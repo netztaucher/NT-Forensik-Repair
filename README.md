@@ -83,7 +83,10 @@ Im Ordner [`examples/`](examples/) liegen vollständige Beispielberichte eines *
 
 ## Dokumentation
 
-- [`docs/runbook.md`](docs/runbook.md) — Schritt-für-Schritt-Runbook für die manuelle Ad-hoc-Analyse einzelner Prüfpunkte.
+- **[`docs/handbuch.md`](docs/handbuch.md)** — vollständiges Benutzerhandbuch: Installation, alle 13 Prüfabschnitte, Berichte, Verdikte lesen, Troubleshooting, FAQ.
+- **[`docs/erkennung.md`](docs/erkennung.md)** — Erkennungs-Referenz: Signaturen, zweistufige Webshell-Bewertung, False-Positive-Filter, Root-Verdikt, Grenzen.
+- **[`docs/incident-response.md`](docs/incident-response.md)** — Incident-Response-Playbook: 7 Phasen von der Beweissicherung bis zur Härtung.
+- **[`docs/runbook.md`](docs/runbook.md)** — Runbook für die manuelle Ad-hoc-Analyse einzelner Prüfpunkte.
 
 ## Sicherheit & Recht
 
