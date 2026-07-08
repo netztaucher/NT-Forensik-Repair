@@ -1,0 +1,15 @@
+# Forensische Läufe / Belege NIEMALS ins Repo (enthalten echte Kundendaten)
+forensik/
+wartungsscripte/
+*_server/
+*_server.tar.gz
+belege/
+lauf.log
+*.tar.gz
+
+# Nur die maskierten Beispiele in examples/ sind erlaubt.
+
+# OS / Editor
+.DS_Store
+*.swp
+*~
