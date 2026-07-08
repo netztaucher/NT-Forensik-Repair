@@ -10,9 +10,18 @@
   &nbsp;·&nbsp; <a href="docs/handbuch.md">Handbuch</a>
 </p>
 
+<p align="center">
+  <a href="https://github.com/netztaucher/NT-Forensik/releases"><img src="https://img.shields.io/github/v/release/netztaucher/NT-Forensik?label=Release" alt="Release"></a>
+  <img src="https://img.shields.io/badge/Modus-read--only-brightgreen" alt="read-only">
+  <img src="https://img.shields.io/badge/Plesk-Obsidian%20%7C%20Ubuntu%2022.04-informational" alt="Plesk">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT"></a>
+</p>
+
 # NT-Forensik
 
 **Forensische Incident-Response für WordPress/Plesk-Server — ein einzelnes, read-only Bash-Skript.**
+
+> 🔒 **Read-only by design.** Das Skript **verändert den Webspace nicht** — es liest, wertet aus und schreibt ausschließlich nach `/root/wartungsscripte/`. Beweise bleiben unangetastet; das Entfernen von Schadcode ist ein bewusst getrennter, manueller Schritt **nach** der Sicherung.
 
 `wp_plesk_forensik.sh` untersucht einen kompromittierten (oder verdächtigen) Plesk-Server systematisch auf Angriffsspuren und erzeugt pro Lauf vier fertige Dokumente:
 
@@ -84,6 +93,7 @@ Das Skript installiert sich beim ersten Lauf nach `/root/wartungsscripte/` und l
 ├── belege/                 # nummerierte Rohdaten, SHA256-versiegelt, Chain-of-Custody
 ├── kundenbericht.md
 ├── bsi_meldung.md
+├── dsgvo_meldung.md
 ├── technik_bericht.md
 └── lauf.log
 ```
@@ -113,8 +123,9 @@ Im Ordner [`examples/`](examples/) liegen vollständige Beispielberichte eines *
 ## Sicherheit & Recht
 
 - **Nur auf eigenen oder ausdrücklich betreuten Systemen einsetzen.** Forensik auf fremden Systemen ohne Auftrag ist strafbar.
-- Das Skript ist **read-only** bzgl. des Webspace; es schreibt ausschließlich in `/root/wartungsscripte/`.
-- Bei Betroffenheit personenbezogener Daten: **DSGVO Art. 33** (72-Stunden-Meldefrist) beachten. Die erzeugte `bsi_meldung.md` ist ein Entwurf und ersetzt keine Rechtsberatung.
+- Das Skript ist **read-only** bzgl. des Webspace; es schreibt ausschließlich in `/root/wartungsscripte/` (root-only, `chmod 700`).
+- **Zwei getrennte Meldewege:** die BSI-Meldung (`bsi_meldung.md`, BSIG/NIS2 — seit 06.12.2025 in Kraft: Frühwarnung ≤ 24 h, Folgemeldung ≤ 72 h, Abschluss ≤ 1 Monat) und die DSGVO-Meldung (`dsgvo_meldung.md`, **Art. 33** an die Datenschutz-Aufsichtsbehörde, ≤ 72 h). Nicht verwechseln.
+- Alle erzeugten Meldungen sind **Entwürfe** und ersetzen keine Rechtsberatung.
 
 ## Lizenz
 
