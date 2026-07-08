@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ============================================================
-# WP-PLESK-FORENSIK.SH — v3.1
+# WP-PLESK-FORENSIK.SH — v3.2
 # Forensische Analyse nach WordPress/Plesk Sicherheitsvorfall
 #
 # Verwendung: sudo bash wp_plesk_forensik.sh [domain.tld]
@@ -17,7 +17,7 @@
 #     ├── bsi_meldung.md                       ← BSI-Meldung (Best Practice)
 #     └── lauf.log                             ← Ausführungsprotokoll
 #
-# Autor: netztaucher | digital — forensik-tool v3.1
+# Autor: netztaucher | digital — forensik-tool v3.2
 # Nur read-only Analyse. Keine Lösch-/Schreiboperationen im Webspace.
 # ============================================================
 
@@ -38,7 +38,7 @@ PLESK_PANEL_LOG="${PLESK_LOG_DIR}/panel.log"
 
 # ── Konfiguration ────────────────────────────────────────────
 DOMAIN="${1:-}"
-TOOL_VERSION="3.1"
+TOOL_VERSION="3.2"
 DAYS_BACK=30   # Analysezeitraum in Tagen
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 RUN_LABEL="${TIMESTAMP}_${DOMAIN:-server}"
@@ -135,7 +135,7 @@ cat <<'EOF'
  ██████  ██    ██ ██████  █████   ██ ██  ██ ███████ ██ █████
  ██      ██    ██ ██   ██ ██      ██  ██ ██      ██ ██ ██  ██
   ██████  ██████  ██   ██ ███████ ██   ████ ███████ ██ ██   ██
-  WP-PLESK-FORENSIK v3.1 — netztaucher | digital
+  WP-PLESK-FORENSIK v3.2 — netztaucher | digital
 EOF
 echo -e "${NC}"
 
@@ -1887,6 +1887,80 @@ DSGVO
 # BELEGE VERSIEGELN: SHA256 über alles
 # ============================================================
 
+# ── Maschinenlesbarer Export für das Repair-Tool (findings.json) ──
+# Kein jq-Zwang; JSON von Hand aus vorhandenen Variablen/Belegen gebaut.
+FINDINGS_FILE="${RUN_DIR}/findings.json"
+
+json_str() {   # einzeiliger String → JSON-escaped (ohne Anführungszeichen)
+  printf '%s' "$1" | tr '\n' ' ' | sed 's/\\/\\\\/g; s/"/\\"/g'
+}
+json_arr() {   # stdin: ein Item pro Zeile → JSON-Array von Strings
+  local first=1 out="[" line esc
+  while IFS= read -r line; do
+    [ -z "$line" ] && continue
+    esc=$(printf '%s' "$line" | sed 's/\\/\\\\/g; s/"/\\"/g')
+    if [ "$first" -eq 1 ]; then out="${out}\"${esc}\""; first=0; else out="${out},\"${esc}\""; fi
+  done
+  printf '%s]' "$out"
+}
+
+emit_findings_json() {
+  local ws php suid tmpx immu cron sysd persist procs wpc fkeys aips bips
+  ws=$(echo "${DROPPER_DETAIL:-}"      | grep '^=== ' | sed 's/^=== //; s/ ===$//' | json_arr)
+  php=$(printf '%s\n' "${PHP_IN_UPLOADS:-}"    | json_arr)
+  suid=$(printf '%s\n' "${SUID_FILES:-}"       | json_arr)
+  tmpx=$(printf '%s\n' "${TMP_EXECS:-}"        | json_arr)
+  immu=$(printf '%s\n' "${IMMUTABLE:-}"        | json_arr)
+  cron=$(printf '%s\n' "${SUSP_CRON:-}"        | json_arr)
+  sysd=$(printf '%s\n' "${SUSP_UNITS:-}"       | json_arr)
+  persist=$(printf '%s\n' "${PERSIST_REPORT:-}" | grep '^=== ' | sed 's/^=== //; s/ ===$//' | json_arr)
+  procs=$(printf '%s\n%s\n%s\n' "${MINER_PROCS:-}" "${DELETED_SUSPECT:-}" "${REVSHELL:-}" | json_arr)
+  wpc=$(printf '%s\n' "${WP_CONFIGS:-}"        | json_arr)
+  fkeys=$(printf '%s\n' "${FOREIGN_KEYS:-}"    | json_arr)
+  aips=$(printf '%s\n' "${ATTACK_IPS_UNIQ:-}"  | grep -oE '([0-9]{1,3}\.){3}[0-9]{1,3}' | json_arr)
+  bips=$(printf '%s\n' "${TOP_FAIL_IPS:-}"     | grep -oE '([0-9]{1,3}\.){3}[0-9]{1,3}' | json_arr)
+
+  cat > "$FINDINGS_FILE" <<JSON
+{
+  "schema_version": "1.0",
+  "tool": "wp_plesk_forensik.sh",
+  "tool_version": "${TOOL_VERSION}",
+  "run_id": "$(json_str "$RUN_LABEL")",
+  "host": "$(json_str "$(hostname -f 2>/dev/null || hostname)")",
+  "domain": "$(json_str "${DOMAIN:-}")",
+  "generated_utc": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")",
+  "counts": { "crit": ${N_CRIT:-0}, "warn": ${N_WARN:-0}, "ok": ${N_OK:-0} },
+  "verdicts": {
+    "root": { "flags": ${ROOT_FLAGS:-0}, "text": "$(json_str "${ROOT_VERDICT:-}")" },
+    "wpdb": { "flags": ${WPDB_FLAGS:-0}, "text": "$(json_str "${WPDB_VERDICT:-}")" }
+  },
+  "metrics": {
+    "webshell_count": ${WEBSHELL_COUNT:-0},
+    "webshell_review": ${WEBSHELL_REVIEW:-0},
+    "ssh_failed": ${SSH_FAILED_COUNT:-0},
+    "wp_installs": ${WP_COUNT:-0},
+    "domains": ${DOMAIN_COUNT:-0}
+  },
+  "actionable": {
+    "webshell_dropper": ${ws:-[]},
+    "php_in_uploads": ${php:-[]},
+    "suid": ${suid:-[]},
+    "tmp_executables": ${tmpx:-[]},
+    "immutable": ${immu:-[]},
+    "cron_suspect": ${cron:-[]},
+    "systemd_suspect": ${sysd:-[]},
+    "persistence": ${persist:-[]},
+    "proc_malicious": ${procs:-[]},
+    "wp_configs": ${wpc:-[]},
+    "foreign_ssh_keys": ${fkeys:-[]},
+    "ioc_ips": { "attacker": ${aips:-[]}, "ssh_bruteforce": ${bips:-[]} }
+  }
+}
+JSON
+  echo "  findings.json geschrieben: $FINDINGS_FILE" >> "$REPORT_FILE"
+}
+emit_findings_json
+
 (
   cd "$BELEGE_DIR"
   # Manifest abschließen
@@ -1897,10 +1971,10 @@ DSGVO
   } >> 00_manifest.txt
   sha256sum ./* 2>/dev/null | grep -v "SHA256SUMS" > SHA256SUMS || true
 )
-# Berichte ebenfalls hashen
+# Berichte + findings.json ebenfalls hashen
 (
   cd "$RUN_DIR"
-  sha256sum technik_bericht.md kundenbericht.md bsi_meldung.md dsgvo_meldung.md 2>/dev/null >> "${BELEGE_DIR}/SHA256SUMS" || true
+  sha256sum technik_bericht.md kundenbericht.md bsi_meldung.md dsgvo_meldung.md findings.json 2>/dev/null >> "${BELEGE_DIR}/SHA256SUMS" || true
 )
 
 # Übergabe-Archiv des kompletten Laufs
@@ -1923,6 +1997,7 @@ echo -e "${BOLD}Kundenbericht:${NC}   ${KUNDE_FILE}"
 echo -e "${BOLD}BSI-Meldung:${NC}     ${BSI_FILE}"
 echo -e "${BOLD}DSGVO-Meldung:${NC}   ${DSGVO_FILE}"
 echo -e "${BOLD}Technik-Bericht:${NC} ${REPORT_FILE}"
+echo -e "${BOLD}findings.json:${NC}   ${FINDINGS_FILE} (maschinenlesbar, für NT-Repair)"
 echo -e "${BOLD}Belege:${NC}          ${BELEGE_DIR} (SHA256-versiegelt)"
 echo -e "${BOLD}Übergabe-Archiv:${NC} ${RUN_ARCHIVE}"
 echo ""

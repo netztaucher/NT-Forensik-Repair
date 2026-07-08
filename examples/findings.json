@@ -1,0 +1,45 @@
+{
+  "schema_version": "1.0",
+  "tool": "wp_plesk_forensik.sh",
+  "tool_version": "3.2",
+  "run_id": "20260708_090000_beispiel-shop.example",
+  "host": "srv-web01.hoster.example",
+  "domain": "beispiel-shop.example",
+  "generated_utc": "2026-07-08T07:00:00Z",
+  "counts": { "crit": 1, "warn": 12, "ok": 230 },
+  "verdicts": {
+    "root": { "flags": 0, "text": "Keine Hinweise auf Root-Kompromittierung. Vorfall auf Web-User-Ebene begrenzt." },
+    "wpdb": { "flags": 0, "text": "Keine Angreifer-Spuren in den WordPress-Datenbanken." }
+  },
+  "metrics": {
+    "webshell_count": 17,
+    "webshell_review": 9,
+    "ssh_failed": 28400,
+    "wp_installs": 12,
+    "domains": 38
+  },
+  "actionable": {
+    "webshell_dropper": [
+      "/var/www/vhosts/beispiel-shop.example/httpdocs/img/social-icon.php",
+      "/var/www/vhosts/beispiel-shop.example/httpdocs/css/theme-cache.php",
+      "/var/www/vhosts/beispiel-shop.example/httpdocs/js/lib-loader.php",
+      "/var/www/vhosts/beispiel-shop.example/httpdocs/cgi-bin/mime-helper.php"
+    ],
+    "php_in_uploads": [],
+    "suid": [],
+    "tmp_executables": [],
+    "immutable": [],
+    "cron_suspect": [],
+    "systemd_suspect": [],
+    "persistence": [],
+    "proc_malicious": [],
+    "wp_configs": [
+      "/var/www/vhosts/beispiel-shop.example/httpdocs/wp-config.php"
+    ],
+    "foreign_ssh_keys": [],
+    "ioc_ips": {
+      "attacker": [ "203.0.113.66" ],
+      "ssh_bruteforce": [ "192.0.2.10", "192.0.2.55", "198.51.100.7", "203.0.113.9" ]
+    }
+  }
+}

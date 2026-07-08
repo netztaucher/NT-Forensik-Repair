@@ -141,6 +141,8 @@ Der Kundenbericht füllt sich vollständig aus den Lauf-Daten — **keine nackte
 
 > **Wichtig:** BSI-Meldung und DSGVO-Meldung sind **getrennte Meldewege an verschiedene Stellen** (BSI-Portal vs. Datenschutz-Aufsichtsbehörde des Bundeslandes). Nicht verwechseln.
 
+Zusätzlich schreibt jeder Lauf **`findings.json`** — einen maschinenlesbaren Export aller Befunde (Verdikte, Zähler, Metriken, actionable Pfade/IPs). Kein Bericht für Menschen, sondern die Schnittstelle für nachgelagerte Werkzeuge (Remediation). Ebenfalls SHA256-versiegelt.
+
 ## 7. Beweissicherung (Chain-of-Custody)
 
 - Jeder Fund wird als nummerierter Beleg `belege/NN_<name>.txt` mit Kopf (Zeitpunkt UTC+lokal, Host, Tool-Version) abgelegt.

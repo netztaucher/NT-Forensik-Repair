@@ -2,6 +2,11 @@
 
 Alle nennenswerten Änderungen an `wp_plesk_forensik.sh`.
 
+## [3.2.0] — 2026-07-08
+
+### Neu
+- **Maschinenlesbarer Export `findings.json`** pro Lauf. Enthält `run_id`, Verdikte (root/wpdb), Zähler, Metriken und die actionable Befunde (Webshell-Dropper, PHP-in-Uploads, SUID, tmp-Executables, Immutable, verdächtige Cron/systemd, Persistenz, Prozesse, WP-Configs, Fremd-SSH-Keys, IOC-IPs). Kein `jq`-Zwang (reines Bash-JSON), in SHA256-Versiegelung + Übergabe-Archiv aufgenommen. Dient als sauberer Vertrag für nachgelagerte Remediation-/Repair-Werkzeuge.
+
 ## [3.1.0] — 2026-07-08
 
 ### Neu
