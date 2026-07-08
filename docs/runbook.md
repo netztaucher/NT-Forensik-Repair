@@ -19,7 +19,7 @@ Alles unter **`/root/wartungsscripte/`** — Skript und Belege getrennt vom Webs
 ├── wp_plesk_forensik.sh
 └── forensik/<YYYYMMDD_HHMMSS>_<domain>/
     ├── belege/  (Rohdaten, SHA256-versiegelt, Chain-of-Custody)
-    ├── kundenbericht.md · bsi_meldung.md · technik_bericht.md
+    ├── kundenbericht.md · bsi_meldung.md · dsgvo_meldung.md · technik_bericht.md
     └── lauf.log
 ```
 
@@ -335,7 +335,7 @@ cd "$BELEGE_DIR" && sha256sum ./* > SHA256SUMS
 cd "$RUN_DIR" && tar czf "/root/wartungsscripte/forensik/$(basename "$RUN_DIR").tar.gz" -C .. "$(basename "$RUN_DIR")"
 ```
 
-Erzeugte Artefakte: `kundenbericht.md`, `bsi_meldung.md`, `technik_bericht.md`, `belege/` (SHA256SUMS).
+Erzeugte Artefakte: `kundenbericht.md`, `bsi_meldung.md`, `dsgvo_meldung.md`, `technik_bericht.md`, `belege/` (SHA256SUMS).
 
 ### BSI-Meldewege & Fristen
 

@@ -13,7 +13,7 @@ Vollständiges Benutzerhandbuch zu `wp_plesk_forensik.sh`.
 3. [Installation & Schnellstart](#3-installation--schnellstart)
 4. [Ablage-Konzept](#4-ablage-konzept)
 5. [Die 13 Prüfabschnitte](#5-die-13-prüfabschnitte)
-6. [Die drei Berichte](#6-die-drei-berichte)
+6. [Die vier Berichte](#6-die-vier-berichte)
 7. [Beweissicherung (Chain-of-Custody)](#7-beweissicherung-chain-of-custody)
 8. [Verdikte richtig lesen](#8-verdikte-richtig-lesen)
 9. [Typischer Ablauf eines Einsatzes](#9-typischer-ablauf-eines-einsatzes)
@@ -79,6 +79,7 @@ Alles liegt unter **`/root/wartungsscripte/`** — getrennt vom Webspace, damit 
     │   │   └── SHA256SUMS                     # Versiegelung
     │   ├── kundenbericht.md
     │   ├── bsi_meldung.md
+    │   ├── dsgvo_meldung.md
     │   ├── technik_bericht.md
     │   └── lauf.log                           # komplettes Ausführungsprotokoll
     └── <YYYYMMDD_HHMMSS>_<domain>.tar.gz      # Übergabe-Archiv des Laufs
@@ -127,15 +128,18 @@ Zentrale Frage: **Root übernommen oder auf Web-User-Ebene begrenzt?** Prüft er
 ### 13 — Zusammenfassung
 Befund-Statistik + Maßnahmenplan (Sofort/Kurz-/Mittelfristig).
 
-## 6. Die drei Berichte
+## 6. Die vier Berichte
 
 | Bericht | Zielgruppe | Inhalt |
 |---|---|---|
 | **`kundenbericht.md`** | Kunde (Laie) | Ampel-Einstufung mit Konsequenz, Sofortmaßnahmen mit **24h/72h-Fristen**, verständliche Technik-Zusammenfassung, maschinell vorbefüllter Angriffshergang, Root-/DB-Reichweite, DSGVO-/BSI-Hinweise |
-| **`bsi_meldung.md`** | BSI / Aufsichtsbehörde | BSIG/NIS2-Struktur, vorausgefüllte Kennzahlen & IOCs, Reichweite/Root-Verdikt, Meldewege & Fristen. `[AUSFÜLLEN]`-Felder für Kontakt/Einstufung |
+| **`bsi_meldung.md`** | BSI | BSIG/NIS2-Struktur, vorausgefüllte Kennzahlen & IOCs, Reichweite/Root-Verdikt, Meldewege & Fristen. `[AUSFÜLLEN]`-Felder für Kontakt/Einstufung |
+| **`dsgvo_meldung.md`** | Datenschutz-Aufsichtsbehörde | Art. 33 DSGVO — **eigener Meldeweg**. Meldepflicht-Einschätzung (🔴/🟠/🟢), Pflichtinhalte Art. 33 Abs. 3 (Art der Verletzung, Betroffene/Datensätze, Folgen, Maßnahmen), betroffene Datenquellen vorbefüllt |
 | **`technik_bericht.md`** | Techniker | Alle Prüfpunkte im Detail, mit Belegverweisen |
 
-Der Kundenbericht füllt sich vollständig aus den Lauf-Daten — **keine nackten Platzhalter**. In der BSI-Meldung bleiben bewusst Formularfelder offen, die das Tool nicht kennen kann (Ansprechpartner, Telefon, meldepflichtige Einstufung).
+Der Kundenbericht füllt sich vollständig aus den Lauf-Daten — **keine nackten Platzhalter**. In BSI- und DSGVO-Meldung bleiben bewusst Formularfelder offen, die das Tool nicht kennen kann (Kontakt/Einstufung bzw. Datenkategorien, Zahl der Betroffenen — das weiß nur der/die Verantwortliche).
+
+> **Wichtig:** BSI-Meldung und DSGVO-Meldung sind **getrennte Meldewege an verschiedene Stellen** (BSI-Portal vs. Datenschutz-Aufsichtsbehörde des Bundeslandes). Nicht verwechseln.
 
 ## 7. Beweissicherung (Chain-of-Custody)
 

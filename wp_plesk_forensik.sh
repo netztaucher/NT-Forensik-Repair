@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ============================================================
-# WP-PLESK-FORENSIK.SH — v3.0
+# WP-PLESK-FORENSIK.SH — v3.1
 # Forensische Analyse nach WordPress/Plesk Sicherheitsvorfall
 #
 # Verwendung: sudo bash wp_plesk_forensik.sh [domain.tld]
@@ -17,7 +17,7 @@
 #     ├── bsi_meldung.md                       ← BSI-Meldung (Best Practice)
 #     └── lauf.log                             ← Ausführungsprotokoll
 #
-# Autor: netztaucher | digital — forensik-tool v3.0
+# Autor: netztaucher | digital — forensik-tool v3.1
 # Nur read-only Analyse. Keine Lösch-/Schreiboperationen im Webspace.
 # ============================================================
 
@@ -38,7 +38,7 @@ PLESK_PANEL_LOG="${PLESK_LOG_DIR}/panel.log"
 
 # ── Konfiguration ────────────────────────────────────────────
 DOMAIN="${1:-}"
-TOOL_VERSION="3.0"
+TOOL_VERSION="3.1"
 DAYS_BACK=30   # Analysezeitraum in Tagen
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 RUN_LABEL="${TIMESTAMP}_${DOMAIN:-server}"
@@ -47,6 +47,7 @@ BELEGE_DIR="${RUN_DIR}/belege"
 REPORT_FILE="${RUN_DIR}/technik_bericht.md"
 KUNDE_FILE="${RUN_DIR}/kundenbericht.md"
 BSI_FILE="${RUN_DIR}/bsi_meldung.md"
+DSGVO_FILE="${RUN_DIR}/dsgvo_meldung.md"
 RUN_LOG="${RUN_DIR}/lauf.log"
 LOG_ARCHIVE="${BELEGE_DIR}/logs_sicherung.tar.gz"
 
@@ -134,7 +135,7 @@ cat <<'EOF'
  ██████  ██    ██ ██████  █████   ██ ██  ██ ███████ ██ █████
  ██      ██    ██ ██   ██ ██      ██  ██ ██      ██ ██ ██  ██
   ██████  ██████  ██   ██ ███████ ██   ████ ███████ ██ ██   ██
-  WP-PLESK-FORENSIK v3.0 — netztaucher | digital
+  WP-PLESK-FORENSIK v3.1 — netztaucher | digital
 EOF
 echo -e "${NC}"
 
@@ -1598,12 +1599,13 @@ $(if [[ "${WEBSHELL_COUNT:-0}" -gt 0 ]]; then echo "- _Weitere bereits durchgef�
 > betroffen sein **könnten** (Kundendaten, Bestellungen, E-Mail-Adressen in der
 > Website-Datenbank), müssen Sie das der zuständigen Datenschutz-Aufsichtsbehörde
 > **innerhalb von 72 Stunden nach Bekanntwerden** melden. Die Frist läuft bereits.
+> Ein vorbereiteter Entwurf liegt in \`dsgvo_meldung.md\`.
 
-> **Meldung an das BSI:** Eine vorbereitete Meldung liegt in \`bsi_meldung.md\`.
-> Ob eine Pflicht besteht, hängt von Ihrer Einstufung ab — im Zweifel ist eine
-> freiwillige Meldung möglich und sinnvoll.
+> **Meldung an das BSI:** Eine vorbereitete Meldung liegt in \`bsi_meldung.md\`
+> (**eigener Meldeweg**, getrennt von der Datenschutzmeldung). Ob eine Pflicht besteht,
+> hängt von Ihrer Einstufung ab — im Zweifel ist eine freiwillige Meldung sinnvoll.
 
-Wir unterstützen Sie bei beiden Meldungen — sprechen Sie uns umgehend an.
+Wir unterstützen Sie bei allen Meldungen — sprechen Sie uns umgehend an.
 
 ## 8. Ihre Unterlagen zu diesem Vorfall
 
@@ -1611,7 +1613,8 @@ Wir unterstützen Sie bei beiden Meldungen — sprechen Sie uns umgehend an.
 |---|---|
 | \`kundenbericht.md\` | Dieses Dokument |
 | \`technik_bericht.md\` | Vollständiger technischer Bericht (alle Prüfpunkte, inkl. Root-Prüfung §12) |
-| \`bsi_meldung.md\` | Vorbereitete BSI-Meldung |
+| \`bsi_meldung.md\` | Vorbereitete BSI-Meldung (BSIG/NIS2) |
+| \`dsgvo_meldung.md\` | Vorbereitete DSGVO-Meldung (Art. 33, eigener Meldeweg an die Datenschutzbehörde) |
 | \`belege/\` | Alle Rohdaten & Beweismittel, mit SHA256-Prüfsummen versiegelt |
 
 $(if [[ -f /root/changelog.md ]]; then echo "> **Abgleich mit Wartungsdokumentation:** Die Befunde wurden gegen das
@@ -1774,6 +1777,113 @@ Basierend auf der forensischen Analyse (in absteigender Wahrscheinlichkeit):
 BSI
 
 # ============================================================
+# DSGVO-MELDUNG (Art. 33 DSGVO — eigener Meldeweg, NICHT BSI!)
+# ============================================================
+# Personenbezogene Daten liegen auf fast jeder WordPress-Seite (Kommentare,
+# Kontaktformulare, Bestellungen). Bei einem Einbruch ist eine Betroffenheit
+# meist nicht auszuschließen → Art. 33 prüfen.
+
+# Einschätzung zur Meldepflicht (maschinell, ersetzt keine Rechtsprüfung)
+if [[ "${WEBSHELL_COUNT:-0}" -gt 0 && "${WP_COUNT:-0}" -gt 0 ]]; then
+  DSGVO_HINWEIS="🔴 **Meldung wahrscheinlich erforderlich.** Es liegt eine bestätigte Kompromittierung vor und es sind WordPress-Installationen (mit typischerweise personenbezogenen Daten) betroffen. Eine Betroffenheit personenbezogener Daten ist **nicht auszuschließen** — die 72-Stunden-Frist des Art. 33 DSGVO läuft ab Kenntnis."
+elif [[ "${N_CRIT:-0}" -gt 0 ]]; then
+  DSGVO_HINWEIS="🟠 **Meldepflicht prüfen.** Es liegt ein kritischer Befund vor. Ob personenbezogene Daten betroffen sind, muss der/die Verantwortliche bewerten (Art. 33 Abs. 1: Meldung, außer die Verletzung führt voraussichtlich zu keinem Risiko)."
+else
+  DSGVO_HINWEIS="🟢 **Nach aktueller Befundlage kein akuter Meldeanlass** aus dieser Analyse. Die Bewertung der Meldepflicht obliegt dem/der Verantwortlichen."
+fi
+
+# Betroffene WordPress-Datenbanken (potenzielle Datenquellen) für die Meldung
+DSGVO_DBS="${WP_CONFIGS:-}"
+[[ -n "$DSGVO_DBS" ]] && DSGVO_DBS=$(echo "$DSGVO_DBS" | sed "s|${VHOSTS_DIR}/||;s|/wp-config.php||" | sed 's/^/- /')
+
+cat > "$DSGVO_FILE" <<DSGVO
+# Meldung einer Verletzung des Schutzes personenbezogener Daten (Art. 33 DSGVO)
+
+> **Eigener Meldeweg — nicht mit der BSI-Meldung verwechseln.** Diese Meldung geht
+> an die zuständige **Datenschutz-Aufsichtsbehörde** des Bundeslandes, nicht ans BSI.
+> Entwurf — vom **Verantwortlichen** zu prüfen und mit \`[AUSFÜLLEN]\` zu ergänzen.
+
+## Meldepflicht — Einschätzung
+
+${DSGVO_HINWEIS}
+
+| | |
+|---|---|
+| **Frist** | unverzüglich, **≤ 72 Stunden** ab Kenntnis (Art. 33 Abs. 1) |
+| **Bei Überschreitung** | Begründung der Verzögerung beifügen (Art. 33 Abs. 1 S. 2) |
+| **Ausnahme** | keine Meldung, wenn die Verletzung **voraussichtlich zu keinem Risiko** für die Rechte und Freiheiten natürlicher Personen führt |
+| **Empfänger** | Datenschutz-Aufsichtsbehörde des Bundeslandes des Verantwortlichen |
+| **Betroffene benachrichtigen?** | bei **hohem Risiko** zusätzlich Art. 34 (unverzüglich an die Betroffenen) |
+
+## 1. Verantwortlicher (meldende Stelle i. S. d. DSGVO)
+
+| Feld | Angabe |
+|---|---|
+| Verantwortlicher (Unternehmen) | [AUSFÜLLEN — Betreiber der Website, nicht der Dienstleister] |
+| Anschrift | [AUSFÜLLEN] |
+| Datenschutzbeauftragter (Name) | [AUSFÜLLEN] |
+| DSB Kontakt (E-Mail/Telefon) | [AUSFÜLLEN] |
+| Technische Unterstützung | netztaucher | digital |
+
+> **Pflichtangabe Art. 33 Abs. 3 lit. b:** Name und Kontaktdaten des DSB oder einer sonstigen Anlaufstelle.
+
+## 2. Art der Verletzung (Art. 33 Abs. 3 lit. a)
+
+**Sachverhalt (technisch belegt):** Kompromittierung der Website${DOMAIN:+ ${DOMAIN}} auf dem Server $(hostname -f 2>/dev/null || hostname). $(if [[ "${WEBSHELL_COUNT:-0}" -gt 0 ]]; then echo "${WEBSHELL_COUNT} Hintertür(en) im Webverzeichnis; unbefugter Zugriff auf das System belegt."; else echo "Auffälligkeiten mit möglichem unbefugtem Zugriff."; fi)
+
+- **Art:** ☑ Vertraulichkeitsverletzung (unbefugter Zugriff)  ☐ Integritätsverletzung  ☐ Verfügbarkeitsverletzung — [prüfen]
+- **Zeitraum:** [AUSFÜLLEN — aus Analyse: Datei-Zeitstempel / Log-Auswertung, siehe technik_bericht.md]
+
+## 3. Betroffene Personen und Datensätze (Art. 33 Abs. 3 lit. a)
+
+> Muss der/die Verantwortliche bewerten — die Forensik liefert nur die betroffenen Systeme.
+
+| Feld | Angabe |
+|---|---|
+| Kategorien betroffener Personen | [AUSFÜLLEN — z. B. Kunden, Newsletter-Abonnenten, Kontaktanfragen] |
+| Ungefähre Zahl betroffener Personen | [AUSFÜLLEN] |
+| Kategorien betroffener Daten | [AUSFÜLLEN — z. B. Name, E-Mail, Anschrift, Bestell-/Zahlungsdaten] |
+| Ungefähre Zahl betroffener Datensätze | [AUSFÜLLEN] |
+| Besondere Kategorien (Art. 9)? | [AUSFÜLLEN — Gesundheit, etc.? i. d. R. nein] |
+
+**Betroffene Datenquellen auf dem Server (aus der Analyse):**
+$(if [[ -n "$DSGVO_DBS" ]]; then echo "$DSGVO_DBS"; else echo "- Keine WordPress-Datenbank im Scan-Pfad gefunden — Datenquellen manuell bestimmen."; fi)
+
+## 4. Wahrscheinliche Folgen (Art. 33 Abs. 3 lit. c)
+
+[AUSFÜLLEN — z. B. Risiko von Identitätsdiebstahl, Spam/Phishing gegen Betroffene, Missbrauch von Zugangsdaten. Einschätzung des Risikogrades: gering / mittel / hoch.]
+
+## 5. Ergriffene und vorgeschlagene Maßnahmen (Art. 33 Abs. 3 lit. d)
+
+**Bereits ergriffen (technisch):**
+- Forensische Sicherung und Dokumentation (revisionssicher, SHA256), Lauf-ID \`${RUN_LABEL}\`.
+$(if [[ "${WEBSHELL_COUNT:-0}" -gt 0 ]]; then echo "- Erfassung aller ${WEBSHELL_COUNT} Schadcode-Fundstellen (Grundlage für Bereinigung/Quarantäne)."; fi)
+- [AUSFÜLLEN — z. B. Passwörter rotiert, Hintertüren entfernt, Domain offline]
+
+**Vorgeschlagen:**
+- Rotation aller Zugangsdaten, WordPress-Neuaufbau aus sauberem Backup, Härtung.
+- [AUSFÜLLEN — Maßnahmen zur Minderung nachteiliger Folgen für Betroffene]
+
+## 6. Dokumentation (Art. 33 Abs. 5)
+
+Auch wenn keine Meldung erfolgt, ist die Verletzung intern zu dokumentieren. Diese
+Analyse (Lauf \`${RUN_LABEL}\`, Belege mit Prüfsummen) erfüllt die technische
+Dokumentationsgrundlage. Rechtliche Bewertung und Entscheidung obliegen dem/der Verantwortlichen.
+
+## 7. Anlagen
+
+| Anlage | Pfad |
+|---|---|
+| Technischer Forensik-Bericht | \`technik_bericht.md\` |
+| BSI-Meldung (separater Meldeweg) | \`bsi_meldung.md\` |
+| Beweismittel inkl. Prüfsummen | \`belege/\` (SHA256SUMS) |
+
+---
+*Entwurf maschinell erstellt am $(date) — wp_plesk_forensik.sh v${TOOL_VERSION}, netztaucher | digital.*
+*Struktur nach Art. 33 DS-GVO. Ersetzt keine Rechtsberatung — vor Versand durch den Verantwortlichen/DSB prüfen.*
+DSGVO
+
+# ============================================================
 # BELEGE VERSIEGELN: SHA256 über alles
 # ============================================================
 
@@ -1790,7 +1900,7 @@ BSI
 # Berichte ebenfalls hashen
 (
   cd "$RUN_DIR"
-  sha256sum technik_bericht.md kundenbericht.md bsi_meldung.md 2>/dev/null >> "${BELEGE_DIR}/SHA256SUMS" || true
+  sha256sum technik_bericht.md kundenbericht.md bsi_meldung.md dsgvo_meldung.md 2>/dev/null >> "${BELEGE_DIR}/SHA256SUMS" || true
 )
 
 # Übergabe-Archiv des kompletten Laufs
@@ -1811,6 +1921,7 @@ echo ""
 echo -e "${BOLD}Lauf-Ordner:${NC}     ${RUN_DIR}"
 echo -e "${BOLD}Kundenbericht:${NC}   ${KUNDE_FILE}"
 echo -e "${BOLD}BSI-Meldung:${NC}     ${BSI_FILE}"
+echo -e "${BOLD}DSGVO-Meldung:${NC}   ${DSGVO_FILE}"
 echo -e "${BOLD}Technik-Bericht:${NC} ${REPORT_FILE}"
 echo -e "${BOLD}Belege:${NC}          ${BELEGE_DIR} (SHA256-versiegelt)"
 echo -e "${BOLD}Übergabe-Archiv:${NC} ${RUN_ARCHIVE}"
@@ -1818,6 +1929,7 @@ echo ""
 echo -e "${YLW}Nächste Schritte:${NC}"
 echo -e "  1. Kundenbericht prüfen:   cat ${KUNDE_FILE}"
 echo -e "  2. BSI-Meldung ergänzen:   [AUSFÜLLEN]-Felder in ${BSI_FILE}"
-echo -e "  3. Archiv lokal sichern:   scp root@$(hostname -f 2>/dev/null || hostname):${RUN_ARCHIVE} ."
-echo -e "  4. Alle 🔴-Maßnahmen sofort umsetzen"
+echo -e "  3. DSGVO-Meldung prüfen:   [AUSFÜLLEN]-Felder in ${DSGVO_FILE} (eigener Meldeweg!)"
+echo -e "  4. Archiv lokal sichern:   scp root@$(hostname -f 2>/dev/null || hostname):${RUN_ARCHIVE} ."
+echo -e "  5. Alle 🔴-Maßnahmen sofort umsetzen"
 echo ""

@@ -14,10 +14,11 @@
 
 **Forensische Incident-Response für WordPress/Plesk-Server — ein einzelnes, read-only Bash-Skript.**
 
-`wp_plesk_forensik.sh` untersucht einen kompromittierten (oder verdächtigen) Plesk-Server systematisch auf Angriffsspuren und erzeugt pro Lauf drei fertige Dokumente:
+`wp_plesk_forensik.sh` untersucht einen kompromittierten (oder verdächtigen) Plesk-Server systematisch auf Angriffsspuren und erzeugt pro Lauf vier fertige Dokumente:
 
 - **`kundenbericht.md`** — verständlicher Bericht für den Kunden (Ampel-Bewertung, Sofortmaßnahmen mit Fristen, Angriffshergang).
 - **`bsi_meldung.md`** — vorausgefüllter Entwurf für die BSI-Meldung (BSIG/NIS2-Struktur) inkl. Kennzahlen und IOCs.
+- **`dsgvo_meldung.md`** — vorausgefüllter Entwurf für die Datenschutz-Meldung nach **Art. 33 DSGVO** (eigener Meldeweg an die Aufsichtsbehörde) mit Meldepflicht-Einschätzung und den Pflichtinhalten des Art. 33 Abs. 3.
 - **`technik_bericht.md`** — vollständiger technischer Bericht über alle Prüfpunkte.
 
 Alle Rohdaten werden als nummerierte, SHA256-versiegelte Belege abgelegt (Chain-of-Custody).
@@ -99,6 +100,7 @@ Im Ordner [`examples/`](examples/) liegen vollständige Beispielberichte eines *
 
 - [`examples/kundenbericht.md`](examples/kundenbericht.md)
 - [`examples/bsi_meldung.md`](examples/bsi_meldung.md)
+- [`examples/dsgvo_meldung.md`](examples/dsgvo_meldung.md)
 - [`examples/technik_bericht_auszug.md`](examples/technik_bericht_auszug.md)
 
 ## Dokumentation
