@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ============================================================
-# WP-PLESK-FORENSIK.SH — v2.9
+# WP-PLESK-FORENSIK.SH — v3.0
 # Forensische Analyse nach WordPress/Plesk Sicherheitsvorfall
 #
 # Verwendung: sudo bash wp_plesk_forensik.sh [domain.tld]
@@ -17,7 +17,7 @@
 #     ├── bsi_meldung.md                       ← BSI-Meldung (Best Practice)
 #     └── lauf.log                             ← Ausführungsprotokoll
 #
-# Autor: netztaucher | digital — forensik-tool v2.9
+# Autor: netztaucher | digital — forensik-tool v3.0
 # Nur read-only Analyse. Keine Lösch-/Schreiboperationen im Webspace.
 # ============================================================
 
@@ -38,7 +38,7 @@ PLESK_PANEL_LOG="${PLESK_LOG_DIR}/panel.log"
 
 # ── Konfiguration ────────────────────────────────────────────
 DOMAIN="${1:-}"
-TOOL_VERSION="2.9"
+TOOL_VERSION="3.0"
 DAYS_BACK=30   # Analysezeitraum in Tagen
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 RUN_LABEL="${TIMESTAMP}_${DOMAIN:-server}"
@@ -134,7 +134,7 @@ cat <<'EOF'
  ██████  ██    ██ ██████  █████   ██ ██  ██ ███████ ██ █████
  ██      ██    ██ ██   ██ ██      ██  ██ ██      ██ ██ ██  ██
   ██████  ██████  ██   ██ ███████ ██   ████ ███████ ██ ██   ██
-  WP-PLESK-FORENSIK v2.9 — netztaucher | digital
+  WP-PLESK-FORENSIK v3.0 — netztaucher | digital
 EOF
 echo -e "${NC}"
 
@@ -1617,6 +1617,17 @@ Wir unterstützen Sie bei beiden Meldungen — sprechen Sie uns umgehend an.
 $(if [[ -f /root/changelog.md ]]; then echo "> **Abgleich mit Wartungsdokumentation:** Die Befunde wurden gegen das
 > Admin-Änderungsprotokoll (\`/root/changelog.md\`) abgeglichen; dort dokumentierte
 > Systemänderungen sind als reguläre Wartung eingeordnet."; fi)
+
+---
+
+### Über netztaucher | digital
+
+Diese Analyse stammt aus unserer laufenden **WordPress-Betreuung und -Absicherung**.
+Wir übernehmen Wartung, Härtung, Monitoring und Notfall-Forensik für WordPress- und
+Rootserver — damit Vorfälle wie dieser gar nicht erst entstehen oder im Ernstfall
+sauber und dokumentiert behoben werden.
+
+**→ https://netztaucher.com/wordpress**
 
 ---
 *netztaucher | digital — maschinell erstellt (wp_plesk_forensik.sh v${TOOL_VERSION}) und dokumentiert den Zustand zum Prüfzeitpunkt. Der Angriffshergang (Abschnitt 5/6) wird nach manueller Auswertung ergänzt.*

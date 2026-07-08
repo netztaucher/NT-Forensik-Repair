@@ -1,3 +1,15 @@
+<p align="center">
+  <a href="https://netztaucher.com/wordpress">
+    <img src="assets/banner.png" alt="NT Forensik — WordPress & Rootserver · Digitale Spurensuche. Klare Analyse. Sichere Lösung." width="100%">
+  </a>
+</p>
+
+<p align="center">
+  <b><a href="https://netztaucher.com/wordpress">WordPress-Betreuung &amp; Sicherheit durch netztaucher</a></b>
+  &nbsp;·&nbsp; <a href="https://github.com/netztaucher/NT-Forensik/releases">Releases</a>
+  &nbsp;·&nbsp; <a href="docs/handbuch.md">Handbuch</a>
+</p>
+
 # NT-Forensik
 
 **Forensische Incident-Response für WordPress/Plesk-Server — ein einzelnes, read-only Bash-Skript.**
@@ -11,6 +23,14 @@
 Alle Rohdaten werden als nummerierte, SHA256-versiegelte Belege abgelegt (Chain-of-Custody).
 
 > Entwickelt von **netztaucher | digital** für den Einsatz auf eigenen und betreuten Systemen.
+
+---
+
+## 🛡️ WordPress-Betreuung durch netztaucher
+
+NT-Forensik entsteht aus der täglichen Praxis unserer **WordPress-Wartung und -Absicherung**. Sie betreiben WordPress und wollen Einbrüche wie die hier dokumentierten gar nicht erst erleben — oder brauchen im Ernstfall schnelle, saubere Incident-Response?
+
+**→ [netztaucher.com/wordpress](https://netztaucher.com/wordpress)** — Wartung, Härtung, Monitoring und Notfall-Forensik aus einer Hand.
 
 ---
 

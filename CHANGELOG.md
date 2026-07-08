@@ -2,6 +2,17 @@
 
 Alle nennenswerten Änderungen an `wp_plesk_forensik.sh`.
 
+## [3.0.0] — 2026-07-08
+
+Erste vollständig dokumentierte, gebrandete Release.
+
+### Neu
+- **Handbuch, Erkennungs-Referenz und Incident-Response-Playbook** unter `docs/`.
+- **netztaucher-Branding**: Hero-Banner im README, Logo, verlinkte WordPress-Leistung ([netztaucher.com/wordpress](https://netztaucher.com/wordpress)).
+- **WordPress-Leistungs-Hinweis im Kundenbericht-Footer** — jeder erzeugte Kundenbericht verweist auf die netztaucher WordPress-Betreuung.
+
+### Enthält alle Erkennungs- und Berichtsfunktionen aus 2.9.0 (siehe unten).
+
 ## [2.9.0] — 2026-07-08
 
 Erste öffentliche Veröffentlichung.

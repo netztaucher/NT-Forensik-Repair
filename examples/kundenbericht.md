@@ -122,4 +122,14 @@ lange unentdeckt blieben.
 | `belege/` | Rohdaten & Beweismittel, SHA256-versiegelt |
 
 ---
+
+### Über netztaucher | digital
+
+Diese Analyse stammt aus unserer laufenden **WordPress-Betreuung und -Absicherung**.
+Wir übernehmen Wartung, Härtung, Monitoring und Notfall-Forensik für WordPress- und
+Rootserver.
+
+**→ https://netztaucher.com/wordpress**
+
+---
 *netztaucher | digital — maschinell erstellt (wp_plesk_forensik.sh). Beispielbericht mit fiktiven Daten.*
