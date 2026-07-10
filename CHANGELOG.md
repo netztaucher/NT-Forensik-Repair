@@ -2,6 +2,53 @@
 
 Alle nennenswerten Änderungen an `wp_plesk_forensik.sh`.
 
+## [3.3.0] — 2026-07-10
+
+### Neu — Detektion der Doorway-/Persistenz-Familie
+Lehre aus einem realen Plesk-WordPress-Kundenvorfall (2026-07): Der Signatur-Webshell-Scan meldete `0`
+Treffer, während der Server massiv kompromittiert war (RCE-Backdoor + SEO-Spam-
+Doorway „open_cache_ruzhu" + selbst-versteckende Admin-Persistenz). Neue Prüfungen
+in §11 (laufen auch **ohne** DB-Verbindung):
+
+- **WordPress-Kern-Integrität** via `wp core verify-checksums` (wenn wp-cli vorhanden):
+  erkennt injizierte Core-Dateien („doesn't verify") und Core-fremde Dateien
+  („should not exist" — Doorways, getarnte Payloads, Attacker-Backups `*.orig`).
+- **Doorway-`.htaccess`-Signatur** (`FilesMatch` erlaubt nur `index.php|cache.php`) —
+  deckt die rekursiv verschachtelte `cache.php`-Injector-Familie über den ganzen
+  Webspace auf, unabhängig von Datei-Endung/Obfuskation.
+- **Bootstrap-Injektion** `@include base64_decode()` in `*.php` (Core-Persistenz, die
+  bei jedem Request getarnte Payloads `.ttf/.png/.gif/.css` nachlädt).
+- **wp-cli-DB-Fallback**: schlägt der direkte `mysql`-Zugang fehl, wird die DB über
+  `wp db query` (als Datei-Eigentümer) geprüft — verhindert das stille Überspringen
+  der DB-Prüfung (im Vorfall wurden so 4 Angreifer-Admins zunächst übersehen).
+- **File-Manager-Webshells + manipulierte .htaccess** (Lehre aus 403-Prüfung, 3. Schicht):
+  Erkennung von TinyFileManager/elFinder/FilesMan/H3K/b374k/WSO in Plugin-Ordnern (CRIT)
+  sowie von `.htaccess`, die alle `.php` per `FilesMatch`-Whitelist sperren und nur
+  Webshell-Namen (`adminfuns.php`, `classsmtps.php`, `postnews.php` …) zulassen — das
+  blockiert legitime `wp-admin`-Seiten (**403**) und tarnt zugleich die Webshells.
+  Neue findings.json-Felder `filemanager`/`tampered_htaccess`.
+- **Bewertung ALLER Plugins + mu-Plugins** (nicht nur der aktiven): Filesystem-Scan über
+  `wp-content/plugins/` **und** `wp-content/mu-plugins/` auf Fake-Signatur
+  (`Author: WordPress` + `wordpress.org/plugins/`) und Backdoor-Hooks
+  (`pre_user_query`, `create_admin`, `ensure_plugin_active`, `eval(base64_decode($_POST/GET/REQUEST))`).
+  Bösartige Plugins deaktivieren/verstecken sich selbst und stehen **nicht** in
+  `active_plugins`; mu-Plugins laufen ohne Aktivierung immer. Neue findings.json-Felder
+  `suspicious_plugins`, `mu_plugins` + Metrik `suspicious_plugins`.
+
+### Geändert
+- **`wpconf_get()` überspringt auskommentierte Zeilen** (`// # * /*`). Vorher griff
+  `head -1` fälschlich einen alten, auskommentierten `define('DB_NAME', …)`-Wert
+  (Migrations-Rest) → Prüfung landete auf der falschen/nicht existenten Datenbank.
+- Admin-Enumeration nutzt die Roh-`capabilities`-Meta (`administrator";b:1`). **Hinweis:**
+  `wp user list --role=administrator` ist **nicht** verlässlich — Malware kann via
+  `pre_user_query` Admins vor UI und wp-cli verstecken (im Vorfall real beobachtet).
+
+### findings.json
+- Neue `actionable`-Felder: `injected_core`, `core_should_not_exist`, `doorway_dirs`,
+  `core_include_injection`, `disguised_payloads`, `rogue_wp_admins`.
+- Neue `metrics`: `injected_core_files`, `doorway_dirs`, `core_include_injections`,
+  `rogue_wp_admins`.
+
 ## [3.2.0] — 2026-07-08
 
 ### Neu

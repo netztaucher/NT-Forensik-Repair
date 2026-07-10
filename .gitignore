@@ -13,3 +13,6 @@ lauf.log
 .DS_Store
 *.swp
 *~
+
+# Lokale Lauf-Kopien (Kundendaten)
+laeufe/
