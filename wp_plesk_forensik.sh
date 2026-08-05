@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # ============================================================
-# WP-PLESK-FORENSIK.SH — v3.4
+# WP-PLESK-FORENSIK.SH — v3.5
 # Forensische Analyse nach WordPress/Plesk Sicherheitsvorfall
 #
-# Verwendung: sudo bash wp_plesk_forensik.sh [domain.tld]
+# Verwendung: sudo bash wp_plesk_forensik.sh [--domain d|--path p|--global] [--yara]
 #
 # Ablage (fest):
 #   /root/wartungsscripte/                     ← Skript-Basis (wird angelegt)
@@ -17,7 +17,7 @@
 #     ├── bsi_meldung.md                       ← BSI-Meldung (Best Practice)
 #     └── lauf.log                             ← Ausführungsprotokoll
 #
-# Autor: netztaucher | digital — forensik-tool v3.4
+# Autor: netztaucher | digital — forensik-tool v3.5
 # Nur read-only Analyse. Keine Lösch-/Schreiboperationen im Webspace.
 # ============================================================
 
@@ -37,11 +37,72 @@ PLESK_LOG_DIR="/var/log/plesk"
 PLESK_PANEL_LOG="${PLESK_LOG_DIR}/panel.log"
 
 # ── Konfiguration ────────────────────────────────────────────
-DOMAIN="${1:-}"
-TOOL_VERSION="3.4"
+TOOL_VERSION="3.5"
 DAYS_BACK=30   # Analysezeitraum in Tagen
+
+# ── Argumente & Scope (v3.5) ─────────────────────────────────
+# Drei Betriebsarten. Die Server-/Rootebene (Abschnitte 3,5,6,8,9,12) läuft
+# in ALLEN Modi mit — der Scope steuert nur den Dateisystem-Scan (Abschnitt 7)
+# und, welche Berichte für wen erzeugt werden (siehe Abschnitt 13).
+#   --domain <d>  ein Kunde         (= bisheriges Positionsargument)
+#   --path <p>    beliebiger Pfad   (Unterordner, Nicht-Plesk-Webspace)
+#   --global      alle vhosts       → Betreiberbericht + je-vhost Kundenberichte
+# Ohne Argument = --global (rückwärtskompatibel: leeres DOMAIN scannte schon
+# immer alle vhosts). Ein blankes Positionsargument bleibt = --domain.
+DOMAIN=""
+SCOPE_MODE="global"      # global | domain | path
+SCAN_PATH_ARG=""         # nur bei --path
+WANT_YARA=0              # 7.11 nur auf Wunsch (teuer auf großen Webspaces)
+
+usage() {
+  cat <<USAGE
+wp_plesk_forensik.sh v${TOOL_VERSION} — read-only WordPress/Plesk-Forensik
+
+Verwendung:
+  sudo bash $0 [SCOPE] [Optionen]
+  sudo bash $0 kunde.tld                 # Kurzform für --domain kunde.tld
+
+Scope (eines):
+  --domain <domain.tld>   Einen Kunden prüfen; Kundenbericht nur mit dessen Daten
+  --path   <pfad>         Beliebigen Pfad/Webspace prüfen
+  --global                Alle vhosts (Standard): Betreiberbericht + je vhost
+                          ein eigener, gefilterter Kundenbericht
+
+Optionen:
+  --yara                  YARA-Signaturscan (7.11) aktivieren (langsam auf
+                          großen Webspaces; ohne Flag übersprungen)
+  -h, --help              Diese Hilfe
+
+Die Server-/Rootebene wird in jedem Modus mitgeprüft. In Kundenberichten
+werden Rootbefunde nur allgemein (betroffen/nicht betroffen) genannt und
+IP-Adressen/E-Mails maskiert.
+USAGE
+}
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --domain) SCOPE_MODE="domain"; DOMAIN="${2:-}"; shift 2 ;;
+    --path)   SCOPE_MODE="path";   SCAN_PATH_ARG="${2:-}"; shift 2 ;;
+    --global) SCOPE_MODE="global"; shift ;;
+    --yara)   WANT_YARA=1; shift ;;
+    -h|--help) usage; exit 0 ;;
+    --) shift; break ;;
+    -*) echo "Unbekannte Option: $1" >&2; usage >&2; exit 2 ;;
+    *)  # Positionsargument = Domain (Rückwärtskompatibilität)
+        SCOPE_MODE="domain"; DOMAIN="$1"; shift ;;
+  esac
+done
+
+# Plausibilität
+if [[ "$SCOPE_MODE" == "domain" && -z "$DOMAIN" ]]; then
+  echo "Fehler: --domain ohne Domain-Angabe." >&2; usage >&2; exit 2
+fi
+if [[ "$SCOPE_MODE" == "path" && -z "$SCAN_PATH_ARG" ]]; then
+  echo "Fehler: --path ohne Pfad-Angabe." >&2; usage >&2; exit 2
+fi
+
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-RUN_LABEL="${TIMESTAMP}_${DOMAIN:-server}"
+RUN_LABEL="${TIMESTAMP}_${DOMAIN:-${SCOPE_MODE}}"
 RUN_DIR="${FORENSIK_BASE}/${RUN_LABEL}"
 BELEGE_DIR="${RUN_DIR}/belege"
 REPORT_FILE="${RUN_DIR}/technik_bericht.md"
@@ -180,7 +241,7 @@ cat <<'EOF'
  ██████  ██    ██ ██████  █████   ██ ██  ██ ███████ ██ █████
  ██      ██    ██ ██   ██ ██      ██  ██ ██      ██ ██ ██  ██
   ██████  ██████  ██   ██ ███████ ██   ████ ███████ ██ ██   ██
-  WP-PLESK-FORENSIK v3.4 — netztaucher | digital
+  WP-PLESK-FORENSIK v3.5 — netztaucher | digital
 EOF
 echo -e "${NC}"
 
@@ -815,11 +876,13 @@ fi
 h1 "7. DATEISYSTEM-SCAN"
 # ============================================================
 
-if [[ -n "$DOMAIN" && -d "${VHOSTS_DIR}/${DOMAIN}" ]]; then
-  SCAN_PATH="${VHOSTS_DIR}/${DOMAIN}"
-else
-  SCAN_PATH="$VHOSTS_DIR"
-fi
+case "$SCOPE_MODE" in
+  path)   SCAN_PATH="$SCAN_PATH_ARG" ;;
+  domain) SCAN_PATH="${VHOSTS_DIR}/${DOMAIN}" ;;
+  *)      SCAN_PATH="$VHOSTS_DIR" ;;   # global
+esac
+# Fallback: gesetzte Domain ohne existierenden vhost -> serverweit statt ins Leere
+[[ "$SCOPE_MODE" == "domain" && ! -d "$SCAN_PATH" ]] && SCAN_PATH="$VHOSTS_DIR"
 
 h2 "7.1 Kürzlich veränderte PHP-Dateien (letzte ${DAYS_BACK} Tage)"
 echo -e "  ${YLW}Durchsuche Webspace (kann dauern...)${NC}"
@@ -1069,7 +1132,9 @@ h2 "7.11 YARA-Signaturscan (optional)"
 # Die Regel ELF_Masquerading_As_KeyFile braucht die externe Variable
 # 'filename' — ohne sie würde sie auf jede ELF-Datei anschlagen.
 YARA_RULES_FILE="${BASE_DIR}/signaturen/gsocket-backdoors.yar"
-if command -v yara &>/dev/null && [[ -f "$YARA_RULES_FILE" ]]; then
+if [[ "$WANT_YARA" != "1" ]]; then
+    info "YARA-Scan nicht aktiviert — mit --yara einschalten (auf großen Webspaces langsam)"
+elif command -v yara &>/dev/null && [[ -f "$YARA_RULES_FILE" ]]; then
     YARA_DETAIL=""
     while IFS= read -r f; do
         [[ -f "$f" ]] || continue
