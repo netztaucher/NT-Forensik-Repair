@@ -2181,9 +2181,27 @@ fi
 KUNDE_CRIT_LIST=$(printf '%s' "$CRIT_LIST" | mask_email)
 KUNDE_WARN_LIST=$(printf '%s' "$WARN_LIST" | mask_email)
 
-cat > "$KUNDE_FILE" <<KUNDE
-# Sicherheitsvorfall — Bericht${DOMAIN:+ für ${DOMAIN}}
+# Scope-Warnung (v3.5): Im Global-Modus umfasst der Bericht ALLE Domains und
+# darf nicht als Einzelkunden-Bericht verschickt werden — sonst sähe Kunde A die
+# Befunde (und ggf. personenbezogenen Daten) von Kunde B. Kundenspezifische,
+# maskierte Berichte entstehen über einen Lauf mit --domain <kunde.tld>.
+if [[ "$SCOPE_MODE" == "global" ]]; then
+  KUNDE_TITEL="Serverweiter Befundbericht (Betreiber)"
+  SCOPE_BANNER="> ⚠️ **Serverweiter Betreiberbericht — nicht für die Weitergabe an einzelne Kunden.**
+> Dieser Lauf (\`--global\`) umfasst **alle Domains** des Servers; die folgenden
+> Befunde können mehrere Kunden betreffen. Für einen kundenspezifischen Bericht
+> (nur dessen Daten, personenbezogene Angaben maskiert, ohne Root-Details) den
+> Lauf mit \`--domain <kunde.tld>\` wiederholen.
+"
+else
+  KUNDE_TITEL="Sicherheitsvorfall — Bericht${DOMAIN:+ für ${DOMAIN}}"
+  SCOPE_BANNER=""
+fi
 
+cat > "$KUNDE_FILE" <<KUNDE
+# ${KUNDE_TITEL}
+
+${SCOPE_BANNER}
 | | |
 |---|---|
 | **Einstufung** | ${AMPEL} |
