@@ -53,86 +53,108 @@ easydiscuss	com_easydiscuss
 adsmanager	com_adsmanager
 community builder	com_comprofiler
 seblod	com_cck
-sourcerer	plg_system_sourcerer
+sourcerer	sourcerer
 jumi	com_jumi
-astroid framework	tpl_astroid
-helix ultimate	tpl_shaper_helixultimate
-helix3	tpl_shaper_helix3
+astroid framework	astroid
+helix ultimate	shaper_helixultimate
+helix3	shaper_helix3
+
+# --- recherchiert und belegt (Quellen: daten/joomla/QUELLEN.md) ---
+ap portfolio	mod_ap_portfolio
+acysms	com_acysms
+admin tools package	pkg_admintools
+advertisement board	com_advertisementboard
+ajax quiz	com_ajaxquiz
+akeeba backup package	pkg_akeebabackup
+altauserpoints	com_altauserpoints
+authentication - master user	masteruser
+baforms	com_baforms
+big file uploader	com_bigfileuploader
+booklibrary	com_booklibrary
+bt_portfolio	com_bt_portfolio
+cp event calendar	com_cpeventcalendar
+community builder package	pkg_communitybuilder
+community quiz	com_communityquiz
+contus hd video share	com_contushdvideoshare
+dt register	com_dtregister
+eshop	com_eshop
+ekrishta	com_ekrishta
+extrasearch	com_extrasearch
+fancy tagcloud	mod_fancy_tagcloud
+form maker	com_formmaker
+gps tools package	pkg_gpstools
+gallery wd	com_gallery_wd
+hdw player	com_hdwplayer
+invitex	com_invitex
+jbusinessdirectory	com_jbusinessdirectory
+jcomments	com_jcomments
+je property finder	com_jepropertyfinder
+jevents package	pkg_jevents
+jgive package	pkg_jgive
+jhotelreservation	com_jhotelreservation
+js support ticket	com_jssupportticket
+jsp location	com_jsplocation
+jsp tickets	com_jsptickets
+jticketing package	pkg_jticketing
+jimtawl	com_jimtawl
+joomla survey force deluxe package	pkg_survey
+joomloc	com_joomloc
+k2	com_k2
+medialibrary	com_medialibrary
+muscol	com_muscol
+onevote!	com_onevote
+osservicesbooking	com_osservicesbooking
+package proclaim	pkg_proclaim
+poweradmin	com_poweradmin
+rpl	com_rpl
+realestatemanager	com_realestatemanager
+realpin	com_realpin
+simgenealogy	com_simgenealogy
+securitycheck	com_securitycheck
+simple image gallery (by joomlaworks)	jw_sig
+simpleimageupload	com_simpleimageupload
+solidres full package	pkg_solidres
+squad management!	com_squadmanagement
+system - google maps	plugin_googlemap3
+vehiclemanager	com_vehiclemanager
+vikrentitems	com_vikrentitems
+visualcalendar	com_visualcalendar
+zap calendar lite	com_zcalendar
+ccnewsletter	com_ccnewsletter
+extplorer	com_extplorer
+jnews	com_jnews
+jofacebookgallery	com_jofacebookgallery
+jquickcontact	com_jquickcontact
+twitchtv	com_twitchtv
+# Alt-/Parallelnamen derselben Erweiterung
+akeeba backup	pkg_akeeba
+altauserpoints (alt)	com_alphauserpoints
+
+# --- bewusst NICHT zugeordnet ---
+# Diese Anzeigenamen liessen sich nicht belegen. Ein geratener Eintrag wuerde
+# flottenweit einen falschen kritischen Befund erzeugen; ein fehlender kostet
+# nur diesen einen Abgleich. Deshalb bleiben sie offen:
+#   Button - Smart Related Articles   Hersteller weg, keine Fundstelle
+#   Bye-Bye Password                  VEL nennt "plugin", belegt ist nur ein Modul
+#   CW Article Attachments Package    nur die Komponente com_cwattachments belegt
+#   CW Tags Package                   nur die Komponente com_cwtags belegt
+#   JMS Support Online                JED-Eintrag entfernt
+#   JomEstate Package                 nur die Komponente com_jomestate belegt
+#   Joomla Checklist Package          widerspruechlich (com_checklist vs. _professional)
+#   OS Property Package               Hersteller liefert kein Paket, nur Einzelteile
+#   System - Rapi Preloader           kein Ordner dokumentiert
+#   UserExtranet                      nur Marketingtext, kein Pfad
+#   Watchful SSO                      nur remote installierbar, kein Ordner dokumentiert
 
 # --- automatisch ergaenzt, bitte Elementnamen eintragen ---
-# AP Portfolio	
-# AcySMS	
-# Admin Tools package	
-# Advertisement Board	
-# Ajax Quiz	
-# AltaUserPoints	
-# Authentication - Master User	
-# BaForms	
-# Big File Uploader	
-# BookLibrary	
-# Bt_Portfolio	
 # Button - Smart Related Articles	
 # Bye-Bye Password	
-# CP Event Calendar	
 # CW Article Attachments Package	
 # CW Tags Package	
-# Community Builder Package	
-# Community Quiz	
-# Contus HD Video Share	
-# DT Register	
-# EShop	
-# Ekrishta	
-# ExtraSearch	
-# Fancy TagCloud	
-# Form Maker	
-# GPS Tools Package	
-# Gallery WD	
-# HDW Player	
-# InviteX	
-# JBusinessDirectory	
-# JComments	
-# JE Property Finder	
-# JEvents Package	
-# JGive Package	
-# JHotelReservation	
 # JMS Support Online	
-# JS Support Ticket	
-# JSP Location	
-# JSP Tickets	
-# JTicketing Package	
-# Jimtawl	
 # JomEstate Package	
 # Joomla Checklist Package	
-# Joomla Survey Force Deluxe Package	
-# Joomloc	
-# K2	
-# MediaLibrary	
-# MusCol	
 # OS Property Package	
-# OneVote!	
-# Osservicesbooking	
-# Package Proclaim	
-# PowerAdmin	
-# RPL	
-# RealEstateManager	
-# RealPin	
-# SIMGenealogy	
-# Securitycheck	
-# Simple Image Gallery (by JoomlaWorks)	
-# SimpleImageUpload	
-# Solidres Full Package	
-# Squad Management!	
-# System - Google Maps	
 # System - Rapi Preloader	
 # UserExtranet	
-# VehicleManager	
-# VikRentItems	
-# Visualcalendar	
 # Watchful SSO	
-# Zap Calendar Lite	
-# ccNewsletter	
-# eXtplorer	
-# jNews	
-# jofacebookgallery	
-# jquickcontact	
-# twitchtv	
