@@ -2469,6 +2469,198 @@ else
       fi
     fi
 
+    # ── 12.5 Kern-Integrität (Prüfsummen-Vergleich) ───────────
+    # Das Gegenstück zu "wp core verify-checksums" bei WordPress. Joomla
+    # veröffentlicht keine Prüfsummen je Datei, deshalb erzeugen wir sie
+    # selbst aus den offiziellen Paketen (werkzeuge/joomla-daten-update.sh).
+    #
+    # Zwei Fragen: Wurde eine Kerndatei verändert? Und liegt in einem reinen
+    # Kern-Verzeichnis eine Datei, die dort nicht hingehört? Letzteres ist die
+    # klassische Ablagestelle für Hintertüren, die wie Kern aussehen sollen.
+    if [[ -n "${jver:-}" ]]; then
+      h2 "12.5 Kern-Integrität — $site"
+      jzweig=$(printf '%s' "$jver" | cut -d. -f1,2)
+      jmanifest="${JOOMLA_DATA_DIR}/coresums/${jzweig}.tsv.gz"
+      jman_hat_version=0
+      if [[ -f "$jmanifest" ]]; then
+        gzip -dc "$jmanifest" 2>/dev/null | sed -n 's/^# Fassungen: //p' | head -1 \
+          | tr ',' '\n' | grep -qxF "$jver" && jman_hat_version=1
+      fi
+
+      # Fehlt die Fassung im mitgelieferten Bestand, kann --online das
+      # offizielle Paket nachladen. Das sind rund 30 MB — deshalb nur auf
+      # ausdrücklichen Wunsch, und der Abruf wird protokolliert.
+      jman_online=""
+      if [[ "$jman_hat_version" -eq 0 && "${WANT_ONLINE:-0}" == "1" ]]; then
+        jman_online="${RUN_DIR}/.online/joomla_${jver}"
+        mkdir -p "$jman_online"
+        info "Kein Prüfsummen-Satz für Joomla ${jver} vorhanden — lade das offizielle Paket nach (--online)"
+        if nf_fetch "https://github.com/joomla/joomla-cms/releases/download/${jver}/Joomla_${jver}-Stable-Full_Package.tar.gz" "${jman_online}/paket.tgz" \
+           && tar xzf "${jman_online}/paket.tgz" -C "$jman_online" 2>/dev/null; then
+          rm -f "${jman_online}/paket.tgz"
+        else
+          warn "Offizielles Joomla-Paket ${jver} nicht abrufbar — Kern-Integrität nicht geprüft"
+          rm -rf "$jman_online"; jman_online=""
+        fi
+      fi
+
+      if [[ "$jman_hat_version" -eq 0 && -z "$jman_online" ]]; then
+        warn "$site: Für Joomla ${jver} liegt kein Prüfsummen-Satz vor — die Unversehrtheit des Programmkerns wurde NICHT geprüft (mit --online nachladbar)"
+      elif ! command -v python3 >/dev/null 2>&1; then
+        info "python3 fehlt — Prüfsummen-Vergleich übersprungen"
+      else
+        # Ein einziger Python-Lauf je Installation. 9800 Dateien einzeln über
+        # sha256sum zu hashen wäre 20- bis 40-mal langsamer und würde das
+        # Verfahren praktisch unbrauchbar machen.
+        jdiff=$(JROOT="$CURRENT_J_PATH" JMAN="$jmanifest" JVER="$jver" \
+                JPAKET="${jman_online:-}" JAUSN="${JOOMLA_DATA_DIR}/coresums/ausnahmen.tsv" python3 <<'PY'
+import os, re, gzip, hashlib, sys
+
+wurzel  = os.environ["JROOT"]
+manifest= os.environ.get("JMAN", "")
+version = os.environ["JVER"]
+paket   = os.environ.get("JPAKET", "")
+ausn_d  = os.environ.get("JAUSN", "")
+
+squash = re.compile(rb"[\n\r\t\v\f ]+")
+
+def hashe(p):
+    try:
+        roh = open(p, "rb").read()
+    except OSError:
+        return None, None
+    return (hashlib.sha256(roh).hexdigest(),
+            hashlib.sha256(squash.sub(b" ", roh)).hexdigest())
+
+# Soll-Zustand: entweder aus dem mitgelieferten Manifest oder aus dem
+# nachgeladenen Originalpaket.
+soll = {}
+if paket and os.path.isdir(paket):
+    for wz, verz, dateien in os.walk(paket):
+        verz[:] = [d for d in verz if os.path.relpath(os.path.join(wz, d), paket) != "installation"]
+        for d in dateien:
+            vp = os.path.join(wz, d)
+            rel = os.path.relpath(vp, paket)
+            h, hs = hashe(vp)
+            if h:
+                soll[rel] = (h, hs)
+elif manifest and os.path.isfile(manifest):
+    with gzip.open(manifest, "rt") as f:
+        for z in f:
+            if z.startswith("#"):
+                continue
+            t = z.rstrip("\n").split("\t")
+            if len(t) < 4:
+                continue
+            rel, h, hs, fassungen = t[0], t[1], t[2], t[3]
+            if fassungen == "*" or version in fassungen.split(","):
+                soll[rel] = (h, hs)
+if not soll:
+    print("KEINDATEN")
+    sys.exit(0)
+
+# Vom Betreiber freigegebene Abweichungen (etwa ein selbst eingespielter Patch)
+ausnahmen = set()
+for kandidat in (ausn_d, os.path.join(wurzel, ".nt-forensik-ausnahmen.tsv")):
+    if kandidat and os.path.isfile(kandidat):
+        for z in open(kandidat):
+            if z.startswith("#") or not z.strip():
+                continue
+            t = z.rstrip("\n").split("\t")
+            if len(t) >= 2:
+                ausnahmen.add((t[0], t[1]))
+
+# Nie vergleichen: was der Betreiber selbst pflegt oder was zur Laufzeit entsteht.
+NIE = re.compile(r"^(configuration\.php|\.htaccess|web\.config|\.user\.ini|robots\.txt|"
+                 r"cache/|tmp/|logs/|images/|administrator/cache/|administrator/logs/)")
+
+veraendert, fehlend, leerraum = [], [], 0
+for rel, (h, hs) in soll.items():
+    if NIE.match(rel):
+        continue
+    vp = os.path.join(wurzel, rel)
+    if not os.path.isfile(vp):
+        fehlend.append(rel)
+        continue
+    ist, ist_s = hashe(vp)
+    if ist == h:
+        continue
+    # Zweite Chance: nur Leerraum unterschiedlich (CRLF, Tabs, angehaengte
+    # Leerzeichen). Wird erst bei Abweichung berechnet und ist deshalb in der
+    # Praxis kostenlos — ueber 99 % passen schon roh.
+    if ist_s == hs:
+        leerraum += 1
+        continue
+    if (rel, ist) in ausnahmen:
+        continue
+    veraendert.append(rel)
+
+# Kernfremde Dateien NUR in Verzeichnissen, die ausschliesslich Kern enthalten
+# duerfen. In components/, modules/, plugins/, templates/, language/ und media/
+# liegen legitim Dritt-Erweiterungen — dort waere jede Meldung Rauschen.
+REIN = ("includes", "administrator/includes", "libraries/src", "libraries/vendor",
+        "api", "cli", "layouts")
+fremd = []
+for basis in REIN:
+    bp = os.path.join(wurzel, basis)
+    if not os.path.isdir(bp):
+        continue
+    for wz, verz, dateien in os.walk(bp):
+        for d in dateien:
+            vp = os.path.join(wz, d)
+            rel = os.path.relpath(vp, wurzel)
+            if rel not in soll and not NIE.match(rel):
+                fremd.append(rel)
+
+print("STATISTIK\t%d\t%d\t%d\t%d\t%d" % (len(soll), len(veraendert), len(fehlend), len(fremd), leerraum))
+for r in sorted(veraendert)[:200]:
+    print("VERAENDERT\t%s" % os.path.join(wurzel, r))
+for r in sorted(fremd)[:200]:
+    print("FREMD\t%s" % os.path.join(wurzel, r))
+for r in sorted(fehlend)[:50]:
+    print("FEHLT\t%s" % r)
+PY
+) || true
+
+        if [[ "$jdiff" == "KEINDATEN" || -z "$jdiff" ]]; then
+          info "Kein auswertbarer Prüfsummen-Satz — Kern-Integrität nicht geprüft"
+        else
+          _stat=$(printf '%s\n' "$jdiff" | grep '^STATISTIK' | head -1)
+          _geprueft=$(printf '%s' "$_stat" | cut -f2)
+          _nmod=$(printf '%s' "$_stat" | cut -f3)
+          _nfehlt=$(printf '%s' "$_stat" | cut -f4)
+          _nfremd=$(printf '%s' "$_stat" | cut -f5)
+          _nlr=$(printf '%s' "$_stat" | cut -f6)
+          info "${_geprueft} Kern-Dateien verglichen${_nlr:+ (${_nlr} nur mit abweichenden Zeilenenden/Leerzeichen — nicht gewertet)}"
+
+          _mod=$(printf '%s\n' "$jdiff" | sed -n 's/^VERAENDERT\t//p')
+          _fremd=$(printf '%s\n' "$jdiff" | sed -n 's/^FREMD\t//p')
+          _fehlt=$(printf '%s\n' "$jdiff" | sed -n 's/^FEHLT\t//p')
+
+          if [[ "${_nmod:-0}" -gt 0 ]]; then
+            crit "$site: ${_nmod} veränderte Datei(en) im Joomla-Programmkern — der Kern wurde nachträglich bearbeitet, das ist der übliche Weg für dauerhaft eingeschleusten Schadcode" web
+            JOOMLA_FLAGS=$((JOOMLA_FLAGS+1))
+            JOOMLA_CORE_MODIFIED+="$_mod"$'\n'
+            code "$(printf '%s' "$_mod" | sed "s|${CURRENT_J_PATH}/||" | head -20)"
+            evidence "joomla_kern_veraendert_$(echo "$site" | tr '/.' '__')" "$_mod"
+          fi
+          if [[ "${_nfremd:-0}" -gt 0 ]]; then
+            crit "$site: ${_nfremd} kernfremde Datei(en) in Verzeichnissen, die nur Programmcode von Joomla enthalten dürfen — typische Ablage für getarnte Hintertüren" web
+            JOOMLA_FLAGS=$((JOOMLA_FLAGS+1))
+            JOOMLA_CORE_UNKNOWN+="$_fremd"$'\n'
+            code "$(printf '%s' "$_fremd" | sed "s|${CURRENT_J_PATH}/||" | head -20)"
+            evidence "joomla_kern_fremd_$(echo "$site" | tr '/.' '__')" "$_fremd"
+          fi
+          if [[ "${_nfehlt:-0}" -gt 0 ]]; then
+            warn "$site: ${_nfehlt} Datei(en) des Programmkerns fehlen — unvollständiges Update oder gelöschte Dateien" web
+            code "$(printf '%s' "$_fehlt" | head -15)"
+          fi
+          [[ "${_nmod:-0}" -eq 0 && "${_nfremd:-0}" -eq 0 && "${_nfehlt:-0}" -eq 0 ]] && \
+            ok "$site: Programmkern unverändert (${_geprueft} Dateien geprüft)"
+        fi
+      fi
+    fi
+
     # ── 12.6 Datenbank-Prüfung ────────────────────────────────
     # Läuft NACH den Dateiprüfungen: scheitert die DB-Verbindung, sind die
     # Befunde oben trotzdem erhoben. (Lehre aus §11, Zeile ~1786: ein
@@ -2695,198 +2887,6 @@ except Exception:
         evidence "joomla_user_keys_$(echo "$site" | tr '/.' '__')" "$jkeys"
       elif [[ "$jkeys_n" -gt 0 ]]; then
         info "${jkeys_n} Anmelde-Token (\"Angemeldet bleiben\") — bei einer Bereinigung mit zurücksetzen"
-      fi
-    fi
-
-    # ── 12.5 Kern-Integrität (Prüfsummen-Vergleich) ───────────
-    # Das Gegenstück zu "wp core verify-checksums" bei WordPress. Joomla
-    # veröffentlicht keine Prüfsummen je Datei, deshalb erzeugen wir sie
-    # selbst aus den offiziellen Paketen (werkzeuge/joomla-daten-update.sh).
-    #
-    # Zwei Fragen: Wurde eine Kerndatei verändert? Und liegt in einem reinen
-    # Kern-Verzeichnis eine Datei, die dort nicht hingehört? Letzteres ist die
-    # klassische Ablagestelle für Hintertüren, die wie Kern aussehen sollen.
-    if [[ -n "${jver:-}" ]]; then
-      h2 "12.5 Kern-Integrität — $site"
-      jzweig=$(printf '%s' "$jver" | cut -d. -f1,2)
-      jmanifest="${JOOMLA_DATA_DIR}/coresums/${jzweig}.tsv.gz"
-      jman_hat_version=0
-      if [[ -f "$jmanifest" ]]; then
-        gzip -dc "$jmanifest" 2>/dev/null | sed -n 's/^# Fassungen: //p' | head -1 \
-          | tr ',' '\n' | grep -qxF "$jver" && jman_hat_version=1
-      fi
-
-      # Fehlt die Fassung im mitgelieferten Bestand, kann --online das
-      # offizielle Paket nachladen. Das sind rund 30 MB — deshalb nur auf
-      # ausdrücklichen Wunsch, und der Abruf wird protokolliert.
-      jman_online=""
-      if [[ "$jman_hat_version" -eq 0 && "${WANT_ONLINE:-0}" == "1" ]]; then
-        jman_online="${RUN_DIR}/.online/joomla_${jver}"
-        mkdir -p "$jman_online"
-        info "Kein Prüfsummen-Satz für Joomla ${jver} vorhanden — lade das offizielle Paket nach (--online)"
-        if nf_fetch "https://github.com/joomla/joomla-cms/releases/download/${jver}/Joomla_${jver}-Stable-Full_Package.tar.gz" "${jman_online}/paket.tgz" \
-           && tar xzf "${jman_online}/paket.tgz" -C "$jman_online" 2>/dev/null; then
-          rm -f "${jman_online}/paket.tgz"
-        else
-          warn "Offizielles Joomla-Paket ${jver} nicht abrufbar — Kern-Integrität nicht geprüft"
-          rm -rf "$jman_online"; jman_online=""
-        fi
-      fi
-
-      if [[ "$jman_hat_version" -eq 0 && -z "$jman_online" ]]; then
-        warn "$site: Für Joomla ${jver} liegt kein Prüfsummen-Satz vor — die Unversehrtheit des Programmkerns wurde NICHT geprüft (mit --online nachladbar)"
-      elif ! command -v python3 >/dev/null 2>&1; then
-        info "python3 fehlt — Prüfsummen-Vergleich übersprungen"
-      else
-        # Ein einziger Python-Lauf je Installation. 9800 Dateien einzeln über
-        # sha256sum zu hashen wäre 20- bis 40-mal langsamer und würde das
-        # Verfahren praktisch unbrauchbar machen.
-        jdiff=$(JROOT="$CURRENT_J_PATH" JMAN="$jmanifest" JVER="$jver" \
-                JPAKET="${jman_online:-}" JAUSN="${JOOMLA_DATA_DIR}/coresums/ausnahmen.tsv" python3 <<'PY'
-import os, re, gzip, hashlib, sys
-
-wurzel  = os.environ["JROOT"]
-manifest= os.environ.get("JMAN", "")
-version = os.environ["JVER"]
-paket   = os.environ.get("JPAKET", "")
-ausn_d  = os.environ.get("JAUSN", "")
-
-squash = re.compile(rb"[\n\r\t\v\f ]+")
-
-def hashe(p):
-    try:
-        roh = open(p, "rb").read()
-    except OSError:
-        return None, None
-    return (hashlib.sha256(roh).hexdigest(),
-            hashlib.sha256(squash.sub(b" ", roh)).hexdigest())
-
-# Soll-Zustand: entweder aus dem mitgelieferten Manifest oder aus dem
-# nachgeladenen Originalpaket.
-soll = {}
-if paket and os.path.isdir(paket):
-    for wz, verz, dateien in os.walk(paket):
-        verz[:] = [d for d in verz if os.path.relpath(os.path.join(wz, d), paket) != "installation"]
-        for d in dateien:
-            vp = os.path.join(wz, d)
-            rel = os.path.relpath(vp, paket)
-            h, hs = hashe(vp)
-            if h:
-                soll[rel] = (h, hs)
-elif manifest and os.path.isfile(manifest):
-    with gzip.open(manifest, "rt") as f:
-        for z in f:
-            if z.startswith("#"):
-                continue
-            t = z.rstrip("\n").split("\t")
-            if len(t) < 4:
-                continue
-            rel, h, hs, fassungen = t[0], t[1], t[2], t[3]
-            if fassungen == "*" or version in fassungen.split(","):
-                soll[rel] = (h, hs)
-if not soll:
-    print("KEINDATEN")
-    sys.exit(0)
-
-# Vom Betreiber freigegebene Abweichungen (etwa ein selbst eingespielter Patch)
-ausnahmen = set()
-for kandidat in (ausn_d, os.path.join(wurzel, ".nt-forensik-ausnahmen.tsv")):
-    if kandidat and os.path.isfile(kandidat):
-        for z in open(kandidat):
-            if z.startswith("#") or not z.strip():
-                continue
-            t = z.rstrip("\n").split("\t")
-            if len(t) >= 2:
-                ausnahmen.add((t[0], t[1]))
-
-# Nie vergleichen: was der Betreiber selbst pflegt oder was zur Laufzeit entsteht.
-NIE = re.compile(r"^(configuration\.php|\.htaccess|web\.config|\.user\.ini|robots\.txt|"
-                 r"cache/|tmp/|logs/|images/|administrator/cache/|administrator/logs/)")
-
-veraendert, fehlend, leerraum = [], [], 0
-for rel, (h, hs) in soll.items():
-    if NIE.match(rel):
-        continue
-    vp = os.path.join(wurzel, rel)
-    if not os.path.isfile(vp):
-        fehlend.append(rel)
-        continue
-    ist, ist_s = hashe(vp)
-    if ist == h:
-        continue
-    # Zweite Chance: nur Leerraum unterschiedlich (CRLF, Tabs, angehaengte
-    # Leerzeichen). Wird erst bei Abweichung berechnet und ist deshalb in der
-    # Praxis kostenlos — ueber 99 % passen schon roh.
-    if ist_s == hs:
-        leerraum += 1
-        continue
-    if (rel, ist) in ausnahmen:
-        continue
-    veraendert.append(rel)
-
-# Kernfremde Dateien NUR in Verzeichnissen, die ausschliesslich Kern enthalten
-# duerfen. In components/, modules/, plugins/, templates/, language/ und media/
-# liegen legitim Dritt-Erweiterungen — dort waere jede Meldung Rauschen.
-REIN = ("includes", "administrator/includes", "libraries/src", "libraries/vendor",
-        "api", "cli", "layouts")
-fremd = []
-for basis in REIN:
-    bp = os.path.join(wurzel, basis)
-    if not os.path.isdir(bp):
-        continue
-    for wz, verz, dateien in os.walk(bp):
-        for d in dateien:
-            vp = os.path.join(wz, d)
-            rel = os.path.relpath(vp, wurzel)
-            if rel not in soll and not NIE.match(rel):
-                fremd.append(rel)
-
-print("STATISTIK\t%d\t%d\t%d\t%d\t%d" % (len(soll), len(veraendert), len(fehlend), len(fremd), leerraum))
-for r in sorted(veraendert)[:200]:
-    print("VERAENDERT\t%s" % os.path.join(wurzel, r))
-for r in sorted(fremd)[:200]:
-    print("FREMD\t%s" % os.path.join(wurzel, r))
-for r in sorted(fehlend)[:50]:
-    print("FEHLT\t%s" % r)
-PY
-) || true
-
-        if [[ "$jdiff" == "KEINDATEN" || -z "$jdiff" ]]; then
-          info "Kein auswertbarer Prüfsummen-Satz — Kern-Integrität nicht geprüft"
-        else
-          _stat=$(printf '%s\n' "$jdiff" | grep '^STATISTIK' | head -1)
-          _geprueft=$(printf '%s' "$_stat" | cut -f2)
-          _nmod=$(printf '%s' "$_stat" | cut -f3)
-          _nfehlt=$(printf '%s' "$_stat" | cut -f4)
-          _nfremd=$(printf '%s' "$_stat" | cut -f5)
-          _nlr=$(printf '%s' "$_stat" | cut -f6)
-          info "${_geprueft} Kern-Dateien verglichen${_nlr:+ (${_nlr} nur mit abweichenden Zeilenenden/Leerzeichen — nicht gewertet)}"
-
-          _mod=$(printf '%s\n' "$jdiff" | sed -n 's/^VERAENDERT\t//p')
-          _fremd=$(printf '%s\n' "$jdiff" | sed -n 's/^FREMD\t//p')
-          _fehlt=$(printf '%s\n' "$jdiff" | sed -n 's/^FEHLT\t//p')
-
-          if [[ "${_nmod:-0}" -gt 0 ]]; then
-            crit "$site: ${_nmod} veränderte Datei(en) im Joomla-Programmkern — der Kern wurde nachträglich bearbeitet, das ist der übliche Weg für dauerhaft eingeschleusten Schadcode" web
-            JOOMLA_FLAGS=$((JOOMLA_FLAGS+1))
-            JOOMLA_CORE_MODIFIED+="$_mod"$'\n'
-            code "$(printf '%s' "$_mod" | sed "s|${CURRENT_J_PATH}/||" | head -20)"
-            evidence "joomla_kern_veraendert_$(echo "$site" | tr '/.' '__')" "$_mod"
-          fi
-          if [[ "${_nfremd:-0}" -gt 0 ]]; then
-            crit "$site: ${_nfremd} kernfremde Datei(en) in Verzeichnissen, die nur Programmcode von Joomla enthalten dürfen — typische Ablage für getarnte Hintertüren" web
-            JOOMLA_FLAGS=$((JOOMLA_FLAGS+1))
-            JOOMLA_CORE_UNKNOWN+="$_fremd"$'\n'
-            code "$(printf '%s' "$_fremd" | sed "s|${CURRENT_J_PATH}/||" | head -20)"
-            evidence "joomla_kern_fremd_$(echo "$site" | tr '/.' '__')" "$_fremd"
-          fi
-          if [[ "${_nfehlt:-0}" -gt 0 ]]; then
-            warn "$site: ${_nfehlt} Datei(en) des Programmkerns fehlen — unvollständiges Update oder gelöschte Dateien" web
-            code "$(printf '%s' "$_fehlt" | head -15)"
-          fi
-          [[ "${_nmod:-0}" -eq 0 && "${_nfremd:-0}" -eq 0 && "${_nfehlt:-0}" -eq 0 ]] && \
-            ok "$site: Programmkern unverändert (${_geprueft} Dateien geprüft)"
-        fi
       fi
     fi
 
