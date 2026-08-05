@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ============================================================
-# WP-PLESK-FORENSIK.SH — v3.7
+# WP-PLESK-FORENSIK.SH — v3.7.1
 # Forensische Analyse nach WordPress/Plesk Sicherheitsvorfall
 #
 # Verwendung: sudo bash wp_plesk_forensik.sh [--domain d|--path p|--global] [--yara]
@@ -17,7 +17,7 @@
 #     ├── bsi_meldung.md                       ← BSI-Meldung (Best Practice)
 #     └── lauf.log                             ← Ausführungsprotokoll
 #
-# Autor: netztaucher | digital — forensik-tool v3.7
+# Autor: netztaucher | digital — forensik-tool v3.7.1
 # Nur read-only Analyse. Keine Lösch-/Schreiboperationen im Webspace.
 # ============================================================
 
@@ -37,7 +37,7 @@ PLESK_LOG_DIR="/var/log/plesk"
 PLESK_PANEL_LOG="${PLESK_LOG_DIR}/panel.log"
 
 # ── Konfiguration ────────────────────────────────────────────
-TOOL_VERSION="3.7"
+TOOL_VERSION="3.7.1"
 DAYS_BACK=30   # Analysezeitraum in Tagen
 
 # ── Argumente & Scope (v3.5) ─────────────────────────────────
@@ -145,8 +145,10 @@ exec > >(tee -a "$RUN_LOG") 2>&1
 
 # ── Zähler & Befund-Sammlung für Kunden-/BSI-Bericht ─────────
 N_CRIT=0; N_WARN=0; N_OK=0
-CRIT_LIST=""   # Markdown-Bullets
+CRIT_LIST=""   # Markdown-Bullets (alle Befunde — Technik/Betreiber)
 WARN_LIST=""
+CUST_CRIT_LIST=""   # nur WEBSITE-Befunde (Kundenbericht) — via crit "…" web
+CUST_WARN_LIST=""
 EVIDENCE_IDX=0
 WPDB_FLAGS=0
 WPDB_VERDICT="⚪ Keine WordPress-Installation im Scan-Pfad gefunden — keine Datenbank-Prüfung durchgeführt."
@@ -211,10 +213,15 @@ h1()  { echo -e "\n${BOLD}${BLU}════════════════
 h2()  { echo -e "\n${CYN}▶ $1${NC}"; echo -e "\n### $1\n" >> "$REPORT_FILE"; }
 
 ok()  { echo -e "  ${GRN}✓${NC} $1"; echo "- ✅ $1" >> "$REPORT_FILE"; N_OK=$((N_OK+1)); }
+# $2="web" markiert einen WEBSITE-Befund (gehört in den Kundenbericht). Ohne $2
+# ist es ein Server-/Root-/Infrastruktur-Befund — der bleibt Technik-/Betreiber-
+# Sache und taucht NICHT im Kundenbericht auf (v3.8 Scope-Trennung).
 warn(){ echo -e "  ${YLW}⚠${NC}  $1"; echo "- ⚠️  **$1**" >> "$REPORT_FILE"; \
-        N_WARN=$((N_WARN+1)); WARN_LIST+="- $1"$'\n'; }
+        N_WARN=$((N_WARN+1)); WARN_LIST+="- $1"$'\n'; \
+        [[ "${2:-}" == web ]] && CUST_WARN_LIST+="- $1"$'\n'; return 0; }
 crit(){ echo -e "  ${RED}✗${NC}  ${BOLD}$1${NC}"; echo "- 🔴 **KRITISCH: $1**" >> "$REPORT_FILE"; \
-        N_CRIT=$((N_CRIT+1)); CRIT_LIST+="- $1"$'\n'; }
+        N_CRIT=$((N_CRIT+1)); CRIT_LIST+="- $1"$'\n'; \
+        [[ "${2:-}" == web ]] && CUST_CRIT_LIST+="- $1"$'\n'; return 0; }
 info(){ echo -e "  ${NC}·  $1"; echo "  $1" >> "$REPORT_FILE"; }
 code(){ echo -e "\n\`\`\`\n$1\n\`\`\`\n" >> "$REPORT_FILE"; }
 
@@ -263,7 +270,7 @@ cat <<'EOF'
  ██████  ██    ██ ██████  █████   ██ ██  ██ ███████ ██ █████
  ██      ██    ██ ██   ██ ██      ██  ██ ██      ██ ██ ██  ██
   ██████  ██████  ██   ██ ███████ ██   ████ ███████ ██ ██   ██
-  WP-PLESK-FORENSIK v3.7 — netztaucher | digital
+  WP-PLESK-FORENSIK v3.7.1 — netztaucher | digital
 EOF
 echo -e "${NC}"
 
@@ -525,7 +532,7 @@ analyze_access_log() {
   scanner_hits=$(count_grep_i "sqlmap|nikto|havij|acunetix|nessus|openvas|masscan|zgrab|nuclei" "$logfile")
   TOTAL_SCANNER_HITS=$((TOTAL_SCANNER_HITS + scanner_hits))
   if [[ "$scanner_hits" -gt 0 ]]; then
-    crit "$domain_label: Scanner-Aktivität erkannt ($scanner_hits Treffer)"
+    crit "$domain_label: Scanner-Aktivität erkannt ($scanner_hits Treffer)" web
     local scanner_lines
     scanner_lines=$(grep -iE "sqlmap|nikto|havij|acunetix|nessus|nuclei" "$logfile" 2>/dev/null | head -20 || true)
     code "$scanner_lines"
@@ -540,7 +547,7 @@ analyze_access_log() {
   shell_posts=$(count_grep "POST.*(wp-content/uploads|eval|base64|cmd=|shell=)" "$logfile")
   TOTAL_SHELL_POSTS=$((TOTAL_SHELL_POSTS + shell_posts))
   if [[ "$shell_posts" -gt 0 ]]; then
-    crit "$domain_label: Verdächtige POST-Requests ($shell_posts)"
+    crit "$domain_label: Verdächtige POST-Requests ($shell_posts)" web
     local shell_lines
     shell_lines=$(grep -E "POST.*(wp-content/uploads|eval|base64)" "$logfile" 2>/dev/null | head -20 || true)
     code "$shell_lines"
@@ -565,7 +572,7 @@ analyze_access_log() {
   local wplogin
   wplogin=$(count_grep "POST.*wp-login\.php" "$logfile")
   if [[ "$wplogin" -gt 20 ]]; then
-    warn "$domain_label: Möglicher wp-login Brute-Force ($wplogin POST-Requests)"
+    warn "$domain_label: Möglicher wp-login Brute-Force ($wplogin POST-Requests)" web
     local wp_ips
     wp_ips=$(grep -E "POST.*wp-login" "$logfile" 2>/dev/null | awk '{print $1}' | sort | uniq -c | sort -rn | head -10 || true)
     code "$wp_ips"
@@ -578,7 +585,7 @@ analyze_access_log() {
   local xmlrpc
   xmlrpc=$(count_grep "POST.*xmlrpc\.php" "$logfile")
   if [[ "$xmlrpc" -gt 50 ]]; then
-    warn "$domain_label: xmlrpc.php-Angriffe möglich ($xmlrpc POSTs)"
+    warn "$domain_label: xmlrpc.php-Angriffe möglich ($xmlrpc POSTs)" web
   fi
 }
 
@@ -956,7 +963,7 @@ if [[ -n "$PHP_IN_UPLOADS_RAW" ]]; then
 fi
 
 if [[ -n "$PHP_IN_UPLOADS" ]]; then
-  crit "PHP-Dateien in Upload-Verzeichnissen (nach Guard-Filter, extrem verdächtig)"
+  crit "PHP-Dateien in Upload-Verzeichnissen (nach Guard-Filter, extrem verdächtig)" web
   code "$PHP_IN_UPLOADS"
   UPLOAD_HASHES=$(echo "$PHP_IN_UPLOADS" | xargs -r sha256sum 2>/dev/null || true)
   evidence "php_in_uploads_mit_hashes" "GEFILTERT (verdächtig):
@@ -1018,7 +1025,7 @@ Treffer: ${preview}
 fi
 
 if [[ "$WEBSHELL_COUNT" -gt 0 ]]; then
-  crit "Webshells/Dropper gefunden: ${WEBSHELL_COUNT} Datei(en) < ${DROPPER_MAX_BYTES} B mit Obfuskation"
+  crit "Webshells/Dropper gefunden: ${WEBSHELL_COUNT} Datei(en) < ${DROPPER_MAX_BYTES} B mit Obfuskation" web
   DROPPER_CLUSTER=$(echo "$DROPPER_DETAIL" | grep "^=== " | sed 's|=== /var/www/vhosts/||;s| ===||' | cut -d/ -f1 | sort | uniq -c | sort -rn || true)
   info "Betroffene Domains (Dropper-Cluster):"
   code "$DROPPER_CLUSTER"
@@ -1029,7 +1036,7 @@ else
 fi
 
 if [[ "$WEBSHELL_REVIEW" -gt 0 ]]; then
-  warn "Obfuskations-Muster in ${WEBSHELL_REVIEW} größeren Datei(en) — manuell prüfen (oft legitime Frameworks)"
+  warn "Obfuskations-Muster in ${WEBSHELL_REVIEW} größeren Datei(en) — manuell prüfen (oft legitime Frameworks)" web
   evidence "webshell_review_gross" "$REVIEW_DETAIL"
 fi
 
@@ -1037,7 +1044,7 @@ h2 "7.4 Versteckte Dateien und Verzeichnisse im Webspace"
 HIDDEN=$(find "$SCAN_PATH" -name ".*" -not -name ".htaccess" -not -name ".well-known" \
   -not -name ".git*" -not -name ".user.ini" 2>/dev/null | head -20 || true)
 if [[ -n "$HIDDEN" ]]; then
-  warn "Versteckte Dateien/Verzeichnisse gefunden — manuell prüfen"
+  warn "Versteckte Dateien/Verzeichnisse gefunden — manuell prüfen" web
   code "$HIDDEN"
   evidence "versteckte_dateien" "$HIDDEN"
 else
@@ -1061,7 +1068,7 @@ SUSP_NAMES=$(find "$SCAN_PATH" -type f \
   -not -path "*/twig/*" -not -path "*/wp-content/plugins/*" \
   2>/dev/null || true)
 if [[ -n "$SUSP_NAMES" ]]; then
-  warn "Dateinamen mit verdächtigen Schlüsselwörtern (manuell gegen Inhalt prüfen)"
+  warn "Dateinamen mit verdächtigen Schlüsselwörtern (manuell gegen Inhalt prüfen)" web
   code "$(echo "$SUSP_NAMES" | xargs -r ls -la 2>/dev/null)"
   evidence "verdaechtige_dateinamen" "$(echo "$SUSP_NAMES" | xargs -r ls -la 2>/dev/null)"
 else
@@ -1072,7 +1079,7 @@ h2 "7.6 .htaccess-Dateien prüfen"
 HTACCESS_REDIRECTS=$(find "$SCAN_PATH" -name ".htaccess" 2>/dev/null \
   -exec grep -lE "RewriteRule.*http|Redirect.*http" {} \; || true)
 if [[ -n "$HTACCESS_REDIRECTS" ]]; then
-  warn ".htaccess mit externen Weiterleitungen gefunden"
+  warn ".htaccess mit externen Weiterleitungen gefunden" web
   code "$HTACCESS_REDIRECTS"
   HT_CONTENT=""
   while IFS= read -r f; do
@@ -1087,7 +1094,7 @@ fi
 h2 "7.7 SUID/SGID-Dateien in Webspace und tmp-Verzeichnissen"
 SUID_FILES=$(find "$SCAN_PATH" /tmp /var/tmp /dev/shm -type f \( -perm -4000 -o -perm -2000 \) 2>/dev/null || true)
 if [[ -n "$SUID_FILES" ]]; then
-  crit "SUID/SGID-Dateien in Webspace/tmp — Privilege-Escalation-Verdacht"
+  crit "SUID/SGID-Dateien in Webspace/tmp — Privilege-Escalation-Verdacht" web
   code "$(echo "$SUID_FILES" | xargs -r ls -la 2>/dev/null)"
   evidence "suid_dateien" "$(echo "$SUID_FILES" | xargs -r ls -la 2>/dev/null)"
 else
@@ -1109,7 +1116,7 @@ h2 "7.9 Immutable-Flags im Webspace (chattr +i — Malware-Selbstschutz)"
 IMMUTABLE=$(find "$SCAN_PATH" -maxdepth 6 -type f -name "*.php" 2>/dev/null | head -8000 \
   | xargs -r lsattr 2>/dev/null | awk '$1 ~ /i/ {print}' || true)
 if [[ -n "$IMMUTABLE" ]]; then
-  crit "PHP-Dateien mit Immutable-Flag — Malware schützt sich so vor Löschung"
+  crit "PHP-Dateien mit Immutable-Flag — Malware schützt sich so vor Löschung" web
   code "$IMMUTABLE"
   evidence "immutable_dateien" "$IMMUTABLE"
 else
@@ -1659,13 +1666,21 @@ if [[ -n "$IMU_BIN" ]] && command -v python3 &>/dev/null; then
     # unvollständig bleiben.
     IMU_JSON=$("$IMU_BIN" malware malicious list --json --by-status found --limit 100000 2>/dev/null || true)
     IMU_REPORT=$(SCOPE_PATH="$SCAN_PATH" VHOSTS="$VHOSTS_DIR" python3 -c '
-import sys, os, json
+import sys, os, json, re
 try: d = json.loads(sys.stdin.read())
 except Exception: sys.exit(0)
 items = d.get("items", []) if isinstance(d, dict) else (d if isinstance(d, list) else [])
 sp = os.environ.get("SCOPE_PATH", ""); vh = os.environ.get("VHOSTS", "/var/www/vhosts")
 glob = (sp == vh or not sp)
-sel = [i for i in items if glob or str(i.get("file","")).startswith(sp)]
+# Quarantäne-/Backup-Pfade sind bereits eingedämmt, nicht live.
+qpat = re.compile(r"/(schadcode|quarant\w*|backup|_?bak|altkopie|sicherung)(/|_|\.)", re.I)
+def keep(i):
+    f = str(i.get("file", ""))
+    if not (glob or f.startswith(sp)): return False
+    if qpat.search(f): return False            # eingedämmt/Backup, kein Live-Fund
+    if not os.path.isfile(f): return False     # Imunify-DB veraltet: Datei existiert nicht mehr
+    return True
+sel = [i for i in items if keep(i)]
 print("COUNT=%d" % len(sel))
 for i in sel[:60]:
     print("%s  [%s]  %s" % (i.get("file"), i.get("type",""), str(i.get("hash",""))[:16]))
@@ -1673,7 +1688,7 @@ for i in sel[:60]:
     IMU_COUNT=$(printf '%s\n' "$IMU_REPORT" | sed -n 's/^COUNT=//p')
     IMU_LIST=$(printf '%s\n' "$IMU_REPORT" | grep -v '^COUNT=' || true)
     if [[ "${IMU_COUNT:-0}" -gt 0 ]]; then
-        crit "Imunify meldet ${IMU_COUNT} nicht bereinigte Malware-Datei(en) im Prüf-Scope"
+        crit "Imunify meldet ${IMU_COUNT} nicht bereinigte Malware-Datei(en) im Prüf-Scope" web
         code "$IMU_LIST"
         evidence "imunify_malware" "Scanner: $IMU_BIN, Status=found, Scope=$SCAN_PATH
 $IMU_LIST"
@@ -1862,7 +1877,7 @@ else
       cmod=$(echo "$CHK" | grep -c "doesn.t verify" 2>/dev/null || echo 0)
       csne=$(echo "$CHK" | grep -c "should not exist" 2>/dev/null || echo 0)
       if [[ "${cmod:-0}" -gt 0 ]]; then
-        crit "$site: ${cmod} veränderte WordPress-Core-Datei(en) — Injektion/Manipulation (verify-checksums)"
+        crit "$site: ${cmod} veränderte WordPress-Core-Datei(en) — Injektion/Manipulation (verify-checksums)" web
         MODLIST=$(echo "$CHK" | grep "doesn.t verify" | sed "s|.*checksum: |${CURRENT_WP_PATH}/|")
         code "$(echo "$MODLIST" | head -30)"
         CORE_INJECTED+="$MODLIST"$'\n'
@@ -1882,7 +1897,7 @@ else
          | while read -r hf; do grep -qF "(index.php|cache.php)" "$hf" 2>/dev/null && dirname "$hf"; done || true)
     if [[ -n "$DW" ]]; then
       dwn=$(echo "$DW" | grep -c . || true)
-      crit "$site: ${dwn} Doorway-Verzeichnis(se) (cache.php/index.php-Injector-Signatur)"
+      crit "$site: ${dwn} Doorway-Verzeichnis(se) (cache.php/index.php-Injector-Signatur)" web
       code "$(echo "$DW" | head -30)"
       DOORWAY_DIRS+="$DW"$'\n'
       evidence "doorway_dirs_$(echo "$site" | tr '/.' '__')" "$DW"
@@ -1893,7 +1908,7 @@ else
     CI=$(grep -rlF "include base64_decode" "$CURRENT_WP_PATH" --include="*.php" 2>/dev/null | head -40 || true)
     if [[ -n "$CI" ]]; then
       cin=$(echo "$CI" | grep -c . || true)
-      crit "$site: ${cin} Datei(en) mit @include base64_decode() — getarnte Payload-Nachladung"
+      crit "$site: ${cin} Datei(en) mit @include base64_decode() — getarnte Payload-Nachladung" web
       code "$(echo "$CI" | head -20)"
       CORE_INJECT_HITS+="$CI"$'\n'
       evidence "core_include_injektion_$(echo "$site" | tr '/.' '__')" "$CI"
@@ -1922,7 +1937,7 @@ else
     SUSP_PLUG=$(printf '%s\n%s\n%s\n' "$FAKE_PLUGINS" "$EVAL_BD" "$FILEMGR" | grep -vE '^$' | sort -u || true)
     if [[ -n "$SUSP_PLUG" ]]; then
       spn=$(echo "$SUSP_PLUG" | grep -c . || true)
-      crit "$site: ${spn} bösartige(s) Plugin/mu-Plugin (Fake-Signatur / eval(base64(\$_...)) / File-Manager-Webshell) — auch inaktive!"
+      crit "$site: ${spn} bösartige(s) Plugin/mu-Plugin (Fake-Signatur / eval(base64(\$_...)) / File-Manager-Webshell) — auch inaktive!" web
       code "$(echo "$SUSP_PLUG" | sed "s|$CURRENT_WP_PATH/||" | head -30)"
       SUSP_PLUGINS+="$SUSP_PLUG"$'\n'
       evidence "boesartige_plugins_$(echo "$site" | tr '/.' '__')" "$SUSP_PLUG"
@@ -1938,7 +1953,7 @@ else
       REVIEW_PLUG=$(printf '%s\n' "$REVIEW_PLUG" | grep -vFf <(printf '%s\n' "$SUSP_PLUG") || true)
     fi
     if [[ -n "$REVIEW_PLUG" ]]; then
-      warn "$site: Plugin(s) mit Admin-/Sichtbarkeits-Hooks (pre_user_query/create_admin) — Inhalt prüfen (oft legitim)"
+      warn "$site: Plugin(s) mit Admin-/Sichtbarkeits-Hooks (pre_user_query/create_admin) — Inhalt prüfen (oft legitim)" web
       code "$(echo "$REVIEW_PLUG" | sed "s|$CURRENT_WP_PATH/||" | head -20)"
       evidence "plugins_review_$(echo "$site" | tr '/.' '__')" "$REVIEW_PLUG"
     fi
@@ -1956,7 +1971,7 @@ else
     BAD_HTA=$(find "$CURRENT_WP_PATH" -name ".htaccess" 2>/dev/null | while read -r hf; do
       grep -qE "adminfuns|chtmlfuns|classsmtps|comfunctions|postnews|schallfuns|epinyins|siteheads|hplfuns|moddofuns" "$hf" 2>/dev/null && echo "$hf"; done || true)
     if [[ -n "$BAD_HTA" ]]; then
-      crit "$site: manipulierte .htaccess (Malware-Whitelist mit Webshell-Namen — bricht Admin/403)"
+      crit "$site: manipulierte .htaccess (Malware-Whitelist mit Webshell-Namen — bricht Admin/403)" web
       code "$(echo "$BAD_HTA" | sed "s|$CURRENT_WP_PATH/||")"
       TAMPERED_HTACCESS+="$BAD_HTA"$'\n'
       evidence "manipulierte_htaccess_$(echo "$site" | tr '/.' '__')" "$(echo "$BAD_HTA" | while read -r h; do echo "=== $h ==="; head -5 "$h"; done)"
@@ -1985,7 +2000,7 @@ else
        WHERE m.meta_key='${pfx}capabilities' AND m.meta_value LIKE '%administrator%'
        AND u.user_registered > DATE_SUB(NOW(), INTERVAL ${DAYS_BACK} DAY);")
     if [[ -n "$NEW_ADMINS" ]]; then
-      crit "$site: Kürzlich angelegte(s) Administrator-Konto(en) — Angreifer-Verdacht"
+      crit "$site: Kürzlich angelegte(s) Administrator-Konto(en) — Angreifer-Verdacht" web
       code "$NEW_ADMINS"
       evidence "wpdb_neue_admins_$(echo "$site" | tr '/.' '__')" "$NEW_ADMINS"
       ROGUE_ADMINS+="=== $site ==="$'\n'"$NEW_ADMINS"$'\n'
@@ -2009,7 +2024,7 @@ else
        WHERE option_value LIKE '%base64_decode%' OR option_value LIKE '%eval(%'
           OR option_name LIKE '%auto_prepend%' OR option_name LIKE '%auto_append%';")
     if [[ -n "$SUSP_OPT" ]]; then
-      crit "$site: verdächtige Optionen (base64/eval/auto_prepend) in ${pfx}options"
+      crit "$site: verdächtige Optionen (base64/eval/auto_prepend) in ${pfx}options" web
       code "$SUSP_OPT"
       evidence "wpdb_verd_optionen_$(echo "$site" | tr '/.' '__')" "$SUSP_OPT"
       WPDB_FLAGS=$((WPDB_FLAGS+1))
@@ -2021,7 +2036,7 @@ else
     ACTIVE_PLUGINS=$(wp_sql "$db" "$du" "$dp" "$dh" \
       "SELECT option_value FROM ${pfx}options WHERE option_name='active_plugins';")
     if echo "$ACTIVE_PLUGINS" | grep -qiE "fileorganizer|filemanager|wp-file-manager"; then
-      warn "$site: Dateimanager-Plugin aktiv (fileorganizer/filemanager) — häufiger Angriffs-Vektor, prüfen"
+      warn "$site: Dateimanager-Plugin aktiv (fileorganizer/filemanager) — häufiger Angriffs-Vektor, prüfen" web
     fi
     evidence "wpdb_active_plugins_$(echo "$site" | tr '/.' '__')" "$ACTIVE_PLUGINS"
   done <<< "$WP_CONFIGS"
@@ -2034,7 +2049,7 @@ else
     ok "WP-DB-VERDIKT: unauffällig"
   else
     WPDB_VERDICT="🔴 **WordPress-Datenbank(en) auffällig** (${WPDB_FLAGS} Befund(e)) — fremde Admins/Optionen prüfen und bereinigen."
-    crit "WP-DB-VERDIKT: ${WPDB_FLAGS} Befund(e)"
+    crit "WP-DB-VERDIKT: ${WPDB_FLAGS} Befund(e)" web
   fi
   echo -e "\n$WPDB_VERDICT\n" >> "$REPORT_FILE"
 fi
@@ -2065,7 +2080,7 @@ for x in inf[:40]: print("INFECTED %s  %s" % (x.get("fullPath"), x.get("siteUrl"
     WPTK_INF=$(printf '%s\n' "$WPTK_REPORT" | grep '^INFECTED' || true)
     WPTK_N=$(printf '%s' "$WPTK_HEAD" | sed -E 's/^INF=([0-9]+).*/\1/')
     if [[ "${WPTK_N:-0}" -gt 0 ]]; then
-        crit "WP Toolkit stuft ${WPTK_N} WordPress-Instanz(en) als infiziert ein"
+        crit "WP Toolkit stuft ${WPTK_N} WordPress-Instanz(en) als infiziert ein" web
         code "$WPTK_INF"
         evidence "wptk_infected" "$WPTK_REPORT"
         WPTK_INFECTED="$WPTK_INF"
@@ -2170,8 +2185,14 @@ else
 fi
 
 h2 "11.4 Privilege-Escalation (sudo/su durch Nicht-Root)"
-SUDO_ESC=$(grep -hE "sudo:.*(www-data|psacln|psaserv|web[0-9])" /var/log/auth.log* /var/log/secure* 2>/dev/null | head -20 || true)
-SU_ESC=$(grep -hE "su(\[[0-9]+\])?:.*(www-data|psacln|web[0-9]).*(root)" /var/log/auth.log* /var/log/secure* 2>/dev/null | head -20 || true)
+# WICHTIG — nur der CALLER zählt: Eskalation ist ein Web-/Systemnutzer, der sudo
+# AUFRUFT (Caller = webNN). Die alte Regex 'sudo:.*web[0-9]' traf auch 'USER=web206'
+# im TARGET-Feld — das ist root, der Rechte an einen Web-User ABGIBT (legitim),
+# u.a. NT-Forensik selbst (`sudo -u webNN wp core verify-checksums` in §11) und
+# jeder Plesk-interne root→User-Aufruf. Ergebnis war ein Root-Fehlalarm auf
+# sauberen Servern (Self-Kontamination). Wir ankern daher auf die Caller-Position.
+SUDO_ESC=$(grep -hE "sudo:[[:space:]]+(www-data|psacln|psaserv|web[0-9]+)[[:space:]]+:" /var/log/auth.log* /var/log/secure* 2>/dev/null | head -20 || true)
+SU_ESC=$(grep -hE "su(\[[0-9]+\])?:.*session opened for user root by (www-data|psacln|psaserv|web[0-9]+)" /var/log/auth.log* /var/log/secure* 2>/dev/null | head -20 || true)
 if [[ -n "$SUDO_ESC" || -n "$SU_ESC" ]]; then
   crit "Rechteausweitung durch Web-/Systemnutzer erkannt"
   code "$SUDO_ESC
@@ -2416,11 +2437,17 @@ SUMMARY
 # KUNDENBERICHT (lesbar, ohne Fachjargon-Overload)
 # ============================================================
 
-if [[ "$N_CRIT" -gt 0 ]]; then
+# Ampel nach KUNDEN-Scope (v3.7.1): nur Website-Befunde bestimmen die Einstufung
+# des Kundenberichts — Server-/Root-Befunde (in N_CRIT enthalten) gehören dem
+# Betreiber, nicht dem Kunden. Sonst steht 🔴 KRITISCH im Kundenbericht, obwohl
+# an SEINER Website nichts Kritisches ist.
+N_CUST_CRIT=$(printf '%s' "$CUST_CRIT_LIST" | grep -c . || true)
+N_CUST_WARN=$(printf '%s' "$CUST_WARN_LIST" | grep -c . || true)
+if [[ "${N_CUST_CRIT:-0}" -gt 0 || "${MALWARE_TOTAL:-0}" -gt 0 ]]; then
   AMPEL="🔴 KRITISCH"
   AMPEL_TEXT="**Ihr System wurde nachweislich kompromittiert.** Es liegen konkrete, technisch belegte Hinweise auf einen erfolgreichen Angriff vor. Ein Angreifer hatte oder hat Zugriff auf Ihren Webauftritt. **Es besteht akuter Handlungsbedarf** — bitte arbeiten Sie die Sofortmaßnahmen unten noch heute ab."
   DRINGLICHKEIT="**Warum das dringend ist:** Solange die Zugänge des Angreifers gültig sind, kann er jederzeit zurückkehren, weitere Hintertüren legen, Daten (auch Kundendaten) abgreifen, Spam über Ihre Domain versenden oder Ihre Seite für Betrug/Schadsoftware missbrauchen. Jede Stunde zählt."
-elif [[ "$N_WARN" -gt 0 ]]; then
+elif [[ "${N_CUST_WARN:-0}" -gt 0 ]]; then
   AMPEL="🟡 AUFFÄLLIG"
   AMPEL_TEXT="Es wurden Auffälligkeiten gefunden, die auf Sicherheitsschwächen oder Angriffsversuche hindeuten. Ein erfolgreicher Einbruch ist nicht belegt, die Punkte sollten aber zeitnah geprüft und behoben werden."
   DRINGLICHKEIT="**Warum das wichtig ist:** Die gefundenen Schwachstellen sind typische Einfallstore. Werden sie nicht geschlossen, ist ein erfolgreicher Angriff nur eine Frage der Zeit."
@@ -2441,10 +2468,9 @@ fi
 if [[ "${WEBSHELL_REVIEW:-0}" -gt 0 ]]; then
   TECH_SUMMARY+="- ${WEBSHELL_REVIEW} weitere Datei(en) mit auffälligen Code-Mustern (überwiegend veraltete, aber gefährliche Programmbibliotheken) — manuelle Prüfung nötig."$'\n'
 fi
-if [[ "${SSH_FAILED_COUNT:-0}" -gt 1000 ]]; then
-  TECH_SUMMARY+="- **${SSH_FAILED_COUNT} fehlgeschlagene SSH-Anmeldeversuche** — Ihr Server wird aktiv per Passwort-Rateangriff attackiert."$'\n'
-fi
-[[ -z "$TECH_SUMMARY" ]] && TECH_SUMMARY="- Keine akuten technischen Kompromittierungs-Indikatoren in diesem Lauf."
+# SSH-Brute-Force ist ein SERVER-Befund (Betreiber-Ebene) und gehört nicht in
+# den Kundenbericht — bleibt im Technik-/BSI-Bericht. (v3.8 Scope-Trennung)
+[[ -z "$TECH_SUMMARY" ]] && TECH_SUMMARY="- Keine akuten technischen Kompromittierungs-Indikatoren an Ihrer Website in diesem Lauf."
 
 # Angriffshergang aus Lauf-Daten maschinell vorbefüllen (keine nackten Platzhalter).
 # Was der Lauf NICHT automatisch weiß (konkreter Angreifer-Login, Einfallstor),
@@ -2479,8 +2505,10 @@ fi
 
 # Befundlisten für den Kundenbericht DSGVO-datensparsam pseudonymisieren
 # (fremde E-Mail-Adressen). Angreifer-IPs bleiben zum Sperren im Klartext.
-KUNDE_CRIT_LIST=$(printf '%s' "$CRIT_LIST" | mask_email)
-KUNDE_WARN_LIST=$(printf '%s' "$WARN_LIST" | mask_email)
+# Kundenbericht zeigt NUR Website-Befunde (via crit/warn "…" web) — Server-/
+# Root-/Infrastruktur-Befunde bleiben Technik-/Betreiber-Sache (v3.8).
+KUNDE_CRIT_LIST=$(printf '%s' "$CUST_CRIT_LIST" | mask_email)
+KUNDE_WARN_LIST=$(printf '%s' "$CUST_WARN_LIST" | mask_email)
 
 # Scope-Warnung (v3.5): Im Global-Modus umfasst der Bericht ALLE Domains und
 # darf nicht als Einzelkunden-Bericht verschickt werden — sonst sähe Kunde A die
