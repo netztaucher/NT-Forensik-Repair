@@ -77,6 +77,34 @@ if ap.exists():
         if len(teile) >= 2:
             alias[teile[0].strip().lower()] = teile[1].strip()
 
+# In #__extensions steht das Element NICHT durchgaengig mit Praefix:
+#   component  com_foo        module  mod_foo        package  pkg_foo
+#   plugin     foo   (+ folder)       template  foo  (ohne tpl_)
+# Gegen die echte Tabelle geprueft (Joomla 5.4.7): Plugins heissen dort
+# "accessibility", "yubikey" usw., Templates "atum", "cassiopeia".
+# Ein Eintrag in der Form plg_/tpl_ wuerde also NIE zutreffen — deshalb hier
+# auf die tatsaechlich gefuehrte Form bringen. Bei Plugins der Bauart
+# plg_<ordner>_<element> faellt der Ordner mit ab und schaerft den Vergleich.
+def normalisiere(element, typ, ordner):
+    e = (element or "").lower()
+    if e.startswith("plg_"):
+        rest = e[4:]
+        teile = rest.split("_", 1)
+        BEKANNTE_ORDNER = {
+            "system", "content", "authentication", "user", "editors",
+            "editors-xtd", "search", "finder", "extension", "captcha",
+            "quickicon", "installer", "fields", "actionlog", "privacy",
+            "sampledata", "workflow", "media-action", "behaviour", "ajax",
+            "api-authentication", "multifactorauth", "schemaorg", "task",
+            "webservices", "filesystem",
+        }
+        if len(teile) == 2 and teile[0] in BEKANNTE_ORDNER:
+            return teile[1], teile[0]
+        return rest, (ordner or "")
+    if e.startswith("tpl_"):
+        return e[4:], (ordner or "")
+    return e, (ordner or "")
+
 zeilen, offen = [], []
 for p in posten:
     inst = p.get("install_data") or ""
@@ -111,6 +139,8 @@ for p in posten:
         if name:
             offen.append(name)
         continue
+
+    element, ordner = normalisiere(element, typ, ordner)
 
     # Nur Tatsachen — kein Beschreibungstext aus dem Feed.
     zeilen.append("\t".join([element, typ, ordner, name, patch, status, cve, verweis]))

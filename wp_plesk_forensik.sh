@@ -2935,37 +2935,46 @@ except Exception:
 
       # Erweiterungen — braucht die Datenbank für den Bestand
       if [[ -n "${jdb:-}" && -n "${jpfx:-}" ]] && j_sql "$jdb" "$jdu" "$jdp" "$jdh" "SELECT 1;" >/dev/null 2>&1; then
+        # ACHTUNG element-Form: #__extensions führt Komponenten/Module/Pakete
+        # MIT Präfix (com_/mod_/pkg_), Plugins und Templates aber OHNE
+        # (Plugin "helix3" + folder "ajax", Template "shaper_helix3"). Die
+        # Vergleichstabellen sind deshalb auf genau diese Form gebracht; bei
+        # Plugins wird zusätzlich der Ordner verglichen, weil derselbe
+        # Elementname in mehreren Ordnern vorkommen kann.
         _extrows=$(j_sql "$jdb" "$jdu" "$jdp" "$jdh" \
-          "SELECT element, type, enabled, IF(manifest_cache IS NULL OR manifest_cache='','-',manifest_cache) FROM ${jpfx}extensions WHERE type IN ('component','module','plugin','package','template') AND protected=0;" 2>/dev/null || true)
+          "SELECT element, type, IF(folder IS NULL OR folder='','-',folder), enabled, IF(manifest_cache IS NULL OR manifest_cache='','-',manifest_cache) FROM ${jpfx}extensions WHERE type IN ('component','module','plugin','package','template') AND protected=0;" 2>/dev/null || true)
         # Versionen in einem einzigen Python-Aufruf aus den Manifesten ziehen
         _extver=$(printf '%s' "$_extrows" | python3 -c '
 import sys, json
 for zeile in sys.stdin.read().splitlines():
     t = zeile.split("\t")
-    if len(t) < 4:
+    if len(t) < 5:
         continue
-    el, typ, en, mc = t[0], t[1], t[2], t[3]
+    el, typ, folder, en, mc = t[0], t[1], t[2], t[3], t[4]
     v = ""
     if mc not in ("-", "", "{}"):
         try:
             v = str((json.loads(mc) or {}).get("version", "") or "")
         except Exception:
             v = ""
-    print("\t".join([el, typ, en, v or "-"]))
+    print("\t".join([el, typ, folder, en, v or "-"]))
 ' 2>/dev/null || true)
 
         _vuln=""
         _krit="${JOOMLA_DATA_DIR}/cve/joomla-ext-kritisch.tsv"
         _vel="${JOOMLA_DATA_DIR}/vel/vel.tsv"
-        while IFS=$'\t' read -r _el _typ _en _v; do
+        while IFS=$'\t' read -r _el _typ _folder _en _v; do
           [[ -n "${_el:-}" ]] || continue
           _vnum=$(j_vernum "$_v")
 
           # a) Tabelle der Fälle mit belegter Massenausnutzung
           if [[ -f "$_krit" ]]; then
-            while IFS=$'\t' read -r _kel _kmax _kfix _kcve _kkev _khinweis; do
+            while IFS=$'\t' read -r _kel _kfolder _kmax _kfix _kcve _kkev _khinweis; do
               [[ "${_kel:0:1}" == "#" || -z "${_kel:-}" ]] && continue
               [[ "$_kel" == "$_el" ]] || continue
+              # Ordner nur vergleichen, wenn die Tabelle einen nennt — sonst
+              # würde ein Eintrag ohne Ordnerangabe nie zutreffen.
+              [[ -z "${_kfolder:-}" || "${_kfolder}" == "${_folder}" ]] || continue
               # Version unbekannt -> melden, aber als Prüfhinweis: die
               # Erweiterung ist da, der Stand nicht feststellbar.
               if [[ "$_vnum" -eq 0 ]]; then
@@ -2988,6 +2997,7 @@ for zeile in sys.stdin.read().splitlines():
             while IFS=$'\t' read -r _vell _veltyp _velf _velname _velpatch _velstatus _velcve _velurl; do
               [[ "${_vell:0:1}" == "#" || -z "${_vell:-}" ]] && continue
               [[ "$_vell" == "$_el" ]] || continue
+              [[ -z "${_velf:-}" || "${_velf}" == "-" || "${_velf}" == "${_folder}" ]] || continue
               if [[ "$_velstatus" == "Live" ]]; then
                 # Kein Patch verfügbar — die einzige Abhilfe ist Entfernen.
                 if [[ "${_en:-0}" == "1" ]]; then

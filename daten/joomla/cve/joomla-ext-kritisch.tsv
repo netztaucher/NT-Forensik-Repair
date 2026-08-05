@@ -9,28 +9,34 @@
 # Der Hinweistext ist eigenformuliert, kein uebernommener Fremdtext.
 #
 # Spalten:
-#   element         Elementname in #__extensions (com_/mod_/plg_/tpl_)
+#   element         Elementname GENAU so, wie #__extensions ihn fuehrt.
+#                   ACHTUNG: nicht durchgaengig mit Praefix! Gegen Joomla 5.4.7
+#                   geprueft: component com_foo, module mod_foo, package pkg_foo,
+#                   plugin aber "foo" (ohne plg_, dafuer mit folder) und
+#                   template "foo" (ohne tpl_). Ein Eintrag "tpl_shaper_helix3"
+#                   wuerde deshalb NIE zutreffen.
+#   folder          nur bei Plugins (system, ajax, content, …), sonst leer
 #   max_verwundbar  hoechste verwundbare Fassung (einschliesslich)
 #   fix             erste sichere Fassung
 #   cve
 #   kev             ja = im Katalog bekannt ausgenutzter Schwachstellen der CISA
 #   hinweis         eine Zeile, laienverstaendlich
 #
-# element	max_verwundbar	fix	cve	kev	hinweis
-com_jce	2.9.99.4	2.9.99.7	CVE-2026-48907	ja	Ohne Anmeldung koennen Angreifer ein Bearbeitungsprofil anlegen, das den Upload von PHP-Dateien erlaubt, und darueber die Seite uebernehmen.
-com_sppagebuilder	6.6.1	6.6.2	CVE-2026-48908	nein	Ein ungeschuetzter Upload-Aufruf erlaubt jedem ohne Anmeldung das Ablegen ausfuehrbarer Dateien. Wurde als unbekannte Luecke angegriffen, bevor eine Korrektur vorlag.
-com_pagebuilderck	3.5.999	3.6.0	CVE-2026-56290	ja	Dateien lassen sich ohne Anmeldung hochladen und ausfuehren. Wurde binnen eines Tages nach Bekanntgabe ausgenutzt.
-tpl_shaper_helix3	3.1.1	3.1.2	CVE-2026-49049	nein	Erlaubt das Ueberschreiben der Vorlagen-Einstellungen ohne Anmeldung. Die Schadwirkung liegt in der Datenbank und ueberlebt eine Wiederherstellung der Dateien.
-plg_ajax_helix3	3.1.1	3.1.2	CVE-2026-49049	nein	Gegenstueck zur Vorlage: dieser Baustein nimmt die Aufrufe entgegen und muss ebenfalls aktualisiert werden.
-com_icagenda	4.0.7	4.0.8	CVE-2026-48939	nein	Ueber das Einreichen von Veranstaltungen lassen sich beliebige Dateien hochladen.
-com_baforms	2.4.0	2.4.1	CVE-2026-56291	nein	Formular-Anhaenge werden nicht geprueft; darueber gelangen ausfuehrbare Dateien auf den Server.
-com_jdownloads	4.1.5	4.1.6	CVE-2026-61900	nein	Das Paket enthaelt eine vergessene Test-Datei zum Hochladen, die ohne jede Rechtepruefung erreichbar ist.
-com_rsfiles	1.17.11	1.17.12	CVE-2026-57827	nein	Der Upload im oeffentlichen Bereich prueft den Dateityp nicht.
-com_acym	10.11.0	10.11.1	CVE-2026-56292	nein	Datenbankabfragen lassen sich ohne Anmeldung manipulieren.
-com_dpcalendar	10.11.1	10.11.2	CVE-2026-57831	nein	Datenbankabfragen im Veranstaltungs-Feed lassen sich ohne Anmeldung manipulieren.
-com_edocman	3.8.999	3.9.0	CVE-2026-57832	nein	Datenbankabfragen lassen sich ohne Anmeldung manipulieren.
-com_phocadownload	6.1.2	6.1.3	CVE-2026-57828	nein	Angemeldete Mitglieder koennen ausfuehrbare Dateien hochladen.
-com_eventbooking	5.7.999	5.8.0	CVE-2026-60024	nein	Erlaubt Datei-Upload ohne Anmeldung und das Auslesen von Benutzernamen.
-com_easystore	2.0.1	2.0.2	CVE-2026-65759	nein	Datenbankabfragen manipulierbar; zusaetzlich lassen sich fremde Bestellungen einsehen.
-com_fabrik	4.0.999	4.1.0	CVE-2020-35734	nein	Der Upload-Baustein prueft den Dateityp nicht ausreichend.
-com_adsmanager	3.1.0	3.1.1	-	nein	Der Upload ist ohne Anmeldung erreichbar und prueft den Dateityp nicht.
+# element	folder	max_verwundbar	fix	cve	kev	hinweis
+com_jce		2.9.99.4	2.9.99.7	CVE-2026-48907	ja	Ohne Anmeldung koennen Angreifer ein Bearbeitungsprofil anlegen, das den Upload von PHP-Dateien erlaubt, und darueber die Seite uebernehmen.
+com_sppagebuilder		6.6.1	6.6.2	CVE-2026-48908	nein	Ein ungeschuetzter Upload-Aufruf erlaubt jedem ohne Anmeldung das Ablegen ausfuehrbarer Dateien. Wurde als unbekannte Luecke angegriffen, bevor eine Korrektur vorlag.
+com_pagebuilderck		3.5.999	3.6.0	CVE-2026-56290	ja	Dateien lassen sich ohne Anmeldung hochladen und ausfuehren. Wurde binnen eines Tages nach Bekanntgabe ausgenutzt.
+shaper_helix3		3.1.1	3.1.2	CVE-2026-49049	nein	Erlaubt das Ueberschreiben der Vorlagen-Einstellungen ohne Anmeldung. Die Schadwirkung liegt in der Datenbank und ueberlebt eine Wiederherstellung der Dateien.
+helix3	ajax	3.1.1	3.1.2	CVE-2026-49049	nein	Gegenstueck zur Vorlage: dieser Baustein nimmt die Aufrufe entgegen und muss ebenfalls aktualisiert werden.
+com_icagenda		4.0.7	4.0.8	CVE-2026-48939	nein	Ueber das Einreichen von Veranstaltungen lassen sich beliebige Dateien hochladen.
+com_baforms		2.4.0	2.4.1	CVE-2026-56291	nein	Formular-Anhaenge werden nicht geprueft; darueber gelangen ausfuehrbare Dateien auf den Server.
+com_jdownloads		4.1.5	4.1.6	CVE-2026-61900	nein	Das Paket enthaelt eine vergessene Test-Datei zum Hochladen, die ohne jede Rechtepruefung erreichbar ist.
+com_rsfiles		1.17.11	1.17.12	CVE-2026-57827	nein	Der Upload im oeffentlichen Bereich prueft den Dateityp nicht.
+com_acym		10.11.0	10.11.1	CVE-2026-56292	nein	Datenbankabfragen lassen sich ohne Anmeldung manipulieren.
+com_dpcalendar		10.11.1	10.11.2	CVE-2026-57831	nein	Datenbankabfragen im Veranstaltungs-Feed lassen sich ohne Anmeldung manipulieren.
+com_edocman		3.8.999	3.9.0	CVE-2026-57832	nein	Datenbankabfragen lassen sich ohne Anmeldung manipulieren.
+com_phocadownload		6.1.2	6.1.3	CVE-2026-57828	nein	Angemeldete Mitglieder koennen ausfuehrbare Dateien hochladen.
+com_eventbooking		5.7.999	5.8.0	CVE-2026-60024	nein	Erlaubt Datei-Upload ohne Anmeldung und das Auslesen von Benutzernamen.
+com_easystore		2.0.1	2.0.2	CVE-2026-65759	nein	Datenbankabfragen manipulierbar; zusaetzlich lassen sich fremde Bestellungen einsehen.
+com_fabrik		4.0.999	4.1.0	CVE-2020-35734	nein	Der Upload-Baustein prueft den Dateityp nicht ausreichend.
+com_adsmanager		3.1.0	3.1.1	-	nein	Der Upload ist ohne Anmeldung erreichbar und prueft den Dateityp nicht.
