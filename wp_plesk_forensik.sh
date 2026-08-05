@@ -204,6 +204,14 @@ crit(){ echo -e "  ${RED}✗${NC}  ${BOLD}$1${NC}"; echo "- 🔴 **KRITISCH: $1*
 info(){ echo -e "  ${NC}·  $1"; echo "  $1" >> "$REPORT_FILE"; }
 code(){ echo -e "\n\`\`\`\n$1\n\`\`\`\n" >> "$REPORT_FILE"; }
 
+# ── Maskierung für Kundenberichte (v3.5) ─────────────────────
+# Kundenberichte gehen an Dritte und müssen DSGVO-datensparsam sein: fremde
+# E-Mail-Adressen (etwa WP-Admin-Konten) werden pseudonymisiert. Angreifer-IPs
+# bleiben im Klartext — sie sind für den Betroffenen zum Sperren nötig und
+# fallen unter berechtigtes Interesse. Technik-/BSI-/DSGVO-Berichte (interne
+# bzw. Behördendokumente) bleiben unmaskiert. stdin → stdout.
+mask_email(){ sed -E 's/([A-Za-z0-9])[A-Za-z0-9._%+-]*(@[A-Za-z0-9.-]+\.[A-Za-z]{2,})/\1***\2/g'; }
+
 # Beleg sichern: schreibt Rohdaten nummeriert nach belege/
 # evidence "label" "inhalt"  → belege/NN_label.txt
 evidence() {
@@ -2024,6 +2032,17 @@ $ROOT_VERDICT
 
 $ROOT_NOTES"
 
+# Kunden-taugliche Root-Aussage (v3.5): im Kundenbericht dürfen KEINE
+# Root-Details stehen (keine IPs, Pfade, Indikatorenzahl, keine
+# „Server-neu-aufsetzen"-Anweisung — das ist Sache des Betreibers). Nur die
+# generische Aussage betroffen/nicht betroffen. Der volle ROOT_VERDICT bleibt
+# in Technik- und BSI-Bericht.
+if [[ "$ROOT_FLAGS" -eq 0 ]]; then
+  ROOT_CUSTOMER_HINT="🟢 Die Prüfung ergab **keine Hinweise**, dass über Ihren Webauftritt hinaus die Serverebene betroffen ist. Ein etwaiger Vorfall ist nach aktueller Beweislage auf Ihre Website begrenzt."
+else
+  ROOT_CUSTOMER_HINT="🟠 Es bestehen Hinweise, dass **auch die Serverebene betroffen** sein könnte. Diese liegen dem Serverbetreiber vor und werden dort gesondert behandelt. Für Ihren Webauftritt gelten die Sofortmaßnahmen in Abschnitt 2."
+fi
+
 
 # Konsolidiert alle Relay-/Prozess-Befunde zu einer klaren Aussage —
 # analog zum bestehenden ROOT_VERDICT.
@@ -2148,6 +2167,11 @@ else
   ANGRIFF_TAT="Aus den Automatik-Daten keine konkrete Angreifer-Aktion belegt — bei der manuellen Auswertung zu prüfen."
 fi
 
+# Befundlisten für den Kundenbericht DSGVO-datensparsam pseudonymisieren
+# (fremde E-Mail-Adressen). Angreifer-IPs bleiben zum Sperren im Klartext.
+KUNDE_CRIT_LIST=$(printf '%s' "$CRIT_LIST" | mask_email)
+KUNDE_WARN_LIST=$(printf '%s' "$WARN_LIST" | mask_email)
+
 cat > "$KUNDE_FILE" <<KUNDE
 # Sicherheitsvorfall — Bericht${DOMAIN:+ für ${DOMAIN}}
 
@@ -2186,25 +2210,26 @@ fi)
 
 ${TECH_SUMMARY}
 
-$(if [[ -n "$CRIT_LIST" ]]; then
+$(if [[ -n "$KUNDE_CRIT_LIST" ]]; then
 echo "**Kritische Einzelbefunde:**
 
-$CRIT_LIST"
+$KUNDE_CRIT_LIST"
 fi)
-$(if [[ -n "$WARN_LIST" ]]; then
+$(if [[ -n "$KUNDE_WARN_LIST" ]]; then
 echo "**Auffälligkeiten (zeitnah beheben):**
 
-$WARN_LIST"
+$KUNDE_WARN_LIST"
 fi)
 
-## 4. Reichweite des Angriffs — hatte der Angreifer Server-Vollzugriff (Root)?
+## 4. Reichweite des Angriffs — war nur Ihre Website oder der ganze Server betroffen?
 
-${ROOT_VERDICT}
+${ROOT_CUSTOMER_HINT}
 
-> **Was das bedeutet:** „Root" ist die uneingeschränkte Administratorebene des
-> gesamten Servers. Blieb der Angreifer darunter (nur auf Ebene der einzelnen
-> Website), ist der Schaden auf diese Website begrenzt. Wurde Root übernommen,
-> muss der gesamte Server als kompromittiert gelten.
+> **Was das bedeutet:** „Serverebene" (Root) ist die Administratorebene des
+> gesamten Servers, auf dem neben Ihrer auch andere Websites liegen. Blieb ein
+> Angreifer darunter (nur auf Ebene Ihrer Website), ist der Schaden auf Ihren
+> Webauftritt begrenzt. Die technische Detailbewertung der Serverebene liegt beim
+> Serverbetreiber; sie ist nicht Teil dieses Kundenberichts.
 
 **WordPress-Datenbank:** ${WPDB_VERDICT}
 
