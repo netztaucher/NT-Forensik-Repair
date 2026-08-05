@@ -1,0 +1,3 @@
+*.eml
+*.preview.html
+__pycache__/
