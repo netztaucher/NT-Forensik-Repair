@@ -130,6 +130,15 @@ if [[ "$SELF_PATH" != "$INSTALLED_PATH" ]]; then
   cp -f "$SELF_PATH" "$INSTALLED_PATH"
   chmod 700 "$INSTALLED_PATH"
 fi
+# Beigelegte Hilfsdateien (YARA-Signaturen, PDF-Generator) neben das Skript
+# mitziehen, falls im Quellordner vorhanden — so findet der Lauf sie unter
+# ${BASE_DIR}, egal von wo gestartet wurde.
+_srcdir="$(dirname "$SELF_PATH")"
+for _aux in signaturen reportgen; do
+  if [[ -d "$_srcdir/$_aux" && ! -e "${BASE_DIR}/$_aux" ]]; then
+    cp -rf "$_srcdir/$_aux" "${BASE_DIR}/$_aux" 2>/dev/null || true
+  fi
+done
 
 # Alles zusätzlich in lauf.log protokollieren
 exec > >(tee -a "$RUN_LOG") 2>&1
@@ -2699,6 +2708,55 @@ JSON
 }
 emit_findings_json
 
+# ── PDF-Abschlussbericht (v3.5, optional/degradierend) ───────
+# Teil 1 = Kundenbericht (laienlesbar, maskiert), Teil 2 = KPI-Zusammenfassung.
+# reportgen/ muss neben dem Skript oder unter ${BASE_DIR} liegen. Fehlt
+# pandoc/weasyprint/reportgen, wird das PDF übersprungen — die Markdown-Berichte
+# bleiben vollständig und maßgeblich (Read-only-Versprechen, kein harter Fehler).
+PDF_FILE="${RUN_DIR}/abschlussbericht.pdf"
+REPORTGEN_DIR=""
+for _d in "$(dirname "$SELF_PATH")/reportgen" "${BASE_DIR}/reportgen"; do
+  [[ -x "$_d/nt_report_pdf.sh" ]] && { REPORTGEN_DIR="$_d"; break; }
+done
+_wp="${WEASYPRINT:-$(command -v weasyprint 2>/dev/null || true)}"
+if [[ -n "$REPORTGEN_DIR" ]] && command -v pandoc >/dev/null 2>&1 && [[ -n "$_wp" ]]; then
+  ZUSAMMEN_FILE="${RUN_DIR}/zusammenfassung.md"
+  {
+    echo "::: kpigrid"
+    echo "- **${N_CRIT}** kritische Befunde"
+    echo "- **${N_WARN}** Auffälligkeiten"
+    echo "- **${N_OK}** geprüfte Punkte"
+    echo "- **$(ls -1 "$BELEGE_DIR" 2>/dev/null | grep -vc SHA256SUMS)** Belege (SHA256)"
+    echo ":::"
+    echo
+    echo "## Bewertung im Überblick"
+    echo
+    echo "**Reichweite (Serverebene):** ${ROOT_CUSTOMER_HINT}"
+    echo
+    echo "**Fernzugriff / Relay-Backdoor:** ${RELAY_VERDICT}"
+    echo
+    echo "**WordPress-Datenbank:** ${WPDB_VERDICT}"
+  } > "$ZUSAMMEN_FILE"
+  _dom="${DOMAIN:-$(hostname -f 2>/dev/null || hostname)}"
+  if WEASYPRINT="$_wp" bash "$REPORTGEN_DIR/nt_report_pdf.sh" \
+       --teil1 "$KUNDE_FILE" --teil2 "$ZUSAMMEN_FILE" \
+       --title "Sicherheitsvorfall\nForensische Untersuchung" \
+       --eyebrow "netztaucher | digital — Forensik" \
+       --domain "$_dom" \
+       --subtitle "Prüfung ${RUN_LABEL} · $(date +%d.%m.%Y)" \
+       --teil2-label "Teil 2 — Zusammenfassung der Aktion" \
+       --meta "Einstufung=${AMPEL}" --meta "Prüfungs-ID=${RUN_LABEL}" \
+       --out "$PDF_FILE" >/dev/null 2>&1; then
+    echo "  PDF-Abschlussbericht: $PDF_FILE" >> "$REPORT_FILE"
+  else
+    echo "  PDF-Erzeugung fehlgeschlagen — Markdown-Berichte bleiben maßgeblich." >> "$REPORT_FILE"
+    PDF_FILE=""
+  fi
+else
+  echo "  PDF übersprungen (pandoc/weasyprint/reportgen nicht verfügbar)." >> "$REPORT_FILE"
+  PDF_FILE=""
+fi
+
 (
   cd "$BELEGE_DIR"
   # Manifest abschließen
@@ -2713,6 +2771,7 @@ emit_findings_json
 (
   cd "$RUN_DIR"
   sha256sum technik_bericht.md kundenbericht.md bsi_meldung.md dsgvo_meldung.md findings.json 2>/dev/null >> "${BELEGE_DIR}/SHA256SUMS" || true
+  [[ -n "$PDF_FILE" && -f "$PDF_FILE" ]] && sha256sum "$(basename "$PDF_FILE")" zusammenfassung.md 2>/dev/null >> "${BELEGE_DIR}/SHA256SUMS" || true
 )
 
 # Übergabe-Archiv des kompletten Laufs
@@ -2735,6 +2794,7 @@ echo -e "${BOLD}Kundenbericht:${NC}   ${KUNDE_FILE}"
 echo -e "${BOLD}BSI-Meldung:${NC}     ${BSI_FILE}"
 echo -e "${BOLD}DSGVO-Meldung:${NC}   ${DSGVO_FILE}"
 echo -e "${BOLD}Technik-Bericht:${NC} ${REPORT_FILE}"
+[[ -n "${PDF_FILE:-}" && -f "${PDF_FILE:-}" ]] && echo -e "${BOLD}PDF-Bericht:${NC}     ${PDF_FILE}"
 echo -e "${BOLD}findings.json:${NC}   ${FINDINGS_FILE} (maschinenlesbar, für NT-Repair)"
 echo -e "${BOLD}Belege:${NC}          ${BELEGE_DIR} (SHA256-versiegelt)"
 echo -e "${BOLD}Übergabe-Archiv:${NC} ${RUN_ARCHIVE}"
