@@ -1,0 +1,23 @@
+# NT-Forensik — freigegebene Abweichungen im Joomla-Programmkern
+#
+# Zweck: ein Betreiber, der eine Kerndatei bewusst geaendert hat (etwa einen
+# Notfall-Patch vor dem offiziellen Release), traegt sie hier ein. Dann meldet
+# 12.5 sie nicht mehr als Veraenderung.
+#
+# WICHTIG: eingetragen wird der Pfad ZUSAMMEN mit der erwarteten Pruefsumme.
+# Ohne den Hash waere der Eintrag ein Blankoscheck — ein Angreifer, der genau
+# diese Datei spaeter austauscht, bliebe unentdeckt. Aendert sich die Datei
+# erneut, faellt sie automatisch wieder auf.
+#
+# Pruefsumme ermitteln:
+#   sha256sum <datei>
+#
+# Format (tab-getrennt):
+#   pfad_relativ_zur_installation	sha256
+#
+# Beispiel (auskommentiert):
+# libraries/src/Http/Transport/CurlTransport.php	3f786850e387550fdab836ed7e6dc881de23001b
+#
+# Eine installationsbezogene Variante ist ebenfalls moeglich: eine Datei
+# .nt-forensik-ausnahmen.tsv im Wurzelverzeichnis der jeweiligen Joomla-
+# Installation, gleiches Format. Die gilt dann nur dort.

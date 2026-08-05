@@ -1,0 +1,160 @@
+# NT-Forensik — Zuordnung Klartext-Name -> Elementname (Handpflege)
+#
+# Der VEL-Feed traegt bei rund 60 % der Eintraege einen Klartext-Titel statt
+# des Elementnamens, unter dem die Erweiterung in #__extensions steht. Ohne
+# diese Tabelle laesst sich der Eintrag keiner Installation zuordnen.
+#
+# Nur exakte Treffer werden verwendet — eine unscharfe Zuordnung wuerde
+# flottenweit falsche kritische Befunde erzeugen. Lieber ein Eintrag weniger.
+# Gepflegt werden bewusst nur die im deutschsprachigen Raum verbreiteten
+# Erweiterungen, nicht alle Eintraege des Feeds.
+#
+# Klartext (klein)	Elementname
+jce	com_jce
+jce editor	com_jce
+joomla content editor	com_jce
+sp page builder	com_sppagebuilder
+page builder ck	com_pagebuilderck
+kunena forum package	com_kunena
+kunena	com_kunena
+rsform! pro	com_rsform
+rsform pro	com_rsform
+rsfiles!	com_rsfiles
+rsfiles	com_rsfiles
+rsfirewall!	com_rsfirewall
+akeeba backup	com_akeeba
+admin tools	com_admintools
+virtuemart	com_virtuemart
+hikashop	com_hikashop
+j2store	com_j2store
+phoca download	com_phocadownload
+phoca gallery	com_phocagallery
+phoca guestbook	com_phocaguestbook
+fabrik	com_fabrik
+jdownloads	com_jdownloads
+dj-classifieds	com_djclassifieds
+dj-catalog2	com_djcatalog2
+chronoforms	com_chronoforms
+breezing forms	com_breezingforms
+convert forms	com_convertforms
+joomsport	com_joomsport
+events booking	com_eventbooking
+eventbooking	com_eventbooking
+icagenda	com_icagenda
+dpcalendar	com_dpcalendar
+edocman	com_edocman
+acymailing	com_acym
+quix	com_quix
+gridbox	com_gridbox
+balbooa forms	com_baforms
+easystore	com_easystore
+easystore pro	com_easystore
+easydiscuss	com_easydiscuss
+adsmanager	com_adsmanager
+community builder	com_comprofiler
+seblod	com_cck
+sourcerer	sourcerer
+jumi	com_jumi
+astroid framework	astroid
+helix ultimate	shaper_helixultimate
+helix3	shaper_helix3
+
+# --- recherchiert und belegt (Quellen: daten/joomla/QUELLEN.md) ---
+ap portfolio	mod_ap_portfolio
+acysms	com_acysms
+admin tools package	pkg_admintools
+advertisement board	com_advertisementboard
+ajax quiz	com_ajaxquiz
+akeeba backup package	pkg_akeebabackup
+altauserpoints	com_altauserpoints
+authentication - master user	masteruser
+baforms	com_baforms
+big file uploader	com_bigfileuploader
+booklibrary	com_booklibrary
+bt_portfolio	com_bt_portfolio
+cp event calendar	com_cpeventcalendar
+community builder package	pkg_communitybuilder
+community quiz	com_communityquiz
+contus hd video share	com_contushdvideoshare
+dt register	com_dtregister
+eshop	com_eshop
+ekrishta	com_ekrishta
+extrasearch	com_extrasearch
+fancy tagcloud	mod_fancy_tagcloud
+form maker	com_formmaker
+gps tools package	pkg_gpstools
+gallery wd	com_gallery_wd
+hdw player	com_hdwplayer
+invitex	com_invitex
+jbusinessdirectory	com_jbusinessdirectory
+jcomments	com_jcomments
+je property finder	com_jepropertyfinder
+jevents package	pkg_jevents
+jgive package	pkg_jgive
+jhotelreservation	com_jhotelreservation
+js support ticket	com_jssupportticket
+jsp location	com_jsplocation
+jsp tickets	com_jsptickets
+jticketing package	pkg_jticketing
+jimtawl	com_jimtawl
+joomla survey force deluxe package	pkg_survey
+joomloc	com_joomloc
+k2	com_k2
+medialibrary	com_medialibrary
+muscol	com_muscol
+onevote!	com_onevote
+osservicesbooking	com_osservicesbooking
+package proclaim	pkg_proclaim
+poweradmin	com_poweradmin
+rpl	com_rpl
+realestatemanager	com_realestatemanager
+realpin	com_realpin
+simgenealogy	com_simgenealogy
+securitycheck	com_securitycheck
+simple image gallery (by joomlaworks)	jw_sig
+simpleimageupload	com_simpleimageupload
+solidres full package	pkg_solidres
+squad management!	com_squadmanagement
+system - google maps	plugin_googlemap3
+vehiclemanager	com_vehiclemanager
+vikrentitems	com_vikrentitems
+visualcalendar	com_visualcalendar
+zap calendar lite	com_zcalendar
+ccnewsletter	com_ccnewsletter
+extplorer	com_extplorer
+jnews	com_jnews
+jofacebookgallery	com_jofacebookgallery
+jquickcontact	com_jquickcontact
+twitchtv	com_twitchtv
+# Alt-/Parallelnamen derselben Erweiterung
+akeeba backup	pkg_akeeba
+altauserpoints (alt)	com_alphauserpoints
+
+# --- bewusst NICHT zugeordnet ---
+# Diese Anzeigenamen liessen sich nicht belegen. Ein geratener Eintrag wuerde
+# flottenweit einen falschen kritischen Befund erzeugen; ein fehlender kostet
+# nur diesen einen Abgleich. Deshalb bleiben sie offen:
+#   Button - Smart Related Articles   Hersteller weg, keine Fundstelle
+#   Bye-Bye Password                  VEL nennt "plugin", belegt ist nur ein Modul
+#   CW Article Attachments Package    nur die Komponente com_cwattachments belegt
+#   CW Tags Package                   nur die Komponente com_cwtags belegt
+#   JMS Support Online                JED-Eintrag entfernt
+#   JomEstate Package                 nur die Komponente com_jomestate belegt
+#   Joomla Checklist Package          widerspruechlich (com_checklist vs. _professional)
+#   OS Property Package               Hersteller liefert kein Paket, nur Einzelteile
+#   System - Rapi Preloader           kein Ordner dokumentiert
+#   UserExtranet                      nur Marketingtext, kein Pfad
+#   Watchful SSO                      nur remote installierbar, kein Ordner dokumentiert
+
+# --- automatisch ergaenzt, bitte Elementnamen eintragen ---
+# Button - Smart Related Articles	
+# Bye-Bye Password	
+# CW Article Attachments Package	
+# CW Tags Package	
+# JMS Support Online	
+# JomEstate Package	
+# Joomla Checklist Package	
+# OS Property Package	
+# System - Rapi Preloader	
+# UserExtranet	
+# Watchful SSO	

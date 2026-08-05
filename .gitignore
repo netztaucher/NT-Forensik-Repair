@@ -16,3 +16,6 @@ lauf.log
 
 # Lokale Lauf-Kopien (Kundendaten)
 laeufe/
+
+# Serena (LSP-Sitzungsdaten, lokal)
+.serena/
