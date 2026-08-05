@@ -63,6 +63,7 @@ def main():
     ap.add_argument("--domain", default="")
     ap.add_argument("--subtitle", default="")
     ap.add_argument("--meta", action="append", default=[], help="Label=Value (wiederholbar), im Deckblatt")
+    ap.add_argument("--cover-stats", default="", help="Grobstatistik als Card aufs Deckblatt: 'Label:Anzahl;Label:Anzahl'")
     ap.add_argument("--intro", default="", help="Intro-Absatz (optional, HTML/Text)")
     ap.add_argument("--kontakt-tel", default="03331 252520")
     ap.add_argument("--kontakt-mail", default="neuber@netztaucher.com")
@@ -84,6 +85,25 @@ def main():
 
     teil2_block = (f'<div class="part"></div><div class="partlabel">{args.teil2_label}</div>{t2}') if t2 else ""
 
+    # Grobstatistik-Card fürs Deckblatt (Seite 1) — "Label:Anzahl;..."
+    cover_stats = ""
+    pairs = [p for p in args.cover_stats.split(";") if ":" in p]
+    if pairs:
+        def _tile(n, l, big=False):
+            bg = NAVY if big else "#eef2f6"
+            fg = "#fff" if big else NAVY
+            return (f'<div style="background:{bg};border-radius:7px;padding:9px 13px;min-width:78px;'
+                    f'text-align:center;border-top:3px solid {ORANGE}">'
+                    f'<div style="font-size:22px;font-weight:800;color:{ORANGE if big else fg};line-height:1">{n}</div>'
+                    f'<div style="font-size:8.5px;letter-spacing:.4px;color:{fg};margin-top:3px;text-transform:uppercase">{l}</div></div>')
+        total = sum(int(c) for _, c in (p.rsplit(":", 1) for p in pairs) if c.strip().isdigit())
+        tiles = [_tile(total, "Fundstellen", big=True)]
+        for p in pairs:
+            lbl, cnt = p.rsplit(":", 1)
+            tiles.append(_tile(cnt.strip(), lbl.strip()))
+        cover_stats = ('<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:16px;align-items:stretch">'
+                       + "".join(tiles) + "</div>")
+
     html = f"""<!doctype html><html lang="de"><head><meta charset="utf-8"><style>{CSS}</style></head><body>
 <div class="fL">{IMG}<span>{contact}</span></div>
 <div class="fR">VERTRAULICH</div>
@@ -96,7 +116,7 @@ def main():
 <div class="sub">{args.subtitle}</div>
 <div class="meta">{meta}</div></div>
 <div class="obar"></div>
-<div class="cbody"><div class="intro"><p>{intro}</p>
+<div class="cbody"><div class="intro"><p>{intro}</p>{cover_stats}
 <div class="fragen"><b>Bei Fragen:</b><br>{args.kontakt_tel}<br>{args.kontakt_mail}</div></div></div>
 <div class="coverfoot">{IMG}<span class="c">{contact}</span><span class="v">VERTRAULICH</span></div>
 </div>

@@ -62,10 +62,10 @@ Der Lauf gliedert sich in 13 Abschnitte:
 | 5 | Benutzer & Rechte | Shell-User, UID-0, sudo, SSH-Keys, **SSH-Login-Hooks, forced commands** |
 | 6 | Cron & Persistenz | Crontabs, systemd-Timer/Units, at-Jobs, rc.local, `ld.so.preload`, **udev/PAM/APT/linger** |
 | 7 | Dateisystem | Webshells (2-stufig), PHP in Uploads, SUID, Immutable-Flags, `.htaccess`-Redirects, **getarnte ELF-Binaries, YARA-Scan** |
-| 8 | Netzwerk & Dienste | Offene Ports, Prozess-Forensik, **Relay-Backdoors (gsocket), fileless/memfd, Kernel-Thread-Tarnung, ausgehende Verbindungen**, Mailqueue, `dpkg -V`-Integrität |
+| 8 | Netzwerk & Dienste | Offene Ports, Prozess-Forensik, **Relay-Backdoors (gsocket), fileless/memfd, Kernel-Thread-Tarnung, ausgehende Verbindungen**, Mailqueue, `dpkg -V`/`debsums`-Integrität, **ctime/Timestomp, AIDE, Imunify-DB** |
 | 9 | Sicherheitsdienste | Fail2ban, ModSecurity, Firewall |
 | 10 | Andere Domains | Server-weite Betroffenheit |
-| 11 | **WordPress-Datenbank** | Fremde Admins, manipulierte Optionen, aktive Plugins |
+| 11 | **WordPress-Datenbank** | Fremde Admins, manipulierte Optionen, aktive Plugins, **WP-Toolkit-Infektionsstatus** |
 | 12 | **Root-/Eskalations-Prüfung** | Root-Logins, Fremd-Keys, Privilege-Escalation → Root-Verdikt |
 | 13 | Zusammenfassung | Befund-Statistik, Maßnahmenplan |
 
@@ -78,6 +78,9 @@ Der Lauf gliedert sich in 13 Abschnitte:
 - **Portlose Relay-Backdoors**: erkennt THC gsocket / gs-netcat, das über ein öffentliches Relay ausgehend auf 443 arbeitet und daher weder von Portscans noch von rkhunter/chkrootkit gefunden wird.
 - **Fileless-Ausführung**: Prozesse, deren Binary via `memfd_create()` nur im RAM existiert — für jeden Dateiscanner unsichtbar.
 - **Tarnungs-Erkennung**: ELF-Binaries mit harmlosem Dateinamen (der reale Anlass war eine gs-netcat-Binary namens `~/.ssh/id_rsa`) und Prozesse, die sich als Kernel-Thread ausgeben.
+- **Zeitstempel-Manipulation (Timestomping)**: referenzlos über die ctime/mtime-Diskrepanz — ein Angreifer, der das Änderungsdatum zurücksetzt, verrät sich über die Inode-Änderungszeit.
+- **Autoritative Scanner-Taps**: liest read-only die Ergebnisse der ohnehin vorhandenen Plesk-Werkzeuge — **Imunify-Malware-DB** und **WP-Toolkit-Infektionsstatus** — statt eigene Signaturen nachzubauen (löst keinen Scan aus).
+- **Befund-Einordnung**: ordnet Funde grob einer Familie samt Geschäftsmodell zu, listet Fundstellen mit Pfaden relativ zum Kundenverzeichnis in `befunde_details.md` und zeigt eine Grobstatistik auf dem PDF-Deckblatt.
 
 ## Verwendung
 
@@ -114,6 +117,7 @@ Das Skript installiert sich beim ersten Lauf nach `/root/wartungsscripte/` und l
 /root/wartungsscripte/forensik/<YYYYMMDD_HHMMSS>_<scope>/
 ├── belege/                 # nummerierte Rohdaten, SHA256-versiegelt, Chain-of-Custody
 ├── kundenbericht.md        # laienlesbar; im --global-Modus Betreiberbericht
+├── befunde_details.md      # Fundstellen relativ zum Kundenverzeichnis + Familie (nur bei Funden)
 ├── zusammenfassung.md      # KPI-Kurzfassung (Teil 2 des PDF)
 ├── abschlussbericht.pdf    # gebrandetes PDF (nur wenn pandoc+weasyprint da)
 ├── bsi_meldung.md
