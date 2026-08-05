@@ -12,7 +12,7 @@ Vollständiges Benutzerhandbuch zu `wp_plesk_forensik.sh`.
 2. [Voraussetzungen](#2-voraussetzungen)
 3. [Installation & Schnellstart](#3-installation--schnellstart)
 4. [Ablage-Konzept](#4-ablage-konzept)
-5. [Die 13 Prüfabschnitte](#5-die-13-prüfabschnitte)
+5. [Die 14 Prüfabschnitte](#5-die-14-prüfabschnitte)
 6. [Die vier Berichte](#6-die-vier-berichte)
 7. [Beweissicherung (Chain-of-Custody)](#7-beweissicherung-chain-of-custody)
 8. [Verdikte richtig lesen](#8-verdikte-richtig-lesen)
@@ -87,7 +87,7 @@ Alles liegt unter **`/root/wartungsscripte/`** — getrennt vom Webspace, damit 
 
 Jeder Lauf ist in sich abgeschlossen und wird durch das Übergabe-Archiv transportierbar.
 
-## 5. Die 13 Prüfabschnitte
+## 5. Die 14 Prüfabschnitte
 
 ### 1 — System-Übersicht
 OS, Kernel, Plesk-Version, PHP-Handler, Webserver, Uptime. **§1.6** liest `/root/changelog.md` (dokumentierte Systemänderungen) und stellt es zum Abgleich bereit: Ein Fund, der dort erklärt ist, ist meist gutartige Wartung — fehlt der Eintrag, ist er erklärungsbedürftig.
@@ -122,10 +122,22 @@ Alle Plesk-Domains + server-weite Scanner-/Webshell-Übersicht (Tabelle) — zei
 ### 11 — WordPress-Datenbank-Prüfung
 Findet WP-Installs, liest DB-Zugang aus `wp-config.php`, prüft read-only: Administrator-Konten, **kürzlich angelegte Admins** (Persistenz-Indikator), `siteurl`/`home` (Redirect-Hijack), **verdächtige Optionen** (`base64`/`eval`/`auto_prepend`), aktive Plugins (flaggt Datei-Manager). Endet mit **WP-DB-Verdikt** 🟢/🔴.
 
-### 12 — Root- & Eskalations-Prüfung
+### 12 — Joomla-Prüfung
+Findet Joomla-Installationen über `class JConfig` in der `configuration.php` (der Dateiname allein ist zu unscharf) und prüft read-only:
+
+- **12.2 Version & Wartungsende** — aus `joomla.xml` und `libraries/src/Version.php`. Widersprechen sich die Quellen, ist das selbst ein Befund (Manipulation oder abgebrochene Migration). Joomla 3 **und** 4 erhalten keine Sicherheitspatches mehr.
+- **12.3 Härtung** — `debug`, `error_reporting`, Standard-Sicherheitsschlüssel, `force_ssl`, Standard-Tabellenpräfix, offene CORS-Freigabe, geteilte Sitzungen. Dazu eine Strukturprüfung: steht in der `configuration.php` ausführbarer Code, wurde sie als Hintertür umgebaut.
+- **12.4 Ungeschützter API-Zugriff** — CVE-2023-23752 gibt die Datenbank-Zugangsdaten im Klartext an jeden Aufrufer heraus. Liegt die Version im Lückenbereich, wird zusätzlich im Zugriffsprotokoll nach erfolgreichen Abrufen gesucht; nur ein Antwortcode 200 belegt den Abfluss, 401 ist legitime Überwachung.
+- **12.6 Datenbank** — aktive System-Plugins (laufen bei jedem Seitenaufruf, noch vor jeder Rechteprüfung), Super-User über die tatsächliche Rechtetabelle statt der Standardgruppe, Verwaltungsrechte an offene Gruppen, Angriffsmuster in der Sitzungstabelle, **Injektionen in den Vorlagen-Einstellungen**, verschleierte Modulinhalte, dauerhafte Anmelde-Token.
+- **12.8 Schaddateien** — als Bild getarnte PHP-Dateien, PHP in Medien- und Zwischenspeicher-Ordnern, Filterumgehung über gemischte Schreibweise der Endung, Code vor der Zugriffssperre, verbliebenes Installationsverzeichnis, automatisch vorgeschaltete PHP-Datei, Sicherungsarchive im Webverzeichnis.
+- **12.9 Protokolle** — bekannte Joomla-Angriffswege. Der Wortlaut trennt Versuch und Erfolg: kritisch wird der Befund nur zusammen mit einem Dateifund.
+
+Endet mit **Joomla-Verdikt** 🟢/🔴.
+
+### 13 — Root- & Eskalations-Prüfung
 Zentrale Frage: **Root übernommen oder auf Web-User-Ebene begrenzt?** Prüft erfolgreiche Root-Logins (IP + Auth-Methode, flaggt Passwort-Login), `/root/.ssh/authorized_keys`, Web-User-Keys server-weit (Fremd- vs. Plesk-Keys), sudo/su-Eskalation, Binärintegrität. Gleicht bekannte Web-Angreifer-IPs gegen Root-Logins ab. Endet mit **Root-Verdikt** 🟢/🔴.
 
-### 13 — Zusammenfassung
+### 14 — Zusammenfassung
 Befund-Statistik + Maßnahmenplan (Sofort/Kurz-/Mittelfristig).
 
 ## 6. Die vier Berichte
@@ -160,7 +172,7 @@ Zusätzlich schreibt jeder Lauf **`findings.json`** — einen maschinenlesbaren 
 - 🟡 **Auffällig** — nur Warnungen. Schwächen/Angriffsversuche, kein belegter Einbruch.
 - 🟢 **Unauffällig** — keine Indikatoren in diesem Lauf (Momentaufnahme, kein Freibrief).
 
-**Root-Verdikt (§12):**
+**Root-Verdikt (§13):**
 - 🟢 = Angriff nach Beweislage auf Web-User-Ebene begrenzt → Bereinigung der Website genügt.
 - 🔴 = Root-Kompromittierung nicht ausgeschlossen → Server als kompromittiert behandeln, Neuaufsetzen erwägen.
 
