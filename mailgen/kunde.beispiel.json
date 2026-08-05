@@ -1,0 +1,7 @@
+{
+  "findings": "/pfad/zum/forensik-lauf/findings.json",
+  "domain": "echte-kundendomain.de",
+  "recipients": [
+    {"name": "Herr/Frau Nachname", "email": "kunde@domain.de"}
+  ]
+}
