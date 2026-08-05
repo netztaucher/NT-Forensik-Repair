@@ -34,7 +34,7 @@ while [[ $# -gt 0 ]]; do
     --teil1) TEIL1="$2"; shift 2 ;;
     --teil2) TEIL2="$2"; shift 2 ;;
     --out)   OUT="$2"; shift 2 ;;
-    --title|--domain|--subtitle|--intro|--eyebrow|--teil1-label|--teil2-label|--kontakt-tel|--kontakt-mail)
+    --title|--domain|--subtitle|--intro|--eyebrow|--teil1-label|--teil2-label|--kontakt-tel|--kontakt-mail|--cover-stats)
              PASS+=("$1" "$2"); shift 2 ;;
     --meta)  PASS+=("--meta" "$2"); shift 2 ;;
     *) fail "Unbekanntes Argument: $1" ;;
