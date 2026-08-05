@@ -82,23 +82,44 @@ Der Lauf gliedert sich in 13 Abschnitte:
 ## Verwendung
 
 ```bash
-# Auf den Server bringen und ausführen (legt /root/wartungsscripte selbst an)
+# Auf den Server bringen (Skript + optionale Hilfsordner signaturen/ reportgen/)
 scp wp_plesk_forensik.sh root@SERVER:/root/
-ssh root@SERVER "bash /root/wp_plesk_forensik.sh kundendomain.tld"
+scp -r signaturen reportgen root@SERVER:/root/     # optional: YARA + PDF-Generator
 
-# Ohne Domain-Argument → alle Domains des Servers
-ssh root@SERVER "bash /root/wp_plesk_forensik.sh"
+# Einen Kunden prüfen (Kundenbericht enthält nur dessen Daten, maskiert)
+ssh root@SERVER "bash /root/wp_plesk_forensik.sh --domain kundendomain.tld"
+
+# Beliebigen Pfad prüfen
+ssh root@SERVER "bash /root/wp_plesk_forensik.sh --path /var/www/vhosts/kunde/httpdocs/shop"
+
+# Alle Domains (Betreiber-Triage; erzeugt einen serverweiten Betreiberbericht,
+# NICHT für die Weitergabe an einzelne Kunden)
+ssh root@SERVER "bash /root/wp_plesk_forensik.sh --global"
+
+# YARA-Signaturscan zusätzlich (langsam auf großen Webspaces)
+ssh root@SERVER "bash /root/wp_plesk_forensik.sh --domain kunde.tld --yara"
+
+# Hilfe
+ssh root@SERVER "bash /root/wp_plesk_forensik.sh --help"
 ```
+
+> Ein blankes Positionsargument (`… wp_plesk_forensik.sh kunde.tld`) bleibt als
+> `--domain kunde.tld` erhalten (rückwärtskompatibel). Die **Server-/Rootebene
+> wird in jedem Modus mitgeprüft**; in Kundenberichten werden Rootbefunde nur
+> allgemein genannt und IP-Adressen/E-Mails maskiert.
 
 Das Skript installiert sich beim ersten Lauf nach `/root/wartungsscripte/` und legt pro Lauf einen Ordner an:
 
 ```
-/root/wartungsscripte/forensik/<YYYYMMDD_HHMMSS>_<domain>/
+/root/wartungsscripte/forensik/<YYYYMMDD_HHMMSS>_<scope>/
 ├── belege/                 # nummerierte Rohdaten, SHA256-versiegelt, Chain-of-Custody
-├── kundenbericht.md
+├── kundenbericht.md        # laienlesbar; im --global-Modus Betreiberbericht
+├── zusammenfassung.md      # KPI-Kurzfassung (Teil 2 des PDF)
+├── abschlussbericht.pdf    # gebrandetes PDF (nur wenn pandoc+weasyprint da)
 ├── bsi_meldung.md
 ├── dsgvo_meldung.md
 ├── technik_bericht.md
+├── findings.json
 └── lauf.log
 ```
 
