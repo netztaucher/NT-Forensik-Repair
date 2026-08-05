@@ -59,10 +59,10 @@ Der Lauf gliedert sich in 13 Abschnitte:
 | 2 | Logs sichern | Voll-Backup aller relevanten Logs (erste Amtshandlung) |
 | 3 | Zugriffs-Analyse | SSH-Logins, Brute-Force-IPs, Plesk-Panel, FTP |
 | 4 | Web-Traffic | Scanner-Signaturen, Webshell-POSTs, wp-login-Brute-Force |
-| 5 | Benutzer & Rechte | Shell-User, UID-0, sudo, SSH-Keys |
-| 6 | Cron & Persistenz | Crontabs, systemd-Timer/Units, at-Jobs, rc.local, `ld.so.preload` |
-| 7 | Dateisystem | Webshells (2-stufig), PHP in Uploads, SUID, Immutable-Flags, `.htaccess`-Redirects |
-| 8 | Netzwerk & Dienste | Offene Ports, Prozess-Forensik, Mailqueue, `dpkg -V`-Integrität |
+| 5 | Benutzer & Rechte | Shell-User, UID-0, sudo, SSH-Keys, **SSH-Login-Hooks, forced commands** |
+| 6 | Cron & Persistenz | Crontabs, systemd-Timer/Units, at-Jobs, rc.local, `ld.so.preload`, **udev/PAM/APT/linger** |
+| 7 | Dateisystem | Webshells (2-stufig), PHP in Uploads, SUID, Immutable-Flags, `.htaccess`-Redirects, **getarnte ELF-Binaries, YARA-Scan** |
+| 8 | Netzwerk & Dienste | Offene Ports, Prozess-Forensik, **Relay-Backdoors (gsocket), fileless/memfd, Kernel-Thread-Tarnung, ausgehende Verbindungen**, Mailqueue, `dpkg -V`-Integrität |
 | 9 | Sicherheitsdienste | Fail2ban, ModSecurity, Firewall |
 | 10 | Andere Domains | Server-weite Betroffenheit |
 | 11 | **WordPress-Datenbank** | Fremde Admins, manipulierte Optionen, aktive Plugins |
@@ -75,6 +75,9 @@ Der Lauf gliedert sich in 13 Abschnitte:
 - **Zweistufige Webshell-Bewertung**: kleine Obfuskations-Dropper (kritisch) vs. große Framework-Dateien mit legitimem `eval` (Review) — trennt echte Funde vom Rauschen per Dateigröße.
 - **False-Positive-Filter**: Theme-Iconfonts, WP-Guard-Dateien, Upgrade-Reste gelöschter Binaries, Plesk-eigene SSH-Keys.
 - **Root-Verdikt**: konsolidiert Login-, Key-, sudo- und Binärintegritätsdaten zu einer klaren Aussage „auf Web-User-Ebene begrenzt" vs. „Root nicht ausgeschlossen".
+- **Portlose Relay-Backdoors**: erkennt THC gsocket / gs-netcat, das über ein öffentliches Relay ausgehend auf 443 arbeitet und daher weder von Portscans noch von rkhunter/chkrootkit gefunden wird.
+- **Fileless-Ausführung**: Prozesse, deren Binary via `memfd_create()` nur im RAM existiert — für jeden Dateiscanner unsichtbar.
+- **Tarnungs-Erkennung**: ELF-Binaries mit harmlosem Dateinamen (der reale Anlass war eine gs-netcat-Binary namens `~/.ssh/id_rsa`) und Prozesse, die sich als Kernel-Thread ausgeben.
 
 ## Verwendung
 
@@ -119,6 +122,7 @@ Im Ordner [`examples/`](examples/) liegen vollständige Beispielberichte eines *
 
 - **[`docs/handbuch.md`](docs/handbuch.md)** — vollständiges Benutzerhandbuch: Installation, alle 13 Prüfabschnitte, Berichte, Verdikte lesen, Troubleshooting, FAQ.
 - **[`docs/erkennung.md`](docs/erkennung.md)** — Erkennungs-Referenz: Signaturen, zweistufige Webshell-Bewertung, False-Positive-Filter, Root-Verdikt, Grenzen.
+- **[`docs/relay-backdoors.md`](docs/relay-backdoors.md)** — Relay-Backdoors (gsocket), Prozess-Introspektion und warum Signatur-Rootkitscanner diese Klasse verfehlen.
 - **[`docs/incident-response.md`](docs/incident-response.md)** — Incident-Response-Playbook: 7 Phasen von der Beweissicherung bis zur Härtung.
 - **[`docs/runbook.md`](docs/runbook.md)** — Runbook für die manuelle Ad-hoc-Analyse einzelner Prüfpunkte.
 

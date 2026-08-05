@@ -2,6 +2,55 @@
 
 Alle nennenswerten Änderungen an `wp_plesk_forensik.sh`.
 
+## [3.4.0] — 2026-08-05
+
+### Neu — Relay-Backdoors & Prozess-Introspektion
+Lehre aus einem realen Fund: eine als `~/.ssh/id_rsa` getarnte gs-netcat-Binary
+(THC gsocket) — eine 2,8 MB große, statisch gelinkte, gestrippte ELF-Datei. Diese
+Backdoor-Klasse öffnet **keinen Port** (beide Seiten verbinden sich ausgehend über
+TLS/443 zu einem Relay) und war für v3.3 unsichtbar. Auch rkhunter/chkrootkit finden
+sie nicht: kein Rootkit, keine trojanisierten Binaries, kein offener Port. Die neuen
+Prüfungen setzen deshalb auf **strukturelle** Merkmale statt auf Namen.
+
+- **§8.7 Relay-Backdoors (gsocket/gs-netcat)** — Signaturscan auf Datei- und
+  Prozessebene, ELF und Text getrennt bewertet (Binary = kritisch, Textfund = Review).
+- **§8.8 Fileless (memfd)** — Prozesse, deren Binary via `memfd_create()` nur im RAM
+  existiert und nie auf der Platte lag.
+- **§8.9 Kernel-Thread-Tarnung** — User-Prozesse, die sich `[kworker/…]` nennen,
+  enttarnt über PPID ≠ 2 und vorhandenes `/proc/PID/exe`. Prüft comm **und** argv[0].
+- **§8.10 Verwaiste Interpreter** — Shells mit PPID 1 ohne kontrollierendes TTY.
+- **§8.11 Prozess-Umgebung** — `GSOCKET_*`, `GS_ARGS`, `LD_PRELOAD`,
+  `HISTFILE=/dev/null` in `/proc/PID/environ`.
+- **§8.12 Ausgehende Verbindungen** — Relay-typische Verbindungen mit **Peer-Port**
+  443/7350 außerhalb der Prozess-Whitelist, TOR-Ports.
+- **§7.10 Getarnte Binaries** — ELF-Magic-Prüfung für Dateien mit Schlüssel-/Konfig-Namen
+  (`id_rsa`, `*.pem`, `*.key`, `*.crt`, `authorized_keys`, `*.conf`).
+- **§7.11 YARA-Signaturscan** über `signaturen/gsocket-backdoors.yar` (optional, wird
+  ohne installiertes `yara` übersprungen).
+- **§5.6 SSH-Login-Hooks** (`~/.ssh/rc`, `/etc/ssh/sshrc` — laufen bei jedem Login,
+  stehen in keinem Cron) und **§5.7** `authorized_keys` mit erzwungenem `command="…"`.
+- **§6.9 Exotische Persistenz** — udev `RUN+=`, PAM `pam_exec.so`, APT `Pre-/Post-Invoke`,
+  systemd `linger`.
+- **`RELAY_VERDICT`** — konsolidiertes Verdikt analog zum Root-Verdikt, in Technik-,
+  Kunden- und BSI-Bericht sowie `findings.json` (`verdicts.relay`, schema 1.1).
+- **`signaturen/gsocket-backdoors.yar`** — YARA-Regelsatz (4 gsocket-Regeln + Reverse-Shell-/Webshell-Muster).
+- **`haertung/audit-backdoor.rules`** — auditd-Regelsatz für laufende Verhaltensüberwachung
+  nach dem Vorfall.
+- **`docs/relay-backdoors.md`** — Erkennungs-Dokumentation inkl. Begründung, warum
+  rkhunter und chkrootkit diese Backdoor-Klasse nicht finden.
+
+### Behoben / gehärtet (im Test auf echtem Plesk aufgefallen)
+- **Signaturscans nutzen `grep -a`/`grep -rla` ohne `-I`.** Das `-I`-Flag überspringt
+  Binärdateien und hätte genau die gesuchten ELF-Backdoors ausgeschlossen.
+- **Selbstausschluss** (`nf_strip_self`): alle neuen Scans filtern gegen `${BASE_DIR}`,
+  sonst meldet der Lauf ab dem zweiten Mal die eigenen Berichte als Fund.
+- **Laufzeit auf Shared-Hosts**: §7.10/§7.11/§8.7 scopen den vhost-Teil auf `SCAN_PATH`
+  (statt aller vhosts) und begrenzen den Inhaltsscan auf Dateien `< 30 MB` — sonst
+  liest der Regex auf Produktions-Servern zig GB Backups/Quarantäne byteweise durch.
+- **§8.12 wertet nur den Peer-Port aus.** Ein Webserver hat bei jeder **eingehenden**
+  HTTPS-Verbindung lokal Port 443; die erste Fassung meldete diese als ausgehenden
+  Relay-Verdacht (auf echtem Plesk gemessen: 76 eingehende vs. 2 echte ausgehende).
+
 ## [3.3.0] — 2026-07-10
 
 ### Neu — Detektion der Doorway-/Persistenz-Familie
