@@ -2,6 +2,36 @@
 
 Alle nennenswerten Änderungen an `wp_plesk_forensik.sh`.
 
+## [3.5.0] — 2026-08-05
+
+### Neu — Scope-Steuerung, DSGVO-Datensparsamkeit, PDF-Abschlussbericht
+- **Scope-Schalter** `--domain <d>` / `--path <p>` / `--global` (plus `--yara`,
+  `-h/--help`). Das bisherige Positionsargument bleibt als `--domain` erhalten.
+  Die Server-/Rootebene wird in **jedem** Modus mitgeprüft; der Scope steuert nur
+  den Dateisystem-Scan und die Berichtserzeugung.
+- **Kundenbericht ohne Root-Details**: §4 nennt die Serverebene nur noch generisch
+  (betroffen / nicht betroffen). Der vollständige Root-Verdikt inkl. IPs,
+  Indikatorzahl und „Server-neu-aufsetzen"-Empfehlung bleibt Technik- und
+  BSI-Bericht vorbehalten.
+- **DSGVO-Datensparsamkeit**: fremde E-Mail-Adressen (z. B. WP-Admin-Konten)
+  werden in Kundenberichten pseudonymisiert (`a***@domain`). Angreifer-IPs
+  bleiben zum Sperren im Klartext (berechtigtes Interesse). Technik-/BSI-/
+  DSGVO-Berichte (interne bzw. Behördendokumente) bleiben unmaskiert.
+- **PDF-Abschlussbericht** im netztaucher-Layout (`abschlussbericht.pdf`):
+  Teil 1 = Kundenbericht, Teil 2 = KPI-Zusammenfassung (`zusammenfassung.md`).
+  Pipeline pandoc → weasyprint über `reportgen/`. Fehlt eine Abhängigkeit, wird
+  das PDF übersprungen — die Markdown-Berichte bleiben vollständig und maßgeblich.
+- **`--yara`-Flag**: der YARA-Scan (7.11) läuft nur noch auf Wunsch (auf großen
+  Webspaces teuer), statt automatisch bei installiertem `yara`.
+
+### Behoben
+- **Cross-Mandanten-Leck geschlossen**: Ein `--global`-Lauf erzeugte zuvor einen
+  „Kundenbericht", der bei leerem Domain-Argument die Befunde (und ggf.
+  personenbezogenen Daten) **aller** Kunden mischte. Der Global-Lauf ist jetzt
+  klar als **Betreiberbericht** gekennzeichnet und nicht zur Weitergabe an
+  einzelne Kunden bestimmt; kundenspezifische, maskierte Berichte entstehen über
+  `--domain`.
+
 ## [3.4.0] — 2026-08-05
 
 ### Neu — Relay-Backdoors & Prozess-Introspektion

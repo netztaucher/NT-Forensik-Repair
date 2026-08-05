@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # ============================================================
-# WP-PLESK-FORENSIK.SH — v3.4
+# WP-PLESK-FORENSIK.SH — v3.5
 # Forensische Analyse nach WordPress/Plesk Sicherheitsvorfall
 #
-# Verwendung: sudo bash wp_plesk_forensik.sh [domain.tld]
+# Verwendung: sudo bash wp_plesk_forensik.sh [--domain d|--path p|--global] [--yara]
 #
 # Ablage (fest):
 #   /root/wartungsscripte/                     ← Skript-Basis (wird angelegt)
@@ -17,7 +17,7 @@
 #     ├── bsi_meldung.md                       ← BSI-Meldung (Best Practice)
 #     └── lauf.log                             ← Ausführungsprotokoll
 #
-# Autor: netztaucher | digital — forensik-tool v3.4
+# Autor: netztaucher | digital — forensik-tool v3.5
 # Nur read-only Analyse. Keine Lösch-/Schreiboperationen im Webspace.
 # ============================================================
 
@@ -37,11 +37,72 @@ PLESK_LOG_DIR="/var/log/plesk"
 PLESK_PANEL_LOG="${PLESK_LOG_DIR}/panel.log"
 
 # ── Konfiguration ────────────────────────────────────────────
-DOMAIN="${1:-}"
-TOOL_VERSION="3.4"
+TOOL_VERSION="3.5"
 DAYS_BACK=30   # Analysezeitraum in Tagen
+
+# ── Argumente & Scope (v3.5) ─────────────────────────────────
+# Drei Betriebsarten. Die Server-/Rootebene (Abschnitte 3,5,6,8,9,12) läuft
+# in ALLEN Modi mit — der Scope steuert nur den Dateisystem-Scan (Abschnitt 7)
+# und, welche Berichte für wen erzeugt werden (siehe Abschnitt 13).
+#   --domain <d>  ein Kunde         (= bisheriges Positionsargument)
+#   --path <p>    beliebiger Pfad   (Unterordner, Nicht-Plesk-Webspace)
+#   --global      alle vhosts       → Betreiberbericht + je-vhost Kundenberichte
+# Ohne Argument = --global (rückwärtskompatibel: leeres DOMAIN scannte schon
+# immer alle vhosts). Ein blankes Positionsargument bleibt = --domain.
+DOMAIN=""
+SCOPE_MODE="global"      # global | domain | path
+SCAN_PATH_ARG=""         # nur bei --path
+WANT_YARA=0              # 7.11 nur auf Wunsch (teuer auf großen Webspaces)
+
+usage() {
+  cat <<USAGE
+wp_plesk_forensik.sh v${TOOL_VERSION} — read-only WordPress/Plesk-Forensik
+
+Verwendung:
+  sudo bash $0 [SCOPE] [Optionen]
+  sudo bash $0 kunde.tld                 # Kurzform für --domain kunde.tld
+
+Scope (eines):
+  --domain <domain.tld>   Einen Kunden prüfen; Kundenbericht nur mit dessen Daten
+  --path   <pfad>         Beliebigen Pfad/Webspace prüfen
+  --global                Alle vhosts (Standard): Betreiberbericht + je vhost
+                          ein eigener, gefilterter Kundenbericht
+
+Optionen:
+  --yara                  YARA-Signaturscan (7.11) aktivieren (langsam auf
+                          großen Webspaces; ohne Flag übersprungen)
+  -h, --help              Diese Hilfe
+
+Die Server-/Rootebene wird in jedem Modus mitgeprüft. In Kundenberichten
+werden Rootbefunde nur allgemein (betroffen/nicht betroffen) genannt und
+IP-Adressen/E-Mails maskiert.
+USAGE
+}
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --domain) SCOPE_MODE="domain"; DOMAIN="${2:-}"; shift 2 ;;
+    --path)   SCOPE_MODE="path";   SCAN_PATH_ARG="${2:-}"; shift 2 ;;
+    --global) SCOPE_MODE="global"; shift ;;
+    --yara)   WANT_YARA=1; shift ;;
+    -h|--help) usage; exit 0 ;;
+    --) shift; break ;;
+    -*) echo "Unbekannte Option: $1" >&2; usage >&2; exit 2 ;;
+    *)  # Positionsargument = Domain (Rückwärtskompatibilität)
+        SCOPE_MODE="domain"; DOMAIN="$1"; shift ;;
+  esac
+done
+
+# Plausibilität
+if [[ "$SCOPE_MODE" == "domain" && -z "$DOMAIN" ]]; then
+  echo "Fehler: --domain ohne Domain-Angabe." >&2; usage >&2; exit 2
+fi
+if [[ "$SCOPE_MODE" == "path" && -z "$SCAN_PATH_ARG" ]]; then
+  echo "Fehler: --path ohne Pfad-Angabe." >&2; usage >&2; exit 2
+fi
+
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-RUN_LABEL="${TIMESTAMP}_${DOMAIN:-server}"
+RUN_LABEL="${TIMESTAMP}_${DOMAIN:-${SCOPE_MODE}}"
 RUN_DIR="${FORENSIK_BASE}/${RUN_LABEL}"
 BELEGE_DIR="${RUN_DIR}/belege"
 REPORT_FILE="${RUN_DIR}/technik_bericht.md"
@@ -69,6 +130,15 @@ if [[ "$SELF_PATH" != "$INSTALLED_PATH" ]]; then
   cp -f "$SELF_PATH" "$INSTALLED_PATH"
   chmod 700 "$INSTALLED_PATH"
 fi
+# Beigelegte Hilfsdateien (YARA-Signaturen, PDF-Generator) neben das Skript
+# mitziehen, falls im Quellordner vorhanden — so findet der Lauf sie unter
+# ${BASE_DIR}, egal von wo gestartet wurde.
+_srcdir="$(dirname "$SELF_PATH")"
+for _aux in signaturen reportgen; do
+  if [[ -d "$_srcdir/$_aux" && ! -e "${BASE_DIR}/$_aux" ]]; then
+    cp -rf "$_srcdir/$_aux" "${BASE_DIR}/$_aux" 2>/dev/null || true
+  fi
+done
 
 # Alles zusätzlich in lauf.log protokollieren
 exec > >(tee -a "$RUN_LOG") 2>&1
@@ -143,6 +213,14 @@ crit(){ echo -e "  ${RED}✗${NC}  ${BOLD}$1${NC}"; echo "- 🔴 **KRITISCH: $1*
 info(){ echo -e "  ${NC}·  $1"; echo "  $1" >> "$REPORT_FILE"; }
 code(){ echo -e "\n\`\`\`\n$1\n\`\`\`\n" >> "$REPORT_FILE"; }
 
+# ── Maskierung für Kundenberichte (v3.5) ─────────────────────
+# Kundenberichte gehen an Dritte und müssen DSGVO-datensparsam sein: fremde
+# E-Mail-Adressen (etwa WP-Admin-Konten) werden pseudonymisiert. Angreifer-IPs
+# bleiben im Klartext — sie sind für den Betroffenen zum Sperren nötig und
+# fallen unter berechtigtes Interesse. Technik-/BSI-/DSGVO-Berichte (interne
+# bzw. Behördendokumente) bleiben unmaskiert. stdin → stdout.
+mask_email(){ sed -E 's/([A-Za-z0-9])[A-Za-z0-9._%+-]*(@[A-Za-z0-9.-]+\.[A-Za-z]{2,})/\1***\2/g'; }
+
 # Beleg sichern: schreibt Rohdaten nummeriert nach belege/
 # evidence "label" "inhalt"  → belege/NN_label.txt
 evidence() {
@@ -180,7 +258,7 @@ cat <<'EOF'
  ██████  ██    ██ ██████  █████   ██ ██  ██ ███████ ██ █████
  ██      ██    ██ ██   ██ ██      ██  ██ ██      ██ ██ ██  ██
   ██████  ██████  ██   ██ ███████ ██   ████ ███████ ██ ██   ██
-  WP-PLESK-FORENSIK v3.4 — netztaucher | digital
+  WP-PLESK-FORENSIK v3.5 — netztaucher | digital
 EOF
 echo -e "${NC}"
 
@@ -815,11 +893,13 @@ fi
 h1 "7. DATEISYSTEM-SCAN"
 # ============================================================
 
-if [[ -n "$DOMAIN" && -d "${VHOSTS_DIR}/${DOMAIN}" ]]; then
-  SCAN_PATH="${VHOSTS_DIR}/${DOMAIN}"
-else
-  SCAN_PATH="$VHOSTS_DIR"
-fi
+case "$SCOPE_MODE" in
+  path)   SCAN_PATH="$SCAN_PATH_ARG" ;;
+  domain) SCAN_PATH="${VHOSTS_DIR}/${DOMAIN}" ;;
+  *)      SCAN_PATH="$VHOSTS_DIR" ;;   # global
+esac
+# Fallback: gesetzte Domain ohne existierenden vhost -> serverweit statt ins Leere
+[[ "$SCOPE_MODE" == "domain" && ! -d "$SCAN_PATH" ]] && SCAN_PATH="$VHOSTS_DIR"
 
 h2 "7.1 Kürzlich veränderte PHP-Dateien (letzte ${DAYS_BACK} Tage)"
 echo -e "  ${YLW}Durchsuche Webspace (kann dauern...)${NC}"
@@ -1069,7 +1149,9 @@ h2 "7.11 YARA-Signaturscan (optional)"
 # Die Regel ELF_Masquerading_As_KeyFile braucht die externe Variable
 # 'filename' — ohne sie würde sie auf jede ELF-Datei anschlagen.
 YARA_RULES_FILE="${BASE_DIR}/signaturen/gsocket-backdoors.yar"
-if command -v yara &>/dev/null && [[ -f "$YARA_RULES_FILE" ]]; then
+if [[ "$WANT_YARA" != "1" ]]; then
+    info "YARA-Scan nicht aktiviert — mit --yara einschalten (auf großen Webspaces langsam)"
+elif command -v yara &>/dev/null && [[ -f "$YARA_RULES_FILE" ]]; then
     YARA_DETAIL=""
     while IFS= read -r f; do
         [[ -f "$f" ]] || continue
@@ -1959,6 +2041,17 @@ $ROOT_VERDICT
 
 $ROOT_NOTES"
 
+# Kunden-taugliche Root-Aussage (v3.5): im Kundenbericht dürfen KEINE
+# Root-Details stehen (keine IPs, Pfade, Indikatorenzahl, keine
+# „Server-neu-aufsetzen"-Anweisung — das ist Sache des Betreibers). Nur die
+# generische Aussage betroffen/nicht betroffen. Der volle ROOT_VERDICT bleibt
+# in Technik- und BSI-Bericht.
+if [[ "$ROOT_FLAGS" -eq 0 ]]; then
+  ROOT_CUSTOMER_HINT="🟢 Die Prüfung ergab **keine Hinweise**, dass über Ihren Webauftritt hinaus die Serverebene betroffen ist. Ein etwaiger Vorfall ist nach aktueller Beweislage auf Ihre Website begrenzt."
+else
+  ROOT_CUSTOMER_HINT="🟠 Es bestehen Hinweise, dass **auch die Serverebene betroffen** sein könnte. Diese liegen dem Serverbetreiber vor und werden dort gesondert behandelt. Für Ihren Webauftritt gelten die Sofortmaßnahmen in Abschnitt 2."
+fi
+
 
 # Konsolidiert alle Relay-/Prozess-Befunde zu einer klaren Aussage —
 # analog zum bestehenden ROOT_VERDICT.
@@ -2083,9 +2176,32 @@ else
   ANGRIFF_TAT="Aus den Automatik-Daten keine konkrete Angreifer-Aktion belegt — bei der manuellen Auswertung zu prüfen."
 fi
 
-cat > "$KUNDE_FILE" <<KUNDE
-# Sicherheitsvorfall — Bericht${DOMAIN:+ für ${DOMAIN}}
+# Befundlisten für den Kundenbericht DSGVO-datensparsam pseudonymisieren
+# (fremde E-Mail-Adressen). Angreifer-IPs bleiben zum Sperren im Klartext.
+KUNDE_CRIT_LIST=$(printf '%s' "$CRIT_LIST" | mask_email)
+KUNDE_WARN_LIST=$(printf '%s' "$WARN_LIST" | mask_email)
 
+# Scope-Warnung (v3.5): Im Global-Modus umfasst der Bericht ALLE Domains und
+# darf nicht als Einzelkunden-Bericht verschickt werden — sonst sähe Kunde A die
+# Befunde (und ggf. personenbezogenen Daten) von Kunde B. Kundenspezifische,
+# maskierte Berichte entstehen über einen Lauf mit --domain <kunde.tld>.
+if [[ "$SCOPE_MODE" == "global" ]]; then
+  KUNDE_TITEL="Serverweiter Befundbericht (Betreiber)"
+  SCOPE_BANNER="> ⚠️ **Serverweiter Betreiberbericht — nicht für die Weitergabe an einzelne Kunden.**
+> Dieser Lauf (\`--global\`) umfasst **alle Domains** des Servers; die folgenden
+> Befunde können mehrere Kunden betreffen. Für einen kundenspezifischen Bericht
+> (nur dessen Daten, personenbezogene Angaben maskiert, ohne Root-Details) den
+> Lauf mit \`--domain <kunde.tld>\` wiederholen.
+"
+else
+  KUNDE_TITEL="Sicherheitsvorfall — Bericht${DOMAIN:+ für ${DOMAIN}}"
+  SCOPE_BANNER=""
+fi
+
+cat > "$KUNDE_FILE" <<KUNDE
+# ${KUNDE_TITEL}
+
+${SCOPE_BANNER}
 | | |
 |---|---|
 | **Einstufung** | ${AMPEL} |
@@ -2121,25 +2237,26 @@ fi)
 
 ${TECH_SUMMARY}
 
-$(if [[ -n "$CRIT_LIST" ]]; then
+$(if [[ -n "$KUNDE_CRIT_LIST" ]]; then
 echo "**Kritische Einzelbefunde:**
 
-$CRIT_LIST"
+$KUNDE_CRIT_LIST"
 fi)
-$(if [[ -n "$WARN_LIST" ]]; then
+$(if [[ -n "$KUNDE_WARN_LIST" ]]; then
 echo "**Auffälligkeiten (zeitnah beheben):**
 
-$WARN_LIST"
+$KUNDE_WARN_LIST"
 fi)
 
-## 4. Reichweite des Angriffs — hatte der Angreifer Server-Vollzugriff (Root)?
+## 4. Reichweite des Angriffs — war nur Ihre Website oder der ganze Server betroffen?
 
-${ROOT_VERDICT}
+${ROOT_CUSTOMER_HINT}
 
-> **Was das bedeutet:** „Root" ist die uneingeschränkte Administratorebene des
-> gesamten Servers. Blieb der Angreifer darunter (nur auf Ebene der einzelnen
-> Website), ist der Schaden auf diese Website begrenzt. Wurde Root übernommen,
-> muss der gesamte Server als kompromittiert gelten.
+> **Was das bedeutet:** „Serverebene" (Root) ist die Administratorebene des
+> gesamten Servers, auf dem neben Ihrer auch andere Websites liegen. Blieb ein
+> Angreifer darunter (nur auf Ebene Ihrer Website), ist der Schaden auf Ihren
+> Webauftritt begrenzt. Die technische Detailbewertung der Serverebene liegt beim
+> Serverbetreiber; sie ist nicht Teil dieses Kundenberichts.
 
 **WordPress-Datenbank:** ${WPDB_VERDICT}
 
@@ -2609,6 +2726,55 @@ JSON
 }
 emit_findings_json
 
+# ── PDF-Abschlussbericht (v3.5, optional/degradierend) ───────
+# Teil 1 = Kundenbericht (laienlesbar, maskiert), Teil 2 = KPI-Zusammenfassung.
+# reportgen/ muss neben dem Skript oder unter ${BASE_DIR} liegen. Fehlt
+# pandoc/weasyprint/reportgen, wird das PDF übersprungen — die Markdown-Berichte
+# bleiben vollständig und maßgeblich (Read-only-Versprechen, kein harter Fehler).
+PDF_FILE="${RUN_DIR}/abschlussbericht.pdf"
+REPORTGEN_DIR=""
+for _d in "$(dirname "$SELF_PATH")/reportgen" "${BASE_DIR}/reportgen"; do
+  [[ -x "$_d/nt_report_pdf.sh" ]] && { REPORTGEN_DIR="$_d"; break; }
+done
+_wp="${WEASYPRINT:-$(command -v weasyprint 2>/dev/null || true)}"
+if [[ -n "$REPORTGEN_DIR" ]] && command -v pandoc >/dev/null 2>&1 && [[ -n "$_wp" ]]; then
+  ZUSAMMEN_FILE="${RUN_DIR}/zusammenfassung.md"
+  {
+    echo "::: kpigrid"
+    echo "- **${N_CRIT}** kritische Befunde"
+    echo "- **${N_WARN}** Auffälligkeiten"
+    echo "- **${N_OK}** geprüfte Punkte"
+    echo "- **$(ls -1 "$BELEGE_DIR" 2>/dev/null | grep -vc SHA256SUMS)** Belege (SHA256)"
+    echo ":::"
+    echo
+    echo "## Bewertung im Überblick"
+    echo
+    echo "**Reichweite (Serverebene):** ${ROOT_CUSTOMER_HINT}"
+    echo
+    echo "**Fernzugriff / Relay-Backdoor:** ${RELAY_VERDICT}"
+    echo
+    echo "**WordPress-Datenbank:** ${WPDB_VERDICT}"
+  } > "$ZUSAMMEN_FILE"
+  _dom="${DOMAIN:-$(hostname -f 2>/dev/null || hostname)}"
+  if WEASYPRINT="$_wp" bash "$REPORTGEN_DIR/nt_report_pdf.sh" \
+       --teil1 "$KUNDE_FILE" --teil2 "$ZUSAMMEN_FILE" \
+       --title "Sicherheitsvorfall\nForensische Untersuchung" \
+       --eyebrow "netztaucher | digital — Forensik" \
+       --domain "$_dom" \
+       --subtitle "Prüfung ${RUN_LABEL} · $(date +%d.%m.%Y)" \
+       --teil2-label "Teil 2 — Zusammenfassung der Aktion" \
+       --meta "Einstufung=${AMPEL}" --meta "Prüfungs-ID=${RUN_LABEL}" \
+       --out "$PDF_FILE" >/dev/null 2>&1; then
+    echo "  PDF-Abschlussbericht: $PDF_FILE" >> "$REPORT_FILE"
+  else
+    echo "  PDF-Erzeugung fehlgeschlagen — Markdown-Berichte bleiben maßgeblich." >> "$REPORT_FILE"
+    PDF_FILE=""
+  fi
+else
+  echo "  PDF übersprungen (pandoc/weasyprint/reportgen nicht verfügbar)." >> "$REPORT_FILE"
+  PDF_FILE=""
+fi
+
 (
   cd "$BELEGE_DIR"
   # Manifest abschließen
@@ -2623,6 +2789,7 @@ emit_findings_json
 (
   cd "$RUN_DIR"
   sha256sum technik_bericht.md kundenbericht.md bsi_meldung.md dsgvo_meldung.md findings.json 2>/dev/null >> "${BELEGE_DIR}/SHA256SUMS" || true
+  [[ -n "$PDF_FILE" && -f "$PDF_FILE" ]] && sha256sum "$(basename "$PDF_FILE")" zusammenfassung.md 2>/dev/null >> "${BELEGE_DIR}/SHA256SUMS" || true
 )
 
 # Übergabe-Archiv des kompletten Laufs
@@ -2645,6 +2812,7 @@ echo -e "${BOLD}Kundenbericht:${NC}   ${KUNDE_FILE}"
 echo -e "${BOLD}BSI-Meldung:${NC}     ${BSI_FILE}"
 echo -e "${BOLD}DSGVO-Meldung:${NC}   ${DSGVO_FILE}"
 echo -e "${BOLD}Technik-Bericht:${NC} ${REPORT_FILE}"
+[[ -n "${PDF_FILE:-}" && -f "${PDF_FILE:-}" ]] && echo -e "${BOLD}PDF-Bericht:${NC}     ${PDF_FILE}"
 echo -e "${BOLD}findings.json:${NC}   ${FINDINGS_FILE} (maschinenlesbar, für NT-Repair)"
 echo -e "${BOLD}Belege:${NC}          ${BELEGE_DIR} (SHA256-versiegelt)"
 echo -e "${BOLD}Übergabe-Archiv:${NC} ${RUN_ARCHIVE}"
