@@ -2,6 +2,44 @@
 
 Alle nennenswerten Änderungen an `wp_plesk_forensik.sh`.
 
+## [3.6.0] — 2026-08-05
+
+### Neu — System-Integrität (referenzlos & baseline)
+- **§8.6 debsums** ergänzt `dpkg -V`: md5-Abgleich der Kern-Paketdateien gegen den
+  Installationsstand (auf dieselbe kritische Paketmenge begrenzt, fließt in den
+  Root-Verdikt). Übersprungen, wenn `debsums` fehlt.
+- **§8.13 Kürzlich veränderte Systemdateien & Timestomping** (referenzlos, ohne
+  Baseline): meldet neue/geänderte Dateien in normalerweise stabilen Systemdirs
+  (`/usr/local/bin`, cron-, systemd-Unit-Dirs …) und erkennt **Zeitstempel-
+  Manipulation** — Inode kürzlich geändert (ctime), mtime aber künstlich
+  zurückdatiert. Nur `stat`-Traversierung, daher schnell.
+- **§8.14 AIDE-Abgleich**: nutzt eine vorhandene AIDE-Baseline read-only
+  (`aide --check`) und meldet Abweichungen. Erstellt/aktualisiert die DB **nicht**.
+  Vorlage: `haertung/aide-forensik.conf`.
+
+### Neu — Autoritative Scanner-Taps (read-only)
+Statt eigene Erkennung nachzubauen, werden die Ergebnisse der auf Plesk ohnehin
+vorhandenen, spezialisierten Scanner **gelesen** (kein Scan wird ausgelöst):
+- **§8.15 Imunify-Malware-Datenbank** (`imunify-antivirus`/`imunify360-agent`):
+  offene Treffer (Status „found") im Prüf-Scope. Signatur-Familie wird
+  ausgewertet.
+- **§11.10 WP Toolkit** (`plesk ext wp-toolkit --list`): meldet vom WP Toolkit
+  als **infiziert** markierte WordPress-Instanzen. Beide Taps sind scope-aware.
+
+### Neu — Befund-Klassifikation, Detaildatei & PDF-Deckblatt-Card
+- Schadcode-Funde werden grob einer **Familie** (Defacement, Backdoor/Webshell,
+  SEO-Spam/Doorway, Phishing, Cryptominer …) samt **Geschäftsmodell** zugeordnet.
+- Neue Datei **`befunde_details.md`** listet alle Fundstellen mit Pfaden
+  **relativ zum Kundenverzeichnis** (nie absolut); Kunden- und Technik-Bericht
+  verweisen darauf. Details bewusst nicht im laienlesbaren Kundenbericht.
+- Das **PDF-Deckblatt (Seite 1)** trägt eine **Grobstatistik-Card**: Fundstellen
+  gesamt + je Familie eine Kachel.
+- `findings.json` → schema **1.2**: neue Schlüssel `timestomp`,
+  `recent_system_changes`, `imunify_malware`, `wptk_infected`.
+
+### Geändert
+- **`--yara`** entkoppelt: der YARA-Scan lief bereits ab v3.5 nur auf Wunsch.
+
 ## [3.5.0] — 2026-08-05
 
 ### Neu — Scope-Steuerung, DSGVO-Datensparsamkeit, PDF-Abschlussbericht
