@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ============================================================
-# WP-PLESK-FORENSIK.SH — v3.5
+# WP-PLESK-FORENSIK.SH — v3.6
 # Forensische Analyse nach WordPress/Plesk Sicherheitsvorfall
 #
 # Verwendung: sudo bash wp_plesk_forensik.sh [--domain d|--path p|--global] [--yara]
@@ -17,7 +17,7 @@
 #     ├── bsi_meldung.md                       ← BSI-Meldung (Best Practice)
 #     └── lauf.log                             ← Ausführungsprotokoll
 #
-# Autor: netztaucher | digital — forensik-tool v3.5
+# Autor: netztaucher | digital — forensik-tool v3.6
 # Nur read-only Analyse. Keine Lösch-/Schreiboperationen im Webspace.
 # ============================================================
 
@@ -37,7 +37,7 @@ PLESK_LOG_DIR="/var/log/plesk"
 PLESK_PANEL_LOG="${PLESK_LOG_DIR}/panel.log"
 
 # ── Konfiguration ────────────────────────────────────────────
-TOOL_VERSION="3.5"
+TOOL_VERSION="3.6"
 DAYS_BACK=30   # Analysezeitraum in Tagen
 
 # ── Argumente & Scope (v3.5) ─────────────────────────────────
@@ -172,6 +172,11 @@ SSH_LOGIN_HOOKS=""       # ~/.ssh/rc und /etc/ssh/sshrc
 RELAY_CONNECTIONS=""     # ausgehende 443/7350 durch untypische Prozesse
 YARA_HITS=""             # YARA-Treffer (falls yara installiert)
 RELAY_VERDICT="⚪ Relay-Backdoor-Prüfung nicht durchgeführt."
+# v3.6 System-Integrität & autoritative Scanner-Taps — für findings.json
+TIMESTOMP=""           # Dateien mit zurückdatiertem mtime (Timestomping)
+RECENT_SYS=""          # kürzlich veränderte Dateien in stabilen Systemdirs
+IMUNIFY_HITS=""        # offene Imunify-Malware-Treffer im Scope
+WPTK_INFECTED=""       # vom WP Toolkit als infiziert markierte Instanzen
 
 # Signaturfamilie THC gsocket / gs-netcat. Trifft auch bei Umbenennung,
 # da die Strings im Binary verbleiben (auch bei stripped).
@@ -258,7 +263,7 @@ cat <<'EOF'
  ██████  ██    ██ ██████  █████   ██ ██  ██ ███████ ██ █████
  ██      ██    ██ ██   ██ ██      ██  ██ ██      ██ ██ ██  ██
   ██████  ██████  ██   ██ ███████ ██   ████ ███████ ██ ██   ██
-  WP-PLESK-FORENSIK v3.5 — netztaucher | digital
+  WP-PLESK-FORENSIK v3.6 — netztaucher | digital
 EOF
 echo -e "${NC}"
 
@@ -1325,6 +1330,24 @@ $(echo "$PKG_MODIFIED" | awk '{print $NF}' | xargs -r sha256sum 2>/dev/null)"
   else
     ok "Kern-Binaries (bash, ssh, curl, wget, cron) stimmen mit Paketdatenbank überein"
   fi
+  # debsums ergänzt dpkg -V: prüft die md5-Summen der installierten Paketdateien
+  # gegen die bei der Installation gespeicherten. Bewusst auf dieselbe kritische
+  # Paketmenge begrenzt — debsums liest Dateiinhalte, über ALLE Pakete wäre es
+  # (wie 7.11/8.7) zu teuer. Fund fließt in PKG_MODIFIED → Root-Verdikt (11.5).
+  if command -v debsums &>/dev/null; then
+    DEBSUMS_BAD=$(debsums -c bash coreutils openssh-server openssh-client curl wget cron 2>/dev/null || true)
+    if [[ -n "$DEBSUMS_BAD" ]]; then
+      crit "debsums: veränderte Paketdateien in Kern-Paketen — Manipulations-Verdacht"
+      code "$DEBSUMS_BAD"
+      evidence "debsums_changed" "$DEBSUMS_BAD
+$(printf '%s\n' "$DEBSUMS_BAD" | xargs -r sha256sum 2>/dev/null)"
+      PKG_MODIFIED+=$'\n'"$DEBSUMS_BAD"
+    else
+      ok "debsums: Kern-Paketdateien unverändert (md5 gegen Installationsstand)"
+    fi
+  else
+    info "debsums nicht installiert — ergänzende md5-Paketprüfung übersprungen (apt install debsums)"
+  fi
 fi
 
 h2 "8.7 Relay-Backdoors (THC gsocket / gs-netcat)"
@@ -1556,6 +1579,112 @@ if command -v ss &>/dev/null; then
     fi
 else
     warn "'ss' nicht verfügbar — ausgehende Verbindungen nicht prüfbar"
+fi
+
+h2 "8.13 Kürzlich veränderte Systemdateien & Zeitstempel-Manipulation (referenzlos)"
+# Ohne Baseline: in Verzeichnissen, die im Normalbetrieb STABIL sind (kein Paket
+# schreibt dort), ist eine kürzlich geänderte/neue Datei erklärungsbedürftig.
+# ctime (Inode-Änderungszeit) lässt sich mit `touch -d` NICHT zurückdatieren —
+# das setzt nur mtime/atime. Ein Angreifer, der mtime fälscht, verrät sich über
+# die Diskrepanz. Nur stat-Traversierung (kein Dateiinhalt) → schnell.
+INTEG_DIRS=(/usr/local/bin /usr/local/sbin /etc/cron.d /etc/cron.hourly /etc/cron.daily /etc/cron.weekly /etc/cron.monthly /etc/systemd/system /etc/init.d)
+RECENT_SYS=""; TIMESTOMP=""
+_have_dpkg=0; command -v dpkg &>/dev/null && _have_dpkg=1
+while IFS= read -r f; do
+    [[ -f "$f" ]] || continue
+    ct=$(stat -c %Z "$f" 2>/dev/null); mt=$(stat -c %Y "$f" 2>/dev/null)
+    [[ -z "$ct" || -z "$mt" ]] && continue
+    # Paketverwaltete Dateien ausschließen: deren mtime ist das (alte) Build-Datum,
+    # die ctime das (neue) Installations-/Update-Datum — das ist KEIN Timestomping,
+    # sondern normales Paketverhalten. Inhaltsmanipulation solcher Dateien fängt
+    # 8.6 (dpkg -V/debsums). Nur NICHT-paketierte Dateien sind hier belastbar.
+    if [[ "$_have_dpkg" == 1 ]] && dpkg -S "$f" &>/dev/null; then continue; fi
+    line="$(stat -c 'ctime %z | mtime %y | %n' "$f" 2>/dev/null)"
+    if (( ct - mt > 7776000 )); then
+        # Inode kürzlich geändert, mtime aber künstlich >90 Tage davor: Timestomping.
+        TIMESTOMP+="$line"$'\n'
+    else
+        RECENT_SYS+="$line"$'\n'
+    fi
+done < <(find "${INTEG_DIRS[@]}" -xdev -type f -ctime -"${DAYS_BACK}" -not -path "${BASE_DIR}/*" 2>/dev/null | head -300)
+
+if [[ -n "$TIMESTOMP" ]]; then
+    crit "Zeitstempel-Manipulation (Timestomping): Datei(en) mit künstlich zurückdatiertem mtime"
+    code "$TIMESTOMP"
+    evidence "timestomp" "$TIMESTOMP"
+fi
+if [[ -n "$RECENT_SYS" ]]; then
+    warn "Kürzlich veränderte Dateien in normalerweise stabilen Systemverzeichnissen — gegen Wartungsfenster/Paket-Updates abgleichen"
+    code "$(printf '%s' "$RECENT_SYS" | head -60)"
+    evidence "recent_system_changes" "$RECENT_SYS"
+elif [[ -z "$TIMESTOMP" ]]; then
+    ok "Keine kürzlich veränderten Dateien in stabilen Systemverzeichnissen (${DAYS_BACK} Tage)"
+fi
+
+h2 "8.14 AIDE-Integritätsabgleich (dauerhafte FIM, falls eingerichtet)"
+# AIDE ist eine echte Baseline-Datenbank — nur aussagekräftig, wenn sie VOR
+# einer Kompromittierung erstellt wurde. Das Skript NUTZT eine vorhandene DB
+# (read-only), erstellt/aktualisiert sie aber NICHT. Config-Vorlage:
+# haertung/aide-forensik.conf. `aide --check` liest Inhalte und kann dauern —
+# läuft daher nur, wenn AIDE bereits eingerichtet ist (bewusste Entscheidung).
+if command -v aide &>/dev/null; then
+    AIDE_DB=$(ls /var/lib/aide/aide.db /var/lib/aide/aide.db.gz 2>/dev/null | head -1 || true)
+    if [[ -n "$AIDE_DB" ]]; then
+        AIDE_OUT=$(aide --check 2>/dev/null | grep -E '^(Added|Removed|Changed|Total|Number)' | head -40 || true)
+        if echo "$AIDE_OUT" | grep -qE '(Added|Removed|Changed).*entries:[[:space:]]*[1-9]'; then
+            crit "AIDE meldet Abweichungen zur Integritäts-Baseline"
+            code "$AIDE_OUT"
+            evidence "aide_check" "$AIDE_OUT"
+        else
+            ok "AIDE-Abgleich ohne Abweichungen zur Baseline"
+        fi
+    else
+        info "AIDE installiert, aber keine Baseline-DB — mit 'aide --init' anlegen (Vorlage: haertung/aide-forensik.conf)"
+    fi
+else
+    info "AIDE nicht installiert — dauerhafte Datei-Integritätsüberwachung nicht aktiv (Härtung: haertung/aide-forensik.conf)"
+fi
+
+h2 "8.15 Imunify-Malware-Datenbank (autoritativer Scanner, read-only)"
+# Plesk/Imunify betreibt einen eigenen signaturbasierten Malware-Scanner mit
+# gepflegter Datenbank und Cloud-Heuristik. Statt diese Erkennung nachzubauen,
+# LESEN wir ihr Ergebnis (Status "found" = erkannt, noch nicht bereinigt).
+# Es wird KEIN Scan ausgelöst — nur die bestehende DB abgefragt (read-only).
+# Scope-aware: bei --domain/--path nur Treffer unterhalb ${SCAN_PATH}.
+IMU_BIN=""
+for _c in imunify-antivirus imunify360-agent; do command -v "$_c" &>/dev/null && { IMU_BIN="$_c"; break; }; done
+if [[ -n "$IMU_BIN" ]] && command -v python3 &>/dev/null; then
+    # --limit hoch: die Standardausgabe liefert nur 50 Einträge; ohne dies
+    # würde der Scope-Filter (und die Zählung) auf Servern mit vielen Treffern
+    # unvollständig bleiben.
+    IMU_JSON=$("$IMU_BIN" malware malicious list --json --by-status found --limit 100000 2>/dev/null || true)
+    IMU_REPORT=$(SCOPE_PATH="$SCAN_PATH" VHOSTS="$VHOSTS_DIR" python3 -c '
+import sys, os, json
+try: d = json.loads(sys.stdin.read())
+except Exception: sys.exit(0)
+items = d.get("items", []) if isinstance(d, dict) else (d if isinstance(d, list) else [])
+sp = os.environ.get("SCOPE_PATH", ""); vh = os.environ.get("VHOSTS", "/var/www/vhosts")
+glob = (sp == vh or not sp)
+sel = [i for i in items if glob or str(i.get("file","")).startswith(sp)]
+print("COUNT=%d" % len(sel))
+for i in sel[:60]:
+    print("%s  [%s]  %s" % (i.get("file"), i.get("type",""), str(i.get("hash",""))[:16]))
+' <<<"$IMU_JSON")
+    IMU_COUNT=$(printf '%s\n' "$IMU_REPORT" | sed -n 's/^COUNT=//p')
+    IMU_LIST=$(printf '%s\n' "$IMU_REPORT" | grep -v '^COUNT=' || true)
+    if [[ "${IMU_COUNT:-0}" -gt 0 ]]; then
+        crit "Imunify meldet ${IMU_COUNT} nicht bereinigte Malware-Datei(en) im Prüf-Scope"
+        code "$IMU_LIST"
+        evidence "imunify_malware" "Scanner: $IMU_BIN, Status=found, Scope=$SCAN_PATH
+$IMU_LIST"
+        IMUNIFY_HITS="$IMU_LIST"
+    else
+        ok "Imunify: keine offenen Malware-Treffer im Prüf-Scope (Status found)"
+    fi
+elif [[ -n "$IMU_BIN" ]]; then
+    info "Imunify vorhanden ($IMU_BIN), aber python3 fehlt — DB nicht ausgewertet"
+else
+    info "Imunify-CLI nicht gefunden — autoritative Scanner-DB nicht abgefragt"
 fi
 
 # ============================================================
@@ -1910,6 +2039,45 @@ else
   echo -e "\n$WPDB_VERDICT\n" >> "$REPORT_FILE"
 fi
 
+h2 "11.10 WP Toolkit — Instanz-Status (Plesk-eigene Bewertung, read-only)"
+# Das Plesk WP Toolkit führt pro WordPress-Instanz Buch — u.a. ob sie als
+# infiziert oder defekt gilt (es erkennt auch nicht dazugehörende Dateien).
+# Wir LESEN diese Bewertung (kein Scan, keine Änderung) und melden infizierte
+# Instanzen. Scope-aware über ${SCAN_PATH}; ergänzt die eigene DB-/Core-Prüfung
+# um Plesks autoritative Sicht.
+if command -v plesk &>/dev/null && command -v python3 &>/dev/null; then
+    WPTK_JSON=$(plesk ext wp-toolkit --list -format json 2>/dev/null || true)
+    WPTK_REPORT=$(SCOPE_PATH="$SCAN_PATH" VHOSTS="$VHOSTS_DIR" python3 -c '
+import sys, os, json
+try: d = json.loads(sys.stdin.read())
+except Exception: sys.exit(0)
+if not isinstance(d, list): sys.exit(0)
+sp = os.environ.get("SCOPE_PATH", ""); vh = os.environ.get("VHOSTS", "/var/www/vhosts")
+glob = (sp == vh or not sp)
+insc = lambda x: glob or str(x.get("fullPath","")).startswith(sp)
+scoped = [x for x in d if insc(x)]
+inf = [x for x in scoped if x.get("infected")]
+brk = [x for x in scoped if x.get("broken")]
+print("INF=%d BRK=%d TOTAL=%d" % (len(inf), len(brk), len(scoped)))
+for x in inf[:40]: print("INFECTED %s  %s" % (x.get("fullPath"), x.get("siteUrl","")))
+' <<<"$WPTK_JSON")
+    WPTK_HEAD=$(printf '%s\n' "$WPTK_REPORT" | grep '^INF=' || true)
+    WPTK_INF=$(printf '%s\n' "$WPTK_REPORT" | grep '^INFECTED' || true)
+    WPTK_N=$(printf '%s' "$WPTK_HEAD" | sed -E 's/^INF=([0-9]+).*/\1/')
+    if [[ "${WPTK_N:-0}" -gt 0 ]]; then
+        crit "WP Toolkit stuft ${WPTK_N} WordPress-Instanz(en) als infiziert ein"
+        code "$WPTK_INF"
+        evidence "wptk_infected" "$WPTK_REPORT"
+        WPTK_INFECTED="$WPTK_INF"
+    elif [[ -n "$WPTK_HEAD" ]]; then
+        ok "WP Toolkit: keine als infiziert markierten Instanzen im Scope (${WPTK_HEAD})"
+    else
+        info "WP Toolkit lieferte keine auswertbare Instanzliste"
+    fi
+else
+    info "WP Toolkit / python3 nicht verfügbar — Plesk-Instanzbewertung nicht abgefragt"
+fi
+
 # ============================================================
 h1 "12. ROOT- & ESKALATIONS-PRÜFUNG"
 # ============================================================
@@ -2076,6 +2244,106 @@ fi
 echo -e "\n### Verdikt Relay-Backdoor\n\n${RELAY_VERDICT}\n" >> "$REPORT_FILE"
 
 # ============================================================
+# BEFUND-KLASSIFIKATION & DETAILDATEI (v3.6)
+# ------------------------------------------------------------
+# Ordnet alle datei-basierten Schadcode-Funde grob einer Familie zu (was es ist
+# + Geschäftsmodell), schreibt die Fundstellen mit Pfaden RELATIV zum
+# Kundenverzeichnis in befunde_details.md und liefert eine Grobstatistik für
+# Bericht und PDF-Deckblatt. Details bewusst NICHT in den laienlesbaren
+# Kundenbericht, sondern in die referenzierte Extradatei.
+# ============================================================
+DETAILS_FILE="${RUN_DIR}/befunde_details.md"
+CUST_ROOT="$SCAN_PATH"
+# Pfad relativ zum Kundenverzeichnis (nie absolut im Bericht/PDF)
+relpath(){ local p="$1"
+  if [[ -n "$CUST_ROOT" && "$CUST_ROOT" != "$VHOSTS_DIR" ]]; then printf '%s' "${p#"$CUST_ROOT"/}"
+  else printf '%s' "${p#"$VHOSTS_DIR"/}"; fi; }
+# Familie aus Imunify-Signaturname
+imu_family(){ local t; t="$(printf '%s' "$1" | tr 'A-Z' 'a-z')"
+  case "$t" in
+    *deface*) echo "Defacement" ;;
+    *backdoor*|*bkdr*|*shell*|*webshell*) echo "Backdoor/Webshell" ;;
+    *phish*) echo "Phishing" ;;
+    *spam*|*seo*|*doorway*|*pharma*) echo "SEO-Spam/Doorway" ;;
+    *redir*) echo "Redirect/Malvertising" ;;
+    *mailer*) echo "Spam-Mailer" ;;
+    *miner*|*coin*|*xmr*) echo "Cryptominer" ;;
+    *inject*) echo "Code-Injection" ;;
+    *) echo "Sonstige/Unklar" ;;
+  esac; }
+# Geschäftsmodell je Familie (eine Zeile, laienverständlich)
+fam_biz(){ case "$1" in
+    "Defacement")            echo "Verunstaltung der Seite — Reputationsschaden, oft Hacktivismus" ;;
+    "Backdoor/Webshell")     echo "Dauerhafter Fernzugriff — Basis für Wiederkehr & weitere Angriffe" ;;
+    "SEO-Spam/Doorway")      echo "Suchmaschinen-Spam (Pharma, Fake-Shops) über Ihre Domain-Reputation" ;;
+    "Phishing")              echo "Datendiebstahl über gefälschte Login-/Bezahlseiten" ;;
+    "Redirect/Malvertising") echo "Weiterverkauf Ihrer Besucher / Schadwerbung" ;;
+    "Spam-Mailer")           echo "Massen-Mailversand — Blacklisting Ihrer Domain/IP" ;;
+    "Cryptominer")           echo "Diebstahl von Server-Rechenleistung" ;;
+    "Code-Injection")        echo "Schadcode in legitime Dateien eingeschleust" ;;
+    "Relay-Backdoor")        echo "Portloser Fernzugriffskanal (umgeht Firewall/NAT)" ;;
+    "Getarnte Binary")       echo "Als harmlose Datei getarntes Angriffswerkzeug" ;;
+    "Getarnte Payload")      echo "Nachladbarer Schadcode in Nicht-PHP-Datei" ;;
+    *)                       echo "Einordnung offen — manuelle Prüfung nötig" ;;
+  esac; }
+
+declare -A FAM_COUNT FAM_FILES
+add_finding(){ local fam="$1" rel="$2" detail="$3"
+  FAM_COUNT["$fam"]=$(( ${FAM_COUNT["$fam"]:-0} + 1 ))
+  FAM_FILES["$fam"]+="- \`${rel}\`${detail:+  — ${detail}}"$'\n'; }
+
+# Quelle 1: Imunify-Treffer (Zeilen "pfad  [type]  hash")
+if [[ -n "${IMUNIFY_HITS:-}" ]]; then
+  while IFS= read -r line; do
+    [[ -z "$line" ]] && continue
+    p="${line%%  \[*}"
+    t="$(printf '%s' "$line" | sed -E 's/.*\[([^]]*)\].*/\1/')"
+    add_finding "$(imu_family "$t")" "$(relpath "$p")" "Imunify-Signatur: ${t}"
+  done <<< "$IMUNIFY_HITS"
+fi
+# Quelle 2: eigene datei-basierte Kategorien (je eine Pfadliste)
+_addcat(){ local fam="$1" list="$2"
+  while IFS= read -r p; do [[ -n "$p" ]] && add_finding "$fam" "$(relpath "$p")" ""; done <<< "$list"; }
+[[ -n "${MASQ_BINARIES:-}"      ]] && _addcat "Getarnte Binary"   "$MASQ_BINARIES"
+[[ -n "${GSOCKET_HITS:-}"       ]] && _addcat "Relay-Backdoor"    "$GSOCKET_HITS"
+[[ -n "${DISGUISED_PAYLOADS:-}" ]] && _addcat "Getarnte Payload"  "$DISGUISED_PAYLOADS"
+[[ -n "${CORE_INJECT_HITS:-}"   ]] && _addcat "Code-Injection"    "$CORE_INJECT_HITS"
+[[ -n "${DOORWAY_DIRS:-}"       ]] && _addcat "SEO-Spam/Doorway"  "$DOORWAY_DIRS"
+
+# Grobstatistik + Detaildatei zusammensetzen
+MALWARE_TOTAL=0; MALWARE_FAMILY_ROWS=""; MALWARE_CARD=""
+for fam in "${!FAM_COUNT[@]}"; do MALWARE_TOTAL=$(( MALWARE_TOTAL + FAM_COUNT[$fam] )); done
+if [[ "$MALWARE_TOTAL" -gt 0 ]]; then
+  {
+    echo "# Fundstellen-Details${DOMAIN:+ — ${DOMAIN}}"
+    echo
+    echo "> Pfade **relativ zum Kundenverzeichnis** (nicht der absolute Serverpfad)."
+    echo "> Erzeugt: $(date +"%d.%m.%Y, %H:%M Uhr") · Prüfung \`${RUN_LABEL}\` · $MALWARE_TOTAL Fundstelle(n)."
+    echo
+    echo "| Familie | Anzahl | Geschäftsmodell |"
+    echo "|---|---|---|"
+  } > "$DETAILS_FILE"
+  # nach Anzahl absteigend (einfacher Bubble über Keys)
+  for fam in "${!FAM_COUNT[@]}"; do echo "${FAM_COUNT[$fam]}|$fam"; done | sort -rn | while IFS='|' read -r n f; do
+    printf '| %s | %s | %s |\n' "$f" "$n" "$(fam_biz "$f")" >> "$DETAILS_FILE"
+  done
+  echo >> "$DETAILS_FILE"
+  for fam in "${!FAM_COUNT[@]}"; do
+    {
+      echo "## ${fam} (${FAM_COUNT[$fam]}) — $(fam_biz "$fam")"
+      echo
+      printf '%s\n' "${FAM_FILES[$fam]}"
+    } >> "$DETAILS_FILE"
+  done
+  # Kompakte Zeilen für Bericht-Tabelle + PDF-Card (Top nach Anzahl)
+  while IFS='|' read -r n f; do
+    MALWARE_FAMILY_ROWS+="| ${f} | ${n} | $(fam_biz "$f") |"$'\n'
+    MALWARE_CARD+="- **${n}** ${f}"$'\n'
+  done < <(for fam in "${!FAM_COUNT[@]}"; do echo "${FAM_COUNT[$fam]}|$fam"; done | sort -rn)
+  echo "  Fundstellen-Details: $DETAILS_FILE ($MALWARE_TOTAL Fund(e), $(printf '%s' "$MALWARE_CARD" | grep -c .) Familien)" >> "$REPORT_FILE"
+fi
+
+# ============================================================
 h1 "13. ZUSAMMENFASSUNG"
 # ============================================================
 
@@ -2237,6 +2505,16 @@ fi)
 
 ${TECH_SUMMARY}
 
+$(if [[ "${MALWARE_TOTAL:-0}" -gt 0 ]]; then
+echo "**Schadcode-Einordnung — ${MALWARE_TOTAL} Fundstelle(n):**
+
+| Art | Anzahl | Was damit bezweckt wird |
+|---|---|---|
+${MALWARE_FAMILY_ROWS}
+> Die vollständige Liste der betroffenen Dateien — mit Pfaden **relativ zu Ihrem
+> Verzeichnis** — liegt in der Datei \`befunde_details.md\` bei Ihren Unterlagen."
+fi)
+
 $(if [[ -n "$KUNDE_CRIT_LIST" ]]; then
 echo "**Kritische Einzelbefunde:**
 
@@ -2321,7 +2599,7 @@ Wir unterstützen Sie bei allen Meldungen — sprechen Sie uns umgehend an.
 
 | Dokument | Zweck |
 |---|---|
-| \`kundenbericht.md\` | Dieses Dokument |
+| \`kundenbericht.md\` | Dieses Dokument |$(if [[ "${MALWARE_TOTAL:-0}" -gt 0 ]]; then printf '\n| `befunde_details.md` | Vollständige Fundstellen-Liste (Pfade relativ zu Ihrem Verzeichnis, Familie, Signatur) |'; fi)
 | \`technik_bericht.md\` | Vollständiger technischer Bericht (alle Prüfpunkte, inkl. Root-Prüfung §12) |
 | \`bsi_meldung.md\` | Vorbereitete BSI-Meldung (BSIG/NIS2) |
 | \`dsgvo_meldung.md\` | Vorbereitete DSGVO-Meldung (Art. 33, eigener Meldeweg an die Datenschutzbehörde) |
@@ -2661,10 +2939,16 @@ emit_findings_json() {
   sshh=$(printf '%s\n'  "${SSH_LOGIN_HOOKS:-}"  | json_arr)
   relc=$(printf '%s\n'  "${RELAY_CONNECTIONS:-}" | json_arr)
   yhit=$(printf '%s\n'  "${YARA_HITS:-}"        | json_arr)
+  # v3.6 System-Integrität & Scanner-Taps
+  local tstomp recsys imuh wptk
+  tstomp=$(printf '%s\n' "${TIMESTOMP:-}"       | json_arr)
+  recsys=$(printf '%s\n' "${RECENT_SYS:-}"      | json_arr)
+  imuh=$(printf '%s\n'   "${IMUNIFY_HITS:-}"    | json_arr)
+  wptk=$(printf '%s\n'   "${WPTK_INFECTED:-}"   | json_arr)
 
   cat > "$FINDINGS_FILE" <<JSON
 {
-  "schema_version": "1.1",
+  "schema_version": "1.2",
   "tool": "wp_plesk_forensik.sh",
   "tool_version": "${TOOL_VERSION}",
   "run_id": "$(json_str "$RUN_LABEL")",
@@ -2718,7 +3002,11 @@ emit_findings_json() {
     "orphan_shells": ${orph:-[]},
     "ssh_login_hooks": ${sshh:-[]},
     "relay_connections": ${relc:-[]},
-    "yara_hits": ${yhit:-[]}
+    "yara_hits": ${yhit:-[]},
+    "timestomp": ${tstomp:-[]},
+    "recent_system_changes": ${recsys:-[]},
+    "imunify_malware": ${imuh:-[]},
+    "wptk_infected": ${wptk:-[]}
   }
 }
 JSON
@@ -2756,6 +3044,12 @@ if [[ -n "$REPORTGEN_DIR" ]] && command -v pandoc >/dev/null 2>&1 && [[ -n "$_wp
     echo "**WordPress-Datenbank:** ${WPDB_VERDICT}"
   } > "$ZUSAMMEN_FILE"
   _dom="${DOMAIN:-$(hostname -f 2>/dev/null || hostname)}"
+  # Grobstatistik der Schadcode-Familien fürs Deckblatt (Seite 1)
+  COVER_STATS=""
+  if [[ "${MALWARE_TOTAL:-0}" -gt 0 ]]; then
+    COVER_STATS=$(for fam in "${!FAM_COUNT[@]}"; do echo "${FAM_COUNT[$fam]}|$fam"; done \
+      | sort -rn | while IFS='|' read -r n f; do printf '%s:%s;' "$f" "$n"; done)
+  fi
   if WEASYPRINT="$_wp" bash "$REPORTGEN_DIR/nt_report_pdf.sh" \
        --teil1 "$KUNDE_FILE" --teil2 "$ZUSAMMEN_FILE" \
        --title "Sicherheitsvorfall\nForensische Untersuchung" \
@@ -2764,6 +3058,7 @@ if [[ -n "$REPORTGEN_DIR" ]] && command -v pandoc >/dev/null 2>&1 && [[ -n "$_wp
        --subtitle "Prüfung ${RUN_LABEL} · $(date +%d.%m.%Y)" \
        --teil2-label "Teil 2 — Zusammenfassung der Aktion" \
        --meta "Einstufung=${AMPEL}" --meta "Prüfungs-ID=${RUN_LABEL}" \
+       ${COVER_STATS:+--cover-stats "$COVER_STATS"} \
        --out "$PDF_FILE" >/dev/null 2>&1; then
     echo "  PDF-Abschlussbericht: $PDF_FILE" >> "$REPORT_FILE"
   else
@@ -2789,6 +3084,7 @@ fi
 (
   cd "$RUN_DIR"
   sha256sum technik_bericht.md kundenbericht.md bsi_meldung.md dsgvo_meldung.md findings.json 2>/dev/null >> "${BELEGE_DIR}/SHA256SUMS" || true
+  [[ -f befunde_details.md ]] && sha256sum befunde_details.md 2>/dev/null >> "${BELEGE_DIR}/SHA256SUMS" || true
   [[ -n "$PDF_FILE" && -f "$PDF_FILE" ]] && sha256sum "$(basename "$PDF_FILE")" zusammenfassung.md 2>/dev/null >> "${BELEGE_DIR}/SHA256SUMS" || true
 )
 
