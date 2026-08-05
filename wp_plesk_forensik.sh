@@ -2693,6 +2693,140 @@ except Exception:
       fi
     fi
 
+    # ── 12.7 Abgleich mit bekannten Schwachstellen ────────────
+    # Zwei getrennte Quellen: der Programmkern gegen die Meldungen des
+    # Joomla-Sicherheitsteams, die Erweiterungen gegen die Liste verwundbarer
+    # Erweiterungen plus eine handgepflegte Tabelle der Fälle mit belegter
+    # Massenausnutzung (die aktuelle Welle ist neuer als der Feed).
+    #
+    # Bewusst NICHT über die NVD: eine Abfrage nach der Joomla-Kennung liefert
+    # dort hunderte Treffer, darunter Komponenten-Lücken von 2006 — als
+    # Prädikat unbrauchbar.
+    h2 "12.7 Abgleich mit bekannten Schwachstellen — $site"
+    if [[ ! -d "$JOOMLA_DATA_DIR" ]]; then
+      info "Kein Schwachstellen-Datenbestand unter ${JOOMLA_DATA_DIR} — Abgleich übersprungen (werkzeuge/joomla-daten-update.sh)"
+    else
+      # Kern
+      _corecve="${JOOMLA_DATA_DIR}/cve/joomla-core.tsv"
+      if [[ -f "$_corecve" && -n "${jver:-}" ]]; then
+        jnum=$(j_vernum "$jver")
+        if [[ "$jnum" -gt 0 ]]; then
+          _hits=""
+          while IFS=$'\t' read -r _lo _hi _cve _sev _typ; do
+            [[ "${_lo:0:1}" == "#" || -z "${_cve:-}" ]] && continue
+            _lonum=$(j_vernum "$_lo"); _hinum=$(j_vernum "$_hi")
+            [[ "$_lonum" -gt 0 && "$jnum" -ge "$_lonum" && "$jnum" -le "$_hinum" ]] || continue
+            _hits+="${_cve}"$'\t'"${_sev:-}"$'\t'"${_typ:-}"$'\n'
+          done < "$_corecve"
+          if [[ -n "$_hits" ]]; then
+            _n=$(printf '%s\n' "$_hits" | grep -c . || true)
+            _hoch=$(printf '%s' "$_hits" | grep -ciE '	High	|	Critical	' || true)
+            if [[ "${_hoch:-0}" -gt 0 ]]; then
+              crit "$site: Joomla ${jver} ist von ${_n} bekannten Schwachstellen betroffen, davon ${_hoch} mit hoher Schwere — Update ist die einzige Abhilfe" web
+              JOOMLA_FLAGS=$((JOOMLA_FLAGS+1))
+            else
+              warn "$site: Joomla ${jver} ist von ${_n} bekannten Schwachstellen betroffen — Update einplanen" web
+            fi
+            code "$(printf '%s' "$_hits" | sort -u | head -15)"
+            evidence "joomla_kern_cve_$(echo "$site" | tr '/.' '__')" "$(printf '%s' "$_hits" | sort -u)"
+            JOOMLA_VULN_EXT+="$(printf 'Kern %s: %s' "$jver" "$(printf '%s' "$_hits" | cut -f1 | sort -u | tr '\n' ' ')")"$'\n'
+          else
+            ok "$site: keine bekannten Kern-Schwachstellen für Joomla ${jver}"
+          fi
+        fi
+      fi
+
+      # Erweiterungen — braucht die Datenbank für den Bestand
+      if [[ -n "${jdb:-}" && -n "${jpfx:-}" ]] && j_sql "$jdb" "$jdu" "$jdp" "$jdh" "SELECT 1;" >/dev/null 2>&1; then
+        _extrows=$(j_sql "$jdb" "$jdu" "$jdp" "$jdh" \
+          "SELECT element, type, enabled, IF(manifest_cache IS NULL OR manifest_cache='','-',manifest_cache) FROM ${jpfx}extensions WHERE type IN ('component','module','plugin','package','template') AND protected=0;" 2>/dev/null || true)
+        # Versionen in einem einzigen Python-Aufruf aus den Manifesten ziehen
+        _extver=$(printf '%s' "$_extrows" | python3 -c '
+import sys, json
+for zeile in sys.stdin.read().splitlines():
+    t = zeile.split("\t")
+    if len(t) < 4:
+        continue
+    el, typ, en, mc = t[0], t[1], t[2], t[3]
+    v = ""
+    if mc not in ("-", "", "{}"):
+        try:
+            v = str((json.loads(mc) or {}).get("version", "") or "")
+        except Exception:
+            v = ""
+    print("\t".join([el, typ, en, v or "-"]))
+' 2>/dev/null || true)
+
+        _vuln=""
+        _krit="${JOOMLA_DATA_DIR}/cve/joomla-ext-kritisch.tsv"
+        _vel="${JOOMLA_DATA_DIR}/vel/vel.tsv"
+        while IFS=$'\t' read -r _el _typ _en _v; do
+          [[ -n "${_el:-}" ]] || continue
+          _vnum=$(j_vernum "$_v")
+
+          # a) Tabelle der Fälle mit belegter Massenausnutzung
+          if [[ -f "$_krit" ]]; then
+            while IFS=$'\t' read -r _kel _kmax _kfix _kcve _kkev _khinweis; do
+              [[ "${_kel:0:1}" == "#" || -z "${_kel:-}" ]] && continue
+              [[ "$_kel" == "$_el" ]] || continue
+              # Version unbekannt -> melden, aber als Prüfhinweis: die
+              # Erweiterung ist da, der Stand nicht feststellbar.
+              if [[ "$_vnum" -eq 0 ]]; then
+                warn "$site: Erweiterung ${_el} ist installiert und war von einer aktiv ausgenutzten Lücke betroffen (${_kcve}); der installierte Stand ist nicht auslesbar — bitte manuell auf mindestens ${_kfix} prüfen" web
+                _vuln+="${_el}"$'\t'"unbekannt"$'\t'"${_kcve}"$'\n'
+              elif [[ "$_vnum" -le "$(j_vernum "$_kmax")" ]]; then
+                if [[ "${_kkev}" == "ja" ]]; then
+                  crit "$site: ${_el} ${_v} — ${_khinweis} Diese Lücke wird nachweislich aktiv ausgenutzt (${_kcve}). Sofort auf ${_kfix} aktualisieren." web
+                else
+                  crit "$site: ${_el} ${_v} — ${_khinweis} (${_kcve}) Auf ${_kfix} aktualisieren." web
+                fi
+                JOOMLA_FLAGS=$((JOOMLA_FLAGS+1))
+                _vuln+="${_el}"$'\t'"${_v}"$'\t'"${_kcve}"$'\n'
+              fi
+            done < "$_krit"
+          fi
+
+          # b) Liste verwundbarer Erweiterungen
+          if [[ -f "$_vel" ]]; then
+            while IFS=$'\t' read -r _vell _veltyp _velf _velname _velpatch _velstatus _velcve _velurl; do
+              [[ "${_vell:0:1}" == "#" || -z "${_vell:-}" ]] && continue
+              [[ "$_vell" == "$_el" ]] || continue
+              if [[ "$_velstatus" == "Live" ]]; then
+                # Kein Patch verfügbar — die einzige Abhilfe ist Entfernen.
+                if [[ "${_en:-0}" == "1" ]]; then
+                  crit "$site: Erweiterung ${_el} steht auf der Liste verwundbarer Joomla-Erweiterungen und es existiert keine korrigierte Fassung — die Erweiterung muss entfernt werden" web
+                  JOOMLA_FLAGS=$((JOOMLA_FLAGS+1))
+                else
+                  warn "$site: Erweiterung ${_el} steht ohne verfügbare Korrektur auf der Schwachstellenliste (derzeit deaktiviert) — entfernen statt liegenlassen" web
+                fi
+                _vuln+="${_el}"$'\t'"${_v}"$'\t'"kein Patch"$'\n'
+              elif [[ -n "$_velpatch" && "$_vnum" -gt 0 ]]; then
+                _pnum=$(j_vernum "$_velpatch")
+                if [[ "$_pnum" -gt 0 && "$_vnum" -lt "$_pnum" ]]; then
+                  warn "$site: Erweiterung ${_el} ${_v} ist älter als die korrigierte Fassung ${_velpatch}${_velcve:+ (${_velcve})} — aktualisieren" web
+                  _vuln+="${_el}"$'\t'"${_v}"$'\t'"< ${_velpatch}"$'\n'
+                fi
+              fi
+            done < "$_vel"
+          fi
+        done <<< "$_extver"
+
+        if [[ -n "$_vuln" ]]; then
+          JOOMLA_VULN_EXT+="$_vuln"
+          evidence "joomla_verwundbare_erweiterungen_$(echo "$site" | tr '/.' '__')" "$_vuln"
+        else
+          ok "$site: keine Erweiterung mit bekannter offener Schwachstelle"
+        fi
+
+        # Webservices vergrößern die Angriffsfläche der 2026er Kern-Lücken
+        # erheblich — als Kontext ausweisen, nicht als eigener Befund.
+        _ws=$(j_sql "$jdb" "$jdu" "$jdp" "$jdh" \
+          "SELECT COUNT(*) FROM ${jpfx}extensions WHERE type='plugin' AND folder='webservices' AND enabled=1;" 2>/dev/null | head -1 || true)
+        [[ "${_ws:-0}" -gt 0 ]] && \
+          info "${_ws} aktive Webservice-Bausteine — sie vergrößern die Angriffsfläche mehrerer Kern-Schwachstellen; abschalten, wenn die Programmschnittstelle nicht gebraucht wird"
+      fi
+    fi
+
     # ── 12.8 Joomla-typische Schaddateien ─────────────────────
     h2 "12.8 Joomla-typische Schaddateien — $site"
     jmal=""
