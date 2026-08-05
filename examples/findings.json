@@ -1,30 +1,51 @@
 {
-  "schema_version": "1.0",
+  "schema_version": "1.4",
   "tool": "wp_plesk_forensik.sh",
-  "tool_version": "3.2",
-  "run_id": "20260708_090000_beispiel-shop.example",
-  "host": "srv-web01.hoster.example",
-  "domain": "beispiel-shop.example",
-  "generated_utc": "2026-07-08T07:00:00Z",
-  "counts": { "crit": 1, "warn": 12, "ok": 230 },
+  "tool_version": "3.8.0",
+  "run_id": "20260805_140000_beispiel-kunde.de",
+  "host": "dev",
+  "domain": "beispiel-kunde.de",
+  "generated_utc": "2026-08-05T15:14:20Z",
+  "counts": { "crit": 6, "warn": 9, "ok": 41 },
   "verdicts": {
-    "root": { "flags": 0, "text": "Keine Hinweise auf Root-Kompromittierung. Vorfall auf Web-User-Ebene begrenzt." },
-    "wpdb": { "flags": 0, "text": "Keine Angreifer-Spuren in den WordPress-Datenbanken." }
+    "root": { "flags": 0, "text": "🟢 Keine Hinweise auf eine Übernahme der Serverebene — der Vorfall ist auf den Webbereich der Domain begrenzt." },
+    "wpdb": { "flags": 0, "text": "⚪ Keine WordPress-Installation im Scan-Pfad gefunden — keine Datenbank-Prüfung durchgeführt." },
+    "joomla": { "flags": 4, "text": "🔴 **Joomla-Installation(en) auffällig** (4 kritische(r) Befund(e)) — Version, Konfiguration und Zugangsdaten prüfen und bereinigen." },
+    "relay": { "flags": 0, "text": "🟢 Kein Hinweis auf einen portlosen Fernzugriffskanal." }
+  },
+  "data_sources": {
+    "joomla_snapshot": "2026-08-01",
+    "joomla_snapshot_age_days": 4,
+    "online_mode": false,
+    "network_fetches": []
   },
   "metrics": {
-    "webshell_count": 17,
-    "webshell_review": 9,
-    "ssh_failed": 28400,
-    "wp_installs": 12,
-    "domains": 38
+    "webshell_count": 3,
+    "webshell_review": 0,
+    "injected_core_files": 0,
+    "doorway_dirs": 0,
+    "core_include_injections": 0,
+    "rogue_wp_admins": 0,
+    "suspicious_plugins": 0,
+    "ssh_failed": 1204,
+    "wp_installs": 0,
+    "joomla_installs": 1,
+    "joomla_core_modified": 0,
+    "joomla_vulnerable_extensions": 0,
+    "joomla_rogue_superusers": 1,
+    "domains": 7
   },
   "actionable": {
-    "webshell_dropper": [
-      "/var/www/vhosts/beispiel-shop.example/httpdocs/img/social-icon.php",
-      "/var/www/vhosts/beispiel-shop.example/httpdocs/css/theme-cache.php",
-      "/var/www/vhosts/beispiel-shop.example/httpdocs/js/lib-loader.php",
-      "/var/www/vhosts/beispiel-shop.example/httpdocs/cgi-bin/mime-helper.php"
-    ],
+    "webshell_dropper": [],
+    "injected_core": [],
+    "core_should_not_exist": [],
+    "doorway_dirs": [],
+    "core_include_injection": [],
+    "disguised_payloads": [],
+    "rogue_wp_admins": [],
+    "suspicious_plugins": [],
+    "mu_plugins": [],
+    "tampered_htaccess": [],
     "php_in_uploads": [],
     "suid": [],
     "tmp_executables": [],
@@ -33,13 +54,35 @@
     "systemd_suspect": [],
     "persistence": [],
     "proc_malicious": [],
-    "wp_configs": [
-      "/var/www/vhosts/beispiel-shop.example/httpdocs/wp-config.php"
-    ],
+    "wp_configs": [],
     "foreign_ssh_keys": [],
-    "ioc_ips": {
-      "attacker": [ "203.0.113.66" ],
-      "ssh_bruteforce": [ "192.0.2.10", "192.0.2.55", "198.51.100.7", "203.0.113.9" ]
-    }
-  }
+    "ioc_ips": { "attacker": ["203.0.113.44","198.51.100.9"], "ssh_bruteforce": [] },
+    "gsocket_hits": [],
+    "masq_binaries": [],
+    "fileless_procs": [],
+    "kthread_fakes": [],
+    "orphan_shells": [],
+    "ssh_login_hooks": [],
+    "relay_connections": [],
+    "yara_hits": [],
+    "timestomp": [],
+    "recent_system_changes": [],
+    "imunify_malware": [],
+    "wptk_infected": [],
+    "joomla_configs": ["/var/www/vhosts/beispiel-kunde.de/httpdocs/configuration.php"],
+    "joomla_versions": ["beispiel-kunde.de/httpdocs\t4.2.7\tjoomla.xml"],
+    "joomla_config_weak": ["Standard-Tabellenpräfix jos_ (macht SQL-Injection-Angriffe zielgenau ohne Vorab-Erkundung)","force_ssl=0 (Anmeldedaten und Sitzungs-Cookies können unverschlüsselt übertragen werden)"],
+    "joomla_log_ioc": ["     14 BOT/0.1 (BOT for JCE)","      2 task=asset.uploadCustomIcon"],
+    "joomla_core_modified": [],
+    "joomla_core_unknown": [],
+    "joomla_system_plugins": ["=== beispiel-kunde.de/httpdocs ===","blpayload — ohne zugehöriges Verzeichnis auf der Platte, auf höchste Ausführungspriorität gesetzt"],
+    "joomla_rogue_superusers": ["777\twebmanager83\twebmanager83@secure.local\t2026-08-02 15:01:50"],
+    "joomla_session_payloads": [],
+    "joomla_mod_custom": [],
+    "joomla_template_params": ["10\tshaper_helix3\t0\t1\tStandard"],
+    "joomla_user_keys": [],
+    "joomla_vulnerable_extensions": [],
+    "joomla_malware": ["/var/www/vhosts/beispiel-kunde.de/httpdocs/images/stories/create.pHp","/var/www/vhosts/beispiel-kunde.de/httpdocs/media/com_sppagebuilder/assets/users.php","/var/www/vhosts/beispiel-kunde.de/httpdocs/tmp/x.xml.php"]
+  },
+  "malware_summary": { "total": 3, "affected_area": "Joomla-Bereich", "finding_summary": "drei Hintertüren", "timeframe": "erst in diesem Sommer", "newest": "2026-07-28", "families": {"Joomla-Webshell": 3} }
 }

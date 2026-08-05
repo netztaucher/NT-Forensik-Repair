@@ -2,6 +2,114 @@
 
 Alle nennenswerten Änderungen an `wp_plesk_forensik.sh`.
 
+## [3.8.0] — 2026-08-05
+
+### Neu — Abschnitt 12: Joomla-Prüfung
+
+Joomla kam im Werkzeug bisher nur als Pfad-Heuristik für das Kunden-Anschreiben
+vor. Eine Joomla-Site bekam faktisch denselben Bericht wie ein statisches
+Verzeichnis — obwohl seit Juni 2026 eine Welle von Massenausnutzungen gegen
+Joomla-Erweiterungen läuft (drei Joomla-Einträge im KEV-Katalog der CISA, zwei
+davon aus 2026) und **Joomla 3 und 4 beide keine Sicherheitspatches mehr
+erhalten**.
+
+- **12.1 Erkennung** über `class JConfig`; der Dateiname `configuration.php`
+  allein ist zu unscharf. Backup-/Altkopien werden übersprungen.
+- **12.2 Version & Wartungsende** aus mehreren unabhängigen Quellen.
+  Widersprechen sie sich, ist das selbst ein Befund.
+- **12.3 Härtung** der `configuration.php`, inkl. Strukturprüfung auf
+  ausführbaren Code (Muster der Rusty-Joomla-Hintertür) und auf
+  Sicherungskopien im Webverzeichnis.
+- **12.4 Ungeschützter API-Zugriff** (CVE-2023-23752) mit Gegenprobe im
+  Zugriffsprotokoll.
+- **12.5 Kern-Integrität**: Prüfsummen-Vergleich des Programmkerns — das
+  Gegenstück zu `wp core verify-checksums`, das es für Joomla bisher nirgends
+  gab. Joomla veröffentlicht keine Prüfsummen je Datei; sie werden deshalb aus
+  den offiziellen Paketen selbst erzeugt. Rund 9800 Dateien in etwa vier
+  Sekunden. Zweistufig: passt der Hash nicht, entscheidet ein zweiter über den
+  auf Leerzeichen normalisierten Inhalt — damit fallen reine Änderungen an
+  Zeilenenden heraus, der klassische Fehlalarm nach FTP-Übertragung.
+- **12.7 Abgleich mit bekannten Schwachstellen**: Kern gegen die Meldungen des
+  Joomla-Sicherheitsteams, Erweiterungen gegen die Liste verwundbarer
+  Erweiterungen und eine handgepflegte Tabelle der Fälle mit belegter
+  Massenausnutzung.
+- **12.6 Datenbank**: aktive System-Plugins (laufen vor jeder Rechteprüfung),
+  Super-User über die tatsächliche Rechtetabelle statt der Standardgruppe,
+  Rechtevergabe an offene Gruppen, Deserialisierungs-Spuren in der
+  Sitzungstabelle, **Injektionen in den Vorlagen-Einstellungen**, verschleierte
+  Modulinhalte, dauerhafte Anmelde-Token.
+- **12.8 Schaddateien**: als Bild getarnte PHP-Dateien, PHP in Medien- und
+  Zwischenspeicher-Ordnern, Filterumgehung über gemischte Schreibweise,
+  Code vor der Zugriffssperre, verbliebenes Installationsverzeichnis,
+  ungeschützter jDownloads-Uploader, `auto_prepend_file`, Sicherungsarchive.
+- **12.9 Protokolle**: bekannte Joomla-Angriffswege. Versuch und Erfolg werden
+  getrennt — kritisch nur zusammen mit einem Dateifund.
+- **12.10 Joomla-Verdikt**, angeschlossen an Kundenbericht, BSI-Meldung,
+  `findings.json` und PDF-Zusammenfassung.
+
+Die Vorlagen-Prüfung ist der Grund, warum ein reiner Dateiscan bei der
+Helix3-Kampagne versagt: die Nutzlast liegt ausschließlich in der Datenbank
+und überlebt jede Wiederherstellung der Dateien.
+
+### Neu — Signaturen & Optionen
+- `signaturen/joomla-malware.yar` als Eigenimplementierung; kein Regelwerk aus
+  GPL-Quellen übernommen (das Repository steht unter MIT).
+- `signaturen/alle.yar` bindet die Regelsätze per `include` ein. Rückfall auf
+  die Einzeldatei hält Installationen mit altem Signaturstand lauffähig.
+- `--online` erlaubt dem Lauf, Vergleichsdaten nachzuladen. Ohne das Flag
+  arbeitet er rein offline. Jeder Abruf wird mit URL, Antwortcode und
+  Prüfsumme im Bericht, als Beleg und in `findings.json` ausgewiesen.
+
+### Neu — Datenbestand und Pflegewerkzeug
+`werkzeuge/joomla-daten-update.sh` erzeugt den Bestand unter `daten/joomla/`
+(Kern-Prüfsummen, Schwachstellenlisten). Läuft auf der Entwicklungsmaschine
+oder in der CI, **nie** auf einem Kundenserver, und wird deshalb nicht mit
+ausgeliefert. Der Bestand umfasst elf Joomla-Fassungen in 3 MB: die
+Prüfsummen liegen je Zweig statt je Fassung, weil gemessen 93 % der Dateien
+über die Patch-Releases eines Zweigs identisch sind.
+
+### Behoben — `nf_fetch` folgte keiner Weiterleitung
+Der Netzabruf verwendete `curl` ohne `-L`. Release-Downloads antworten mit
+302 auf einen Auslieferungsdienst; ohne Folgen der Weiterleitung landete nur
+die 302-Antwort in der Zieldatei und der Abruf scheiterte stumm. Zudem war
+das Zeitlimit von 25 Sekunden für ein 30-MB-Paket zu knapp.
+
+### Behoben — `findings.json` wurde bei echten Funden unlesbar
+`json_arr`/`json_str` maskierten keine Steuerzeichen. Tabulatoren stecken in
+jeder Zeile, die aus `mysql -N` stammt — unter anderem in `ROGUE_ADMINS`.
+Die Datei wurde damit ausgerechnet dann ungültig, **wenn ein echter Fund
+vorlag**, und der Anschreiben-Generator konnte sie nicht mehr lesen. Unbemerkt
+geblieben, weil die Beispieldatei nur leere Listen enthält.
+
+### Behoben — Hilfsdateien wurden nie aufgefrischt
+Die Selbst-Installation kopierte `signaturen/` und `reportgen/` nur, wenn das
+Ziel **noch nicht existierte**. Ein einmal installierter Host blieb dauerhaft
+auf dem Erststand und hätte neue Signaturen nie erhalten.
+
+### Behoben — Abschnittsnummern
+Die Unterabschnitte der Root-Prüfung hießen 11.1–11.6 innerhalb von
+Abschnitt 12. Mit dem neuen Joomla-Abschnitt rücken Root-Prüfung auf 13 und
+Zusammenfassung auf 14; alle Querverweise wurden mitgezogen.
+
+### Geändert
+- `MAIL_AREA`: die frühere Joomla-Regex traf schon bei einem blanken
+  `/administrator` und damit auch bei Nicht-Joomla. Jetzt ist der volle
+  Joomla-Pfadkontext nötig. WordPress steht vor Shop (WooCommerce liegt immer
+  unter `wp-content`), und Joomla-Shops werden über die verbreiteten
+  Shop-Komponenten erkannt statt Joomla pauschal als Shop zu behandeln.
+- `findings.json`: **Schema 1.4** — neu `verdicts.joomla`, ein Block
+  `data_sources` (Stand des Datenbestands, Online-Modus, Netzabrufe) und
+  `joomla_*`-Felder unter `metrics` und `actionable`. Rückwärtskompatibel,
+  `mailgen.py` liest weiterhin unverändert.
+
+### Geprüft
+Gegen echte Joomla-Pakete (3.10.12, 4.4.14, 5.4.7) und ein unverändertes
+Joomla-Schema auf MySQL 8.0: eine saubere Installation bleibt vollständig
+still, alle Angriffsmuster werden erkannt. Zwei dabei gefundene Fehler in der
+neuen Prüfung wurden vor der Auslieferung behoben — ein Feldversatz durch
+leere Datenbankspalten und ein Fehlalarm, der alle Kern-System-Plugins einer
+Neuinstallation als Hintertür meldete.
+
 ## [3.7.1] — 2026-08-05
 
 ### Behoben — Scope-Trennung Kundenbericht
