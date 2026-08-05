@@ -2,6 +2,42 @@
 
 Alle nennenswerten Änderungen an `wp_plesk_forensik.sh`.
 
+## [3.7.1] — 2026-08-05
+
+### Behoben — Scope-Trennung Kundenbericht
+- Der **Kundenbericht** zeigte bisher ALLE Befunde inkl. Server-/Root-/
+  Infrastruktur-Ebene (Cronjobs, Rechteausweitung, Root-Verdikt, andere
+  Benutzer, Ports, systemd, `/root/.ssh` …). Das gehört dort nicht hin und
+  leakte interne Serverdetails an den Kunden.
+- `crit`/`warn` kennen jetzt einen **`web`-Scope** (`crit "…" web`): nur so
+  markierte **Website-Befunde** (Webshells, WordPress-DB/Core/Plugins, Doorway,
+  Imunify-/WP-Toolkit-Treffer, Webspace-Auffälligkeiten, Traffic der Domain)
+  landen im Kundenbericht. Server-/Root-Befunde bleiben Technik-/BSI-/
+  Betreiberbericht vorbehalten.
+- SSH-Brute-Force-Zeile aus der Kunden-Kurzfassung entfernt (Server-Ebene).
+
+### Behoben — Root-Fehlalarm durch Self-Kontamination
+- §11.4 Privilege-Escalation ankert jetzt auf die **Caller-Position**
+  (`sudo: webNN :` = Web-User ruft sudo auf). Die alte Regex traf auch das
+  TARGET-Feld (`USER=webNN`) und meldete damit **root→Web-User**-Aufrufe als
+  Eskalation — u.a. NT-Forensiks eigenes `sudo -u webNN wp core verify-checksums`
+  (§11) und jeden Plesk-internen root→User-sudo. Folge war ein
+  „Root-Kompromittierung möglich" auf **sauberen** Servern. Jetzt nur noch echte
+  Web-User→root-Eskalation.
+
+### Behoben — Imunify-Tap überzeichnet
+- §8.15 zählt einen Imunify-Treffer nur, wenn die Datei **noch auf der Platte
+  existiert**. Imunifys DB behält Status „found" auch für längst gelöschte
+  Dateien → sonst Malware-Fehlalarm für nicht mehr vorhandene Funde.
+- Quarantäne-/Backup-Pfade (`schadcode/`, `quarantine`, `backup`, `*_bak`,
+  `altkopie`, `sicherung`) werden ausgeschlossen — die sind bereits eingedämmt,
+  kein Live-Befund.
+
+### Behoben — Kunden-Ampel nach Website-Scope
+- Die Einstufung des Kundenberichts (🔴/🟡/🟢) richtet sich jetzt nach den
+  **Website-Befunden** (+ echte Malware), nicht mehr nach dem Gesamt-`N_CRIT`.
+  Server-/Root-Befunde allein machen den Kundenbericht nicht mehr „KRITISCH".
+
 ## [3.7.0] — 2026-08-05
 
 ### Neu — Mail-Kontext in findings.json
