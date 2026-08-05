@@ -22,6 +22,17 @@ erhalten**.
   Sicherungskopien im Webverzeichnis.
 - **12.4 Ungeschützter API-Zugriff** (CVE-2023-23752) mit Gegenprobe im
   Zugriffsprotokoll.
+- **12.5 Kern-Integrität**: Prüfsummen-Vergleich des Programmkerns — das
+  Gegenstück zu `wp core verify-checksums`, das es für Joomla bisher nirgends
+  gab. Joomla veröffentlicht keine Prüfsummen je Datei; sie werden deshalb aus
+  den offiziellen Paketen selbst erzeugt. Rund 9800 Dateien in etwa vier
+  Sekunden. Zweistufig: passt der Hash nicht, entscheidet ein zweiter über den
+  auf Leerzeichen normalisierten Inhalt — damit fallen reine Änderungen an
+  Zeilenenden heraus, der klassische Fehlalarm nach FTP-Übertragung.
+- **12.7 Abgleich mit bekannten Schwachstellen**: Kern gegen die Meldungen des
+  Joomla-Sicherheitsteams, Erweiterungen gegen die Liste verwundbarer
+  Erweiterungen und eine handgepflegte Tabelle der Fälle mit belegter
+  Massenausnutzung.
 - **12.6 Datenbank**: aktive System-Plugins (laufen vor jeder Rechteprüfung),
   Super-User über die tatsächliche Rechtetabelle statt der Standardgruppe,
   Rechtevergabe an offene Gruppen, Deserialisierungs-Spuren in der
@@ -48,6 +59,20 @@ und überlebt jede Wiederherstellung der Dateien.
 - `--online` erlaubt dem Lauf, Vergleichsdaten nachzuladen. Ohne das Flag
   arbeitet er rein offline. Jeder Abruf wird mit URL, Antwortcode und
   Prüfsumme im Bericht, als Beleg und in `findings.json` ausgewiesen.
+
+### Neu — Datenbestand und Pflegewerkzeug
+`werkzeuge/joomla-daten-update.sh` erzeugt den Bestand unter `daten/joomla/`
+(Kern-Prüfsummen, Schwachstellenlisten). Läuft auf der Entwicklungsmaschine
+oder in der CI, **nie** auf einem Kundenserver, und wird deshalb nicht mit
+ausgeliefert. Der Bestand umfasst elf Joomla-Fassungen in 3 MB: die
+Prüfsummen liegen je Zweig statt je Fassung, weil gemessen 93 % der Dateien
+über die Patch-Releases eines Zweigs identisch sind.
+
+### Behoben — `nf_fetch` folgte keiner Weiterleitung
+Der Netzabruf verwendete `curl` ohne `-L`. Release-Downloads antworten mit
+302 auf einen Auslieferungsdienst; ohne Folgen der Weiterleitung landete nur
+die 302-Antwort in der Zieldatei und der Abruf scheiterte stumm. Zudem war
+das Zeitlimit von 25 Sekunden für ein 30-MB-Paket zu knapp.
 
 ### Behoben — `findings.json` wurde bei echten Funden unlesbar
 `json_arr`/`json_str` maskierten keine Steuerzeichen. Tabulatoren stecken in

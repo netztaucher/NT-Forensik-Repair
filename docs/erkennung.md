@@ -135,7 +135,23 @@ Zwei Fallstricke, beide gegen echte Pakete geprüft: Das `version="3.6"`-**Attri
 
 **Widersprechen sich die Quellen, ist das selbst ein Befund:** unterschiedliche Haupt-/Nebenversion = 🔴 (Manipulation oder abgebrochene Migration), nur unterschiedlicher Patchstand = ⚠️ (unvollständiges Update oder Restore).
 
-### 7.3 Datenbank (§12.6)
+### 7.3 Kern-Integrität (§12.5)
+
+Joomla veröffentlicht keine Prüfsummen je Datei — es gibt kein Gegenstück zu `wp core verify-checksums`. NT-Forensik erzeugt sie deshalb selbst aus den offiziellen Paketen (`werkzeuge/joomla-daten-update.sh --coresums`).
+
+**Zweistufiger Vergleich.** Passt der Hash nicht, wird ein zweiter über den auf einfache Leerzeichen normalisierten Inhalt gerechnet. Stimmt der, war es nur eine Änderung an Zeilenenden, Tabs oder angehängten Leerzeichen — typisch nach einer Übertragung per FTP oder einer Bearbeitung unter Windows. Solche Fälle werden gezählt und ausgewiesen, aber **nicht gewertet**. Der zweite Hash wird nur bei Abweichung berechnet und ist deshalb praktisch kostenlos: über 99 % passen schon roh.
+
+**Ein Manifest je Zweig, nicht je Fassung.** Gemessen sind 93 % der Dateien über die Patch-Releases eines Zweigs identisch. Drei Fassungen kombiniert kosten 860 KB statt 2408 KB einzeln; der gesamte Bestand über elf Fassungen liegt bei 3 MB.
+
+**Kernfremde Dateien** werden nur in Verzeichnissen gemeldet, die ausschließlich Joomla-Programmcode enthalten dürfen: `includes/`, `administrator/includes/`, `libraries/src/`, `libraries/vendor/`, `api/`, `cli/`, `layouts/`. In `components/`, `modules/`, `plugins/`, `templates/`, `language/` und `media/` liegen legitim Dritt-Erweiterungen — dort wäre jede Meldung Rauschen.
+
+Nie verglichen wird, was der Betreiber selbst pflegt oder was zur Laufzeit entsteht: `configuration.php`, `.htaccess`, `web.config`, `.user.ini`, `robots.txt`, `cache/`, `tmp/`, `logs/`, `images/`.
+
+Fehlt die Fassung im mitgelieferten Bestand, meldet der Lauf das offen und prüft **nicht** stillschweigend gegen etwas Ähnliches. Mit `--online` lädt er das offizielle Paket der tatsächlich gefundenen Fassung nach (rund 30 MB) und protokolliert den Abruf.
+
+Bewusste Abweichungen — etwa ein selbst eingespielter Notfall-Patch — trägt der Betreiber in `coresums/ausnahmen.tsv` ein, **zusammen mit der erwarteten Prüfsumme**. Ohne den Hash wäre der Eintrag ein Blankoscheck: wer die Datei später austauscht, bliebe unentdeckt.
+
+### 7.4 Datenbank (§12.6)
 
 | Prüfung | 🔴-Kriterium |
 |---|---|
@@ -150,13 +166,13 @@ Zwei Fallstricke, beide gegen echte Pakete geprüft: Das `version="3.6"`-**Attri
 
 Super-User werden **nicht** über die Standardgruppe 8 bestimmt, sondern über die Rechtetabelle des Wurzel-Assets samt Untergruppen — Joomla erlaubt weitere Gruppen mit Verwaltungsrecht, und Kindgruppen erben es.
 
-### 7.4 Schaddateien (§12.8)
+### 7.5 Schaddateien (§12.8)
 
 Die tragfähigste Regel: **Bild-Kennung in den ersten vier Bytes einer Datei, die der Webserver als PHP ausführt.** Genau so sehen die über die JCE- und Medien-Uploadlücken abgelegten Hintertüren aus — die Bild-Kennung bringt sie an der Upload-Prüfung vorbei. Einen legitimen Fall dafür gibt es nicht.
 
 Dazu: PHP in Medien-/Zwischenspeicher-Ordnern (Guard-gefiltert), gemischte Schreibweise der Endung (`.pHp`) als reine Filterumgehung, ausführbarer Code **vor** der `_JEXEC`-Zugriffssperre, verbliebenes `installation/`-Verzeichnis, `auto_prepend_file`, Sicherungsarchive im Webverzeichnis.
 
-### 7.5 Protokolle (§12.9) — Versuch ist nicht Erfolg
+### 7.6 Protokolle (§12.9) — Versuch ist nicht Erfolg
 
 Ein Protokolleintrag belegt, dass jemand einen bekannten Angriffsweg *ausprobiert* hat. Das ist auf einem öffentlich erreichbaren Server Alltag. Der Befund ist deshalb bewusst nur ⚠️ und zählt **nicht** ins Verdikt — kritisch wird er erst zusammen mit einem Dateifund an derselben Installation. Dieselbe Trennung gilt beim Konfigurations-Endpunkt: nur ein Antwortcode 200 belegt einen Abfluss, 401 ist legitime Überwachung.
 

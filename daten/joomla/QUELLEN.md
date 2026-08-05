@@ -15,13 +15,15 @@ sind nicht urheberrechtlich geschützt, formulierter Fließtext schon.
 | `vel/VERIFY` | Prüfsumme desselben Feeds | wie oben | reine Prüfsumme | 2026-08-05 |
 | `cve/joomla-core.tsv` | Sicherheitszentrum des Joomla Security Strike Team (`developer.joomla.org`) | keine ausdrückliche Angabe | Versionsbereiche, CVE-Nummer, Schwere, Angriffsart. Beschreibungstexte werden **nicht** übernommen. | 2026-08-05 |
 | `cve/joomla-ext-kritisch.tsv` | Herstellerwarnungen, Katalog bekannt ausgenutzter Schwachstellen der CISA, öffentliche Vorfallsberichte | Tatsachen aus mehreren Quellen | Elementname, Versionsbereich, CVE, Fassung mit Behebung. Der Hinweistext ist **eigenformuliert**. | Handpflege |
+| `coresums/*.tsv.gz` | **selbst erzeugt** aus den offiziellen Joomla-Paketen (`github.com/joomla/joomla-cms/releases`) | Joomla selbst steht unter GPL-2.0-or-later | Nur Prüfsummen — das sind Tatsachen. Das Paket wird weder verteilt noch abgeleitet; es wird zur Erzeugung heruntergeladen und danach verworfen. | 2026-08-05 |
+| `coresums/ausnahmen.tsv` | eigene Freigabeliste | — | vollständig selbst erstellt | Handpflege |
 | `../../signaturen/joomla-malware.yar` | Eigenimplementierung nach öffentlich dokumentierten Angriffsmustern | — | **kein** Regelwerk aus fremden Quellen übernommen, weder Wortlaut noch Struktur | Handpflege |
 
 ## Bewusst nicht verwendet
 
 | Quelle | Grund |
 |---|---|
-| Fertige Prüfsummen-Sammlungen Dritter | Für die Daten selbst ist keine Lizenz angegeben. Prüfsummen werden stattdessen aus den offiziellen Joomla-Paketen selbst erzeugt — eindeutig und von jedem nachrechenbar. |
+| Fertige Prüfsummen-Sammlungen Dritter | Für die Daten selbst ist keine Lizenz angegeben (nur für das erzeugende Werkzeug, und das steht unter AGPL-3.0). Prüfsummen werden stattdessen aus den offiziellen Joomla-Paketen selbst erzeugt — lizenzrechtlich eindeutig und von jedem nachrechenbar. |
 | Wortlisten aus GPL-lizenzierten Scannern (joomscan, JoomlaScan, CMSmap) | GPL ist ansteckend; das Repository steht unter MIT. Benötigte Tatsachen wurden in ein eigenes Schema neu erhoben. |
 | JAMSS (Joomla-Anti-Malware-Scan-Script) | GPL-3.0. Nur als Ideengeber gelesen — kein Ausdruck im Wortlaut übernommen. |
 | droopescan-Versionsdaten | AGPL-3.0 (netzwerkwirksames Copyleft), und ohne Abdeckung für Joomla 4/5/6. |

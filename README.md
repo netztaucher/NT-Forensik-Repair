@@ -66,7 +66,7 @@ Der Lauf gliedert sich in 14 Abschnitte:
 | 9 | Sicherheitsdienste | Fail2ban, ModSecurity, Firewall |
 | 10 | Andere Domains | Server-weite Betroffenheit |
 | 11 | **WordPress-Datenbank** | Fremde Admins, manipulierte Optionen, aktive Plugins, **WP-Toolkit-Infektionsstatus** |
-| 12 | **Joomla-Prüfung** | Version & Wartungsende, Härtung der `configuration.php`, ungeschützter API-Zugriff, **Datenbank-Persistenz (System-Plugins, Super-User, Vorlagen-Injektionen)**, Joomla-typische Schaddateien, Angriffsspuren in den Protokollen |
+| 12 | **Joomla-Prüfung** | Version & Wartungsende, Härtung der `configuration.php`, ungeschützter API-Zugriff, **Kern-Integrität (Prüfsummen)**, **Datenbank-Persistenz (System-Plugins, Super-User, Vorlagen-Injektionen)**, Abgleich mit bekannten Schwachstellen, Joomla-typische Schaddateien, Angriffsspuren in den Protokollen |
 | 13 | **Root-/Eskalations-Prüfung** | Root-Logins, Fremd-Keys, Privilege-Escalation → Root-Verdikt |
 | 14 | Zusammenfassung | Befund-Statistik, Maßnahmenplan |
 
@@ -83,6 +83,7 @@ Der Lauf gliedert sich in 14 Abschnitte:
 - **Autoritative Scanner-Taps**: liest read-only die Ergebnisse der ohnehin vorhandenen Plesk-Werkzeuge — **Imunify-Malware-DB** und **WP-Toolkit-Infektionsstatus** — statt eigene Signaturen nachzubauen (löst keinen Scan aus).
 - **Befund-Einordnung**: ordnet Funde grob einer Familie samt Geschäftsmodell zu, listet Fundstellen mit Pfaden relativ zum Kundenverzeichnis in `befunde_details.md` und zeigt eine Grobstatistik auf dem PDF-Deckblatt.
 - **Joomla-Datenbank-Persistenz**: prüft die Stellen, an denen sich ein Angreifer in Joomla einnistet, ohne eine einzige Datei anzufassen — aktive System-Plugins (laufen bei jedem Seitenaufruf, noch vor jeder Rechteprüfung), Super-User über die tatsächliche Rechtetabelle statt der Standardgruppe, und **Injektionen in den Vorlagen-Einstellungen**. Letztere sind der Grund, warum ein reiner Dateiscan bei der Helix3-Kampagne (2026) eine verunstaltete Seite als sauber meldet: die Nutzlast liegt ausschließlich in der Datenbank und überlebt jede Wiederherstellung der Dateien.
+- **Kern-Integrität für Joomla**: Joomla veröffentlicht — anders als WordPress — keine Prüfsummen je Datei. NT-Forensik erzeugt sie deshalb selbst aus den offiziellen Paketen und vergleicht rund 9800 Dateien in etwa vier Sekunden. Der Vergleich läuft zweistufig: passt der Hash nicht, wird ein zweiter über den auf Leerzeichen normalisierten Inhalt gerechnet. Damit fallen Änderungen an Zeilenenden oder Leerzeichen heraus — der klassische Fehlalarm nach einer Übertragung per FTP oder einer Bearbeitung unter Windows.
 - **Als Bild getarnte Hintertüren**: eine Datei, die der Webserver als PHP ausführt, aber mit einer Bild-Kennung beginnt — das Muster der JCE- und Medien-Uploadlücken. Dafür gibt es keinen legitimen Fall, die Regel ist praktisch fehlalarmfrei.
 - **Wartungsende als Befund**: Joomla 3 und 4 erhalten beide keine Sicherheitspatches mehr (seit 08/2023 bzw. 10/2025). Advisories aus 2026 nennen weiterhin 3.x als betroffen, ohne dass ein Fix existiert — solche Installationen sind nicht „veraltet", sondern dauerhaft angreifbar.
 
