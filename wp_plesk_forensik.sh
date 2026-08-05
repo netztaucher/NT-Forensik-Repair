@@ -2183,6 +2183,18 @@ j_truthy() {
   esac
 }
 
+# SQL gegen eine Joomla-Datenbank. Spiegelt wp_sql (Zeile ~1866): Stufe 1
+# Plesk-Admin-Zugang, Stufe 2 die Zugangsdaten aus configuration.php. Eine
+# dritte Stufe gibt es nicht — Joomla hat kein Gegenstück zu wp-cli, das
+# freies SQL ausführen könnte (cli/joomla.php kann das nicht). Nur SELECT.
+j_sql() {
+  local db="$1" user="$2" pass="$3" host="$4" query="$5"
+  if [[ -n "${PLESK_MYSQL_PW:-}" ]]; then
+    MYSQL_PWD="$PLESK_MYSQL_PW" mysql -u admin -N -e "USE \`$db\`; $query" 2>/dev/null && return 0
+  fi
+  MYSQL_PWD="$pass" mysql -h "${host%%:*}" -u "$user" -N -e "$query" "$db" 2>/dev/null
+}
+
 # Version "a.b.c" in eine vergleichbare Zahl wandeln (aabbbccc).
 # Nicht rein numerische Versionen ergeben 0 → Aufrufer überspringt sie,
 # statt zu raten (siehe FP-Disziplin in docs/erkennung.md).
@@ -2241,8 +2253,16 @@ else
     site=$(echo "$cfg" | sed "s|${VHOSTS_DIR}/||;s|/configuration.php||")
     CURRENT_J_PATH=$(dirname "$cfg")
     jpfx=$(jconf_get "$cfg" dbprefix); jpfx=${jpfx:-jos_}
+    # Das Präfix stammt aus einer Datei des GEPRÜFTEN Systems und wird unten in
+    # SQL-Abfragen eingesetzt. Auf einer kompromittierten Installation kann es
+    # beliebiger Text sein — deshalb hart auf Tabellennamen-Zeichen begrenzen,
+    # sonst prüft das Forensik-Werkzeug selbst untergeschobenes SQL aus.
+    if [[ ! "$jpfx" =~ ^[A-Za-z0-9_]+$ ]]; then
+      warn "$site: Ungültiges Tabellenpräfix in der Konfiguration (\"${jpfx}\") — Datenbank-Prüfungen werden übersprungen" web
+      jpfx=""
+    fi
 
-    echo -e "  ${CYN}Joomla-Prüfung:${NC} $site (prefix=$jpfx)"
+    echo -e "  ${CYN}Joomla-Prüfung:${NC} $site (prefix=${jpfx:-ungültig})"
     echo -e "\n#### $site  (Prefix: \`$jpfx\`)\n" >> "$REPORT_FILE"
 
     # ── 12.2 Version aus mehreren unabhängigen Quellen ────────
@@ -2437,6 +2457,235 @@ else
         # CVE-2026-23899 — Nachfolger derselben Schwachstellenklasse, benötigt
         # aber einen gültigen API-Token, daher eine Stufe niedriger.
         warn "$site: Joomla ${jver} ist von einer Schwachstelle im Konfigurations-Endpunkt betroffen (CVE-2026-23899) — Update auf 5.4.4 bzw. 6.0.4 oder neuer" web
+      fi
+    fi
+
+    # ── 12.6 Datenbank-Prüfung ────────────────────────────────
+    # Läuft NACH den Dateiprüfungen: scheitert die DB-Verbindung, sind die
+    # Befunde oben trotzdem erhoben. (Lehre aus §11, Zeile ~1786: ein
+    # fehlgeschlagener mysql-Connect ließ dort vier Angreifer-Admins durch.)
+    jdb=$(jconf_get "$cfg" db)
+    jdu=$(jconf_get "$cfg" user)
+    jdp=$(jconf_get "$cfg" password)
+    jdh=$(jconf_get "$cfg" host); jdh=${jdh:-localhost}
+
+    if [[ -z "$jdb" || -z "$jpfx" ]]; then
+      info "$site: kein Datenbankname bzw. kein gültiges Präfix — Datenbank-Prüfung übersprungen"
+    elif ! j_sql "$jdb" "$jdu" "$jdp" "$jdh" "SELECT 1;" >/dev/null 2>&1; then
+      warn "$site: keine Datenbank-Verbindung — Datenbank-Prüfungen übersprungen (die Dateiprüfungen oben sind erfolgt)"
+    else
+      h2 "12.6 Datenbank-Prüfung — $site"
+
+      # (a) System-Plugins. PluginHelper::importPlugin('system') läuft im
+      # Bootstrap VOR dem Routing und VOR jeder Rechteprüfung — eine aktive
+      # Zeile lädt plugins/system/<element>/ bei JEDEM Aufruf der Seite.
+      # Deshalb die bevorzugte Stelle für dauerhaften Zugriff.
+      #
+      # ABER: 20–40 aktive System-Plugins sind auf einer gepflegten Seite
+      # normal (Akeeba, RSFirewall, Regular Labs …). Die reine Bedingung ist
+      # KEIN Befund. Kritisch nur bei einem von drei harten Indikatoren.
+      # ACHTUNG Leerfelder: die Auswertung unten liest die Zeilen mit
+      # IFS=$'\t'. Bash fasst aufeinanderfolgende Tabulatoren zu EINEM Trenner
+      # zusammen — ein leeres Feld mitten in der Zeile würde alle folgenden
+      # Spalten verschieben. Deshalb liefert jede Abfrage für potenziell leere
+      # Spalten das Füllzeichen '-' statt eines Leerstrings.
+      jsysrows=$(j_sql "$jdb" "$jdu" "$jdp" "$jdh" \
+        "SELECT extension_id, element, enabled, protected, locked, ordering, IF(manifest_cache IS NULL OR manifest_cache='','-',manifest_cache) FROM ${jpfx}extensions WHERE type='plugin' AND folder='system' AND enabled=1;" 2>/dev/null || true)
+      jsys_n=$(printf '%s\n' "$jsysrows" | grep -c . || true)
+      if [[ "$jsys_n" -gt 0 ]]; then
+        info "$jsys_n aktive System-Plugins (werden bei jedem Seitenaufruf geladen)"
+
+        # Ein leeres manifest_cache gilt als Hinweis auf eine per SQL eingefügte
+        # Zeile — aber NUR relativ zur selben Installation. Joomlas base.sql
+        # liefert die Kern-Erweiterungen selbst mit leerem manifest_cache aus;
+        # auf einer frisch aufgesetzten Seite ist das Feld also flächendeckend
+        # leer und beweist nichts. Erst wenn die Mehrheit der Plugins ein
+        # gefülltes Manifest hat, ist eine leere Zeile eine echte Abweichung.
+        # (Ohne diese Selbstkalibrierung meldet die Prüfung jedes Kern-Plugin
+        # einer Neuinstallation als Hintertür.)
+        jmc_ok=0
+        while IFS=$'\t' read -r _eid _el _en _prot _lock _ord _mc; do
+          [[ -n "${_el:-}" ]] || continue
+          [[ "$_mc" != "-" && "$_mc" != "{}" ]] && jmc_ok=$((jmc_ok+1))
+        done <<< "$jsysrows"
+        jmc_aussagekraeftig=0
+        [[ $(( jmc_ok * 100 / jsys_n )) -ge 60 ]] && jmc_aussagekraeftig=1
+
+        jsys_bad=""
+        while IFS=$'\t' read -r _eid _el _en _prot _lock _ord _mc; do
+          [[ -n "${_el:-}" ]] || continue
+          _reason=""
+          # 1) Verzeichnis fehlt -> die Zeile verweist ins Leere. Zuerst
+          #    prüfen: existiert das Verzeichnis, ist es ein normales Plugin,
+          #    egal was im manifest_cache steht.
+          if [[ ! -d "${CURRENT_J_PATH}/plugins/system/${_el}" ]]; then
+            _reason="ohne zugehöriges Verzeichnis auf der Platte"
+          # 2) Verzeichnis vorhanden, enthält aber Schadcode-Muster.
+          #    PATTERN_REGEX aus 7.3 wiederverwenden — eine Pflegestelle.
+          elif [[ -n "${PATTERN_REGEX:-}" ]] && grep -rlPi "${PATTERN_REGEX}" "${CURRENT_J_PATH}/plugins/system/${_el}" --include="*.php" >/dev/null 2>&1; then
+            _reason="mit Schadcode-Muster im Plugin-Verzeichnis"
+          # 3) Manifest fehlt, obwohl alle anderen eines haben (s. o.)
+          elif [[ "$jmc_aussagekraeftig" -eq 1 ]] \
+            && { [[ "$_mc" == "-" || "$_mc" == "{}" ]] || ! printf '%s' "$_mc" | python3 -c 'import sys,json; json.loads(sys.stdin.read())' >/dev/null 2>&1; }; then
+            _reason="ohne Installationspaket, während alle übrigen Plugins eines haben (per Datenbank eingefügt)"
+          fi
+          # Zusatzangaben, nur ergänzend zu einem der Gründe oben. Für sich
+          # genommen ist beides unauffällig: Kern-Erweiterungen sind regulär
+          # als geschützt markiert.
+          if [[ -n "$_reason" ]]; then
+            [[ "${_prot:-0}" == "1" || "${_lock:-0}" == "1" ]] && _reason+=", zusätzlich gegen Löschen/Deaktivieren gesperrt"
+            [[ "${_ord:-0}" =~ ^-[0-9]+$ && "${_ord#-}" -gt 100 ]] && _reason+=", auf höchste Ausführungspriorität gesetzt"
+            jsys_bad+="${_el} — ${_reason}"$'\n'
+          fi
+        done <<< "$jsysrows"
+        if [[ -n "$jsys_bad" ]]; then
+          while IFS= read -r _b; do
+            [[ -n "$_b" ]] && crit "$site: System-Plugin ${_b} — läuft bei jedem Seitenaufruf mit" web
+          done <<< "$jsys_bad"
+          JOOMLA_FLAGS=$((JOOMLA_FLAGS+1))
+          JOOMLA_SYS_PLUGINS+="=== $site ==="$'\n'"$jsys_bad"
+          evidence "joomla_systemplugins_$(echo "$site" | tr '/.' '__')" "$jsysrows"
+        else
+          ok "$site: aktive System-Plugins alle mit Installationspaket und Verzeichnis"
+        fi
+      fi
+
+      # (b) Super-User. Gruppe 8 NICHT hartkodieren: Joomla erlaubt weitere
+      # Gruppen mit core.admin, und Untergruppen erben das Recht. Autoritativ
+      # ist die Rechtetabelle des Wurzel-Assets.
+      jrules=$(j_sql "$jdb" "$jdu" "$jdp" "$jdh" "SELECT rules FROM ${jpfx}assets WHERE id=1;" 2>/dev/null | head -1 || true)
+      jadming=$(printf '%s' "$jrules" | python3 -c '
+import sys, json
+try:
+    r = json.loads(sys.stdin.read() or "{}")
+    print(",".join(str(g) for g, v in (r.get("core.admin") or {}).items() if str(v) in ("1", "True", "true")))
+except Exception:
+    pass' 2>/dev/null || true)
+      if [[ -z "$jadming" ]]; then
+        info "Rechtetabelle des Wurzel-Assets nicht lesbar — Super-User-Prüfung auf die Standardgruppe 8 zurückgesetzt"
+        jadming="8"
+      fi
+      # Untergruppen über den verschachtelten Baum (lft/rgt) mitnehmen
+      jallg=$(j_sql "$jdb" "$jdu" "$jdp" "$jdh" \
+        "SELECT DISTINCT g2.id FROM ${jpfx}usergroups g1 JOIN ${jpfx}usergroups g2 ON g2.lft >= g1.lft AND g2.rgt <= g1.rgt WHERE g1.id IN (${jadming});" 2>/dev/null | tr '\n' ',' | sed 's/,$//' || true)
+      jallg="${jallg:-$jadming}"
+      info "Super-User-Gruppen (inkl. Untergruppen): ${jallg}"
+
+      jsuper=$(j_sql "$jdb" "$jdu" "$jdp" "$jdh" \
+        "SELECT u.id, u.username, IF(u.email='','-',u.email), u.registerDate, IFNULL(u.lastvisitDate,'nie'), u.block, IF(u.activation IS NULL OR u.activation='','-',u.activation), IF(u.password REGEXP '^[0-9a-f]{32}\$' OR u.password='', 'SCHWACH', 'ok') FROM ${jpfx}users u JOIN ${jpfx}user_usergroup_map m ON u.id=m.user_id WHERE m.group_id IN (${jallg}) GROUP BY u.id ORDER BY u.registerDate DESC;" 2>/dev/null || true)
+      jsuper_n=$(printf '%s\n' "$jsuper" | grep -c . || true)
+      if [[ "$jsuper_n" -gt 0 ]]; then
+        info "${jsuper_n} Konto/Konten mit Super-User-Rechten"
+        evidence "joomla_superuser_$(echo "$site" | tr '/.' '__')" "$jsuper"
+        # Kritisch nur bei der vollständigen Kombination: frisch angelegt,
+        # freigeschaltet, nicht gesperrt und nie über die Oberfläche benutzt.
+        # Ein einzelnes Merkmal trifft auch auf legitime Konten zu.
+        while IFS=$'\t' read -r _id _un _em _reg _lv _blk _act _pw; do
+          [[ -n "${_un:-}" ]] || continue
+          # '-' = Feld ist leer, also freigeschaltet (siehe Füllzeichen oben)
+          if [[ "${_blk:-1}" == "0" && "${_act:-}" == "-" && "${_lv:-}" == "nie" ]]; then
+            _regs=$(date -d "${_reg:-1970-01-01}" +%s 2>/dev/null || echo 0)
+            _cut=$(( $(date +%s) - DAYS_BACK * 86400 ))
+            if [[ "$_regs" -gt "$_cut" ]]; then
+              crit "$site: Super-User \"${_un}\" (${_em}) wurde am ${_reg%% *} angelegt, ist freigeschaltet und hat sich nie angemeldet — typisches Muster eines vom Angreifer hinterlegten Zweitzugangs" web
+              JOOMLA_FLAGS=$((JOOMLA_FLAGS+1))
+              JOOMLA_ROGUE_SUPER+="${_id}"$'\t'"${_un}"$'\t'"${_em}"$'\t'"${_reg}"$'\n'
+            fi
+          fi
+          if [[ "${_pw:-ok}" == "SCHWACH" ]]; then
+            crit "$site: Super-User \"${_un}\" hat kein oder ein veraltet gespeichertes Passwort — das Konto ist praktisch ungeschützt" web
+            JOOMLA_FLAGS=$((JOOMLA_FLAGS+1))
+          fi
+        done <<< "$jsuper"
+        [[ -z "$JOOMLA_ROGUE_SUPER" ]] && ok "$site: keine neu angelegten, unbenutzten Super-User im Prüfzeitraum"
+      fi
+
+      # (c) Rechtetabelle: Verwaltungsrechte für Öffentlich/Registriert wären
+      # gleichbedeutend mit "jeder darf administrieren".
+      jaclbad=$(j_sql "$jdb" "$jdu" "$jdp" "$jdh" \
+        "SELECT id, name FROM ${jpfx}assets WHERE rules LIKE '%\"core.admin\":{%\"1\":1%' OR rules LIKE '%\"core.admin\":{%\"2\":1%' OR rules LIKE '%\"core.manage\":{%\"1\":1%';" 2>/dev/null || true)
+      if [[ -n "$jaclbad" ]]; then
+        crit "$site: Verwaltungsrechte sind an die Gruppe \"Öffentlich\" oder \"Registriert\" vergeben — nicht angemeldete Besucher haben Administrationsrechte" web
+        JOOMLA_FLAGS=$((JOOMLA_FLAGS+1))
+        code "$jaclbad"
+        evidence "joomla_acl_$(echo "$site" | tr '/.' '__')" "$jaclbad"
+      else
+        ok "$site: keine Verwaltungsrechte an offene Benutzergruppen vergeben"
+      fi
+
+      # (d) Sitzungstabelle. Nur die bekannten Gadget-Ketten suchen — ein
+      # blankes "O:" trifft jedes serialisierte Objekt und wäre wertlos.
+      # Bei anderem Sitzungsspeicher ist die Tabelle leer, dann gar nicht prüfen.
+      jsh=$(jconf_get "$cfg" session_handler)
+      if [[ -z "$jsh" || "$jsh" == "database" ]]; then
+        jsess=$(j_sql "$jdb" "$jdu" "$jdp" "$jdh" \
+          "SELECT session_id, IFNULL(userid,0), IFNULL(username,''), LENGTH(data) FROM ${jpfx}session WHERE data LIKE '%JDatabaseDriverMysqli%' OR data LIKE '%JSimplepieFactory%' OR data LIKE '%disconnectHandlers%';" 2>/dev/null || true)
+        if [[ -n "$jsess" ]]; then
+          crit "$site: In der Sitzungstabelle stehen Angriffsmuster zur Codeausführung — es wurde versucht, über eine manipulierte Sitzung Schadcode auszuführen" web
+          JOOMLA_FLAGS=$((JOOMLA_FLAGS+1))
+          JOOMLA_SESSION_HITS+="$jsess"$'\n'
+          evidence "joomla_session_$(echo "$site" | tr '/.' '__')" "$jsess"
+        else
+          ok "$site: keine Angriffsmuster in der Sitzungstabelle"
+        fi
+      else
+        info "Sitzungen werden nicht in der Datenbank gespeichert (${jsh}) — Sitzungsprüfung entfällt"
+      fi
+
+      # (e) Vorlagen-Parameter. WICHTIGSTE Prüfung der aktuellen Bedrohungslage:
+      # die Helix3-Kampagne (CVE-2026-49049) legt ihre Nutzlast AUSSCHLIESSLICH
+      # hier ab, in den Feldern für eigenes CSS/JavaScript, die die Vorlage
+      # direkt in die Seite schreibt. Ein reiner Dateiscan meldet eine
+      # verunstaltete Seite deshalb als sauber.
+      jtpl=$(j_sql "$jdb" "$jdu" "$jdp" "$jdh" \
+        "SELECT id, template, client_id, home, title FROM ${jpfx}template_styles WHERE params REGEXP '<script|</script|javascript:|eval\\\\(|atob\\\\(|document\\\\.write|base64,|innerHTML|z-index:2147483647|Hacked by|AntonKill';" 2>/dev/null || true)
+      if [[ -n "$jtpl" ]]; then
+        crit "$site: In den Vorlagen-Einstellungen der Datenbank steht eingeschleustes Skript — solcher Code überlebt jede Wiederherstellung der Dateien und wird auf der Seite ausgeliefert" web
+        JOOMLA_FLAGS=$((JOOMLA_FLAGS+1))
+        JOOMLA_TPL_PARAMS+="$jtpl"$'\n'
+        code "$jtpl"
+        evidence "joomla_template_params_$(echo "$site" | tr '/.' '__')" \
+          "$(j_sql "$jdb" "$jdu" "$jdp" "$jdh" "SELECT id, template, home, LEFT(params,2000) FROM ${jpfx}template_styles;" 2>/dev/null || true)"
+      else
+        ok "$site: Vorlagen-Einstellungen ohne eingeschleusten Skriptcode"
+      fi
+
+      # (f) Module. <script>/<iframe> allein wäre massiver Fehlalarm —
+      # "Eigenes HTML" ist genau das Werkzeug für Analyse- und Marketing-Codes.
+      # Deshalb zusätzlich ein Verschleierungs- oder Versteckmerkmal verlangen.
+      jmod=$(j_sql "$jdb" "$jdu" "$jdp" "$jdh" \
+        "SELECT id, title, module, position FROM ${jpfx}modules WHERE published=1 AND (content REGEXP 'eval\\\\(|atob\\\\(|String\\\\.fromCharCode|document\\\\.write\\\\(unescape|left:[[:space:]]*-9999|display:[[:space:]]*none[^;]*<a |<\\\\?php');" 2>/dev/null || true)
+      if [[ -n "$jmod" ]]; then
+        crit "$site: Veröffentlichte Module enthalten verschleierten oder versteckten Fremdcode — typisch für Spam-Verlinkung oder das Abgreifen von Eingaben" web
+        JOOMLA_FLAGS=$((JOOMLA_FLAGS+1))
+        JOOMLA_MOD_CUSTOM+="$jmod"$'\n'
+        code "$jmod"
+        evidence "joomla_module_inject_$(echo "$site" | tr '/.' '__')" "$jmod"
+      else
+        ok "$site: keine verschleierten Inhalte in veröffentlichten Modulen"
+      fi
+      # Erweiterungen, die PHP in Inhalten ausführbar machen, ändern die
+      # Tragweite jedes Content-Fundes — deshalb als Kontext ausweisen.
+      jphpext=$(j_sql "$jdb" "$jdu" "$jdp" "$jdh" \
+        "SELECT element FROM ${jpfx}extensions WHERE enabled=1 AND element IN ('sourcerer','directphp','jumi','phpmod','php');" 2>/dev/null || true)
+      [[ -n "$jphpext" ]] && \
+        warn "$site: Erweiterung(en) $(printf '%s' "$jphpext" | tr '\n' ' ') machen PHP-Code in Artikeln und Modulen ausführbar — jeder eingeschleuste Inhalt wird damit zu ausführbarem Programmcode" web
+
+      # (g) Anmelde-Token. Eine gültige Zeile meldet ohne Passwort UND ohne
+      # zweiten Faktor an und überlebt einen Passwortwechsel. Das Kernfeature
+      # "Angemeldet bleiben" füllt die Tabelle aber legitim — Befund nur, wenn
+      # das zugehörige Plugin gar nicht aktiv ist (dann wurde eingefügt).
+      jrem=$(j_sql "$jdb" "$jdu" "$jdp" "$jdh" \
+        "SELECT COUNT(*) FROM ${jpfx}extensions WHERE type='plugin' AND folder='system' AND element='remember' AND enabled=1;" 2>/dev/null | head -1 || true)
+      jkeys=$(j_sql "$jdb" "$jdu" "$jdp" "$jdh" \
+        "SELECT user_id, series, time, IFNULL(uastring,'') FROM ${jpfx}user_keys;" 2>/dev/null || true)
+      jkeys_n=$(printf '%s\n' "$jkeys" | grep -c . || true)
+      if [[ "$jkeys_n" -gt 0 && "${jrem:-1}" == "0" ]]; then
+        warn "$site: ${jkeys_n} dauerhafte(r) Anmelde-Token vorhanden, obwohl die Funktion \"Angemeldet bleiben\" abgeschaltet ist — die Einträge wurden nachträglich eingefügt und erlauben Anmeldung ohne Passwort" web
+        JOOMLA_USER_KEYS+="$jkeys"$'\n'
+        evidence "joomla_user_keys_$(echo "$site" | tr '/.' '__')" "$jkeys"
+      elif [[ "$jkeys_n" -gt 0 ]]; then
+        info "${jkeys_n} Anmelde-Token (\"Angemeldet bleiben\") — bei einer Bereinigung mit zurücksetzen"
       fi
     fi
 
