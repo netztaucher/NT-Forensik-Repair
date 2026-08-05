@@ -1,0 +1,123 @@
+# element	type	folder	name	patch_version	status	cve	url
+com_abook	component		com_abook	3.1.4	Resolved	CVE-2018-7312	
+com_acym					Live		
+com_acym				6.9.2	Resolved		
+com_acym	component		AcyMailing	5.9.6	Resolved		
+com_akeeba					Resolved		
+com_akeeba	package		Akeeba Backup package	5.5.2	Resolved		
+com_awdwall	component		com_awdwall	4.1.2	Resolved		
+com_baforms					Live		
+com_canonical	component		com_canonical	4.2.1	Resolved		
+com_catalog	component		COM_CATALOG	1.0.8	Resolved		
+com_checklist	component		COM_CHECKLIST	1.1.1	Resolved		
+com_chronoforms					Resolved		
+com_chronoforms5	component		com_chronoforms5	5.0.14	Resolved	CVE-2016-10045	
+com_chronoforms5	component		com_chronoforms5	5.013	Resolved	CVE-2016-10033	
+com_comprofiler					Resolved		
+com_comprofiler	component		Package Installer	2.1.5	Resolved		
+com_convertforms					Resolved		
+com_convertforms	plugin		System - Novarain Installer	2.0.4	Resolved		
+com_dpcalendar					Live		
+com_easy_youtube_gallery	component		com_easy_youtube_gallery		Live		
+com_easyblog	component		com_easyblog	3.9.15770	Resolved		
+com_easydiscuss	component		com_easydiscuss	4.0.21	Resolved		
+com_easydiscuss	component		com_easydiscuss	4.1.10	Resolved		
+com_edocman					Resolved		
+com_edocman				1.1.18	Resolved		
+com_enmasse	component		COM_ENMASSE		Live		
+com_eventbooking					Resolved		
+com_eventbooking				2.1.1	Resolved		
+com_gallery	component		COM_GALLERY	1.1.9	Resolved		
+com_gmap	component		COM_GMAP		Live	CVE-2018-6396	
+com_gmapfp	component		COM_GMAPFP	3.123pro	Resolved		
+com_gmapfp	component		COM_GMAPFP	3.41	Resolved		
+com_googlemaps	component		COM_GOOGLEMAPS		Live		
+com_gridbox	package		Gridbox	2.4.1.1	Resolved		
+com_guru	component		COM_GURU	5.0.15	Resolved		
+com_hikashop					Live		
+com_hikashop				5.1.4	Resolved	CVE-2025-25225	
+com_hikashop	component		HikaShop	3.1.1	Resolved		
+com_ijoomla_seo	component		COM_IJOOMLA_SEO	3.1.18	Resolved		
+com_j2store				3.3.11	Resolved		
+com_j2store	component		J2Store	3.1.7	Resolved		
+com_j2store	component		com_j2store	2.8.4	Resolved		
+com_jak2filter	component		com_jak2filter	1.2.5	Resolved		
+com_jce					Live		
+com_jce	component		COM_JCE	2.6.26	Resolved		
+com_jce	component		JCE	2.4.6	Resolved		
+com_jce	component		JCE	2.5.3	Resolved		
+com_jdownloads					Live		
+com_jdownloads					Resolved		
+com_jdownloads	component		com_jDownloads	3.2.59	Resolved		
+com_jobgrokapp	component		com_jobgrokapp	3.1-1.2.5	Resolved		
+com_joomlaquiz	component		COM_JOOMLAQUIZ	3.7.5	Resolved		
+com_jsautoz	component		COM_JSAUTOZ		Live	CVE-2018-6006	
+com_jsjobs	component		COM_JSJOBS	1.1.6	Resolved		
+com_jsjobs	component		COM_JSJOBS	1.1.9	Resolved		
+com_jsjobs	component		COM_JSJOBS	1.2.0	Resolved		
+com_jsjobs	component		COM_JSJOBS	1.2.1	Resolved		
+com_jtagcalendar	component		com_jtagcalendar	6.2.5	Resolved		
+com_kissgallery	component		COM_KISSGALLERY		Live		
+com_kunena					Resolved		
+com_kunena				3.0.8	Resolved		
+com_kunena				4.0.11	Resolved		
+com_kunena				5.1.10	Resolved		
+com_kunena				5.1.12.	Resolved		
+com_kunena	component		com_kunena	5.0.9	Resolved		
+com_kunena	package		Kunena Forum Package		Resolved		
+com_kunena	package		Kunena Forum Package	3.0.6	Resolved		
+com_kunena	package		Kunena Forum Package	5.0.14	Resolved		
+com_kunena	package		Kunena Forum Package	5.0.4	Resolved		
+com_kunena	package		Kunena Forum Package	5.0.5	Resolved		
+com_kunena	package		Kunena Forum Package	5.1.5	Resolved		
+com_lmslite	component		com_lmslite	3.2.3.20	Resolved		
+com_lmslite	component		com_lmslite	3.2.3.48	Resolved		
+com_magiczoomplus	component		com_magiczoomplus	3.3.6	Resolved		
+com_myproject	component		COM_MYPROJECT	2.1	Resolved		
+com_neorecruit	component		com_neorecruit	4.2.2	Resolved	CVE-2018-6370	
+com_nexevocontact	component		COM_NEXEVOCONTACT		Resolved		
+com_nge	component		com_nge	2.2.0	Resolved		
+com_nitro_layer_slider	component		com_nitro_layer_slider	1.0.1	Resolved		
+com_ns_downloadshop	component		com_ns_downloadshop	2.2.8	Resolved		
+com_os_cck	component		COM_OS_CCK	2.0.5	Resolved		
+com_phocagallery					Live		
+com_phocagallery					Resolved		
+com_phocaguestbook					Resolved		
+com_portfoliogallery	component		COM_PORTFOLIOGALLERY	1.1.0	Resolved		
+com_prayercenter	component		COM_PRAYERCENTER	3.0.2	Resolved	CVE-2018-7314	
+com_price_alert	component		com_price_alert		Live		
+com_rand	component		COM_RAND	1.5.1	Resolved		
+com_rand	component		COM_RAND	1.5.3	Resolved		
+com_registrationpro	component		COM_REGISTRATIONPRO	4.1.3	Resolved		
+com_rsappt_pro3	component		com_rsappt_pro3	4.0.2 (RC2	Resolved		
+com_rsfiles				1.17.8	Resolved		
+com_rsform				2.2.1	Resolved		
+com_rsmonials	component		COM_RSMONIALS		Live		
+com_saxumastro	component		com_saxumastro		Live	CVE-2018-7180	
+com_saxumnumerology	component		com_saxumnumerology		Live	CVE-2018-7177	
+com_saxumpicker	component		com_saxumpicker		Live	CVE-2018-7178	
+com_simplecalendar	component		com_simplecalendar	3.2.1	Resolved	CVE-2018-5974	
+com_slider	component		COM_SLIDER	1.1.0	Resolved		
+com_spmoviedb	component		COM_SPMOVIEDB	1.4	Resolved		
+com_streetguess	component		com_streetguess	1.1.13	Resolved		
+com_streetguess	component		com_streetguess	1.1.8	Resolved		
+com_timetable	component		COM_TIMETABLE	1.7	Resolved	CVE-2018-6583	
+com_userbench	component		com_userbench	1.1	Resolved		
+com_videogallerylite	component		COM_VIDEOGALLERYLITE	1.1.3	Resolved		
+com_vikappointments	component		COM_VIKAPPOINTMENTS	1.5	Resolved		
+com_vikrentcar	component		COM_VIKRENTCAR	1.11	Resolved		
+com_virtuemart	component		VIRTUEMART	3.0.10	Resolved		
+com_virtuemart	component		VIRTUEMART	3.2.14	Resolved		
+com_virtuemart	component		VIRTUEMART	3.2.6	Resolved		
+com_virtuemart_magiczoomplus	component		com_virtuemart_magiczoomplus	4.9.6	Resolved		
+com_zhyandexmap	component		COM_ZHYANDEXMAP		Resolved		
+pkg_attachments	package		pkg_attachments	3.2.6	Resolved		
+pkg_gantry5	package		pkg_gantry5		Resolved		
+pkg_jem	package		pkg_jem	2.1.4.2	Resolved		
+pkg_zhbaidumap	package		PKG_ZHBAIDUMAP	3.0.1.0	Resolved	CVE-2018-6605	
+pkg_zhgooglemap	package		PKG_ZHGOOGLEMAP	8.4.1.0	Resolved	CVE-2018-6582	
+pkg_zhyandexmap	package		PKG_ZHYANDEXMAP	6.3.1.0	Resolved	CVE-2018-6604	
+plg_content_imgresizecache	plugin		plg_content_imgresizecache	1.3.3	Resolved		
+plg_editors_yeeditor	plugin		PLG_EDITORS_YEEDITOR		Live		
+plg_sige	plugin		PLG_SIGE	3.2.4	Resolved	CVE-2017-16356	
+plg_system_jsnframework	plugin		plg_system_jsnframework	2.1.6	Resolved		

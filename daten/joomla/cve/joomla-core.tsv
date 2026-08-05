@@ -1,0 +1,215 @@
+# min_version	max_version	cve	schwere	typ
+1.0.0	2.1.1	CVE-2025-25226	Low	SQL Injection
+1.5.0	3.10.14	CVE-2024-21723	Low	Open Redirect
+1.6.0	3.10.14	CVE-2024-21724	Moderate	XSS
+1.6.0	3.9.24	CVE-2021-26029	Low	ACL Violation
+1.6.0	4.4.0	CVE-2023-40626	High	Information Disclosure
+1.6.2	3.9.10	CVE-2019-15028	Low	Incorrect Access Control
+1.7.0	3.9.15	CVE-2020-10243	Low	SQL Injection
+1.7.0	3.9.22	CVE-2020-35616	Low	ACL Violation
+1.7.3	3.7.2	CVE-2017-9933	High	Information Disclosure
+1.7.3	3.7.2	CVE-2017-9934	High	XSS
+2.5.0	3.9.13	CVE-2019-19846	Low	SQL injection
+2.5.0	3.9.15	CVE-2020-10238	Low	Incorrect Access Control
+2.5.0	3.9.16	CVE-2020-11889	Low	Incorrect Access Control
+2.5.0	3.9.16	CVE-2020-11890	Low	Incorrect Access Control
+2.5.0	3.9.18	CVE-2020-13763	Low	Insecure Permissions
+2.5.0	3.9.19	CVE-2020-15699	Low	Incorrect Access Control
+2.5.0	3.9.20	CVE-2020-24597	Low	Directory Traversal
+2.5.0	3.9.22	CVE-2020-35610	Low	Information Disclosure
+2.5.0	3.9.22	CVE-2020-35611	Low	Information Disclosure
+2.5.0	3.9.22	CVE-2020-35612	Low	Path traversal
+2.5.0	3.9.24	CVE-2021-23129	Low	XSS
+2.5.0	3.9.24	CVE-2021-23130	Low	XSS
+2.5.0	3.9.27	CVE-2021-26036	Low	DoS
+2.5.0	3.9.27	CVE-2021-26037	Low	Incorrect Session Handling
+2.5.0	3.9.27	CVE-2021-26038	Low	Incorrect Access Control
+3.0.0	3.10.15	CVE-2024-21731	Moderate	XSS
+3.0.0	3.10.15	CVE-2024-26279	Moderate	XSS
+3.0.0	3.10.16	CVE-2024-27185	Low	Cache Poisoning
+3.0.0	3.10.16	CVE-2024-40743	Moderate	XSS
+3.0.0	3.10.19	CVE-2024-40748	Moderate	XSS
+3.0.0	3.10.20	CVE-2025-54476	Moderate	XSS
+3.0.0	3.3.1	CVE-2025-25226	Low	SQL Injection
+3.0.0	3.9.11	CVE-2019-16725	Low	XSS
+3.0.0	3.9.14	CVE-2020-8419	Low	CSRF
+3.0.0	3.9.14	CVE-2020-8420	Low	CSRF
+3.0.0	3.9.15	CVE-2020-10240	Low	Other
+3.0.0	3.9.15	CVE-2020-10242	Low	XSS
+3.0.0	3.9.18	CVE-2020-11022	Moderate	XSS
+3.0.0	3.9.18	CVE-2020-13761	Low	XSS
+3.0.0	3.9.18	CVE-2020-13762	Low	XSS
+3.0.0	3.9.19	CVE-2020-15696	Low	XSS
+3.0.0	3.9.19	CVE-2020-15697	Low	Incorrect Access Control
+3.0.0	3.9.19	CVE-2020-15698	Low	Information Disclosure
+3.0.0	3.9.20	CVE-2020-24598	Low	Open Redirect
+3.0.0	3.9.22	CVE-2020-35613	Low	SQL Injection
+3.0.0	3.9.23	CVE-2021-23123	Low	Incorrect Access Control
+3.0.0	3.9.24	CVE-2021-23132	Low	Improper Input Validation
+3.0.0	3.9.24	CVE-2021-26027	Low	ACL violation
+3.0.0	3.9.24	CVE-2021-26028	Low	Path Traversal
+3.0.0	3.9.25	CVE-2021-26030	Low	XSS
+3.0.0	3.9.25	CVE-2021-26031	Low	LFI
+3.0.0	3.9.26	CVE-2021-26032	Low	XSS
+3.0.0	3.9.26	CVE-2021-26033	Low	CSRF
+3.0.0	3.9.26	CVE-2021-26034	Low	CSRF
+3.0.0	3.9.27	CVE-2021-26035	Low	XSS
+3.0.0	3.9.27	CVE-2021-26039	Low	XSS
+3.0.0	5.4.3	CVE-2026-21629	Low	Incorrect Access Control
+3.0.0	5.4.5	CVE-2026-25900	Moderate	XSS
+3.0.0	5.4.5	CVE-2026-30894	Moderate	XSS
+3.0.0	5.4.5	CVE-2026-48903	Moderate	XSS
+3.0.0	5.4.5	CVE-2026-48905	Moderate	XSS
+3.0.0	5.4.6	CVE-2026-48948	Low	Incorrect Access Control
+3.0.0	5.4.6	CVE-2026-48954	Moderate	XSS
+3.1.0	3.9.23	CVE-2021-23125	Low	XSS
+3.2.0	3.10.14	CVE-2024-21722	Low	Insufficient Session Expiration
+3.2.0	3.9.12	CVE-2019-18650	Low	CSRF
+3.2.0	3.9.15	CVE-2020-10241	Low	CSRF
+3.2.0	3.9.24	CVE-2021-23126	Low	Insecure Randomness
+3.2.0	3.9.24	CVE-2021-23128	Low	Insecure Randomness
+3.2.0	3.9.24	CVE-2021-23131	Low	Improper Input Validation
+3.2.1	5.4.5	CVE-2026-40383	High	Local File Inclusion
+3.4.6	3.10.16	CVE-2024-27184	Low	Open redirect
+3.6.0	3.9.12	CVE-2019-18674	Low	Path Disclosure
+3.7.0	3.10.14	CVE-2024-21726	Moderate	XSS
+3.7.0	3.10.15	CVE-2024-26278	Moderate	XSS
+3.7.0	3.10.6	CVE-2022-23796	Low	XSS
+3.7.0	3.9.15	CVE-2020-10239	Low	Incorrect Access Control
+3.7.0	3.9.18	CVE-2020-13760	Low	CSRF
+3.8.0	3.9.13	CVE-2019-19845	Low	Path Disclosure
+3.8.8	3.9.16	CVE-2020-11891	Low	Incorrect Access Control
+3.9.0	3.10.19	CVE-2024-40749	Moderate	ACL Violation
+3.9.0	3.9.14	CVE-2020-8421	Low	XSS
+3.9.0	3.9.19	CVE-2020-15695	Low	CSRF
+3.9.0	3.9.20	CVE-2020-24599	Low	XSS
+3.9.0	3.9.22	CVE-2020-35614	Low	User Enumeration
+3.9.0	3.9.22	CVE-2020-35615	Low	CSRF
+3.9.0	3.9.23	CVE-2021-23124	Low	XSS
+3.9.0	5.4.1	CVE-2025-63083	Moderate	XSS
+3.9.0	5.4.5	CVE-2026-48902	Low	Mixed Content
+3.9.7	3.9.8	CVE-2019-14654	Low	Remote Code Execution
+4.0.0	4.1.0	CVE-2022-23799	Low	Variable Tampering
+4.0.0	4.1.0	CVE-2022-23800	Low	XSS
+4.0.0	4.1.0	CVE-2022-23801	Low	XSS
+4.0.0	4.2.3	CVE-2022-27912	Low	Information Disclosure
+4.0.0	4.2.3	CVE-2022-27913	Low	Reflexted XSS
+4.0.0	4.2.4	CVE-2022-27914	Low	Reflexted XSS
+4.0.0	4.2.6	CVE-2023-23750	Low	CSRF
+4.0.0	4.2.6	CVE-2023-23751	Low	Incorrect Access Control
+4.0.0	4.2.7	CVE-2023-23752	High	Incorrect Access Control
+4.0.0	4.4.11	CVE-2025-22213	Low	Malicious file upload
+4.0.0	4.4.12	CVE-2025-25227	Moderate	Authentication Bypass
+4.0.0	4.4.13	CVE-2025-54476	Moderate	XSS
+4.0.0	4.4.13	CVE-2025-54477	Low	User Enumeration
+4.0.0	4.4.2	CVE-2024-21722	Low	Insufficient Session Expiration
+4.0.0	4.4.2	CVE-2024-21723	Low	Open Redirect
+4.0.0	4.4.2	CVE-2024-21724	Moderate	XSS
+4.0.0	4.4.2	CVE-2024-21725	High	XSS
+4.0.0	4.4.2	CVE-2024-21726	Moderate	XSS
+4.0.0	4.4.5	CVE-2024-21729	Moderate	XSS
+4.0.0	4.4.5	CVE-2024-21730	Low	XSS
+4.0.0	4.4.5	CVE-2024-21731	Moderate	XSS
+4.0.0	4.4.5	CVE-2024-26278	Moderate	XSS
+4.0.0	4.4.5	CVE-2024-26279	Moderate	XSS
+4.0.0	4.4.6	CVE-2024-27184	Low	Open redirect
+4.0.0	4.4.6	CVE-2024-27185	Low	Cache Poisoning
+4.0.0	4.4.6	CVE-2024-27187	Moderate	XSS
+4.0.0	4.4.6	CVE-2024-40743	Moderate	XSS
+4.0.0	4.4.9	CVE-2024-40747	Moderate	XSS
+4.0.0	4.4.9	CVE-2024-40748	Moderate	XSS
+4.0.0	4.4.9	CVE-2024-40749	Moderate	ACL Violation
+4.0.0	5.4.1	CVE-2025-63082	Moderate	XSS
+4.0.0	5.4.3	CVE-2026-21630	Low	SQLi
+4.0.0	5.4.3	CVE-2026-21631	Moderate	XSS
+4.0.0	5.4.3	CVE-2026-21632	Moderate	XSS
+4.0.0	5.4.3	CVE-2026-23898	High	Arbitrary File Deletion
+4.0.0	5.4.3	CVE-2026-23899	High	Incorrect Access Control
+4.0.0	5.4.5	CVE-2026-25901	Moderate	XSS
+4.0.0	5.4.5	CVE-2026-30895	Moderate	XSS
+4.0.0	5.4.5	CVE-2026-35222	Moderate	SQLi
+4.0.0	5.4.5	CVE-2026-35223	Moderate	Incorrect Access Control
+4.0.0	5.4.5	CVE-2026-40384	Moderate	Path traversal
+4.0.0	5.4.5	CVE-2026-48896	Moderate	Authentication Bypass
+4.0.0	5.4.5	CVE-2026-48897	Moderate	Authentication Bypass
+4.0.0	5.4.5	CVE-2026-48898	High	Privilege Escalation
+4.0.0	5.4.5	CVE-2026-48899	Moderate	Incorrect Access Control
+4.0.0	5.4.5	CVE-2026-48901	Low	Incorrect Cache Key Construction
+4.0.0	5.4.5	CVE-2026-48904	Moderate	Privilege Escalation
+4.0.0	5.4.6	CVE-2026-48950	Moderate	XSS
+4.0.0	5.4.6	CVE-2026-48951	Moderate	XSS
+4.0.0	5.4.6	CVE-2026-48952	Moderate	XSS
+4.0.0	5.4.6	CVE-2026-48953	Moderate	XSS
+4.0.0	5.4.6	CVE-2026-48956	Moderate	Incorrect Access Control
+4.0.0	5.4.6	CVE-2026-48957	Moderate	Incorrect Access Control
+4.0.0	5.4.6	CVE-2026-48958	Moderate	Incorrect Access Control
+4.1.0	4.4.10	CVE-2025-22207	Low	SQL Injection
+4.1.0	5.4.5	CVE-2026-48900	Low	Incorrect Access Control
+4.1.0	5.4.6	CVE-2026-48947	Low	Incorrect Access Control
+4.2.0	4.3.1	CVE-2023-23754	Low	Open Redirect / XSS
+4.2.0	4.3.1	CVE-2023-23755	Moderate	Lack of rate limiting
+4.2.0	5.4.6	CVE-2026-48949	Moderate	XSS
+5.0.0	5.0.2	CVE-2024-21722	Low	Insufficient Session Expiration
+5.0.0	5.0.2	CVE-2024-21723	Low	Open Redirect
+5.0.0	5.0.2	CVE-2024-21724	Moderate	XSS
+5.0.0	5.0.2	CVE-2024-21725	High	XSS
+5.0.0	5.0.2	CVE-2024-21726	Moderate	XSS
+5.0.0	5.1.1	CVE-2024-21729	Moderate	XSS
+5.0.0	5.1.1	CVE-2024-21730	Low	XSS
+5.0.0	5.1.1	CVE-2024-21731	Moderate	XSS
+5.0.0	5.1.1	CVE-2024-26278	Moderate	XSS
+5.0.0	5.1.1	CVE-2024-26279	Moderate	XSS
+5.0.0	5.1.2	CVE-2024-27184	Low	Open redirect
+5.0.0	5.1.2	CVE-2024-27185	Low	Cache Poisoning
+5.0.0	5.1.2	CVE-2024-27186	Moderate	XSS
+5.0.0	5.1.2	CVE-2024-27187	Moderate	XSS
+5.0.0	5.1.2	CVE-2024-40743	Moderate	XSS
+5.0.0	5.2.2	CVE-2024-40747	Moderate	XSS
+5.0.0	5.2.2	CVE-2024-40748	Moderate	XSS
+5.0.0	5.2.2	CVE-2024-40749	Moderate	ACL Violation
+5.0.0	5.2.3	CVE-2025-22207	Low	SQL Injection
+5.0.0	5.2.4	CVE-2025-22213	Low	Malicious file upload
+5.0.0	5.2.5	CVE-2025-25227	Moderate	Authentication Bypass
+5.0.0	5.3.3	CVE-2025-54476	Moderate	XSS
+5.0.0	5.3.3	CVE-2025-54477	Low	User Enumeration
+5.4.0	5.4.5	CVE-2026-35221	Moderate	SQLi
+6.0.0	6.0.1	CVE-2025-63082	Moderate	XSS
+6.0.0	6.0.1	CVE-2025-63083	Moderate	XSS
+6.0.0	6.0.3	CVE-2026-21629	Low	Incorrect Access Control
+6.0.0	6.0.3	CVE-2026-21630	Low	SQLi
+6.0.0	6.0.3	CVE-2026-21631	Moderate	XSS
+6.0.0	6.0.3	CVE-2026-21632	Moderate	XSS
+6.0.0	6.0.3	CVE-2026-23898	High	Arbitrary File Deletion
+6.0.0	6.0.3	CVE-2026-23899	High	Incorrect Access Control
+6.0.0	6.1.0	CVE-2026-25900	Moderate	XSS
+6.0.0	6.1.0	CVE-2026-25901	Moderate	XSS
+6.0.0	6.1.0	CVE-2026-30894	Moderate	XSS
+6.0.0	6.1.0	CVE-2026-30895	Moderate	XSS
+6.0.0	6.1.0	CVE-2026-35220	Moderate	CSRF
+6.0.0	6.1.0	CVE-2026-35221	Moderate	SQLi
+6.0.0	6.1.0	CVE-2026-35222	Moderate	SQLi
+6.0.0	6.1.0	CVE-2026-35223	Moderate	Incorrect Access Control
+6.0.0	6.1.0	CVE-2026-40383	High	Local File Inclusion
+6.0.0	6.1.0	CVE-2026-40384	Moderate	Path traversal
+6.0.0	6.1.0	CVE-2026-48896	Moderate	Authentication Bypass
+6.0.0	6.1.0	CVE-2026-48897	Moderate	Authentication Bypass
+6.0.0	6.1.0	CVE-2026-48898	High	Privilege Escalation
+6.0.0	6.1.0	CVE-2026-48899	Moderate	Incorrect Access Control
+6.0.0	6.1.0	CVE-2026-48900	Low	Incorrect Access Control
+6.0.0	6.1.0	CVE-2026-48901	Low	Incorrect Cache Key Construction
+6.0.0	6.1.0	CVE-2026-48902	Low	Mixed Content
+6.0.0	6.1.0	CVE-2026-48903	Moderate	XSS
+6.0.0	6.1.0	CVE-2026-48904	Moderate	Privilege Escalation
+6.0.0	6.1.0	CVE-2026-48905	Moderate	XSS
+6.0.0	6.1.1	CVE-2026-48947	Low	Incorrect Access Control
+6.0.0	6.1.1	CVE-2026-48948	Low	Incorrect Access Control
+6.0.0	6.1.1	CVE-2026-48949	Moderate	XSS
+6.0.0	6.1.1	CVE-2026-48950	Moderate	XSS
+6.0.0	6.1.1	CVE-2026-48951	Moderate	XSS
+6.0.0	6.1.1	CVE-2026-48952	Moderate	XSS
+6.0.0	6.1.1	CVE-2026-48953	Moderate	XSS
+6.0.0	6.1.1	CVE-2026-48954	Moderate	XSS
+6.0.0	6.1.1	CVE-2026-48955	Moderate	Incorrect Access Control
+6.0.0	6.1.1	CVE-2026-48956	Moderate	Incorrect Access Control
+6.0.0	6.1.1	CVE-2026-48957	Moderate	Incorrect Access Control
+6.0.0	6.1.1	CVE-2026-48958	Moderate	Incorrect Access Control
