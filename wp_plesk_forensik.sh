@@ -2600,6 +2600,13 @@ for rel, (h, hs) in soll.items():
 # liegen legitim Dritt-Erweiterungen — dort waere jede Meldung Rauschen.
 REIN = ("includes", "administrator/includes", "libraries/src", "libraries/vendor",
         "api", "cli", "layouts")
+# ... aber auch INNERHALB dieser Zweige gibt es Stellen, an die Erweiterungen
+# und Sprachpakete regulaer installieren. Ohne diese Ausnahmen meldet jede
+# gewachsene Installation ihre Zusatzpakete als Hintertuer — auf einem realen
+# Kundensystem waren es Akeeba Backup unter api/components/ und ein deutsches
+# Sprachpaket unter api/language/ (Vorfall 2026-08-05).
+REIN_AUS = re.compile(r"^(api/components/|api/language/|api/modules/|"
+                      r"libraries/vendor/composer/|layouts/plugins/)")
 fremd = []
 for basis in REIN:
     bp = os.path.join(wurzel, basis)
@@ -2609,7 +2616,7 @@ for basis in REIN:
         for d in dateien:
             vp = os.path.join(wz, d)
             rel = os.path.relpath(vp, wurzel)
-            if rel not in soll and not NIE.match(rel):
+            if rel not in soll and not NIE.match(rel) and not REIN_AUS.match(rel):
                 fremd.append(rel)
 
 print("STATISTIK\t%d\t%d\t%d\t%d\t%d" % (len(soll), len(veraendert), len(fehlend), len(fremd), leerraum))
@@ -3066,6 +3073,14 @@ for zeile in sys.stdin.read().splitlines():
       fi
       # Joomlas eigene Schutzdatei: <?php die('Restricted access'); ?>
       [[ "$fsize" -lt 400 ]] && grep -qiE "_JEXEC|die\(.Restricted access" "$f" 2>/dev/null && continue
+      # Joomlas eigene ZWISCHENSPEICHER-Dateien sind ebenfalls .php-Dateien.
+      # Format laut libraries/src/Cache/Storage/FileStorage.php:
+      #   <?php die("Access Denied"); ?>#x#<serialisierte Daten>
+      # Der Datenteil ist beliebig gross, der Grössen-Guard oben greift also
+      # nicht. Ohne diese Ausnahme meldet ein gewachsener Shop tausende
+      # Cache-Dateien als Schadcode — auf einem realen Kundensystem waren es
+      # 3551 Stück (Vorfall 2026-08-05).
+      [[ "$(head -c 30 "$f" 2>/dev/null)" == '<?php die("Access Denied"); ?>' ]] && continue
       jmal+="$f"$'\n'
     done < <(find "$CURRENT_J_PATH"/images "$CURRENT_J_PATH"/tmp "$CURRENT_J_PATH"/cache \
                   "$CURRENT_J_PATH"/administrator/cache "$CURRENT_J_PATH"/media \
