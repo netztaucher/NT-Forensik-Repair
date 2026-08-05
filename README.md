@@ -111,6 +111,12 @@ ssh root@SERVER "bash /root/wp_plesk_forensik.sh --domain kunde.tld --yara"
 ssh root@SERVER "bash /root/wp_plesk_forensik.sh --help"
 ```
 
+Für die Joomla-Prüfung muss der Datenbestand mit auf den Server:
+
+```bash
+scp -r wp_plesk_forensik.sh signaturen daten reportgen root@SERVER:/root/
+```
+
 Der Lauf arbeitet standardmäßig **rein offline** — er baut keine Verbindung nach außen auf. `--online` erlaubt dem Lauf, Vergleichsdaten nachzuladen; jeder Abruf wird mit URL, Antwortcode und Prüfsumme im Technikbericht, als Beleg und in `findings.json` ausgewiesen, damit im Nachhinein nachvollziehbar bleibt, dass der Lauf das Netz berührt hat.
 
 > Ein blankes Positionsargument (`… wp_plesk_forensik.sh kunde.tld`) bleibt als
@@ -152,8 +158,9 @@ Im Ordner [`examples/`](examples/) liegen vollständige Beispielberichte eines *
 
 ## Dokumentation
 
-- **[`docs/handbuch.md`](docs/handbuch.md)** — vollständiges Benutzerhandbuch: Installation, alle 13 Prüfabschnitte, Berichte, Verdikte lesen, Troubleshooting, FAQ.
+- **[`docs/handbuch.md`](docs/handbuch.md)** — vollständiges Benutzerhandbuch: Installation, alle 14 Prüfabschnitte, Berichte, Verdikte lesen, Troubleshooting, FAQ.
 - **[`docs/erkennung.md`](docs/erkennung.md)** — Erkennungs-Referenz: Signaturen, zweistufige Webshell-Bewertung, False-Positive-Filter, Root-Verdikt, Grenzen.
+- **[`docs/joomla-pruefung.md`](docs/joomla-pruefung.md)** — Joomla-Prüfung im Detail: die zehn Prüfschritte, Datenbestand, Offline-/Online-Betrieb, Fehlalarm-Vermeidung, Pflege.
 - **[`docs/relay-backdoors.md`](docs/relay-backdoors.md)** — Relay-Backdoors (gsocket), Prozess-Introspektion und warum Signatur-Rootkitscanner diese Klasse verfehlen.
 - **[`docs/incident-response.md`](docs/incident-response.md)** — Incident-Response-Playbook: 7 Phasen von der Beweissicherung bis zur Härtung.
 - **[`docs/runbook.md`](docs/runbook.md)** — Runbook für die manuelle Ad-hoc-Analyse einzelner Prüfpunkte.
