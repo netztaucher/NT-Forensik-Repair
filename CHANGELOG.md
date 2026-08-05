@@ -2,6 +2,18 @@
 
 Alle nennenswerten Änderungen an `wp_plesk_forensik.sh`.
 
+## [3.7.0] — 2026-08-05
+
+### Neu — Mail-Kontext in findings.json
+- `findings.json` (schema **1.3**) enthält bei Funden einen Block
+  **`malware_summary`**: `total`, `affected_area` (grob: Shop-/Joomla-/WordPress-/
+  Webbereich, aus den Fundpfaden), `finding_summary` (laienverständliche
+  Formulierung aus dominanter Familie + Anzahl, Singular/Plural), `timeframe`
+  (Zeitbezug aus der neuesten Datei-mtime, z. B. „erst in diesem Sommer"),
+  `newest` und `families{}`. Ohne Funde: `"malware_summary": null`.
+- Zweck: der Anschreiben-Generator (Kunden-E-Mail) füllt Bereich, Fund und
+  Zeitbezug automatisch aus dem Lauf, statt sie manuell zu setzen.
+
 ## [3.6.0] — 2026-08-05
 
 ### Neu — System-Integrität (referenzlos & baseline)

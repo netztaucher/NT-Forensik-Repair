@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ============================================================
-# WP-PLESK-FORENSIK.SH — v3.6
+# WP-PLESK-FORENSIK.SH — v3.7
 # Forensische Analyse nach WordPress/Plesk Sicherheitsvorfall
 #
 # Verwendung: sudo bash wp_plesk_forensik.sh [--domain d|--path p|--global] [--yara]
@@ -17,7 +17,7 @@
 #     ├── bsi_meldung.md                       ← BSI-Meldung (Best Practice)
 #     └── lauf.log                             ← Ausführungsprotokoll
 #
-# Autor: netztaucher | digital — forensik-tool v3.6
+# Autor: netztaucher | digital — forensik-tool v3.7
 # Nur read-only Analyse. Keine Lösch-/Schreiboperationen im Webspace.
 # ============================================================
 
@@ -37,7 +37,7 @@ PLESK_LOG_DIR="/var/log/plesk"
 PLESK_PANEL_LOG="${PLESK_LOG_DIR}/panel.log"
 
 # ── Konfiguration ────────────────────────────────────────────
-TOOL_VERSION="3.6"
+TOOL_VERSION="3.7"
 DAYS_BACK=30   # Analysezeitraum in Tagen
 
 # ── Argumente & Scope (v3.5) ─────────────────────────────────
@@ -263,7 +263,7 @@ cat <<'EOF'
  ██████  ██    ██ ██████  █████   ██ ██  ██ ███████ ██ █████
  ██      ██    ██ ██   ██ ██      ██  ██ ██      ██ ██ ██  ██
   ██████  ██████  ██   ██ ███████ ██   ████ ███████ ██ ██   ██
-  WP-PLESK-FORENSIK v3.6 — netztaucher | digital
+  WP-PLESK-FORENSIK v3.7 — netztaucher | digital
 EOF
 echo -e "${NC}"
 
@@ -2292,6 +2292,7 @@ add_finding(){ local fam="$1" rel="$2" detail="$3"
   FAM_COUNT["$fam"]=$(( ${FAM_COUNT["$fam"]:-0} + 1 ))
   FAM_FILES["$fam"]+="- \`${rel}\`${detail:+  — ${detail}}"$'\n'; }
 
+MAL_PATHS=""   # absolute Fund-Pfade (für Mail-Kontext: Bereich + Zeitraum)
 # Quelle 1: Imunify-Treffer (Zeilen "pfad  [type]  hash")
 if [[ -n "${IMUNIFY_HITS:-}" ]]; then
   while IFS= read -r line; do
@@ -2299,11 +2300,12 @@ if [[ -n "${IMUNIFY_HITS:-}" ]]; then
     p="${line%%  \[*}"
     t="$(printf '%s' "$line" | sed -E 's/.*\[([^]]*)\].*/\1/')"
     add_finding "$(imu_family "$t")" "$(relpath "$p")" "Imunify-Signatur: ${t}"
+    MAL_PATHS+="$p"$'\n'
   done <<< "$IMUNIFY_HITS"
 fi
 # Quelle 2: eigene datei-basierte Kategorien (je eine Pfadliste)
 _addcat(){ local fam="$1" list="$2"
-  while IFS= read -r p; do [[ -n "$p" ]] && add_finding "$fam" "$(relpath "$p")" ""; done <<< "$list"; }
+  while IFS= read -r p; do [[ -n "$p" ]] && { add_finding "$fam" "$(relpath "$p")" ""; MAL_PATHS+="$p"$'\n'; }; done <<< "$list"; }
 [[ -n "${MASQ_BINARIES:-}"      ]] && _addcat "Getarnte Binary"   "$MASQ_BINARIES"
 [[ -n "${GSOCKET_HITS:-}"       ]] && _addcat "Relay-Backdoor"    "$GSOCKET_HITS"
 [[ -n "${DISGUISED_PAYLOADS:-}" ]] && _addcat "Getarnte Payload"  "$DISGUISED_PAYLOADS"
@@ -2312,8 +2314,39 @@ _addcat(){ local fam="$1" list="$2"
 
 # Grobstatistik + Detaildatei zusammensetzen
 MALWARE_TOTAL=0; MALWARE_FAMILY_ROWS=""; MALWARE_CARD=""
+# Mail-Kontext (v3.7) für den Anschreiben-Generator — Defaults für set -u
+MAIL_AREA=""; MAIL_FINDING=""; MAIL_TIMEFRAME=""; MAIL_NEWEST=""; MAIL_FAMILIES_JSON="{}"
 for fam in "${!FAM_COUNT[@]}"; do MALWARE_TOTAL=$(( MALWARE_TOTAL + FAM_COUNT[$fam] )); done
 if [[ "$MALWARE_TOTAL" -gt 0 ]]; then
+  # betroffener Bereich aus den Pfaden (grob, laienverständlich)
+  if   printf '%s' "$MAL_PATHS" | grep -qiE '/(administrator|com_[a-z]+|mod_[a-z]+|api/language|libraries/(joomla|src))'; then MAIL_AREA="Shop-/Joomla-Bereich"
+  elif printf '%s' "$MAL_PATHS" | grep -qiE '/(shop2?|warenkorb|checkout|xtcommerce|woocommerce|magento)'; then MAIL_AREA="Shop-Bereich"
+  elif printf '%s' "$MAL_PATHS" | grep -qiE 'wp-content|wp-admin|wp-includes'; then MAIL_AREA="WordPress-Bereich"
+  else MAIL_AREA="Webbereich"; fi
+  # neueste mtime der Fundstellen -> Zeitbezug
+  _newest=0
+  while IFS= read -r _p; do [[ -f "$_p" ]] || continue; _m=$(stat -c %Y "$_p" 2>/dev/null || echo 0); (( _m > _newest )) && _newest=$_m; done <<< "$MAL_PATHS"
+  if [[ "$_newest" -gt 0 ]]; then
+    _y=$(date -d "@$_newest" +%Y 2>/dev/null || echo ""); _mo=$(date -d "@$_newest" +%m 2>/dev/null || echo ""); _cy=$(date +%Y)
+    case "$_mo" in 12|01|02) _s="Winter";; 03|04|05) _s="Frühjahr";; 06|07|08) _s="Sommer";; *) _s="Herbst";; esac
+    if [[ -n "$_y" && "$_y" == "$_cy" ]]; then MAIL_TIMEFRAME="erst in diesem $_s"
+    elif [[ -n "$_y" ]]; then MAIL_TIMEFRAME="im $_s $_y"
+    else MAIL_TIMEFRAME="in den letzten Monaten"; fi
+    MAIL_NEWEST=$(date -d "@$_newest" +%Y-%m-%d 2>/dev/null || echo "")
+  else MAIL_TIMEFRAME="in den letzten Monaten"; fi
+  # dominante Familie -> Fund-Formulierung (Singular/Plural)
+  _domfam=$(for fam in "${!FAM_COUNT[@]}"; do echo "${FAM_COUNT[$fam]}|$fam"; done | sort -rn | head -1 | cut -d'|' -f2)
+  case "$_domfam" in
+    "Backdoor/Webshell"|"Relay-Backdoor") _ns="eine versteckte Hintertür"; _np="mehrere versteckte Hintertüren";;
+    "Defacement")                          _ns="eine verunstaltete Seite"; _np="mehrere verunstaltete Seiten";;
+    "SEO-Spam/Doorway")                    _ns="eine versteckte Spam-Seite"; _np="mehrere versteckte Spam-Seiten";;
+    *)                                     _ns="eine Schaddatei"; _np="mehrere Schaddateien";;
+  esac
+  [[ "$MALWARE_TOTAL" -eq 1 ]] && MAIL_FINDING="$_ns" || MAIL_FINDING="$_np"
+  # Familien als JSON-Objekt (Namen ohne Sonderzeichen -> keine Escapes nötig)
+  MAIL_FAMILIES_JSON="{"; _f1=1
+  for fam in "${!FAM_COUNT[@]}"; do [[ $_f1 -eq 0 ]] && MAIL_FAMILIES_JSON+=","; MAIL_FAMILIES_JSON+="\"${fam}\":${FAM_COUNT[$fam]}"; _f1=0; done
+  MAIL_FAMILIES_JSON+="}"
   {
     echo "# Fundstellen-Details${DOMAIN:+ — ${DOMAIN}}"
     echo
@@ -2940,7 +2973,13 @@ emit_findings_json() {
   relc=$(printf '%s\n'  "${RELAY_CONNECTIONS:-}" | json_arr)
   yhit=$(printf '%s\n'  "${YARA_HITS:-}"        | json_arr)
   # v3.6 System-Integrität & Scanner-Taps
-  local tstomp recsys imuh wptk
+  local tstomp recsys imuh wptk malsum
+  # Mail-Kontext für den Anschreiben-Generator (null, wenn keine Funde)
+  if [[ "${MALWARE_TOTAL:-0}" -gt 0 ]]; then
+    malsum="{ \"total\": ${MALWARE_TOTAL}, \"affected_area\": \"$(json_str "${MAIL_AREA:-}")\", \"finding_summary\": \"$(json_str "${MAIL_FINDING:-}")\", \"timeframe\": \"$(json_str "${MAIL_TIMEFRAME:-}")\", \"newest\": \"${MAIL_NEWEST:-}\", \"families\": ${MAIL_FAMILIES_JSON} }"
+  else
+    malsum="null"
+  fi
   tstomp=$(printf '%s\n' "${TIMESTOMP:-}"       | json_arr)
   recsys=$(printf '%s\n' "${RECENT_SYS:-}"      | json_arr)
   imuh=$(printf '%s\n'   "${IMUNIFY_HITS:-}"    | json_arr)
@@ -2948,7 +2987,7 @@ emit_findings_json() {
 
   cat > "$FINDINGS_FILE" <<JSON
 {
-  "schema_version": "1.2",
+  "schema_version": "1.3",
   "tool": "wp_plesk_forensik.sh",
   "tool_version": "${TOOL_VERSION}",
   "run_id": "$(json_str "$RUN_LABEL")",
@@ -3007,7 +3046,8 @@ emit_findings_json() {
     "recent_system_changes": ${recsys:-[]},
     "imunify_malware": ${imuh:-[]},
     "wptk_infected": ${wptk:-[]}
-  }
+  },
+  "malware_summary": ${malsum}
 }
 JSON
   echo "  findings.json geschrieben: $FINDINGS_FILE" >> "$REPORT_FILE"
