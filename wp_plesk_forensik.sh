@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ============================================================
-# WP-PLESK-FORENSIK.SH — v3.3
+# WP-PLESK-FORENSIK.SH — v3.4
 # Forensische Analyse nach WordPress/Plesk Sicherheitsvorfall
 #
 # Verwendung: sudo bash wp_plesk_forensik.sh [domain.tld]
@@ -17,7 +17,7 @@
 #     ├── bsi_meldung.md                       ← BSI-Meldung (Best Practice)
 #     └── lauf.log                             ← Ausführungsprotokoll
 #
-# Autor: netztaucher | digital — forensik-tool v3.3
+# Autor: netztaucher | digital — forensik-tool v3.4
 # Nur read-only Analyse. Keine Lösch-/Schreiboperationen im Webspace.
 # ============================================================
 
@@ -38,7 +38,7 @@ PLESK_PANEL_LOG="${PLESK_LOG_DIR}/panel.log"
 
 # ── Konfiguration ────────────────────────────────────────────
 DOMAIN="${1:-}"
-TOOL_VERSION="3.3"
+TOOL_VERSION="3.4"
 DAYS_BACK=30   # Analysezeitraum in Tagen
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 RUN_LABEL="${TIMESTAMP}_${DOMAIN:-server}"
@@ -91,6 +91,41 @@ ROGUE_ADMINS=""        # via wp-cli-Fallback gefundene Angreifer-Admins
 SUSP_PLUGINS=""        # verdächtige Plugins/mu-Plugins (alle bewertet, auch inaktive)
 MU_PLUGINS=""          # alle mu-Plugins (laufen immer, ohne Aktivierung)
 TAMPERED_HTACCESS=""   # manipulierte .htaccess (Malware-Whitelist, bricht Admin/403)
+
+# ── v3.4: Relay-Backdoors — Variablen & Selbstausschluss ─────
+GSOCKET_HITS=""          # Dateien/Prozesse mit gsocket-Signatur
+MASQ_BINARIES=""         # ELF-Binaries getarnt als Schlüssel-/Konfigdatei
+FILELESS_PROCS=""        # Prozesse aus memfd (nur im RAM)
+KTHREAD_FAKES=""         # als Kernel-Thread getarnte User-Prozesse
+ORPHAN_SHELLS=""         # verwaiste Interpreter ohne TTY
+SSH_LOGIN_HOOKS=""       # ~/.ssh/rc und /etc/ssh/sshrc
+RELAY_CONNECTIONS=""     # ausgehende 443/7350 durch untypische Prozesse
+YARA_HITS=""             # YARA-Treffer (falls yara installiert)
+RELAY_VERDICT="⚪ Relay-Backdoor-Prüfung nicht durchgeführt."
+
+# Signaturfamilie THC gsocket / gs-netcat. Trifft auch bei Umbenennung,
+# da die Strings im Binary verbleiben (auch bei stripped).
+GS_SIG_REGEX='GSRN|gs\.thc\.org|GS_connect|GSOCKET_ARGS|GSOCKET_SECRET|gs-netcat|4_gs-netcat\.c|GS_daemonize|gs_watchdog|GSOCKET_SOCKS|GS_gen_secret'
+# Vom gsocket-Installer verwendete Tarnnamen
+GS_DISGUISE_REGEX='gs-dbus|gs-bd|dbus-run-session\.sh'
+
+# WICHTIG — Selbstausschluss: NT-Forensik legt seine Berichte und Belege unter
+# ${BASE_DIR} (/root/wartungsscripte) ab. Da /root mitgescannt wird und die
+# Berichte die Suchbegriffe im Klartext enthalten, würde sich das Skript ab dem
+# zweiten Lauf selbst als Backdoor melden. Alle Scans dieses Abschnitts filtern
+# daher konsequent gegen ${BASE_DIR}.
+nf_strip_self() { grep -vF "${BASE_DIR}/" || true; }
+
+# Eigene Prozesskette (Skript + Eltern), damit der Lauf sich nicht selbst meldet
+NF_SELF_PIDS=" $$ ${PPID:-0} "
+_nf_p=${PPID:-0}
+for _nf_i in 1 2 3 4 5; do
+    [[ -r "/proc/$_nf_p/status" ]] || break
+    _nf_p=$(awk '/^PPid:/{print $2}' "/proc/$_nf_p/status" 2>/dev/null)
+    [[ -z "$_nf_p" || "$_nf_p" == "0" ]] && break
+    NF_SELF_PIDS+="$_nf_p "
+done
+nf_is_self() { [[ " $NF_SELF_PIDS " == *" $1 "* ]]; }
 
 # ── Hilfsfunktionen ──────────────────────────────────────────
 h1()  { echo -e "\n${BOLD}${BLU}══════════════════════════════════════════${NC}"; \
@@ -145,7 +180,7 @@ cat <<'EOF'
  ██████  ██    ██ ██████  █████   ██ ██  ██ ███████ ██ █████
  ██      ██    ██ ██   ██ ██      ██  ██ ██      ██ ██ ██  ██
   ██████  ██████  ██   ██ ███████ ██   ████ ███████ ██ ██   ██
-  WP-PLESK-FORENSIK v3.3 — netztaucher | digital
+  WP-PLESK-FORENSIK v3.4 — netztaucher | digital
 EOF
 echo -e "${NC}"
 
@@ -552,6 +587,50 @@ else
   warn "Plesk ftpuser-Tool nicht gefunden — manuell in Plesk prüfen"
 fi
 
+h2 "5.6 SSH-Login-Hooks (~/.ssh/rc, /etc/ssh/sshrc)"
+# Diese beiden Dateien werden bei JEDEM SSH-Login ausgeführt, noch bevor
+# die Shell startet. Sie tauchen in keiner Prozessliste und in keinem
+# Cron auf und werden bei einer Bereinigung fast immer übersehen —
+# der Angreifer ist nach dem nächsten Login wieder da.
+SSH_HOOKS_FOUND=""
+if [[ -f /etc/ssh/sshrc ]]; then
+    crit "/etc/ssh/sshrc existiert — wird bei jedem SSH-Login serverweit ausgeführt"
+    code "$(cat /etc/ssh/sshrc 2>/dev/null)"
+    SSH_HOOKS_FOUND+="=== /etc/ssh/sshrc ==="$'\n'"$(cat /etc/ssh/sshrc 2>/dev/null)"$'\n'
+    SSH_LOGIN_HOOKS+="/etc/ssh/sshrc"$'\n'
+fi
+
+USER_SSH_RC=$(find /root /home "$VHOSTS_DIR" -maxdepth 5 -type f -path "*/.ssh/rc" 2>/dev/null || true)
+if [[ -n "$USER_SSH_RC" ]]; then
+    crit "SSH-Login-Hook(s) in Benutzerverzeichnissen gefunden — Persistenz ohne Cron/systemd"
+    while IFS= read -r hk; do
+        [[ -f "$hk" ]] || continue
+        info "Hook: $hk (geändert: $(stat -c %y "$hk" 2>/dev/null | cut -d. -f1))"
+        code "$(cat "$hk" 2>/dev/null)"
+        SSH_HOOKS_FOUND+="=== $hk ==="$'\n'"$(cat "$hk" 2>/dev/null)"$'\n'
+        SSH_LOGIN_HOOKS+="$hk"$'\n'
+    done <<< "$USER_SSH_RC"
+elif [[ -z "$SSH_HOOKS_FOUND" ]]; then
+    ok "Keine SSH-Login-Hooks (~/.ssh/rc, /etc/ssh/sshrc)"
+fi
+[[ -n "$SSH_HOOKS_FOUND" ]] && evidence "ssh_login_hooks" "$SSH_HOOKS_FOUND"
+
+h2 "5.7 authorized_keys mit erzwungenen Kommandos"
+# Ein Schlüssel mit command="..." führt bei Login ein festes Kommando aus.
+# Legitim für Backup-/Deploy-Keys (rrsync, borg) — aber auch eine elegante
+# Backdoor, die in einer Sichtprüfung der Keys leicht durchrutscht.
+FORCED_CMD_KEYS=$(find /root /home "$VHOSTS_DIR" -maxdepth 5 -name "authorized_keys" -type f 2>/dev/null \
+    | while read -r ak; do
+        grep -HnE '^(command=|.*,command=|no-pty|permitopen=)' "$ak" 2>/dev/null || true
+      done || true)
+if [[ -n "$FORCED_CMD_KEYS" ]]; then
+    warn "SSH-Schlüssel mit erzwungenem Kommando/Optionen — gegen Backup-/Deploy-Zwecke abgleichen"
+    code "$FORCED_CMD_KEYS"
+    evidence "ssh_forced_commands" "$FORCED_CMD_KEYS"
+else
+    ok "Keine authorized_keys mit erzwungenen Kommandos"
+fi
+
 # ============================================================
 h1 "6. CRONJOBS & PERSISTENZ"
 # ============================================================
@@ -678,6 +757,59 @@ h2 "6.8 Kernel-Module"
 LSMOD_OUT=$(lsmod 2>/dev/null | head -40 || true)
 code "$LSMOD_OUT"
 evidence "kernel_module" "$(lsmod 2>/dev/null || true)"
+
+h2 "6.9 Weniger bekannte Persistenz-Orte (udev, PAM, APT, linger)"
+# Diese vier Orte überleben eine Bereinigung, die sich auf Cron und
+# systemd beschränkt — und werden genau deshalb gern genutzt.
+EXOTIC_PERSIST=""
+
+# udev: RUN+= führt Code aus, sobald ein passendes Gerät auftaucht
+UDEV_HITS=$(grep -rnasE 'RUN\+?=.*(sh|bash|python|perl|/tmp/|/dev/shm/)' /etc/udev/rules.d/ 2>/dev/null || true)
+if [[ -n "$UDEV_HITS" ]]; then
+    crit "udev-Regel führt Code aus — Persistenz über Geräte-Events"
+    code "$UDEV_HITS"
+    EXOTIC_PERSIST+="=== udev ==="$'\n'"$UDEV_HITS"$'\n'
+else
+    ok "Keine udev-Regeln mit Code-Ausführung"
+fi
+
+# PAM: pam_exec.so hängt sich in jeden Login ein
+PAM_HITS=$(grep -rnasE 'pam_exec\.so|/tmp/|/dev/shm/' /etc/pam.d/ 2>/dev/null || true)
+if [[ -n "$PAM_HITS" ]]; then
+    crit "PAM-Konfiguration ruft externes Programm auf — Login-Hook"
+    code "$PAM_HITS"
+    EXOTIC_PERSIST+="=== PAM ==="$'\n'"$PAM_HITS"$'\n'
+else
+    ok "Keine auffälligen PAM-Einträge"
+fi
+
+# APT: Pre-/Post-Invoke läuft bei jedem apt-Aufruf als root
+APT_HITS=$(grep -rnasE '(Pre-Invoke|Post-Invoke).*(curl|wget|/tmp/|/dev/shm/|base64)' /etc/apt/apt.conf.d/ 2>/dev/null || true)
+if [[ -n "$APT_HITS" ]]; then
+    crit "APT-Hook lädt/führt Code aus — läuft bei jedem apt-Lauf als root"
+    code "$APT_HITS"
+    EXOTIC_PERSIST+="=== APT ==="$'\n'"$APT_HITS"$'\n'
+else
+    ok "Keine auffälligen APT-Hooks"
+fi
+
+# systemd linger: User-Services laufen ohne Login weiter
+if [[ -d /var/lib/systemd/linger ]]; then
+    LINGER_USERS=$(ls -A /var/lib/systemd/linger 2>/dev/null || true)
+    if [[ -n "$LINGER_USERS" ]]; then
+        warn "Benutzer mit aktivem 'linger' — deren systemd-User-Services laufen auch ohne Login: $(echo "$LINGER_USERS" | tr '\n' ' ')"
+        USER_UNITS=$(find /home /root -maxdepth 5 -type d -path '*/.config/systemd/user' 2>/dev/null \
+            | while read -r d; do ls -la "$d" 2>/dev/null | sed "s|^|[$d] |"; done || true)
+        code "$LINGER_USERS
+
+$USER_UNITS"
+        EXOTIC_PERSIST+="=== linger ==="$'\n'"$LINGER_USERS"$'\n'"$USER_UNITS"$'\n'
+    else
+        ok "Kein Benutzer mit aktivem linger"
+    fi
+fi
+
+[[ -n "$EXOTIC_PERSIST" ]] && evidence "persistenz_exotisch" "$EXOTIC_PERSIST"
 
 # ============================================================
 h1 "7. DATEISYSTEM-SCAN"
@@ -899,6 +1031,70 @@ else
   ok "Keine Immutable-Flags auf PHP-Dateien (Stichprobe max. 8000 Dateien)"
 fi
 
+h2 "7.10 Als Schlüssel-/Konfigdatei getarnte Binaries"
+# Konkreter Anlass: eine gs-netcat-Binary lag als ~/.ssh/id_rsa auf dem
+# System. Eine Datei mit diesem Namen prüft niemand auf ihren Dateityp.
+# Erkennung über das ELF-Magic (7f 45 4c 46), nicht über den Namen.
+# Scope: System-Verzeichnisse (Schlüssel-/Konfig-Ablageorte) plus der
+# geprüfte Webspace ${SCAN_PATH} — NICHT alle vhosts. Auf Shared-Hosts
+# mit hunderten vhosts explodiert ein $VHOSTS_DIR-Scan (Plesk-Statistik/
+# webalizer allein liefern Zehntausende .png/.log-Treffer). Der serverweite
+# Voll-Scan bleibt dem Global-Modus (ab v3.5) vorbehalten. Die Endungsliste
+# ist bewusst auf Schlüssel-/Zertifikat-/Konfig-Namen begrenzt; eine als
+# Bild/Log getarnte ELF fängt ohnehin der inhaltsbasierte Signaturscan 8.7
+# (grep -rla) und, falls vorhanden, YARA (7.11) — beide lesen den Inhalt,
+# nicht den Namen.
+MASQ_FOUND=""
+while IFS= read -r f; do
+    [[ -f "$f" ]] || continue
+    magic=$(head -c4 "$f" 2>/dev/null | od -An -tx1 2>/dev/null | tr -d ' \n')
+    if [[ "$magic" == "7f454c46" ]]; then
+        MASQ_FOUND+="$(ls -la --time-style=long-iso "$f" 2>/dev/null)  SHA256: $(sha256sum "$f" 2>/dev/null | awk '{print $1}')"$'\n'
+        MASQ_BINARIES+="$f"$'\n'
+    fi
+done < <(find /root /home /etc "$SCAN_PATH" /tmp /var/tmp /dev/shm -xdev -type f \
+    \( -name 'id_*' -o -name '*.pem' -o -name '*.key' -o -name '*.crt' \
+       -o -name 'authorized_keys*' -o -name 'known_hosts' -o -name '*.conf' \) 2>/dev/null | nf_strip_self)
+
+if [[ -n "$MASQ_FOUND" ]]; then
+    crit "Ausführbare Binary als Schlüssel-/Konfigdatei getarnt"
+    code "$MASQ_FOUND"
+    evidence "getarnte_binaries" "$MASQ_FOUND"
+else
+    ok "Keine als Schlüssel-/Konfigdatei getarnten Binaries"
+fi
+
+h2 "7.11 YARA-Signaturscan (optional)"
+# Nutzt signaturen/gsocket-backdoors.yar, falls yara installiert ist.
+# Die Regel ELF_Masquerading_As_KeyFile braucht die externe Variable
+# 'filename' — ohne sie würde sie auf jede ELF-Datei anschlagen.
+YARA_RULES_FILE="${BASE_DIR}/signaturen/gsocket-backdoors.yar"
+if command -v yara &>/dev/null && [[ -f "$YARA_RULES_FILE" ]]; then
+    YARA_DETAIL=""
+    while IFS= read -r f; do
+        [[ -f "$f" ]] || continue
+        bn=$(basename "$f")
+        yout=$(yara -w -d filename="$bn" "$YARA_RULES_FILE" "$f" 2>/dev/null || true)
+        if [[ -n "$yout" ]]; then
+            rules=$(echo "$yout" | awk '{print $1}' | sort -u | tr '\n' ' ')
+            YARA_DETAIL+="$f — Regeln: $rules"$'\n'
+            YARA_HITS+="$f"$'\n'
+        fi
+    done < <(find /tmp /var/tmp /dev/shm /root /home /usr/local/bin /usr/local/sbin /opt "$SCAN_PATH" \
+                -xdev -type f -size -30M 2>/dev/null | nf_strip_self)
+    if [[ -n "$YARA_DETAIL" ]]; then
+        crit "YARA-Signaturtreffer im Dateisystem"
+        code "$YARA_DETAIL"
+        evidence "yara_treffer" "$YARA_DETAIL"
+    else
+        ok "Keine YARA-Signaturtreffer"
+    fi
+elif ! command -v yara &>/dev/null; then
+    info "yara nicht installiert — Signaturscan übersprungen (apt install yara)"
+else
+    info "Keine Regeldatei unter $YARA_RULES_FILE — Signaturscan übersprungen"
+fi
+
 # ============================================================
 h1 "8. NETZWERK & DIENSTE"
 # ============================================================
@@ -1047,6 +1243,237 @@ $(echo "$PKG_MODIFIED" | awk '{print $NF}' | xargs -r sha256sum 2>/dev/null)"
   else
     ok "Kern-Binaries (bash, ssh, curl, wget, cron) stimmen mit Paketdatenbank überein"
   fi
+fi
+
+h2 "8.7 Relay-Backdoors (THC gsocket / gs-netcat)"
+# gsocket öffnet KEINEN Port. Beide Seiten verbinden sich ausgehend über
+# TLS/443 zu einem Relay (GSRN) und finden sich über ein gemeinsames
+# Geheimnis. Abschnitt 8.1 (LISTEN-Ports) ist dagegen blind — deshalb
+# hier eigens Datei-, Prozess- und Verbindungsebene.
+# Scope wie 7.10/7.11: System-Dirs voll, vhost-Teil nur ${SCAN_PATH} (der
+# serverweite Voll-Scan über alle vhosts bleibt dem Global-Modus ab v3.5
+# vorbehalten — über hunderte vhosts liest der Scan jede Datei und ist auf
+# Shared-Hosts nicht tragbar).
+# Umsetzung als find | grep statt grep -r: die Größengrenze -size -30M
+# überspringt Backup-Archive und Quarantäne-Dumps (auf Produktions-Root
+# schnell dutzende GB), die der Regex sonst byteweise durchkämmt. Die gesuchte
+# gs-netcat-Binary ist ~2,8 MB und bleibt damit erfasst. nf_strip_self prunt
+# den eigenen Ablageordner ${BASE_DIR} VOR dem Lesen. grep -a (ohne -I!) ist
+# Absicht: -I würde Binärdateien überspringen und genau die ELF-Backdoor
+# nie lesen.
+GS_FILE_HITS=$(find /tmp /var/tmp /dev/shm /root /home /usr/local/bin /usr/local/sbin /opt "$SCAN_PATH" \
+    -xdev -type f -size -30M 2>/dev/null | nf_strip_self \
+    | xargs -r -d '\n' grep -la -E "$GS_SIG_REGEX" 2>/dev/null \
+    | grep -vF "$INSTALLED_PATH" || true)
+if [[ -n "$GS_FILE_HITS" ]]; then
+    # Differenzierung nach Dateityp — ohne sie erzeugt jede Dokumentation und
+    # jede Signaturdatei, die die Begriffe nennt, einen Fehlalarm:
+    #   ELF-Binary   → das Werkzeug selbst liegt auf dem System (kritisch)
+    #   Skript/Text  → Installer, Konfiguration oder nur eine Erwähnung (Review)
+    GS_ELF=""; GS_TEXT=""
+    while IFS= read -r f; do
+        [[ -f "$f" ]] || continue
+        line="$(ls -la --time-style=long-iso "$f" 2>/dev/null)  SHA256: $(sha256sum "$f" 2>/dev/null | awk '{print $1}')"
+        magic=$(head -c4 "$f" 2>/dev/null | od -An -tx1 2>/dev/null | tr -d ' \n')
+        if [[ "$magic" == "7f454c46" ]]; then
+            GS_ELF+="$line"$'\n'
+            GSOCKET_HITS+="$f"$'\n'
+        else
+            GS_TEXT+="$line"$'\n'
+        fi
+    done <<< "$GS_FILE_HITS"
+
+    if [[ -n "$GS_ELF" ]]; then
+        crit "gs-netcat-Binary auf dem System gefunden — interaktive Relay-Backdoor"
+        code "$GS_ELF"
+        evidence "gsocket_binaries" "$GS_ELF"
+    fi
+    if [[ -n "$GS_TEXT" ]]; then
+        warn "gsocket-Begriffe in Nicht-Binärdateien (Installer, Konfig oder bloße Erwähnung) — manuell einordnen"
+        code "$GS_TEXT"
+        evidence "gsocket_textfunde" "$GS_TEXT"
+    fi
+else
+    ok "Keine gsocket-Signaturen im Dateisystem"
+fi
+
+GS_PROC_HITS=$(ps -eo pid,ppid,user,etime,args 2>/dev/null \
+    | grep -iE "$GS_SIG_REGEX|$GS_DISGUISE_REGEX" \
+    | grep -vE "grep|wp_plesk_forensik" || true)
+if [[ -n "$GS_PROC_HITS" ]]; then
+    crit "gsocket-typischer Prozess läuft"
+    code "$GS_PROC_HITS"
+    evidence "gsocket_prozesse" "$GS_PROC_HITS"
+    GSOCKET_HITS+="(Prozess) $(echo "$GS_PROC_HITS" | head -1)"$'\n'
+else
+    ok "Kein gsocket-typischer Prozessname"
+fi
+
+h2 "8.8 Fileless-Prozesse (memfd — Binary nur im RAM)"
+# memfd_create() führt ein Binary aus, das nie auf der Platte landet.
+# Kein Dateiscanner der Welt findet das; nur /proc verrät es.
+# Abschnitt 8.2b sieht solche Prozesse zwar als "(deleted)", benennt
+# aber die Ursache nicht — und die ist für die Bewertung entscheidend.
+MEMFD_DETAIL=""
+for pid in /proc/[0-9]*; do
+    nf_is_self "$(basename "$pid")" && continue
+    exe=$(readlink "$pid/exe" 2>/dev/null) || continue
+    case "$exe" in
+        *memfd:*)
+            p=$(basename "$pid")
+            MEMFD_DETAIL+="PID $p — $exe
+  comm:    $(cat "$pid/comm" 2>/dev/null)
+  cmdline: $(tr '\0' ' ' < "$pid/cmdline" 2>/dev/null | head -c 200)
+  user:    $(stat -c %U "$pid" 2>/dev/null)
+  ppid:    $(awk '/^PPid:/{print $2}' "$pid/status" 2>/dev/null)
+"
+            FILELESS_PROCS+="PID $p: $exe"$'\n' ;;
+    esac
+done
+if [[ -n "$MEMFD_DETAIL" ]]; then
+    crit "Prozess(e) laufen ausschließlich aus dem Arbeitsspeicher (memfd) — fileless Malware"
+    code "$MEMFD_DETAIL"
+    evidence "fileless_memfd_prozesse" "$MEMFD_DETAIL"
+else
+    ok "Keine memfd-Prozesse (keine fileless Ausführung)"
+fi
+
+h2 "8.9 Als Kernel-Thread getarnte Prozesse"
+# Echte Kernel-Threads haben eckige Klammern im Namen, PPID 2 (kthreadd)
+# UND kein /proc/PID/exe. Ein User-Prozess, der sich [kworker/…] nennt,
+# verrät sich über genau diese beiden Merkmale.
+# Die Tarnung kann über comm (prctl PR_SET_NAME) ODER über argv[0]
+# (exec -a, in `ps` sichtbar) laufen — beide sind gratis fälschbar, daher
+# werden beide geprüft. comm allein würde eine reine argv[0]-Tarnung
+# übersehen, obwohl sie in der Prozessliste wie ein Kernel-Thread aussieht.
+KTHREAD_DETAIL=""
+for pid in /proc/[0-9]*; do
+    nf_is_self "$(basename "$pid")" && continue
+    comm=$(cat "$pid/comm" 2>/dev/null) || continue
+    argv0=$(tr '\0' '\n' < "$pid/cmdline" 2>/dev/null | head -1)
+    # kthread-typisch tarnt sich, wenn comm ODER argv[0] mit '[' beginnt
+    if [[ "$comm" == \[* || "$argv0" == \[* ]]; then
+        ppid=$(awk '/^PPid:/{print $2}' "$pid/status" 2>/dev/null)
+        exe=$(readlink "$pid/exe" 2>/dev/null)
+        # Beweis: echte Kernel-Threads haben KEIN exe und PPID 2. Ein Treffer
+        # mit vorhandenem exe oder fremder PPID ist damit belastbar (crit).
+        if [[ -n "$exe" ]] || { [[ -n "$ppid" ]] && [[ "$ppid" != "2" ]] && [[ "$ppid" != "0" ]]; }; then
+            p=$(basename "$pid")
+            [[ "$comm" == \[* ]] && vektor="comm='$comm'" || vektor="argv[0]='$argv0'"
+            KTHREAD_DETAIL+="PID $p gibt sich als Kernel-Thread aus ($vektor)
+  comm: $comm
+  argv[0]: ${argv0:-<leer>}
+  exe:  ${exe:-<keins>}
+  ppid: ${ppid:-?} (echte Kernel-Threads: 2)
+  user: $(stat -c %U "$pid" 2>/dev/null)
+"
+            KTHREAD_FAKES+="PID $p: ${comm}${argv0:+ / $argv0}"$'\n'
+        fi
+    fi
+done
+if [[ -n "$KTHREAD_DETAIL" ]]; then
+    crit "Prozess(e) tarnen sich als Kernel-Thread"
+    code "$KTHREAD_DETAIL"
+    evidence "kernel_thread_tarnung" "$KTHREAD_DETAIL"
+else
+    ok "Keine als Kernel-Thread getarnten Prozesse"
+fi
+
+h2 "8.10 Verwaiste Interpreter ohne Terminal"
+# Eine Shell mit PPID 1 und ohne kontrollierendes TTY hat keinen
+# Benutzer am anderen Ende — das ist das Profil einer abgesetzten
+# Reverse-Shell, die den Elternprozess überlebt hat.
+ORPHAN_DETAIL=""
+for pid in /proc/[0-9]*; do
+    nf_is_self "$(basename "$pid")" && continue
+    comm=$(cat "$pid/comm" 2>/dev/null) || continue
+    case "$comm" in
+        sh|bash|dash|zsh|ksh|perl|python|python3|ruby|php|nc|ncat|socat)
+            ppid=$(awk '/^PPid:/{print $2}' "$pid/status" 2>/dev/null)
+            tty=$(awk '{print $7}' "$pid/stat" 2>/dev/null)
+            if [[ "$ppid" == "1" ]] && [[ "${tty:-0}" == "0" ]]; then
+                p=$(basename "$pid")
+                ORPHAN_DETAIL+="PID $p ($comm) — PPID 1, kein TTY
+  cmdline: $(tr '\0' ' ' < "$pid/cmdline" 2>/dev/null | head -c 200)
+  user:    $(stat -c %U "$pid" 2>/dev/null)
+  cwd:     $(readlink "$pid/cwd" 2>/dev/null)
+"
+                ORPHAN_SHELLS+="PID $p: $comm"$'\n'
+            fi ;;
+    esac
+done
+if [[ -n "$ORPHAN_DETAIL" ]]; then
+    warn "Verwaiste Shell(s)/Interpreter ohne Terminal — mit laufenden Diensten abgleichen"
+    code "$ORPHAN_DETAIL"
+    evidence "verwaiste_interpreter" "$ORPHAN_DETAIL"
+else
+    ok "Keine verwaisten Interpreter ohne TTY"
+fi
+
+h2 "8.11 Prozess-Umgebung auf Backdoor-Marker"
+# GSOCKET_*/GS_ARGS verrät gsocket auch dann, wenn das Binary umbenannt
+# wurde. LD_PRELOAD in einem einzelnen Prozess ist Hooking ohne Eintrag
+# in /etc/ld.so.preload. HISTFILE=/dev/null ist Spurenvermeidung.
+ENV_DETAIL=""
+for pid in /proc/[0-9]*; do
+    [[ -r "$pid/environ" ]] || continue
+    if grep -aqE "GSOCKET_|GS_ARGS=|LD_PRELOAD=|HISTFILE=/dev/null|HISTSIZE=0" "$pid/environ" 2>/dev/null; then
+        p=$(basename "$pid")
+        nf_is_self "$p" && continue
+        ENV_DETAIL+="PID $p ($(cat "$pid/comm" 2>/dev/null)) — $(tr '\0' ' ' < "$pid/cmdline" 2>/dev/null | head -c 120)
+$(tr '\0' '\n' < "$pid/environ" 2>/dev/null | grep -aE "GSOCKET_|GS_ARGS=|LD_PRELOAD=|HISTFILE=|HISTSIZE=" | sed 's/^/  /')
+"
+    fi
+done
+if [[ -n "$ENV_DETAIL" ]]; then
+    crit "Prozess(e) mit Backdoor-typischen Umgebungsvariablen"
+    code "$ENV_DETAIL"
+    evidence "prozess_umgebung_marker" "$ENV_DETAIL"
+else
+    ok "Keine Backdoor-Marker in Prozess-Umgebungen"
+fi
+
+h2 "8.12 Ausgehende Verbindungen (Relay-Erkennung)"
+# Der eigentliche Kanal einer Relay-Backdoor. Ausgehend auf 443 sieht
+# wie normales HTTPS aus — auffällig wird es durch den Prozess, der die
+# Verbindung hält. Bekannte Web-/Update-/Monitoring-Clients sind
+# ausgenommen; alles andere auf 443/7350 ist erklärungsbedürftig.
+#
+# WICHTIG — nur der PEER-Port zählt: Auf einem Webserver hat jede eingehende
+# HTTPS-Verbindung lokal Port 443. Ein simples grep ':443 ' trifft dieses
+# lokale Feld und meldet dann jeden Besucher als Relay-Verdacht — auf einem
+# Produktions-Plesk sind das dutzende Fehlalarme pro Lauf (gemessen: 76
+# eingehende vs. 2 echte ausgehende). Eine Relay-Backdoor verbindet sich
+# AUSGEHEND, d. h. der ENTFERNTE Port ist 443/7350. Wir werten deshalb
+# ausschließlich das Peer-Feld ($5 in `ss`: Netid Recv-Q Send-Q Local Peer
+# Process) aus.
+if command -v ss &>/dev/null; then
+    ESTAB=$(ss -tunp state established 2>/dev/null || true)
+    evidence "verbindungen_etabliert" "$ESTAB"
+
+    RELAY_SUSPECT=$(echo "$ESTAB" \
+        | awk 'NR>1 { n=split($5,a,":"); pp=a[n]; if (pp=="443" || pp=="7350") print }' \
+        | grep -viE 'users:\(\("(nginx|apache2?|httpd|curl|wget|php-fpm[0-9.]*|php|node|containerd|dockerd|packagekitd?|snapd|unattended-upgr|apt|apt-get|aptd|systemd-resolve|chronyd?|ntpd|fail2ban-server|certbot|git|ssh|sshd|tailscaled|sw-engine|psa|plesk|mysqld|postfix|dovecot|python3?)"' || true)
+    if [[ -n "$RELAY_SUSPECT" ]]; then
+        crit "Ausgehende TLS-Verbindung durch untypischen Prozess — Relay-Backdoor-Verdacht"
+        code "$RELAY_SUSPECT"
+        evidence "relay_verdaechtige_verbindungen" "$RELAY_SUSPECT"
+        RELAY_CONNECTIONS+="$RELAY_SUSPECT"$'\n'
+    else
+        ok "Keine untypischen ausgehenden 443/7350-Verbindungen"
+    fi
+
+    TOR_CONN=$(echo "$ESTAB" \
+        | awk 'NR>1 { n=split($5,a,":"); pp=a[n]; if (pp=="9001"||pp=="9030"||pp=="9050"||pp=="9150") print }' || true)
+    if [[ -n "$TOR_CONN" ]]; then
+        warn "TOR-typische Verbindung(en) — gsocket kann optional über TOR routen"
+        code "$TOR_CONN"
+        evidence "tor_verbindungen" "$TOR_CONN"
+    else
+        ok "Keine TOR-typischen Verbindungen"
+    fi
+else
+    warn "'ss' nicht verfügbar — ausgehende Verbindungen nicht prüfbar"
 fi
 
 # ============================================================
@@ -1532,6 +1959,29 @@ $ROOT_VERDICT
 
 $ROOT_NOTES"
 
+
+# Konsolidiert alle Relay-/Prozess-Befunde zu einer klaren Aussage —
+# analog zum bestehenden ROOT_VERDICT.
+RELAY_FLAGS=0
+[[ -n "$GSOCKET_HITS"       ]] && RELAY_FLAGS=$((RELAY_FLAGS+3))
+[[ -n "$MASQ_BINARIES"      ]] && RELAY_FLAGS=$((RELAY_FLAGS+3))
+[[ -n "$FILELESS_PROCS"     ]] && RELAY_FLAGS=$((RELAY_FLAGS+3))
+[[ -n "$KTHREAD_FAKES"      ]] && RELAY_FLAGS=$((RELAY_FLAGS+2))
+[[ -n "$YARA_HITS"          ]] && RELAY_FLAGS=$((RELAY_FLAGS+2))
+[[ -n "$SSH_LOGIN_HOOKS"    ]] && RELAY_FLAGS=$((RELAY_FLAGS+2))
+[[ -n "$RELAY_CONNECTIONS"  ]] && RELAY_FLAGS=$((RELAY_FLAGS+1))
+[[ -n "$ORPHAN_SHELLS"      ]] && RELAY_FLAGS=$((RELAY_FLAGS+1))
+
+if   [[ "$RELAY_FLAGS" -ge 3 ]]; then
+    RELAY_VERDICT="🔴 **Interaktive Backdoor nachgewiesen.** Es bestehen Hinweise auf einen aktiven, ausgehenden Fernzugriffskanal (Relay-Backdoor). Ein solcher Kanal umgeht Firewall und NAT vollständig und ist von außen nicht als offener Port sichtbar. Das System ist als vollständig kompromittiert zu behandeln; ein Entfernen einzelner Dateien genügt nicht."
+elif [[ "$RELAY_FLAGS" -ge 1 ]]; then
+    RELAY_VERDICT="🟡 **Backdoor-Verdacht.** Einzelne Indikatoren für einen Fernzugriffskanal gefunden, aber keine eindeutige Signatur. Befunde manuell verifizieren, bevor bereinigt wird."
+else
+    RELAY_VERDICT="🟢 **Kein Hinweis auf eine Relay-Backdoor.** Weder Signaturen, getarnte Binaries, fileless Prozesse noch untypische ausgehende Verbindungen gefunden. (Kein Ausschluss: ein inaktiver Kanal ist zum Scanzeitpunkt unsichtbar — dauerhafte Erkennung nur über auditd, siehe haertung/audit-backdoor.rules.)"
+fi
+
+echo -e "\n### Verdikt Relay-Backdoor\n\n${RELAY_VERDICT}\n" >> "$REPORT_FILE"
+
 # ============================================================
 h1 "13. ZUSAMMENFASSUNG"
 # ============================================================
@@ -1692,6 +2142,8 @@ ${ROOT_VERDICT}
 > muss der gesamte Server als kompromittiert gelten.
 
 **WordPress-Datenbank:** ${WPDB_VERDICT}
+
+**Fernzugriff / Relay-Backdoor:** ${RELAY_VERDICT}
 
 ## 5. Angriffshergang & Angreifer
 
@@ -1877,9 +2329,14 @@ Datei-Hashes verdächtiger Dateien: siehe \`belege/\` (SHA256SUMS und Einzelbele
 ${ROOT_VERDICT}
 $(if [[ -n "${ROOT_NOTES:-}" ]]; then echo; echo "$ROOT_NOTES"; fi)
 
+### Relay-Backdoor / ausgehender Fernzugriff (automatisiert bewertet)
+
+${RELAY_VERDICT}
+
 | Frage | Antwort |
 |---|---|
 | Server-Root kompromittiert? | $(if [[ "${ROOT_FLAGS:-0}" -eq 0 ]]; then echo "Nach Beweislage nein (auf Web-User-Ebene begrenzt)"; else echo "NICHT ausgeschlossen — ${ROOT_FLAGS} Indikator(en), siehe Technik-Bericht §12"; fi) |
+| Relay-Backdoor / Fernzugriffskanal? | $(if [[ "${RELAY_FLAGS:-0}" -eq 0 ]]; then echo "kein Hinweis (kein Ausschluss bei inaktivem Kanal)"; else echo "Verdacht/Nachweis — ${RELAY_FLAGS} Punkt(e), siehe Technik-Bericht §8.7–8.12"; fi) |
 | WordPress-Datenbank | $(if [[ "${WPDB_FLAGS:-0}" -eq 0 ]]; then echo "unauffällig (keine fremden Admins/Optionen)"; else echo "AUFFÄLLIG — ${WPDB_FLAGS} Befund(e), siehe Technik-Bericht §11"; fi) |
 | Verfügbarkeit beeinträchtigt? | [AUSFÜLLEN] |
 | Integrität von Daten/Systemen verletzt? | [AUSFÜLLEN] |
@@ -2077,10 +2534,20 @@ emit_findings_json() {
   fkeys=$(printf '%s\n' "${FOREIGN_KEYS:-}"    | json_arr)
   aips=$(printf '%s\n' "${ATTACK_IPS_UNIQ:-}"  | grep -oE '([0-9]{1,3}\.){3}[0-9]{1,3}' | json_arr)
   bips=$(printf '%s\n' "${TOP_FAIL_IPS:-}"     | grep -oE '([0-9]{1,3}\.){3}[0-9]{1,3}' | json_arr)
+  # v3.4 Relay-Backdoors — Prozess-/Datei-Introspektion (Abschnitte 5.6/5.7, 6.9, 7.10/7.11, 8.7–8.12)
+  local gsock masq fless kthr orph sshh relc yhit
+  gsock=$(printf '%s\n' "${GSOCKET_HITS:-}"     | json_arr)
+  masq=$(printf '%s\n'  "${MASQ_BINARIES:-}"    | json_arr)
+  fless=$(printf '%s\n' "${FILELESS_PROCS:-}"   | json_arr)
+  kthr=$(printf '%s\n'  "${KTHREAD_FAKES:-}"    | json_arr)
+  orph=$(printf '%s\n'  "${ORPHAN_SHELLS:-}"    | json_arr)
+  sshh=$(printf '%s\n'  "${SSH_LOGIN_HOOKS:-}"  | json_arr)
+  relc=$(printf '%s\n'  "${RELAY_CONNECTIONS:-}" | json_arr)
+  yhit=$(printf '%s\n'  "${YARA_HITS:-}"        | json_arr)
 
   cat > "$FINDINGS_FILE" <<JSON
 {
-  "schema_version": "1.0",
+  "schema_version": "1.1",
   "tool": "wp_plesk_forensik.sh",
   "tool_version": "${TOOL_VERSION}",
   "run_id": "$(json_str "$RUN_LABEL")",
@@ -2090,7 +2557,8 @@ emit_findings_json() {
   "counts": { "crit": ${N_CRIT:-0}, "warn": ${N_WARN:-0}, "ok": ${N_OK:-0} },
   "verdicts": {
     "root": { "flags": ${ROOT_FLAGS:-0}, "text": "$(json_str "${ROOT_VERDICT:-}")" },
-    "wpdb": { "flags": ${WPDB_FLAGS:-0}, "text": "$(json_str "${WPDB_VERDICT:-}")" }
+    "wpdb": { "flags": ${WPDB_FLAGS:-0}, "text": "$(json_str "${WPDB_VERDICT:-}")" },
+    "relay": { "flags": ${RELAY_FLAGS:-0}, "text": "$(json_str "${RELAY_VERDICT:-}")" }
   },
   "metrics": {
     "webshell_count": ${WEBSHELL_COUNT:-0},
@@ -2125,7 +2593,15 @@ emit_findings_json() {
     "proc_malicious": ${procs:-[]},
     "wp_configs": ${wpc:-[]},
     "foreign_ssh_keys": ${fkeys:-[]},
-    "ioc_ips": { "attacker": ${aips:-[]}, "ssh_bruteforce": ${bips:-[]} }
+    "ioc_ips": { "attacker": ${aips:-[]}, "ssh_bruteforce": ${bips:-[]} },
+    "gsocket_hits": ${gsock:-[]},
+    "masq_binaries": ${masq:-[]},
+    "fileless_procs": ${fless:-[]},
+    "kthread_fakes": ${kthr:-[]},
+    "orphan_shells": ${orph:-[]},
+    "ssh_login_hooks": ${sshh:-[]},
+    "relay_connections": ${relc:-[]},
+    "yara_hits": ${yhit:-[]}
   }
 }
 JSON
