@@ -1215,7 +1215,11 @@ h2 "7.11 YARA-Signaturscan (optional)"
 # Nutzt signaturen/gsocket-backdoors.yar, falls yara installiert ist.
 # Die Regel ELF_Masquerading_As_KeyFile braucht die externe Variable
 # 'filename' — ohne sie würde sie auf jede ELF-Datei anschlagen.
-YARA_RULES_FILE="${BASE_DIR}/signaturen/gsocket-backdoors.yar"
+# Sammel-Regeldatei bevorzugen (bindet gsocket + Joomla + künftige ein).
+# Rückfall auf die einzelne Datei hält Hosts lauffähig, die noch einen alten
+# signaturen/-Stand tragen.
+YARA_RULES_FILE="${BASE_DIR}/signaturen/alle.yar"
+[[ -f "$YARA_RULES_FILE" ]] || YARA_RULES_FILE="${BASE_DIR}/signaturen/gsocket-backdoors.yar"
 if [[ "$WANT_YARA" != "1" ]]; then
     info "YARA-Scan nicht aktiviert — mit --yara einschalten (auf großen Webspaces langsam)"
 elif command -v yara &>/dev/null && [[ -f "$YARA_RULES_FILE" ]]; then
@@ -2689,6 +2693,140 @@ except Exception:
       fi
     fi
 
+    # ── 12.8 Joomla-typische Schaddateien ─────────────────────
+    h2 "12.8 Joomla-typische Schaddateien — $site"
+    jmal=""
+
+    # Stärkste Regel, praktisch fehlalarmfrei: eine Datei, die der Webserver
+    # als PHP ausführt, trägt in den ersten Bytes eine Bild-Kennung. Genau so
+    # sehen die über die JCE-/Bildupload-Lücken abgelegten Hintertüren aus
+    # (getarnt als GIF, um die Upload-Prüfung zu bestehen). Einen legitimen
+    # Fall dafür gibt es nicht.
+    while IFS= read -r f; do
+      [[ -f "$f" ]] || continue
+      case "$(head -c4 "$f" 2>/dev/null | od -An -tx1 | tr -d ' \n')" in
+        47494638|89504e47|ffd8ffe0|ffd8ffe1|ffd8ffdb)
+          jmal+="$f"$'\n' ;;
+      esac
+    done < <(find "$CURRENT_J_PATH" -type f \
+               \( -iname '*.php' -o -iname '*.phtml' -o -iname '*.php[3-8]' -o -iname '*.phar' \) \
+               -newermt "-${DAYS_BACK} days" 2>/dev/null | nf_strip_self)
+
+    # PHP unterhalb von Verzeichnissen, die ausschließlich Medien, Zwischen-
+    # ablagen oder Zwischenspeicher enthalten dürfen. Der Guard-Filter aus 7.2
+    # verhindert Fehlalarme durch die winzigen Schutzdateien, die Joomla und
+    # viele Erweiterungen dort regulär ablegen.
+    while IFS= read -r f; do
+      [[ -f "$f" ]] || continue
+      fsize=$(stat -c%s "$f" 2>/dev/null || echo 999999)
+      if [[ "$fsize" -lt 200 ]] && head -c 200 "$f" 2>/dev/null \
+         | grep -qiE "silence is golden|browsing the directory is not allowed|restricted access|^<\?php[[:space:]]*$"; then
+        continue
+      fi
+      # Joomlas eigene Schutzdatei: <?php die('Restricted access'); ?>
+      [[ "$fsize" -lt 400 ]] && grep -qiE "_JEXEC|die\(.Restricted access" "$f" 2>/dev/null && continue
+      jmal+="$f"$'\n'
+    done < <(find "$CURRENT_J_PATH"/images "$CURRENT_J_PATH"/tmp "$CURRENT_J_PATH"/cache \
+                  "$CURRENT_J_PATH"/administrator/cache "$CURRENT_J_PATH"/media \
+               -type f \( -iname '*.php' -o -iname '*.phtml' -o -iname '*.php[3-8]' -o -iname '*.phar' \) \
+               2>/dev/null | nf_strip_self)
+
+    # Gemischte Groß-/Kleinschreibung der Endung (.pHp) — reine Umgehung von
+    # Upload-Filtern, in einer gewachsenen Installation gibt es das nicht.
+    while IFS= read -r f; do
+      [[ -f "$f" ]] && jmal+="$f"$'\n'
+    done < <(find "$CURRENT_J_PATH" -type f -name '*.[pP][hH][pP]' ! -name '*.php' 2>/dev/null | nf_strip_self)
+
+    # Ausführbarer Code VOR der Zugriffssperre in den Einstiegsdateien.
+    # Jede Joomla-Datei beginnt mit Kommentar und defined('_JEXEC') or die;
+    # Steht davor Code, wurde die Datei vorne aufgebohrt.
+    for _entry in index.php administrator/index.php api/index.php includes/framework.php; do
+      _ep="${CURRENT_J_PATH}/${_entry}"
+      [[ -f "$_ep" ]] || continue
+      _guard=$(grep -n "_JEXEC\|JPATH_BASE" "$_ep" 2>/dev/null | head -1 | cut -d: -f1)
+      [[ -n "$_guard" ]] || continue
+      if head -n "$((_guard - 1))" "$_ep" 2>/dev/null \
+         | grep -qEi '(\beval[[:space:]]*\(|base64_decode|gzinflate|\$_(POST|GET|REQUEST|COOKIE)|@?include[[:space:]]*\(|file_get_contents[[:space:]]*\([[:space:]]*.php://input)'; then
+        jmal+="$_ep"$'\n'
+      fi
+    done
+
+    # Das Installationsverzeichnis gehört nach dem Aufsetzen gelöscht —
+    # bleibt es liegen, kann die Seite darüber neu aufgesetzt und übernommen
+    # werden.
+    if [[ -d "${CURRENT_J_PATH}/installation" ]]; then
+      crit "$site: Das Installationsverzeichnis ist noch vorhanden — darüber lässt sich die Seite neu aufsetzen und übernehmen; es muss gelöscht werden" web
+      JOOMLA_FLAGS=$((JOOMLA_FLAGS+1))
+    fi
+
+    # jDownloads CVE-2026-61900: ein im Paket vergessener Test-Uploader ohne
+    # jede Rechte- oder Sitzungsprüfung. Die reine Existenz der Datei genügt.
+    _jdl="${CURRENT_J_PATH}/administrator/components/com_jdownloads/assets/upload/upload-handler.php"
+    if [[ -f "$_jdl" ]]; then
+      crit "$site: Die Erweiterung jDownloads enthält eine ungeschützte Upload-Datei, über die jeder ohne Anmeldung Dateien hochladen kann (CVE-2026-61900) — auf 4.1.6 aktualisieren" web
+      JOOMLA_FLAGS=$((JOOMLA_FLAGS+1))
+      jmal+="$_jdl"$'\n'
+    fi
+
+    # Automatisch vorgeschaltete PHP-Datei: eine der unauffälligsten
+    # Dauerzugriffs-Methoden, weil kein einziger Aufruf sie sichtbar macht.
+    _prep=$(grep -rlE '(auto_prepend_file|auto_append_file)' \
+              "$CURRENT_J_PATH" --include='.htaccess' --include='.user.ini' --include='php.ini' 2>/dev/null | head -20 || true)
+    if [[ -n "$_prep" ]]; then
+      crit "$site: In der Server-Konfiguration wird eine PHP-Datei automatisch vor jedem Seitenaufruf geladen — typische, von aussen unsichtbare Hintertür" web
+      JOOMLA_FLAGS=$((JOOMLA_FLAGS+1))
+      code "$_prep"
+      evidence "joomla_auto_prepend_$(echo "$site" | tr '/.' '__')" "$_prep"
+    fi
+
+    # Sicherungsarchive ausserhalb des Backup-Verzeichnisses: ein per Browser
+    # erreichbares .jpa enthält die komplette Seite inklusive Datenbank und
+    # aller Passwort-Hashes.
+    _arch=$(find "$CURRENT_J_PATH" -maxdepth 3 -type f \( -iname '*.jpa' -o -iname '*.jps' -o -iname '*.j01' \) \
+              2>/dev/null | grep -viE 'com_akeeba[a-z]*/backup/' | head -20 || true)
+    if [[ -n "$_arch" ]]; then
+      crit "$site: Sicherungsarchiv der Seite ausserhalb des geschützten Backup-Ordners — es enthält Datenbank und Passwörter und ist ggf. über den Browser abrufbar" web
+      JOOMLA_FLAGS=$((JOOMLA_FLAGS+1))
+      code "$_arch"
+    fi
+
+    jmal=$(printf '%s' "$jmal" | grep -v '^$' | sort -u || true)
+    if [[ -n "$jmal" ]]; then
+      _n=$(printf '%s\n' "$jmal" | grep -c . || true)
+      crit "$site: ${_n} Schaddatei(en) mit Joomla-typischem Muster — als Bild getarnte oder in Medienordnern abgelegte Hintertüren" web
+      JOOMLA_FLAGS=$((JOOMLA_FLAGS+1))
+      JOOMLA_MALWARE+="$jmal"$'\n'
+      code "$(printf '%s' "$jmal" | head -20)"
+      evidence "joomla_schaddateien_$(echo "$site" | tr '/.' '__')" \
+        "$(while IFS= read -r f; do [[ -f "$f" ]] && printf '%s  %s  %s\n' "$(stat -c%s "$f" 2>/dev/null)" "$(date -d "@$(stat -c%Y "$f" 2>/dev/null)" +%F 2>/dev/null)" "$f"; done <<< "$jmal")"
+    else
+      ok "$site: keine Joomla-typischen Schaddateien gefunden"
+    fi
+
+    # ── 12.9 Angriffsspuren in den Zugriffsprotokollen ────────
+    # WICHTIG in der Formulierung: ein Protokolleintrag belegt den VERSUCH,
+    # nicht den Erfolg. Nur zusammen mit einem Dateifund wird daraus ein
+    # kritischer Befund.
+    _jvhost=$(printf '%s' "$site" | cut -d/ -f1)
+    _jlogs=$(ls "${VHOSTS_DIR}/${_jvhost}/logs/"access*log* 2>/dev/null || true)
+    if [[ -n "$_jlogs" ]]; then
+      _ioc=$(grep -hoiE 'BOT/0\.1 \(BOT for JCE\)|icagenda-batch/1\.0|task=profiles\.import|task=asset(\.|%2e)uploadCustomIcon|option=com_users&task=user\.register|plugin=helix3' \
+               "${VHOSTS_DIR}/${_jvhost}/logs/"access*log* 2>/dev/null | sort | uniq -c | sort -rn || true)
+      if [[ -n "$_ioc" ]]; then
+        if [[ -n "$jmal" ]]; then
+          crit "$site: In den Zugriffsprotokollen stehen Aufrufe bekannter Joomla-Angriffswege — zusammen mit den gefundenen Schaddateien ist das der belegte Angriffsweg" web
+          JOOMLA_FLAGS=$((JOOMLA_FLAGS+1))
+        else
+          warn "$site: In den Zugriffsprotokollen stehen Aufrufe bekannter Joomla-Angriffswege — das belegt Angriffsversuche, nicht deren Erfolg" web
+        fi
+        code "$_ioc"
+        JOOMLA_LOG_IOC+="$_ioc"$'\n'
+        evidence "joomla_log_ioc_$(echo "$site" | tr '/.' '__')" "$_ioc"
+      else
+        ok "$site: keine bekannten Joomla-Angriffsmuster in den Zugriffsprotokollen"
+      fi
+    fi
+
   done <<< "$JOOMLA_CONFIGS"
 fi
 
@@ -2926,6 +3064,8 @@ fam_biz(){ case "$1" in
     "Relay-Backdoor")        echo "Portloser Fernzugriffskanal (umgeht Firewall/NAT)" ;;
     "Getarnte Binary")       echo "Als harmlose Datei getarntes Angriffswerkzeug" ;;
     "Getarnte Payload")      echo "Nachladbarer Schadcode in Nicht-PHP-Datei" ;;
+    "Joomla-Webshell")       echo "Über eine Joomla-Lücke abgelegte Hintertür (meist als Bild getarnt)" ;;
+    "Kernfremde Datei")      echo "Datei im Programmkern, die dort nicht hingehört — Hintertür oder Update-Altlast" ;;
     *)                       echo "Einordnung offen — manuelle Prüfung nötig" ;;
   esac; }
 
@@ -2953,6 +3093,13 @@ _addcat(){ local fam="$1" list="$2"
 [[ -n "${DISGUISED_PAYLOADS:-}" ]] && _addcat "Getarnte Payload"  "$DISGUISED_PAYLOADS"
 [[ -n "${CORE_INJECT_HITS:-}"   ]] && _addcat "Code-Injection"    "$CORE_INJECT_HITS"
 [[ -n "${DOORWAY_DIRS:-}"       ]] && _addcat "SEO-Spam/Doorway"  "$DOORWAY_DIRS"
+# v3.8 Joomla. NUR Variablen mit nackten, absoluten Pfaden je Zeile — _addcat
+# ruft relpath() und füllt MAL_PATHS. JOOMLA_VERSIONS, _ROGUE_SUPER und
+# _VULN_EXT tragen Tabulatoren und "=== site ==="-Kopfzeilen und dürfen hier
+# NICHT durch.
+[[ -n "${JOOMLA_MALWARE:-}"       ]] && _addcat "Joomla-Webshell"  "$JOOMLA_MALWARE"
+[[ -n "${JOOMLA_CORE_MODIFIED:-}" ]] && _addcat "Code-Injection"   "$JOOMLA_CORE_MODIFIED"
+[[ -n "${JOOMLA_CORE_UNKNOWN:-}"  ]] && _addcat "Kernfremde Datei" "$JOOMLA_CORE_UNKNOWN"
 
 # Grobstatistik + Detaildatei zusammensetzen
 MALWARE_TOTAL=0; MALWARE_FAMILY_ROWS=""; MALWARE_CARD=""
@@ -2961,9 +3108,19 @@ MAIL_AREA=""; MAIL_FINDING=""; MAIL_TIMEFRAME=""; MAIL_NEWEST=""; MAIL_FAMILIES_
 for fam in "${!FAM_COUNT[@]}"; do MALWARE_TOTAL=$(( MALWARE_TOTAL + FAM_COUNT[$fam] )); done
 if [[ "$MALWARE_TOTAL" -gt 0 ]]; then
   # betroffener Bereich aus den Pfaden (grob, laienverständlich)
-  if   printf '%s' "$MAL_PATHS" | grep -qiE '/(administrator|com_[a-z]+|mod_[a-z]+|api/language|libraries/(joomla|src))'; then MAIL_AREA="Shop-/Joomla-Bereich"
-  elif printf '%s' "$MAL_PATHS" | grep -qiE '/(shop2?|warenkorb|checkout|xtcommerce|woocommerce|magento)'; then MAIL_AREA="Shop-Bereich"
+  # Reihenfolge und Regex bewusst geändert (v3.8): die frühere Joomla-Regex
+  # traf schon bei einem blanken "/administrator" und damit auch bei
+  # Nicht-Joomla; jetzt ist der volle Joomla-Pfadkontext nötig. WordPress
+  # steht VOR Shop, weil WooCommerce immer unter wp-content liegt und sonst
+  # als "Shop-Bereich" statt "WordPress-Bereich" beschriftet würde.
+  # Der Anschreiben-Generator leitet aus dem Wort "Shop" ab, ob er den Absatz
+  # zu Zahlungsdaten aufnimmt. Deshalb bei Joomla die verbreiteten
+  # Shop-Komponenten gezielt erkennen, statt Joomla wie früher pauschal als
+  # Shop zu behandeln.
+  if   printf '%s' "$MAL_PATHS" | grep -qiE 'com_(virtuemart|hikashop|eshop|j2store|redshop|phocacart|jshopping)'; then MAIL_AREA="Joomla-Shop-Bereich"
+  elif printf '%s' "$MAL_PATHS" | grep -qiE '/(administrator/components|components/com_[a-z]+|modules/mod_[a-z]+|plugins/(system|content|authentication|editors)/|libraries/(joomla|src)/|media/com_[a-z]+)'; then MAIL_AREA="Joomla-Bereich"
   elif printf '%s' "$MAL_PATHS" | grep -qiE 'wp-content|wp-admin|wp-includes'; then MAIL_AREA="WordPress-Bereich"
+  elif printf '%s' "$MAL_PATHS" | grep -qiE '/(shop2?|warenkorb|checkout|xtcommerce|woocommerce|magento)'; then MAIL_AREA="Shop-Bereich"
   else MAIL_AREA="Webbereich"; fi
   # neueste mtime der Fundstellen -> Zeitbezug
   _newest=0
