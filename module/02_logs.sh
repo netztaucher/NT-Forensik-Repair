@@ -1,5 +1,11 @@
 # NT-Forensik — Abschnitt 2: Logs sichern
 #
+# @nummer:  2
+# @titel:   Logs sichern
+# @frage:   Sind die Protokolle gesichert, bevor die Rotation sie vernichtet?
+# @kosten:  HOCH — archiviert alle Serverlogs; auf Servern mit vielen Vhosts sehr langsam
+# @ebene:   system
+#
 # Wird vom Runner eingebunden, nicht einzeln ausgefuehrt.
 # Vorgabewerte der hier gefuellten Variablen: lib/befunde.sh
 

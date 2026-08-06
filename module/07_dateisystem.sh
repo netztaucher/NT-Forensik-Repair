@@ -1,5 +1,11 @@
 # NT-Forensik — Abschnitt 7: Dateisystem-Scan
 #
+# @nummer:  7
+# @titel:   Dateisystem-Scan
+# @frage:   Liegt Schadcode im Webverzeichnis?
+# @kosten:  mittel bis hoch — durchsucht den gesamten Prüfumfang
+# @ebene:   website
+#
 # Wird vom Runner eingebunden, nicht einzeln ausgefuehrt.
 # Vorgabewerte der hier gefuellten Variablen: lib/befunde.sh
 

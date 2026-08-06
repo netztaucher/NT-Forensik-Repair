@@ -1,5 +1,11 @@
 # NT-Forensik — Abschnitt 9: Sicherheits-Dienste
 #
+# @nummer:  9
+# @titel:   Sicherheits-Dienste
+# @frage:   Sind Fail2ban, ModSecurity und Firewall aktiv?
+# @kosten:  gering
+# @ebene:   system
+#
 # Wird vom Runner eingebunden, nicht einzeln ausgefuehrt.
 # Vorgabewerte der hier gefuellten Variablen: lib/befunde.sh
 

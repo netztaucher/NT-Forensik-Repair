@@ -1,4 +1,10 @@
-# NT-Forensik — Abschnitt 12: Joomla-Pruefung
+# NT-Forensik — Abschnitt 12: Joomla-Prüfung
+#
+# @nummer:  12
+# @titel:   Joomla-Prüfung
+# @frage:   Ist eine Joomla-Installation angreifbar oder übernommen?
+# @kosten:  mittel — Prüfsummen etwa 4 s je Installation
+# @ebene:   website
 #
 # Wird vom Runner eingebunden, nicht einzeln ausgefuehrt.
 # Vorgabewerte der hier gefuellten Variablen: lib/befunde.sh

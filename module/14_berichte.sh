@@ -1,5 +1,11 @@
 # NT-Forensik — Abschnitt 14: Zusammenfassung & Berichte
 #
+# @nummer:  14
+# @titel:   Zusammenfassung & Berichte
+# @frage:   Erzeugt Technik-, Kunden-, BSI- und DSGVO-Bericht sowie findings.json
+# @kosten:  gering
+# @ebene:   bericht
+#
 # Wird vom Runner eingebunden, nicht einzeln ausgefuehrt.
 # Vorgabewerte der hier gefuellten Variablen: lib/befunde.sh
 
@@ -651,6 +657,11 @@ emit_findings_json() {
   jvuln=$(printf  '%s\n' "${JOOMLA_VULN_EXT:-}"      | json_arr)
   jmal=$(printf   '%s\n' "${JOOMLA_MALWARE:-}"       | json_arr)
   onlinef=$(printf '%s\n' "${ONLINE_FETCHES:-}"      | json_arr)
+  # Welche Abschnitte liefen, welche nicht — damit ein Teillauf maschinell
+  # als solcher erkennbar ist und nicht als vollständiges Ergebnis gilt.
+  local modgel moduebr
+  modgel=$(printf '%s\n' ${MODULE_GELAUFEN:-} | json_arr)
+  moduebr=$(printf '%s\n' "${MODULE_UEBERSPRUNGEN:-}" | json_arr)
   local n_jcmod n_jvuln n_jsuper
   n_jcmod=$(printf  '%s\n' "${JOOMLA_CORE_MODIFIED:-}" | grep -c . 2>/dev/null)
   n_jvuln=$(printf  '%s\n' "${JOOMLA_VULN_EXT:-}"      | grep -c . 2>/dev/null)
@@ -665,6 +676,11 @@ emit_findings_json() {
   "host": "$(json_str "$(hostname -f 2>/dev/null || hostname)")",
   "domain": "$(json_str "${DOMAIN:-}")",
   "generated_utc": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")",
+  "run": {
+    "vollstaendig": $(if [[ -z "${MODULE_UEBERSPRUNGEN:-}" ]]; then echo true; else echo false; fi),
+    "module_gelaufen": ${modgel:-[]},
+    "module_uebersprungen": ${moduebr:-[]}
+  },
   "counts": { "crit": ${N_CRIT:-0}, "warn": ${N_WARN:-0}, "ok": ${N_OK:-0} },
   "verdicts": {
     "root": { "flags": ${ROOT_FLAGS:-0}, "text": "$(json_str "${ROOT_VERDICT:-}")" },

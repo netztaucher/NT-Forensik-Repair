@@ -1,5 +1,11 @@
 # NT-Forensik — Abschnitt 5: Benutzer & Rechte
 #
+# @nummer:  5
+# @titel:   Benutzer & Rechte
+# @frage:   Gibt es unerwartete Konten, Rechte oder hinterlegte Schlüssel?
+# @kosten:  gering
+# @ebene:   system
+#
 # Wird vom Runner eingebunden, nicht einzeln ausgefuehrt.
 # Vorgabewerte der hier gefuellten Variablen: lib/befunde.sh
 

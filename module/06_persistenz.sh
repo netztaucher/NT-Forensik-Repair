@@ -1,5 +1,11 @@
 # NT-Forensik — Abschnitt 6: Cronjobs & Persistenz
 #
+# @nummer:  6
+# @titel:   Cronjobs & Persistenz
+# @frage:   Hat sich etwas eingerichtet, das den Neustart überlebt?
+# @kosten:  gering
+# @ebene:   system
+#
 # Wird vom Runner eingebunden, nicht einzeln ausgefuehrt.
 # Vorgabewerte der hier gefuellten Variablen: lib/befunde.sh
 

@@ -1,5 +1,11 @@
 # NT-Forensik — Abschnitt 10: Andere Domains
 #
+# @nummer:  10
+# @titel:   Andere Domains
+# @frage:   Sind weitere Kunden auf demselben Server mitbetroffen?
+# @kosten:  gering bis mittel
+# @ebene:   system
+#
 # Wird vom Runner eingebunden, nicht einzeln ausgefuehrt.
 # Vorgabewerte der hier gefuellten Variablen: lib/befunde.sh
 
