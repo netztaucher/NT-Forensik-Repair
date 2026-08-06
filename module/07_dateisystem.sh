@@ -190,14 +190,43 @@ else
 fi
 
 h2 "7.8 Ausführbare Dateien in tmp-Verzeichnissen"
-TMP_EXECS=$(find /tmp /var/tmp /dev/shm -type f \( -perm -u+x -o -name "*.sh" -o -name "*.php" -o -name "*.py" -o -name "*.pl" \) 2>/dev/null | head -20 || true)
+# Entpackte AppImage-Pakete in systemd-private-Verzeichnissen sind auf einem
+# Plesk-Server der Normalfall: Collabora Office und andere Dienste entpacken
+# sich bei jedem Start dorthin. Auf einem echten Kundensystem stellten sie 20
+# von 23 Funden — und weil die Liste bei 20 abgeschnitten wurde, verdraengten
+# sie alles andere. Das Bereinigungswerkzeug haette diese Dateien in Quarantaene
+# verschoben und damit einen laufenden Dienst zerlegt, waehrend der echte
+# Schadcode unangetastet blieb.
+#
+# Ausgeblendet wird nur der Entpack-Baum selbst, nicht das Verzeichnis darueber:
+# ein Angreifer, der den Dienst uebernimmt, legt seine Dateien nicht in einen
+# bei jedem Neustart neu erzeugten Ordner.
+TMP_ALLE=$(find /tmp /var/tmp /dev/shm -type f \( -perm -u+x -o -name "*.sh" -o -name "*.php" -o -name "*.py" -o -name "*.pl" \) 2>/dev/null | nf_strip_self || true)
+TMP_N_ALLE=$(printf '%s\n' "$TMP_ALLE" | grep -c . || true)
+TMP_EXECS=$(printf '%s\n' "$TMP_ALLE" | grep -vE '/appimage_extracted_[0-9a-f]+/' || true)
+TMP_N_ZEIG=$(printf '%s\n' "$TMP_EXECS" | grep -c . || true)
+TMP_N_AUS=$(( TMP_N_ALLE - TMP_N_ZEIG ))
+# Keine stille Deckelung: was nicht gezeigt wird, wird beziffert.
+TMP_KAPPUNG=""
+if [[ "$TMP_N_ZEIG" -gt 60 ]]; then
+  TMP_KAPPUNG="Anzeige auf 60 von ${TMP_N_ZEIG} Dateien begrenzt — vollstaendige Liste im Beleg."
+  TMP_EXECS=$(printf '%s\n' "$TMP_EXECS" | head -60)
+fi
 if [[ -n "$TMP_EXECS" ]]; then
-  warn "Ausführbare Dateien/Skripte in tmp-Verzeichnissen — prüfen"
+  warn "Ausführbare Dateien/Skripte in tmp-Verzeichnissen — prüfen (${TMP_N_ZEIG})"
+  [[ "$TMP_N_AUS" -gt 0 ]] && info "${TMP_N_AUS} weitere aus entpackten AppImage-Paketen (systemd-private) ausgeblendet — bei Plesk der Normalfall"
+  [[ -n "$TMP_KAPPUNG" ]] && info "$TMP_KAPPUNG"
   code "$(echo "$TMP_EXECS" | xargs -r ls -la 2>/dev/null)"
-  evidence "tmp_executables" "$(echo "$TMP_EXECS" | xargs -r ls -la 2>/dev/null)
-$(echo "$TMP_EXECS" | xargs -r sha256sum 2>/dev/null)"
+  evidence "tmp_executables" "Gefunden gesamt: ${TMP_N_ALLE}
+Davon als AppImage-Entpackung ausgeblendet: ${TMP_N_AUS}
+Bewertet: ${TMP_N_ZEIG}
+${TMP_KAPPUNG}
+
+$(printf '%s\n' "$TMP_ALLE" | grep -vE '/appimage_extracted_[0-9a-f]+/' | xargs -r ls -la 2>/dev/null)
+
+$(printf '%s\n' "$TMP_ALLE" | grep -vE '/appimage_extracted_[0-9a-f]+/' | xargs -r sha256sum 2>/dev/null)"
 else
-  ok "Keine ausführbaren Dateien in tmp-Verzeichnissen"
+  ok "Keine ausführbaren Dateien in tmp-Verzeichnissen$([[ "$TMP_N_AUS" -gt 0 ]] && echo " (${TMP_N_AUS} AppImage-Dateien ausgeblendet)")"
 fi
 
 h2 "7.9 Immutable-Flags im Webspace (chattr +i — Malware-Selbstschutz)"
