@@ -1,0 +1,27 @@
+Proprietäre Lizenz — gilt ausschließlich für dieses Verzeichnis
+
+© 2026 netztaucher | digital. Alle Rechte vorbehalten.
+
+Der Inhalt von repair-<fassung>.enc ist urheberrechtlich geschütztes,
+kostenpflichtiges Werk. Die MIT-Lizenz im Wurzelverzeichnis dieses Repositoriums
+gilt für dieses Verzeichnis NICHT.
+
+Erlaubt ist die Ausführung über den mitgelieferten Lader nt_repair.sh mit einem
+gültigen, auf den ausführenden Arbeitsplatz ausgestellten Lizenzschlüssel.
+
+Nicht erlaubt ist insbesondere:
+
+  - das Entschlüsseln des Archivs ohne gültige Lizenz,
+  - das Umgehen oder Nachbilden der Lizenzprüfung,
+  - Weitergabe, Veröffentlichung oder Weiterverkauf des entschlüsselten Inhalts,
+  - Bearbeitung, Dekompilierung oder Ableitung von Werken daraus.
+
+Die Verschlüsselung dieses Archivs ist eine wirksame technische Schutzmaßnahme im
+Sinne des § 95a UrhG. Ihre Umgehung ist unabhängig vom technischen Aufwand
+unzulässig.
+
+Der Analyse-Teil dieses Repositoriums (wp_plesk_forensik.sh nebst lib/, module/,
+daten/, signaturen/, reportgen/ und docs/) steht unverändert unter der MIT-Lizenz
+und ist ohne Lizenzschlüssel frei nutzbar.
+
+Lizenzen: https://netztaucher.com — kontakt@netztaucher.com

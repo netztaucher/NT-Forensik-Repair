@@ -178,6 +178,30 @@ Im Ordner [`examples/`](examples/) liegen vollständige Beispielberichte eines *
 - **[`docs/relay-backdoors.md`](docs/relay-backdoors.md)** — Relay-Backdoors (gsocket), Prozess-Introspektion und warum Signatur-Rootkitscanner diese Klasse verfehlen.
 - **[`docs/incident-response.md`](docs/incident-response.md)** — Incident-Response-Playbook: 7 Phasen von der Beweissicherung bis zur Härtung.
 - **[`docs/runbook.md`](docs/runbook.md)** — Runbook für die manuelle Ad-hoc-Analyse einzelner Prüfpunkte.
+- **[`docs/findings-schnittstelle.md`](docs/findings-schnittstelle.md)** — `findings.json` als Vertrag: welche Feldpfade NT-Repair liest und was bei Schema-Änderungen zu tun ist.
+- **[`docs/lizenzierung.md`](docs/lizenzierung.md)** — Lizenzierung des Bereinigungsteils: was geschützt ist, was nicht, wie ein Arbeitsplatz freigeschaltet wird, was bei Serverausfall passiert.
+
+## Bereinigung — `nt_repair.sh`
+
+Die Analyse beantwortet, **was passiert ist**. Für den Schritt danach — Quarantäne,
+IOC-Sperren, Zugangsdaten, Bericht und Kundenanschreiben — liegt `nt_repair.sh`
+daneben. Es liest die `findings.json` des Forensik-Laufs und arbeitet sie ab; ohne
+ausdrückliches Go pro Aktion ändert es nichts, und gelöscht wird nie, nur verschoben.
+
+```bash
+# Plan aus einem Forensik-Lauf, ohne Änderung
+bash nt_repair.sh --from /root/wartungsscripte/forensik/<LAUF>
+
+# Ausführen, mit Einzelbestätigung je Aktionsgruppe
+bash nt_repair.sh --from /root/wartungsscripte/forensik/<LAUF> --apply
+```
+
+Dieser Teil ist **kostenpflichtig und lizenzgebunden**: der Lader ist offen lesbar,
+der Inhalt liegt verschlüsselt in `paket/`, und der Schlüssel dazu kommt bei jedem
+Lauf vom Lizenzserver. Ohne gültige Lizenz startet die Bereinigung nicht.
+
+**Die Analyse ist davon unberührt.** `wp_plesk_forensik.sh` läuft vollständig, ohne
+Lizenz, ohne Netz, mit offenem Quelltext. Details: [`docs/lizenzierung.md`](docs/lizenzierung.md).
 
 ## Sicherheit & Recht
 
@@ -188,7 +212,10 @@ Im Ordner [`examples/`](examples/) liegen vollständige Beispielberichte eines *
 
 ## Lizenz
 
-MIT — siehe [LICENSE](LICENSE).
+MIT — siehe [LICENSE](LICENSE). **Ausgenommen** ist `paket/` (der verschlüsselte
+Inhalt von `nt_repair.sh`): proprietär, kostenpflichtig, siehe
+[`paket/LICENSE`](paket/LICENSE). Der Lader `nt_repair.sh` selbst steht unter MIT —
+er enthält nichts Geheimes und soll nachlesbar sein.
 
 ---
 *netztaucher | digital*
