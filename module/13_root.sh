@@ -203,6 +203,13 @@ imu_family(){ local t; t="$(printf '%s' "$1" | tr 'A-Z' 'a-z')"
     *spam*|*seo*|*doorway*|*pharma*) echo "SEO-Spam/Doorway" ;;
     *redir*) echo "Redirect/Malvertising" ;;
     *mailer*) echo "Spam-Mailer" ;;
+    # VOR der Miner-Regel: "adminer" enthaelt "miner". Ein Adminer im
+    # wp-includes-Verzeichnis wurde dadurch als Cryptominer ausgewiesen und
+    # dem Kunden als "Diebstahl von Rechenleistung" erklaert — waehrend es
+    # tatsaechlich ein offener Vollzugriff auf seine Datenbank war. Fuer die
+    # DSGVO-Einschaetzung ist das der Unterschied zwischen Sachschaden und
+    # Zugriff auf personenbezogene Daten.
+    *adminer*|*admin.tool.db*|*phpmyadmin*|*sqlbuddy*) echo "Datenbank-Zugriffswerkzeug" ;;
     *miner*|*coin*|*xmr*) echo "Cryptominer" ;;
     *inject*) echo "Code-Injection" ;;
     *) echo "Sonstige/Unklar" ;;
@@ -216,6 +223,7 @@ fam_biz(){ case "$1" in
     "Redirect/Malvertising") echo "Weiterverkauf Ihrer Besucher / Schadwerbung" ;;
     "Spam-Mailer")           echo "Massen-Mailversand — Blacklisting Ihrer Domain/IP" ;;
     "Cryptominer")           echo "Diebstahl von Server-Rechenleistung" ;;
+    "Datenbank-Zugriffswerkzeug") echo "Direkter Zugriff auf die Datenbank — Auslesen, Ändern und Löschen aller gespeicherten Daten, auch personenbezogener" ;;
     "Code-Injection")        echo "Schadcode in legitime Dateien eingeschleust" ;;
     "Relay-Backdoor")        echo "Portloser Fernzugriffskanal (umgeht Firewall/NAT)" ;;
     "Getarnte Binary")       echo "Als harmlose Datei getarntes Angriffswerkzeug" ;;
