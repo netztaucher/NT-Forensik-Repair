@@ -38,7 +38,7 @@ Dazu kommt die Lage: Seit Juni 2026 läuft eine Welle von Massenausnutzungen geg
 
 ```bash
 # Skript und Datenbestand auf den Server bringen
-scp -r wp_plesk_forensik.sh signaturen daten reportgen root@SERVER:/root/
+scp -r wp_plesk_forensik.sh lib module signaturen daten reportgen root@SERVER:/root/
 
 # Eine Domain prüfen
 ssh root@SERVER "bash /root/wp_plesk_forensik.sh --domain kunde.tld"
