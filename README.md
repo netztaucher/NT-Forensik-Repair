@@ -6,22 +6,27 @@
 
 <p align="center">
   <b><a href="https://netztaucher.com/wordpress">WordPress-Betreuung &amp; Sicherheit durch netztaucher</a></b>
-  &nbsp;·&nbsp; <a href="https://github.com/netztaucher/NT-Forensik/releases">Releases</a>
+  &nbsp;·&nbsp; <a href="https://github.com/netztaucher/NT-Forensik-Repair/releases">Releases</a>
   &nbsp;·&nbsp; <a href="docs/handbuch.md">Handbuch</a>
 </p>
 
 <p align="center">
-  <a href="https://github.com/netztaucher/NT-Forensik/releases"><img src="https://img.shields.io/github/v/release/netztaucher/NT-Forensik?label=Release" alt="Release"></a>
+  <a href="https://github.com/netztaucher/NT-Forensik-Repair/releases"><img src="https://img.shields.io/github/v/release/netztaucher/NT-Forensik-Repair?label=Release" alt="Release"></a>
   <img src="https://img.shields.io/badge/Modus-read--only-brightgreen" alt="read-only">
   <img src="https://img.shields.io/badge/Plesk-Obsidian%20%7C%20Ubuntu%2022.04-informational" alt="Plesk">
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT"></a>
 </p>
 
-# NT-Forensik
+# NT-Forensik-Repair
 
-**Forensische Incident-Response für WordPress/Plesk-Server — ein einzelnes, read-only Bash-Skript.**
+**Forensische Incident-Response für WordPress/Plesk/Joomla-Server — Analyse und Bereinigung, strikt getrennt.**
 
-> 🔒 **Read-only by design.** Das Skript **verändert den Webspace nicht** — es liest, wertet aus und schreibt ausschließlich nach `/root/wartungsscripte/`. Beweise bleiben unangetastet; das Entfernen von Schadcode ist ein bewusst getrennter, manueller Schritt **nach** der Sicherung.
+| | | |
+|---|---|---|
+| **`wp_plesk_forensik.sh`** | Analyse — was ist passiert? | frei, quelloffen, ohne Netz lauffähig |
+| **`nt_repair.sh`** | Bereinigung — was tun wir dagegen? | [lizenzgebunden](docs/lizenzierung.md) |
+
+> 🔒 **Read-only by design.** Die Analyse **verändert den Webspace nicht** — sie liest, wertet aus und schreibt ausschließlich nach `/root/wartungsscripte/`. Beweise bleiben unangetastet. Das Entfernen von Schadcode ist ein bewusst getrennter Schritt **nach** der Sicherung; dafür gibt es [`nt_repair.sh`](#bereinigung--nt_repairsh), das ohne ausdrückliches Go pro Aktion nichts ändert und nie löscht, sondern verschiebt.
 
 `wp_plesk_forensik.sh` untersucht einen kompromittierten (oder verdächtigen) Plesk-Server systematisch auf Angriffsspuren und erzeugt pro Lauf vier fertige Dokumente:
 
