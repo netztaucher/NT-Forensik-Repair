@@ -94,29 +94,48 @@ Der Lauf gliedert sich in 14 Abschnitte:
 
 ## Verwendung
 
-```bash
-# Auf den Server bringen (Skript + optionale Hilfsordner signaturen/ reportgen/)
-scp wp_plesk_forensik.sh root@SERVER:/root/
-scp -r signaturen reportgen root@SERVER:/root/     # optional: YARA + PDF-Generator
+**Das Werkzeug besteht aus mehr als einer Datei.** Seit v3.9.0 liegen die
+Prüfabschnitte in `module/` und die gemeinsamen Funktionen in `lib/`; fehlt
+einer der beiden Ordner, bricht der Lauf mit Code 3 ab. Es gehört also das
+ganze Verzeichnis auf den Server, nicht das Skript allein.
 
+```bash
+# Auf den Server bringen — am einfachsten direkt klonen
+ssh root@SERVER "git clone --depth 1 https://github.com/netztaucher/NT-Forensik-Repair.git /root/nt-forensik"
+
+# ohne git auf dem Zielsystem: das ganze Verzeichnis übertragen
+rsync -a --exclude laeufe --exclude .git ./ root@SERVER:/root/nt-forensik/
+```
+
+| Ordner | wofür | nötig |
+|---|---|---|
+| `lib/`, `module/` | Runner und Prüfabschnitte | **immer** |
+| `daten/` | Joomla-Prüfsummen und Schwachstellenlisten (3 MB) | für Abschnitt 12 |
+| `signaturen/` | YARA-Regeln | nur mit `--yara` |
+| `reportgen/` | PDF-Erzeugung | nur für den PDF-Bericht |
+
+```bash
 # Einen Kunden prüfen (Kundenbericht enthält nur dessen Daten, maskiert)
-ssh root@SERVER "bash /root/wp_plesk_forensik.sh --domain kundendomain.tld"
+ssh root@SERVER "bash /root/nt-forensik/wp_plesk_forensik.sh --domain kundendomain.tld"
 
 # Beliebigen Pfad prüfen
-ssh root@SERVER "bash /root/wp_plesk_forensik.sh --path /var/www/vhosts/kunde/httpdocs/shop"
+ssh root@SERVER "bash /root/nt-forensik/wp_plesk_forensik.sh --path /var/www/vhosts/kunde/httpdocs/shop"
 
 # Alle Domains (Betreiber-Triage; erzeugt einen serverweiten Betreiberbericht,
 # NICHT für die Weitergabe an einzelne Kunden)
-ssh root@SERVER "bash /root/wp_plesk_forensik.sh --global"
+ssh root@SERVER "bash /root/nt-forensik/wp_plesk_forensik.sh --global"
 
 # Nur die Joomla-Prüfung — spart Log-Archiv und serverweiten Dateiscan
-ssh root@SERVER "bash /root/wp_plesk_forensik.sh --domain kunde.tld --nur-joomla"
+ssh root@SERVER "bash /root/nt-forensik/wp_plesk_forensik.sh --domain kunde.tld --nur-joomla"
+
+# Nur die WordPress-Seite: Web-Traffic, Dateisystem-Scan, WP-Datenbank
+ssh root@SERVER "bash /root/nt-forensik/wp_plesk_forensik.sh --domain kunde.tld --nur 4,7,11"
 
 # YARA-Signaturscan zusätzlich (langsam auf großen Webspaces)
-ssh root@SERVER "bash /root/wp_plesk_forensik.sh --domain kunde.tld --yara"
+ssh root@SERVER "bash /root/nt-forensik/wp_plesk_forensik.sh --domain kunde.tld --yara"
 
 # Hilfe
-ssh root@SERVER "bash /root/wp_plesk_forensik.sh --help"
+ssh root@SERVER "bash /root/nt-forensik/wp_plesk_forensik.sh --help"
 ```
 
 **Ohne Scope-Argument startet ein Menü**, das die Abschnitte erklärt und am
@@ -127,13 +146,6 @@ Ende den passenden Befehl zum Kopieren ausgibt. Aufrufe mit `--domain`,
 Abschnitte lassen sich gezielt wählen: `--nur 12`, `--ohne 2,10`,
 `--nur-website`. Der Bericht weist dann aus, was **nicht** geprüft wurde —
 ein Teillauf darf sich nicht wie ein vollständiges Ergebnis lesen.
-
-Auf den Server gehören Skript **und** die Ordner daneben — ohne `lib/` und
-`module/` ist das Werkzeug nicht lauffähig:
-
-```bash
-scp -r wp_plesk_forensik.sh lib module signaturen daten reportgen root@SERVER:/root/
-```
 
 Der Lauf arbeitet standardmäßig **rein offline** — er baut keine Verbindung nach außen auf. `--online` erlaubt dem Lauf, Vergleichsdaten nachzuladen; jeder Abruf wird mit URL, Antwortcode und Prüfsumme im Technikbericht, als Beleg und in `findings.json` ausgewiesen, damit im Nachhinein nachvollziehbar bleibt, dass der Lauf das Netz berührt hat.
 
