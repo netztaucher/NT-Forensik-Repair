@@ -79,7 +79,7 @@ while IFS= read -r c; do
     JOOMLA_SKIPPED=$((JOOMLA_SKIPPED+1)); continue
   fi
   _jfound+="$c"$'\n'
-done < <(find "$SCAN_PATH" -maxdepth 5 -name configuration.php 2>/dev/null | nf_strip_self)
+done < <(find "${SCAN_PATHS[@]}" -maxdepth 5 -name configuration.php 2>/dev/null | nf_strip_self)
 JOOMLA_CONFIGS=$(printf '%s' "$_jfound")
 JOOMLA_COUNT=$(printf '%s\n' "$JOOMLA_CONFIGS" | grep -c . || true)
 

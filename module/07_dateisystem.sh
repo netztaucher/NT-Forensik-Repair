@@ -16,7 +16,7 @@ h1 "7. DATEISYSTEM-SCAN"
 h2 "7.1 Kürzlich veränderte PHP-Dateien (letzte ${DAYS_BACK} Tage)"
 echo -e "  ${YLW}Durchsuche Webspace (kann dauern...)${NC}"
 
-RECENT_PHP=$(find "$SCAN_PATH" -name "*.php" -mtime -"$DAYS_BACK" -ls 2>/dev/null \
+RECENT_PHP=$(find "${SCAN_PATHS[@]}" -name "*.php" -mtime -"$DAYS_BACK" -ls 2>/dev/null \
   | sort -k8 -r | head -50 || true)
 if [[ -n "$RECENT_PHP" ]]; then
   info "Kürzlich veränderte .php-Dateien:"
@@ -27,7 +27,7 @@ else
 fi
 
 h2 "7.2 PHP-Dateien in Upload-Verzeichnissen"
-PHP_IN_UPLOADS_RAW=$(find "$SCAN_PATH" \
+PHP_IN_UPLOADS_RAW=$(find "${SCAN_PATHS[@]}" \
   \( -path "*/uploads/*.php" -o -path "*/uploads/*.phtml" -o -path "*/uploads/*.php5" \) \
   2>/dev/null || true)
 
@@ -83,7 +83,7 @@ h2 "7.3 Webshell-Muster (Inhalt) — zweistufig"
 echo -e "  ${YLW}Scanne auf Webshell-Signaturen (inkl. obfuskierte Cookie-Backdoors)...${NC}"
 
 
-WEBSHELL_HITS=$(grep -rlPi "$PATTERN_REGEX" "$SCAN_PATH" --include="*.php" \
+WEBSHELL_HITS=$(grep -rlPi "$PATTERN_REGEX" "${SCAN_PATHS[@]}" --include="*.php" \
   --exclude-dir=phpunit --exclude-dir=sebastian --exclude-dir=mockery 2>/dev/null || true)
 
 DROPPER_CLUSTER=""
@@ -129,7 +129,7 @@ if [[ "$WEBSHELL_REVIEW" -gt 0 ]]; then
 fi
 
 h2 "7.4 Versteckte Dateien und Verzeichnisse im Webspace"
-HIDDEN=$(find "$SCAN_PATH" -name ".*" -not -name ".htaccess" -not -name ".well-known" \
+HIDDEN=$(find "${SCAN_PATHS[@]}" -name ".*" -not -name ".htaccess" -not -name ".well-known" \
   -not -name ".git*" -not -name ".user.ini" 2>/dev/null | head -20 || true)
 if [[ -n "$HIDDEN" ]]; then
   warn "Versteckte Dateien/Verzeichnisse gefunden — manuell prüfen" web
@@ -144,7 +144,7 @@ h2 "7.5 Verdächtige Dateinamen (namensbasiert, geringe Konfidenz → Warnung)"
 # class-wp-optimize-bypass.php; Cache-Hashes mit 'c99'). Daher WARN, nicht CRIT,
 # und aggressive Ausschlüsse: Core, vendor, Template-Caches, Twig, Elementor-Assets.
 # whole-name-Match (kein Substring in Pfad) via -iname am Basenamen.
-SUSP_NAMES=$(find "$SCAN_PATH" -type f \
+SUSP_NAMES=$(find "${SCAN_PATHS[@]}" -type f \
   \( -iname "*.php" -o -iname "*.phtml" -o -iname "*.php5" -o -iname "*.pl" \
      -o -iname "*.py" -o -iname "*.sh" -o -iname "*.cgi" \) \
   \( -iname "*shell*" -o -iname "*exploit*" -o -iname "*hack*" \
@@ -164,7 +164,7 @@ else
 fi
 
 h2 "7.6 .htaccess-Dateien prüfen"
-HTACCESS_REDIRECTS=$(find "$SCAN_PATH" -name ".htaccess" 2>/dev/null \
+HTACCESS_REDIRECTS=$(find "${SCAN_PATHS[@]}" -name ".htaccess" 2>/dev/null \
   -exec grep -lE "RewriteRule.*http|Redirect.*http" {} \; || true)
 if [[ -n "$HTACCESS_REDIRECTS" ]]; then
   warn ".htaccess mit externen Weiterleitungen gefunden" web
@@ -180,7 +180,7 @@ else
 fi
 
 h2 "7.7 SUID/SGID-Dateien in Webspace und tmp-Verzeichnissen"
-SUID_FILES=$(find "$SCAN_PATH" /tmp /var/tmp /dev/shm -type f \( -perm -4000 -o -perm -2000 \) 2>/dev/null || true)
+SUID_FILES=$(find "${SCAN_PATHS[@]}" /tmp /var/tmp /dev/shm -type f \( -perm -4000 -o -perm -2000 \) 2>/dev/null || true)
 if [[ -n "$SUID_FILES" ]]; then
   crit "SUID/SGID-Dateien in Webspace/tmp — Privilege-Escalation-Verdacht" web
   code "$(echo "$SUID_FILES" | xargs -r ls -la 2>/dev/null)"
@@ -201,7 +201,7 @@ else
 fi
 
 h2 "7.9 Immutable-Flags im Webspace (chattr +i — Malware-Selbstschutz)"
-IMMUTABLE=$(find "$SCAN_PATH" -maxdepth 6 -type f -name "*.php" 2>/dev/null | head -8000 \
+IMMUTABLE=$(find "${SCAN_PATHS[@]}" -maxdepth 6 -type f -name "*.php" 2>/dev/null | head -8000 \
   | xargs -r lsattr 2>/dev/null | awk '$1 ~ /i/ {print}' || true)
 if [[ -n "$IMMUTABLE" ]]; then
   crit "PHP-Dateien mit Immutable-Flag — Malware schützt sich so vor Löschung" web
@@ -232,7 +232,7 @@ while IFS= read -r f; do
         MASQ_FOUND+="$(ls -la --time-style=long-iso "$f" 2>/dev/null)  SHA256: $(sha256sum "$f" 2>/dev/null | awk '{print $1}')"$'\n'
         MASQ_BINARIES+="$f"$'\n'
     fi
-done < <(find /root /home /etc "$SCAN_PATH" /tmp /var/tmp /dev/shm -xdev -type f \
+done < <(find /root /home /etc "${SCAN_PATHS[@]}" /tmp /var/tmp /dev/shm -xdev -type f \
     \( -name 'id_*' -o -name '*.pem' -o -name '*.key' -o -name '*.crt' \
        -o -name 'authorized_keys*' -o -name 'known_hosts' -o -name '*.conf' \) 2>/dev/null | nf_strip_self)
 
@@ -266,7 +266,7 @@ elif command -v yara &>/dev/null && [[ -f "$YARA_RULES_FILE" ]]; then
             YARA_DETAIL+="$f — Regeln: $rules"$'\n'
             YARA_HITS+="$f"$'\n'
         fi
-    done < <(find /tmp /var/tmp /dev/shm /root /home /usr/local/bin /usr/local/sbin /opt "$SCAN_PATH" \
+    done < <(find /tmp /var/tmp /dev/shm /root /home /usr/local/bin /usr/local/sbin /opt "${SCAN_PATHS[@]}" \
                 -xdev -type f -size -30M 2>/dev/null | nf_strip_self)
     if [[ -n "$YARA_DETAIL" ]]; then
         crit "YARA-Signaturtreffer im Dateisystem"

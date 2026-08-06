@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # ============================================================
-# WP-PLESK-FORENSIK.SH — v3.7.1
+# WP-PLESK-FORENSIK.SH
+# Die Fassung steht an EINER Stelle: TOOL_VERSION in lib/konfig.sh.
 # Forensische Analyse nach WordPress/Plesk Sicherheitsvorfall
 #
 # Verwendung: sudo bash wp_plesk_forensik.sh [--domain d|--path p|--global] [--yara]
@@ -17,7 +18,7 @@
 #     ├── bsi_meldung.md                       ← BSI-Meldung (Best Practice)
 #     └── lauf.log                             ← Ausführungsprotokoll
 #
-# Autor: netztaucher | digital — forensik-tool v3.7.1
+# Autor: netztaucher | digital
 # Nur read-only Analyse. Keine Lösch-/Schreiboperationen im Webspace.
 # ============================================================
 
@@ -73,21 +74,29 @@ scan_path_bestimmen
 ablage_einrichten
 
 # ── Banner ───────────────────────────────────────────────────
-echo -e "${BOLD}${BLU}"
-cat <<'EOF'
-  ██████  ██████  ██████  ███████ ███    ██ ███████ ██ ██   ██
- ██      ██    ██ ██   ██ ██      ████   ██ ██      ██ ██  ██
- ██████  ██    ██ ██████  █████   ██ ██  ██ ███████ ██ █████
- ██      ██    ██ ██   ██ ██      ██  ██ ██      ██ ██ ██  ██
-  ██████  ██████  ██   ██ ███████ ██   ████ ███████ ██ ██   ██
-  WP-PLESK-FORENSIK v3.7.1 — netztaucher | digital
-EOF
-echo -e "${NC}"
+# Die Kunst selbst steht in lib/konfig.sh, damit --help sie ebenfalls zeigen
+# kann — dort wird die Hilfe ausgegeben, lange bevor dieser Punkt erreicht ist.
+banner_zeigen
 
-echo -e "${BOLD}Analysiert:${NC}  ${DOMAIN:-alle Domains}"
+if [[ "$SCOPE_MODE" == "abo" ]]; then
+  echo -e "${BOLD}Analysiert:${NC}  Abo ${ABO_USER} — ${#SCAN_PATHS[@]} Verzeichnis(se):"
+  for _p in "${SCAN_PATHS[@]}"; do echo -e "               ${_p}"; done
+else
+  echo -e "${BOLD}Analysiert:${NC}  ${DOMAIN:-alle Domains}"
+fi
 echo -e "${BOLD}Lauf:${NC}        ${RUN_LABEL}"
 echo -e "${BOLD}Ablage:${NC}      ${RUN_DIR}"
 echo -e "${BOLD}Datum:${NC}       $(date)\n"
+
+# Der haeufigste Irrtum: --path sieht aus, als begrenze es den ganzen Lauf.
+# Es begrenzt aber nur die Abschnitte, die den Pfad ueberhaupt auswerten.
+# Ohne diesen Hinweis landen bei einem Shared-Host hunderte fremde vhosts im
+# Bericht, und das faellt erst auf, wenn er fertig ist.
+if [[ "$SCOPE_MODE" == "path" && "$MODUL_NUR" != "ebene:website" ]]; then
+  echo -e "${YLW}Hinweis:${NC}     --path begrenzt nur die Abschnitte 7, 11 und 12."
+  echo -e "             Die serverweiten Abschnitte prüfen weiterhin den ganzen Server."
+  echo -e "             Nur ein Kunde? ${BOLD}--web<NN>${NC} statt --path.\n"
+fi
 
 # ── Chain-of-Custody Manifest ────────────────────────────────
 cat > "${BELEGE_DIR}/00_manifest.txt" <<MANIFEST
