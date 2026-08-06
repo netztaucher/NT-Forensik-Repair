@@ -29,7 +29,7 @@ set -uo pipefail
 # Beide Werte kommen aus werkzeuge/paket-bauen.sh (NT-Repair) und gehoeren
 # zusammen. PAKET_SHA256 ist die Pruefsumme des ENTSCHLUESSELTEN Archivs.
 PAKET_VERSION="0.4.0"
-PAKET_SHA256="ee638d4c84f76f1499219ca3974725e4def55b311d4fb38d790960cf8b70a241"
+PAKET_SHA256="ebc5cd14261b78e52442b29b7d4c680a836f6daab3637d499201b68b854450e7"
 
 LIZENZ_SERVER="${NT_REPAIR_LIZENZ_SERVER:-https://tools.netztaucher.com/licence}"
 NACHFRIST_TAGE="${NT_REPAIR_NACHFRIST_TAGE:-7}"
