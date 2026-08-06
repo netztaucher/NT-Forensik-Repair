@@ -21,7 +21,7 @@ PLESK_LOG_DIR="/var/log/plesk"
 PLESK_PANEL_LOG="${PLESK_LOG_DIR}/panel.log"
 
 # ── Konfiguration ────────────────────────────────────────────
-TOOL_VERSION="3.8.0"
+TOOL_VERSION="3.9.0"
 DAYS_BACK=30   # Analysezeitraum in Tagen
 
 # ── Argumente & Scope (v3.5) ─────────────────────────────────

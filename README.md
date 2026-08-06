@@ -104,6 +104,9 @@ ssh root@SERVER "bash /root/wp_plesk_forensik.sh --path /var/www/vhosts/kunde/ht
 # NICHT für die Weitergabe an einzelne Kunden)
 ssh root@SERVER "bash /root/wp_plesk_forensik.sh --global"
 
+# Nur die Joomla-Prüfung — spart Log-Archiv und serverweiten Dateiscan
+ssh root@SERVER "bash /root/wp_plesk_forensik.sh --domain kunde.tld --nur-joomla"
+
 # YARA-Signaturscan zusätzlich (langsam auf großen Webspaces)
 ssh root@SERVER "bash /root/wp_plesk_forensik.sh --domain kunde.tld --yara"
 
@@ -111,10 +114,20 @@ ssh root@SERVER "bash /root/wp_plesk_forensik.sh --domain kunde.tld --yara"
 ssh root@SERVER "bash /root/wp_plesk_forensik.sh --help"
 ```
 
-Für die Joomla-Prüfung muss der Datenbestand mit auf den Server:
+**Ohne Scope-Argument startet ein Menü**, das die Abschnitte erklärt und am
+Ende den passenden Befehl zum Kopieren ausgibt. Aufrufe mit `--domain`,
+`--path` oder `--global` laufen immer direkt durch; für Cronjobs zusätzlich
+`--kein-menue`.
+
+Abschnitte lassen sich gezielt wählen: `--nur 12`, `--ohne 2,10`,
+`--nur-website`. Der Bericht weist dann aus, was **nicht** geprüft wurde —
+ein Teillauf darf sich nicht wie ein vollständiges Ergebnis lesen.
+
+Auf den Server gehören Skript **und** die Ordner daneben — ohne `lib/` und
+`module/` ist das Werkzeug nicht lauffähig:
 
 ```bash
-scp -r wp_plesk_forensik.sh signaturen daten reportgen root@SERVER:/root/
+scp -r wp_plesk_forensik.sh lib module signaturen daten reportgen root@SERVER:/root/
 ```
 
 Der Lauf arbeitet standardmäßig **rein offline** — er baut keine Verbindung nach außen auf. `--online` erlaubt dem Lauf, Vergleichsdaten nachzuladen; jeder Abruf wird mit URL, Antwortcode und Prüfsumme im Technikbericht, als Beleg und in `findings.json` ausgewiesen, damit im Nachhinein nachvollziehbar bleibt, dass der Lauf das Netz berührt hat.
@@ -160,6 +173,7 @@ Im Ordner [`examples/`](examples/) liegen vollständige Beispielberichte eines *
 
 - **[`docs/handbuch.md`](docs/handbuch.md)** — vollständiges Benutzerhandbuch: Installation, alle 14 Prüfabschnitte, Berichte, Verdikte lesen, Troubleshooting, FAQ.
 - **[`docs/erkennung.md`](docs/erkennung.md)** — Erkennungs-Referenz: Signaturen, zweistufige Webshell-Bewertung, False-Positive-Filter, Root-Verdikt, Grenzen.
+- **[`docs/architektur.md`](docs/architektur.md)** — Aufbau: Runner, `lib/`, `module/`, das Modul-Interface, wie man einen Prüfabschnitt hinzufügt, und wie belegt wird, dass ein Umbau nichts verändert hat.
 - **[`docs/joomla-pruefung.md`](docs/joomla-pruefung.md)** — Joomla-Prüfung im Detail: die zehn Prüfschritte, Datenbestand, Offline-/Online-Betrieb, Fehlalarm-Vermeidung, Pflege.
 - **[`docs/relay-backdoors.md`](docs/relay-backdoors.md)** — Relay-Backdoors (gsocket), Prozess-Introspektion und warum Signatur-Rootkitscanner diese Klasse verfehlen.
 - **[`docs/incident-response.md`](docs/incident-response.md)** — Incident-Response-Playbook: 7 Phasen von der Beweissicherung bis zur Härtung.
