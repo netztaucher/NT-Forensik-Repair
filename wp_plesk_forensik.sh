@@ -220,6 +220,47 @@ J_DATA_STAMP=""          # Stand des Offline-Datenbestands (YYYY-MM-DD)
 JOOMLA_DATA_AGE=0        # Alter des Offline-Datenbestands in Tagen
 ONLINE_FETCHES=""        # Protokoll aller Netzabrufe (forensische Transparenz)
 
+# Aus Abschnitt 13 hochgezogen: der Kundenbericht und die PDF-Zusammenfassung
+# lesen ROOT_CUSTOMER_HINT ungeschützt. Ohne Default bricht jeder Lauf ab,
+# bei dem die Root-Prüfung nicht gelaufen ist.
+ROOT_CUSTOMER_HINT="Die Reichweite auf Serverebene wurde in diesem Lauf nicht geprüft."
+MALWARE_TOTAL=0          # Grobstatistik der Schadcode-Familien (Abschnitt 13)
+
+# ── Von Prüfabschnitten hochgezogene Werte ───────────────────
+# Diese wurden früher mitten in einem Prüfabschnitt gesetzt und von anderen
+# Abschnitten gelesen — die einzigen echten Abhängigkeiten zwischen
+# Abschnitten. Hier oben stehen sie unabhängig davon zur Verfügung, welche
+# Abschnitte ein Lauf tatsächlich ausführt.
+
+# Prüfumfang. Früher in Abschnitt 7; gelesen von 7, 8, 11, 12 und 13.
+case "$SCOPE_MODE" in
+  path)   SCAN_PATH="$SCAN_PATH_ARG" ;;
+  domain) SCAN_PATH="${VHOSTS_DIR}/${DOMAIN}" ;;
+  *)      SCAN_PATH="$VHOSTS_DIR" ;;   # global
+esac
+# Fallback: gesetzte Domain ohne existierenden vhost -> serverweit statt ins Leere
+[[ "$SCOPE_MODE" == "domain" && ! -d "$SCAN_PATH" ]] && SCAN_PATH="$VHOSTS_DIR"
+
+# Plesk-Admin-Zugang für die Datenbankprüfungen. Früher in Abschnitt 11;
+# die Joomla-Prüfung in Abschnitt 12 fällt ebenfalls darauf zurück.
+PLESK_MYSQL_PW=""
+[[ -f /etc/psa/.psa.shadow ]] && PLESK_MYSQL_PW=$(cat /etc/psa/.psa.shadow 2>/dev/null || true)
+
+# Webshell-Signatur. Früher in Abschnitt 7; Abschnitt 12 nutzt sie bewusst
+# mit — eine Signatur, eine Pflegestelle.
+# Case-insensitive angewendet (-i), damit mixed-case-Evasion wie 'EvaL',
+# 'evAl', 'EVaL' erkannt wird. Erfasst u.a.:
+#  - Variable-Variable-Superglobal:  ${$a.$b.$c}  → rekonstruiert _COOKIE/_POST
+#  - eval/assert(base64_decode|gzinflate|gzuncompress|str_rot13|$_...)
+#  - preg_replace mit /e-Modifier, create_function-Dropper
+# move_uploaded_file($_FILES) bewusst NICHT — matcht legitime Upload-Handler.
+# phpunit/sebastian ausgeschlossen (legitimes eval in Testframeworks).
+PATTERN_REGEX='\$\{\s*\$[a-zA-Z0-9_]+(\s*\.\s*\$[a-zA-Z0-9_]+)+\s*\}|eval\s*\(\s*(base64_decode|gzinflate|gzuncompress|str_rot13)|eval\s*\(\s*\$_(GET|POST|REQUEST|COOKIE|SERVER)|assert\s*\(\s*\$_|create_function\s*\(\s*['"'"'"][^'"'"'"]*['"'"'"]\s*,\s*\$|preg_replace\s*\(\s*['"'"'"].*/e[imsuxADSUXJ]*['"'"'"]|\bFilesMan\b|c99sh|r57shell|b374k'
+
+# Schwelle: Dropper sind fast reine Obfuskation → klein. Legitime
+# Framework-Nutzung (phpseclib, eGroupware) steckt in großen Dateien.
+DROPPER_MAX_BYTES=3000
+
 # Signaturfamilie THC gsocket / gs-netcat. Trifft auch bei Umbenennung,
 # da die Strings im Binary verbleiben (auch bei stripped).
 GS_SIG_REGEX='GSRN|gs\.thc\.org|GS_connect|GSOCKET_ARGS|GSOCKET_SECRET|gs-netcat|4_gs-netcat\.c|GS_daemonize|gs_watchdog|GSOCKET_SOCKS|GS_gen_secret'
@@ -965,13 +1006,6 @@ fi
 h1 "7. DATEISYSTEM-SCAN"
 # ============================================================
 
-case "$SCOPE_MODE" in
-  path)   SCAN_PATH="$SCAN_PATH_ARG" ;;
-  domain) SCAN_PATH="${VHOSTS_DIR}/${DOMAIN}" ;;
-  *)      SCAN_PATH="$VHOSTS_DIR" ;;   # global
-esac
-# Fallback: gesetzte Domain ohne existierenden vhost -> serverweit statt ins Leere
-[[ "$SCOPE_MODE" == "domain" && ! -d "$SCAN_PATH" ]] && SCAN_PATH="$VHOSTS_DIR"
 
 h2 "7.1 Kürzlich veränderte PHP-Dateien (letzte ${DAYS_BACK} Tage)"
 echo -e "  ${YLW}Durchsuche Webspace (kann dauern...)${NC}"
@@ -1042,18 +1076,6 @@ fi
 h2 "7.3 Webshell-Muster (Inhalt) — zweistufig"
 echo -e "  ${YLW}Scanne auf Webshell-Signaturen (inkl. obfuskierte Cookie-Backdoors)...${NC}"
 
-# Detection-Familie. Case-insensitive (-i), damit mixed-case-Evasion wie
-# 'EvaL'/'evAl'/'EVaL' erkannt wird. Erfasst u.a.:
-#  - Variable-Variable-Superglobal:  ${$a.$b.$c}  → rekonstruiert _COOKIE/_POST
-#  - eval/assert(base64_decode|gzinflate|gzuncompress|str_rot13|$_...)
-#  - preg_replace mit /e-Modifier, create_function-Dropper
-# move_uploaded_file($_FILES) bewusst NICHT — matcht legitime Upload-Handler.
-# phpunit/sebastian ausgeschlossen (legitimes eval in Testframeworks).
-PATTERN_REGEX='\$\{\s*\$[a-zA-Z0-9_]+(\s*\.\s*\$[a-zA-Z0-9_]+)+\s*\}|eval\s*\(\s*(base64_decode|gzinflate|gzuncompress|str_rot13)|eval\s*\(\s*\$_(GET|POST|REQUEST|COOKIE|SERVER)|assert\s*\(\s*\$_|create_function\s*\(\s*['"'"'"][^'"'"'"]*['"'"'"]\s*,\s*\$|preg_replace\s*\(\s*['"'"'"].*/e[imsuxADSUXJ]*['"'"'"]|\bFilesMan\b|c99sh|r57shell|b374k'
-
-# Schwelle: Dropper sind fast reine Obfuskation → klein. Legitime
-# Framework-Nutzung (phpseclib, eGroupware) steckt in großen Dateien.
-DROPPER_MAX_BYTES=3000
 
 WEBSHELL_HITS=$(grep -rlPi "$PATTERN_REGEX" "$SCAN_PATH" --include="*.php" \
   --exclude-dir=phpunit --exclude-dir=sebastian --exclude-dir=mockery 2>/dev/null || true)
@@ -1863,10 +1885,6 @@ h1 "11. WORDPRESS-DATENBANK-PRÜFUNG"
 
 WPDB_FLAGS=0
 
-# MySQL-Aufruf: bevorzugt Plesk-Admin-Zugang (kein Passwort nötig), sonst
-# die Zugangsdaten aus wp-config.php.
-PLESK_MYSQL_PW=""
-[[ -f /etc/psa/.psa.shadow ]] && PLESK_MYSQL_PW=$(cat /etc/psa/.psa.shadow 2>/dev/null || true)
 
 # wp-cli + PHP-Binary erkennen (Fallback wenn direkter mysql-Zugang scheitert;
 # Lehre aus einem Kundenvorfall 2026-07: mysql-Connect schlug fehl, DB-Prüfung wurde
