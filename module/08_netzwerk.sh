@@ -192,7 +192,7 @@ h2 "8.7 Relay-Backdoors (THC gsocket / gs-netcat)"
 # den eigenen Ablageordner ${BASE_DIR} VOR dem Lesen. grep -a (ohne -I!) ist
 # Absicht: -I würde Binärdateien überspringen und genau die ELF-Backdoor
 # nie lesen.
-GS_FILE_HITS=$(find /tmp /var/tmp /dev/shm /root /home /usr/local/bin /usr/local/sbin /opt "$SCAN_PATH" \
+GS_FILE_HITS=$(find /tmp /var/tmp /dev/shm /root /home /usr/local/bin /usr/local/sbin /opt "${SCAN_PATHS[@]}" \
     -xdev -type f -size -30M 2>/dev/null | nf_strip_self \
     | xargs -r -d '\n' grep -la -E "$GS_SIG_REGEX" 2>/dev/null \
     | grep -vF "$INSTALLED_PATH" || true)
@@ -484,18 +484,25 @@ if [[ -n "$IMU_BIN" ]] && command -v python3 &>/dev/null; then
     # würde der Scope-Filter (und die Zählung) auf Servern mit vielen Treffern
     # unvollständig bleiben.
     IMU_JSON=$("$IMU_BIN" malware malicious list --json --by-status found --limit 100000 2>/dev/null || true)
-    IMU_REPORT=$(SCOPE_PATH="$SCAN_PATH" VHOSTS="$VHOSTS_DIR" python3 -c '
+    # ALLE Pfade des Scopes, nicht nur den ersten. Ein Plesk-Abo hat mehrere
+    # vhost-Verzeichnisse; SCAN_PATH ist davon willkuerlich das alphabetisch
+    # erste. Auf einem echten Kundensystem war das /var/www/vhosts/<domain>,
+    # waehrend der Schadcode unter <webNN>.<server>/httpdocs/<domain>/
+    # lag — der Filter warf damit ALLE sechs Imunify-Treffer weg und der
+    # Bericht meldete "keine offenen Malware-Treffer im Pruef-Scope".
+    IMU_REPORT=$(SCOPE_PATHS="$(printf '%s\n' "${SCAN_PATHS[@]}")" VHOSTS="$VHOSTS_DIR" python3 -c '
 import sys, os, json, re
 try: d = json.loads(sys.stdin.read())
 except Exception: sys.exit(0)
 items = d.get("items", []) if isinstance(d, dict) else (d if isinstance(d, list) else [])
-sp = os.environ.get("SCOPE_PATH", ""); vh = os.environ.get("VHOSTS", "/var/www/vhosts")
-glob = (sp == vh or not sp)
+sps = [x for x in os.environ.get("SCOPE_PATHS", "").split("\n") if x]
+vh = os.environ.get("VHOSTS", "/var/www/vhosts")
+glob = (not sps) or (vh in sps)
 # Quarantäne-/Backup-Pfade sind bereits eingedämmt, nicht live.
 qpat = re.compile(r"/(schadcode|quarant\w*|backup|_?bak|altkopie|sicherung)(/|_|\.)", re.I)
 def keep(i):
     f = str(i.get("file", ""))
-    if not (glob or f.startswith(sp)): return False
+    if not (glob or any(f.startswith(x) for x in sps)): return False
     if qpat.search(f): return False            # eingedämmt/Backup, kein Live-Fund
     if not os.path.isfile(f): return False     # Imunify-DB veraltet: Datei existiert nicht mehr
     return True
@@ -509,7 +516,8 @@ for i in sel[:60]:
     if [[ "${IMU_COUNT:-0}" -gt 0 ]]; then
         crit "Imunify meldet ${IMU_COUNT} nicht bereinigte Malware-Datei(en) im Prüf-Scope" web
         code "$IMU_LIST"
-        evidence "imunify_malware" "Scanner: $IMU_BIN, Status=found, Scope=$SCAN_PATH
+        evidence "imunify_malware" "Scanner: $IMU_BIN, Status=found
+Scope: $(printf '%s ' "${SCAN_PATHS[@]}")
 $IMU_LIST"
         IMUNIFY_HITS="$IMU_LIST"
     else
