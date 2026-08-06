@@ -16,8 +16,8 @@ Schritt-für-Schritt-Ablauf für einen echten Vorfall — von der Meldung bis zu
 ## Phase 1 — Sichern & Analysieren (automatisiert)
 
 ```bash
-scp wp_plesk_forensik.sh root@SERVER:/root/
-ssh root@SERVER "bash /root/wp_plesk_forensik.sh betroffene-domain.tld"
+ssh root@SERVER "git clone --depth 1 https://github.com/netztaucher/NT-Forensik-Repair.git /root/nt-forensik"
+ssh root@SERVER "bash /root/nt-forensik/wp_plesk_forensik.sh betroffene-domain.tld"
 ```
 
 Der Lauf:
