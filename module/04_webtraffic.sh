@@ -99,15 +99,16 @@ if [[ -n "$DOMAIN" ]]; then
     analyze_access_log "$log" "$DOMAIN"
   done
 else
-  if [[ -d "$VHOSTS_DIR" ]]; then
-    for domain_dir in "$VHOSTS_DIR"/*/; do
-      d=$(basename "$domain_dir")
-      [[ "$d" == "system" || "$d" == "chroot" ]] && continue
-      for log in "$domain_dir/logs/access_log" "$domain_dir/logs/access_ssl_log"; do
-        analyze_access_log "$log" "$d"
-      done
+  # Nur die Verzeichnisse des Scopes. Vorher lief die Schleife immer ueber
+  # ${VHOSTS_DIR}/*, sodass --path und --webNN hier ohne Wirkung blieben.
+  while IFS= read -r domain_dir; do
+    [[ -d "$domain_dir" ]] || continue
+    d=$(basename "$domain_dir")
+    [[ "$d" == "system" || "$d" == "chroot" ]] && continue
+    for log in "$domain_dir/logs/access_log" "$domain_dir/logs/access_ssl_log"; do
+      analyze_access_log "$log" "$d"
     done
-  fi
+  done < <(scope_vhost_dirs)
 fi
 
 # Angreifer-IP-Liste konsolidieren (für BSI-Meldung / IOCs)
