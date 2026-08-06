@@ -87,6 +87,12 @@ ein Teillauf darf sich nicht wie ein vollständiges Ergebnis lesen.
 USAGE
 }
 
+# Argumente kommen aus NT_ARGV (vom Runner gesichert), nicht aus $@:
+# diese Datei wird per 'source' aus einer Funktion eingebunden, dort ist $@
+# die Argumentliste der Funktion.
+set -- "${NT_ARGV[@]:-}"
+[[ $# -eq 1 && -z "$1" ]] && shift    # leeres Element bei leerem NT_ARGV
+
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --domain) SCOPE_MODE="domain"; DOMAIN="${2:-}"; SCOPE_GESETZT=1; shift 2 ;;
@@ -116,76 +122,81 @@ if [[ "$SCOPE_MODE" == "path" && -z "$SCAN_PATH_ARG" ]]; then
   echo "Fehler: --path ohne Pfad-Angabe." >&2; usage >&2; exit 2
 fi
 
-TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-RUN_LABEL="${TIMESTAMP}_${DOMAIN:-${SCOPE_MODE}}"
-RUN_DIR="${FORENSIK_BASE}/${RUN_LABEL}"
-BELEGE_DIR="${RUN_DIR}/belege"
-REPORT_FILE="${RUN_DIR}/technik_bericht.md"
-KUNDE_FILE="${RUN_DIR}/kundenbericht.md"
-BSI_FILE="${RUN_DIR}/bsi_meldung.md"
-DSGVO_FILE="${RUN_DIR}/dsgvo_meldung.md"
-RUN_LOG="${RUN_DIR}/lauf.log"
-LOG_ARCHIVE="${BELEGE_DIR}/logs_sicherung.tar.gz"
+# ── Prüfumfang ableiten ──────────────────────────────────────
+# Als Funktion, weil das Startmenü den Umfang nachträglich ändern kann.
+# Der Runner ruft sie auf, nachdem das Menü durch ist.
+scan_path_bestimmen() {
+  case "$SCOPE_MODE" in
+    path)   SCAN_PATH="$SCAN_PATH_ARG" ;;
+    domain) SCAN_PATH="${VHOSTS_DIR}/${DOMAIN}" ;;
+    *)      SCAN_PATH="$VHOSTS_DIR" ;;   # global
+  esac
+  # Fallback: gesetzte Domain ohne existierenden vhost -> serverweit statt ins Leere
+  [[ "$SCOPE_MODE" == "domain" && ! -d "$SCAN_PATH" ]] && SCAN_PATH="$VHOSTS_DIR"
+}
 
-# ── Root-Check ───────────────────────────────────────────────
-if [[ $EUID -ne 0 ]]; then
-  echo -e "${RED}Fehler: Skript muss als root ausgeführt werden.${NC}"
-  echo "  sudo bash $0 [domain.tld]"
-  exit 1
-fi
+# ── Ablage einrichten ────────────────────────────────────────
+# Ebenfalls als Funktion: der Laufordner trägt die geprüfte Domain im
+# Namen, und die steht erst nach dem Menü fest.
+ablage_einrichten() {
+  TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+  RUN_LABEL="${TIMESTAMP}_${DOMAIN:-${SCOPE_MODE}}"
+  RUN_DIR="${FORENSIK_BASE}/${RUN_LABEL}"
+  BELEGE_DIR="${RUN_DIR}/belege"
+  REPORT_FILE="${RUN_DIR}/technik_bericht.md"
+  KUNDE_FILE="${RUN_DIR}/kundenbericht.md"
+  BSI_FILE="${RUN_DIR}/bsi_meldung.md"
+  DSGVO_FILE="${RUN_DIR}/dsgvo_meldung.md"
+  RUN_LOG="${RUN_DIR}/lauf.log"
+  LOG_ARCHIVE="${BELEGE_DIR}/logs_sicherung.tar.gz"
 
-# ── Basis-Verzeichnisse anlegen ──────────────────────────────
-mkdir -p "$BASE_DIR" "$FORENSIK_BASE" "$BELEGE_DIR"
-chmod 700 "$BASE_DIR" "$FORENSIK_BASE" "$RUN_DIR" "$BELEGE_DIR"
+  # ── Root-Check ───────────────────────────────────────────────
+  if [[ $EUID -ne 0 ]]; then
+    echo -e "${RED}Fehler: Skript muss als root ausgeführt werden.${NC}"
+    echo "  sudo bash $0 [domain.tld]"
+    exit 1
+  fi
 
-# ── Selbst-Installation nach /root/wartungsscripte ──────────
-# SELF_PATH und SELF_DIR setzt der Runner, bevor er diese Datei einbindet —
-# er braucht sie schon, um sie überhaupt zu finden.
-INSTALLED_PATH="${BASE_DIR}/wp_plesk_forensik.sh"
-if [[ "$SELF_PATH" != "$INSTALLED_PATH" ]]; then
-  cp -f "$SELF_PATH" "$INSTALLED_PATH"
-  chmod 700 "$INSTALLED_PATH"
-fi
-# Beigelegte Hilfsdateien (YARA-Signaturen, PDF-Generator, Joomla-Datenbestand)
-# neben das Skript mitziehen — so findet der Lauf sie unter ${BASE_DIR}, egal
-# von wo gestartet wurde.
-#
-# Auffrischen bei JEDEM Lauf, nicht nur beim ersten (v3.8): der frühere
-# '! -e'-Guard hat einen einmal installierten Host dauerhaft auf dem Erststand
-# eingefroren. Bei Signaturen war das ärgerlich; beim versionierten Joomla-
-# Datenbestand (Prüfsummen, Schwachstellenliste) wäre es ein Fehler — der Lauf
-# würde stumm gegen einen jahrealten Stand prüfen und "unauffällig" melden.
-#
-# lib/ und module/ gehören zwingend dazu: ohne sie ist die installierte Kopie
-# unter ${BASE_DIR} nicht lauffähig, weil der Runner nur noch einbindet.
-_srcdir="$SELF_DIR"
-if [[ "$_srcdir" != "$BASE_DIR" ]]; then   # sonst kopiert sich die installierte Kopie selbst
-  for _aux in signaturen reportgen daten lib module; do
-    if [[ -d "$_srcdir/$_aux" ]]; then
-      mkdir -p "${BASE_DIR}/$_aux"
-      # '/.' kopiert den INHALT — ohne den entsteht ${BASE_DIR}/daten/daten
-      cp -rf "$_srcdir/$_aux/." "${BASE_DIR}/$_aux/" 2>/dev/null || true
-    fi
-  done
-fi
+  # ── Basis-Verzeichnisse anlegen ──────────────────────────────
+  mkdir -p "$BASE_DIR" "$FORENSIK_BASE" "$BELEGE_DIR"
+  chmod 700 "$BASE_DIR" "$FORENSIK_BASE" "$RUN_DIR" "$BELEGE_DIR"
 
-# Alles zusätzlich in lauf.log protokollieren
-exec > >(tee -a "$RUN_LOG") 2>&1
+  # ── Selbst-Installation nach /root/wartungsscripte ──────────
+  # SELF_PATH und SELF_DIR setzt der Runner, bevor er diese Datei einbindet —
+  # er braucht sie schon, um sie überhaupt zu finden.
+  INSTALLED_PATH="${BASE_DIR}/wp_plesk_forensik.sh"
+  if [[ "$SELF_PATH" != "$INSTALLED_PATH" ]]; then
+    cp -f "$SELF_PATH" "$INSTALLED_PATH"
+    chmod 700 "$INSTALLED_PATH"
+  fi
+  # Beigelegte Hilfsdateien (YARA-Signaturen, PDF-Generator, Joomla-Datenbestand)
+  # neben das Skript mitziehen — so findet der Lauf sie unter ${BASE_DIR}, egal
+  # von wo gestartet wurde.
+  #
+  # Auffrischen bei JEDEM Lauf, nicht nur beim ersten (v3.8): der frühere
+  # '! -e'-Guard hat einen einmal installierten Host dauerhaft auf dem Erststand
+  # eingefroren. Bei Signaturen war das ärgerlich; beim versionierten Joomla-
+  # Datenbestand (Prüfsummen, Schwachstellenliste) wäre es ein Fehler — der Lauf
+  # würde stumm gegen einen jahrealten Stand prüfen und "unauffällig" melden.
+  #
+  # lib/ und module/ gehören zwingend dazu: ohne sie ist die installierte Kopie
+  # unter ${BASE_DIR} nicht lauffähig, weil der Runner nur noch einbindet.
+  _srcdir="$SELF_DIR"
+  if [[ "$_srcdir" != "$BASE_DIR" ]]; then   # sonst kopiert sich die installierte Kopie selbst
+    for _aux in signaturen reportgen daten lib module; do
+      if [[ -d "$_srcdir/$_aux" ]]; then
+        mkdir -p "${BASE_DIR}/$_aux"
+        # '/.' kopiert den INHALT — ohne den entsteht ${BASE_DIR}/daten/daten
+        cp -rf "$_srcdir/$_aux/." "${BASE_DIR}/$_aux/" 2>/dev/null || true
+      fi
+    done
+  fi
 
-# ── Von Prüfabschnitten hochgezogene Werte ───────────────────
-# Diese wurden früher mitten in einem Prüfabschnitt gesetzt und von anderen
-# Abschnitten gelesen — die einzigen echten Abhängigkeiten zwischen
-# Abschnitten. Hier oben stehen sie unabhängig davon zur Verfügung, welche
-# Abschnitte ein Lauf tatsächlich ausführt.
+  # Alles zusätzlich in lauf.log protokollieren
+  exec > >(tee -a "$RUN_LOG") 2>&1
 
-# Prüfumfang. Früher in Abschnitt 7; gelesen von 7, 8, 11, 12 und 13.
-case "$SCOPE_MODE" in
-  path)   SCAN_PATH="$SCAN_PATH_ARG" ;;
-  domain) SCAN_PATH="${VHOSTS_DIR}/${DOMAIN}" ;;
-  *)      SCAN_PATH="$VHOSTS_DIR" ;;   # global
-esac
-# Fallback: gesetzte Domain ohne existierenden vhost -> serverweit statt ins Leere
-[[ "$SCOPE_MODE" == "domain" && ! -d "$SCAN_PATH" ]] && SCAN_PATH="$VHOSTS_DIR"
+}
+
 
 # Plesk-Admin-Zugang für die Datenbankprüfungen. Früher in Abschnitt 11;
 # die Joomla-Prüfung in Abschnitt 12 fällt ebenfalls darauf zurück.

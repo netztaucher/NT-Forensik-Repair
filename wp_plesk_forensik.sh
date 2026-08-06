@@ -32,6 +32,12 @@ set -u
 SELF_PATH="$(readlink -f "$0" 2>/dev/null || echo "$0")"
 SELF_DIR="$(dirname "$SELF_PATH")"
 
+# Aufrufargumente sichern, BEVOR irgendetwas eingebunden wird.
+# 'source' aus einer Funktion heraus setzt $@ auf die Argumente der Funktion,
+# nicht auf die des Skripts — die Kommandozeile käme in lib/konfig.sh sonst
+# nie an. Deshalb wird sie hier festgehalten und dort daraus gelesen.
+NT_ARGV=("$@")
+
 lade() {   # lade <relativer Pfad> — bricht mit klarer Meldung ab statt still zu scheitern
   local f="${SELF_DIR}/$1"
   if [[ ! -r "$f" ]]; then
@@ -47,6 +53,24 @@ lade lib/konfig.sh     # Pfade, Argumente, Laufordner, Selbst-Installation
 lade lib/befunde.sh    # Vorgabewerte aller Befund-Variablen
 lade lib/muster.sh     # Signaturen, Selbstausschluss
 lade lib/kern.sh       # Ausgabe- und Beleg-Funktionen
+lade lib/menue.sh      # Startmenü (nur wenn kein Prüfumfang angegeben wurde)
+
+# ── Startmenü ────────────────────────────────────────────────
+# Nur wenn kein Prüfumfang angegeben wurde. Ein Scope-Argument ist eine
+# eindeutige Anweisung und läuft immer direkt durch — sonst wäre jeder
+# bestehende Aufruf über SSH oder aus einem Cronjob gebrochen.
+if menue_faellig; then
+  if [[ -t 0 ]]; then
+    menue_starten
+  else
+    menue_ohne_terminal   # erklärt und beendet mit Code 2, statt zu warten
+  fi
+fi
+
+# Erst jetzt steht fest, was geprüft wird — das Menü kann Umfang und Domain
+# geändert haben, und der Laufordner trägt die Domain im Namen.
+scan_path_bestimmen
+ablage_einrichten
 
 # ── Banner ───────────────────────────────────────────────────
 echo -e "${BOLD}${BLU}"
