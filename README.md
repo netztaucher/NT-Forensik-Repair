@@ -115,6 +115,9 @@ rsync -a --exclude laeufe --exclude .git ./ root@SERVER:/root/nt-forensik/
 | `reportgen/` | PDF-Erzeugung | nur für den PDF-Bericht |
 
 ```bash
+# Ein Plesk-Abo als Ganzes — alle Verzeichnisse dieses Kunden, sonst nichts
+ssh root@SERVER "bash /root/nt-forensik/wp_plesk_forensik.sh --webNN"
+
 # Einen Kunden prüfen (Kundenbericht enthält nur dessen Daten, maskiert)
 ssh root@SERVER "bash /root/nt-forensik/wp_plesk_forensik.sh --domain kundendomain.tld"
 
