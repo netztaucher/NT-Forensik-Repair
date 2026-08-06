@@ -39,7 +39,12 @@ menue_uebersicht() {
       titel=$(modul_feld "$datei" titel)
       frage=$(modul_feld "$datei" frage)
       kosten=$(modul_feld "$datei" kosten)
-      printf '   %b%2s%b  %-32s %s\n' "$CYN" "$nr" "$NC" "$titel" "$frage"
+      # Spaltenbreite über die Zeichenzahl auffüllen, nicht über Bytes:
+      # printf '%-32s' zählt je nach Umgebung Bytes, und ein Umlaut belegt in
+      # UTF-8 zwei. Auf Systemen ohne UTF-8-Locale verrutscht die Spalte sonst.
+      _len=$(printf '%s' "$titel" | wc -m | tr -d ' ')
+      printf '   %b%2s%b  %s%*s %s\n' "$CYN" "$nr" "$NC" \
+             "$titel" "$(( 32 - _len > 0 ? 32 - _len : 1 ))" "" "$frage"
       case "$kosten" in
         HOCH*) printf '        %b Aufwand: %s%b\n' "$YLW" "$kosten" "$NC" ;;
         *)     printf '        Aufwand: %s\n' "$kosten" ;;
