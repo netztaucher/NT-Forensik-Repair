@@ -17,6 +17,9 @@ lauf.log
 # Lokale Lauf-Kopien (Kundendaten)
 laeufe/
 
+# Repair-Laufordner (Protokolle, Prüfsummen, echte Kundenpfade)
+repair/
+
 # Serena (LSP-Sitzungsdaten, lokal)
 .serena/
 
