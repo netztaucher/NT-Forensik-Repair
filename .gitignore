@@ -22,3 +22,6 @@ laeufe/
 
 # Handover-Mechanik (lokale Logs)
 logs/
+
+# Arbeitsdateien der Datenpflege (werkzeuge/joomla-daten-update.sh)
+.vel_offen.tsv
