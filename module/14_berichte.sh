@@ -838,6 +838,24 @@ fi
   } >> 00_manifest.txt
   sha256sum ./* 2>/dev/null | grep -v "SHA256SUMS" > SHA256SUMS || true
 )
+# ── Fremdkunden aus den weiterzugebenden Dokumenten halten ───
+# Vor dem Hashen, damit die Pruefsummen zur ausgelieferten Fassung passen.
+# Ein Bericht ueber EINEN Kunden darf keine Daten anderer Kunden enthalten;
+# auf einem Shared-Host mit 482 vhosts standen in einem Lauf ueber ein
+# einzelnes Abo 112 fremde Kennungen in 17 Abschnitten.
+#
+# Die Belege unter belege/ bleiben bewusst UNMASKIERT: sie sind Beweismittel
+# und gehoeren dem Betreiber, nicht in eine Kundenuebergabe. Wer das Paket
+# weitergibt, gibt die Berichte weiter, nicht die Rohbelege.
+if [[ "$SCOPE_MODE" != "global" ]]; then
+  echo -e "\n${BOLD}Datenschutz${NC}"
+  for _dok in technik_bericht.md kundenbericht.md befunde_details.md lauf.log; do
+    [[ -f "${RUN_DIR}/${_dok}" ]] || continue
+    printf '  %-24s' "$_dok"
+    nf_fremdkunden_maskieren "${RUN_DIR}/${_dok}" || echo "  (nichts zu maskieren)"
+  done
+fi
+
 # Berichte + findings.json ebenfalls hashen
 (
   cd "$RUN_DIR"
