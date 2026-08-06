@@ -38,6 +38,10 @@ SCOPE_MODE="global"      # global | domain | path
 SCAN_PATH_ARG=""         # nur bei --path
 WANT_YARA=0              # 7.11 nur auf Wunsch (teuer auf großen Webspaces)
 WANT_ONLINE=0            # --online: Joomla-Prüfsummen/Schwachstellenliste nachladen
+SCOPE_GESETZT=0          # wurde ein Scope ausdrücklich angegeben? (steuert das Menü)
+WANT_MENUE=-1            # -1 = automatisch, 0 = nie, 1 = erzwungen
+MODUL_NUR=""             # --nur:  Komma-Liste von Abschnittsnummern
+MODUL_OHNE=""            # --ohne: Komma-Liste von Abschnittsnummern
 
 usage() {
   cat <<USAGE
@@ -53,6 +57,13 @@ Scope (eines):
   --global                Alle vhosts (Standard): Betreiberbericht + je vhost
                           ein eigener, gefilterter Kundenbericht
 
+Abschnittsauswahl:
+  --nur <n[,n…]>          Nur diese Prüfabschnitte (z. B. --nur 12)
+  --ohne <n[,n…]>         Alle ausser diesen (z. B. --ohne 2,10)
+  --nur-joomla            Kurzform für --nur 12
+  --nur-website           Nur die Abschnitte, die den Webauftritt prüfen
+                          (überspringt die serverweiten — deutlich schneller)
+
 Optionen:
   --yara                  YARA-Signaturscan (7.11) aktivieren (langsam auf
                           großen Webspaces; ohne Flag übersprungen)
@@ -60,26 +71,40 @@ Optionen:
                           aus dem Netz nachladen. OHNE dieses Flag arbeitet der
                           Lauf rein offline aus dem mitgelieferten Datenbestand.
                           Jeder Abruf wird im Bericht und als Beleg ausgewiesen.
+  --kein-menue            Startmenü unterdrücken (für Cronjobs und Skripte)
+  --menue                 Startmenü erzwingen
   -h, --help              Diese Hilfe
 
-Die Server-/Rootebene wird in jedem Modus mitgeprüft. In Kundenberichten
-werden Rootbefunde nur allgemein (betroffen/nicht betroffen) genannt und
-IP-Adressen/E-Mails maskiert.
+Ohne Scope-Argument startet das Menü. Wird ein Scope angegeben, läuft die
+Prüfung direkt durch — bestehende Aufrufe und Skripte bleiben unverändert.
+
+Die Server-/Rootebene wird in jedem Modus mitgeprüft, sofern nicht abgewählt.
+In Kundenberichten werden Rootbefunde nur allgemein (betroffen/nicht
+betroffen) genannt und IP-Adressen/E-Mails maskiert.
+
+Der Berichtskopf weist immer aus, welche Abschnitte NICHT gelaufen sind —
+ein Teillauf darf sich nicht wie ein vollständiges Ergebnis lesen.
 USAGE
 }
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --domain) SCOPE_MODE="domain"; DOMAIN="${2:-}"; shift 2 ;;
-    --path)   SCOPE_MODE="path";   SCAN_PATH_ARG="${2:-}"; shift 2 ;;
-    --global) SCOPE_MODE="global"; shift ;;
+    --domain) SCOPE_MODE="domain"; DOMAIN="${2:-}"; SCOPE_GESETZT=1; shift 2 ;;
+    --path)   SCOPE_MODE="path";   SCAN_PATH_ARG="${2:-}"; SCOPE_GESETZT=1; shift 2 ;;
+    --global) SCOPE_MODE="global"; SCOPE_GESETZT=1; shift ;;
     --yara)   WANT_YARA=1; shift ;;
     --online) WANT_ONLINE=1; shift ;;
+    --nur)    MODUL_NUR="${2:-}";  shift 2 ;;
+    --ohne)   MODUL_OHNE="${2:-}"; shift 2 ;;
+    --nur-joomla)  MODUL_NUR="12" ; shift ;;
+    --nur-website) MODUL_NUR="ebene:website"; shift ;;
+    --kein-menue)  WANT_MENUE=0; shift ;;
+    --menue)       WANT_MENUE=1; shift ;;
     -h|--help) usage; exit 0 ;;
     --) shift; break ;;
     -*) echo "Unbekannte Option: $1" >&2; usage >&2; exit 2 ;;
     *)  # Positionsargument = Domain (Rückwärtskompatibilität)
-        SCOPE_MODE="domain"; DOMAIN="$1"; shift ;;
+        SCOPE_MODE="domain"; DOMAIN="$1"; SCOPE_GESETZT=1; shift ;;
   esac
 done
 

@@ -108,7 +108,29 @@ HEADER
 # ── Pruefabschnitte ──────────────────────────────────────────
 # Reihenfolge ist bedeutsam: Abschnitt 13 fasst die Funde der vorherigen
 # zusammen, Abschnitt 14 schreibt daraus die Berichte.
+MODULE_GELAUFEN=""
+MODULE_UEBERSPRUNGEN=""
+
 for _modul in "${SELF_DIR}"/module/*.sh; do
   [[ -r "$_modul" ]] || continue
-  lade "module/$(basename "$_modul")"
+  _nr=$(modul_feld "$_modul" nummer)
+  if modul_gewaehlt "$_nr" "$(modul_feld "$_modul" ebene)"; then
+    MODULE_GELAUFEN+="${_nr} "
+    lade "module/$(basename "$_modul")"
+  else
+    _t="${_nr}. $(modul_feld "$_modul" titel)"
+    MODULE_UEBERSPRUNGEN+="${_t}"$'\n'
+    echo -e "  ${CYN}übersprungen:${NC} ${_t}"
+  fi
 done
+
+# Ein Teillauf darf sich nicht wie ein vollständiges Ergebnis lesen.
+if [[ -n "$MODULE_UEBERSPRUNGEN" ]]; then
+  {
+    printf '\n> **Eingeschränkter Lauf.** Die folgenden Prüfabschnitte wurden auf '
+    printf 'ausdrückliche Auswahl hin NICHT ausgeführt. Ihre Ergebnisse fehlen '
+    printf 'in diesem Bericht — das ist keine Entwarnung für diese Bereiche:\n>\n'
+    while IFS= read -r _z; do [[ -n "$_z" ]] && printf '> - %s\n' "$_z"; done <<< "$MODULE_UEBERSPRUNGEN"
+    printf '\n'
+  } >> "$REPORT_FILE"
+fi

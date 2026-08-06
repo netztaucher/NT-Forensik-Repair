@@ -86,3 +86,29 @@ count_grep_i() {
   n=$(grep -icE "$1" "$2" 2>/dev/null) || true
   echo "${n:-0}"
 }
+
+# ── Modul-Metadaten und Auswahl ──────────────────────────────
+# Jedes Modul beschreibt sich im eigenen Kopf (@nummer/@titel/@frage/
+# @kosten/@ebene). Es gibt bewusst keine zentrale Liste — die würde
+# auseinanderlaufen, sobald jemand ein Modul hinzufügt oder umbenennt.
+modul_feld() {   # modul_feld <datei> <feldname>
+  sed -n "s/^# @${2}:[[:space:]]*//p" "$1" 2>/dev/null | head -1
+}
+
+# Gehört dieser Abschnitt in den Lauf?
+#   modul_gewaehlt <nummer> <ebene>
+# --nur gewinnt gegen --ohne. Abschnitt 14 (Berichte) läuft immer mit,
+# ausser er wird ausdrücklich per --ohne 14 abgewählt: ein Lauf ohne
+# Bericht und ohne findings.json ist praktisch nie gewollt.
+modul_gewaehlt() {
+  local nr="$1" ebene="${2:-}"
+  case ",${MODUL_OHNE}," in *",${nr},"*) return 1 ;; esac
+  if [[ -n "$MODUL_NUR" ]]; then
+    [[ "$nr" == "14" ]] && return 0
+    case "$MODUL_NUR" in
+      ebene:*) [[ "$ebene" == "${MODUL_NUR#ebene:}" ]] && return 0 || return 1 ;;
+    esac
+    case ",${MODUL_NUR}," in *",${nr},"*) return 0 ;; *) return 1 ;; esac
+  fi
+  return 0
+}

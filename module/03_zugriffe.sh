@@ -1,5 +1,11 @@
 # NT-Forensik — Abschnitt 3: Zugriffs-Analyse
 #
+# @nummer:  3
+# @titel:   Zugriffs-Analyse
+# @frage:   Wer hat sich angemeldet, und wurde ein Zugang durchprobiert?
+# @kosten:  gering
+# @ebene:   system
+#
 # Wird vom Runner eingebunden, nicht einzeln ausgefuehrt.
 # Vorgabewerte der hier gefuellten Variablen: lib/befunde.sh
 

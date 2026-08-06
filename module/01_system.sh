@@ -1,4 +1,10 @@
-# NT-Forensik — Abschnitt 1: System-Uebersicht
+# NT-Forensik — Abschnitt 1: System-Übersicht
+#
+# @nummer:  1
+# @titel:   System-Übersicht
+# @frage:   Auf welchem System läuft das, und was wurde zuletzt daran geändert?
+# @kosten:  gering
+# @ebene:   system
 #
 # Wird vom Runner eingebunden, nicht einzeln ausgefuehrt.
 # Vorgabewerte der hier gefuellten Variablen: lib/befunde.sh

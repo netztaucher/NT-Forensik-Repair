@@ -1,5 +1,11 @@
 # NT-Forensik — Abschnitt 11: WordPress-Datenbank
 #
+# @nummer:  11
+# @titel:   WordPress-Datenbank
+# @frage:   Ist eine WordPress-Installation übernommen?
+# @kosten:  mittel — je Installation
+# @ebene:   website
+#
 # Wird vom Runner eingebunden, nicht einzeln ausgefuehrt.
 # Vorgabewerte der hier gefuellten Variablen: lib/befunde.sh
 

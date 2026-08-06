@@ -1,4 +1,10 @@
-# NT-Forensik — Abschnitt 13: Root- & Eskalations-Pruefung
+# NT-Forensik — Abschnitt 13: Root- & Eskalations-Prüfung
+#
+# @nummer:  13
+# @titel:   Root- & Eskalations-Prüfung
+# @frage:   War der Vorfall auf die Website begrenzt oder ist der Server betroffen?
+# @kosten:  gering
+# @ebene:   system
 #
 # Wird vom Runner eingebunden, nicht einzeln ausgefuehrt.
 # Vorgabewerte der hier gefuellten Variablen: lib/befunde.sh

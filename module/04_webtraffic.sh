@@ -1,5 +1,11 @@
 # NT-Forensik — Abschnitt 4: Web-Traffic-Analyse
 #
+# @nummer:  4
+# @titel:   Web-Traffic-Analyse
+# @frage:   Welche Angriffsversuche stehen in den Zugriffsprotokollen?
+# @kosten:  mittel — abhängig von der Protokollgröße
+# @ebene:   website
+#
 # Wird vom Runner eingebunden, nicht einzeln ausgefuehrt.
 # Vorgabewerte der hier gefuellten Variablen: lib/befunde.sh
 

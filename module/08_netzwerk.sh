@@ -1,5 +1,11 @@
 # NT-Forensik — Abschnitt 8: Netzwerk & Dienste
 #
+# @nummer:  8
+# @titel:   Netzwerk & Dienste
+# @frage:   Läuft ein Fernzugriff, ein Miner oder ein getarnter Prozess?
+# @kosten:  mittel
+# @ebene:   system
+#
 # Wird vom Runner eingebunden, nicht einzeln ausgefuehrt.
 # Vorgabewerte der hier gefuellten Variablen: lib/befunde.sh
 
