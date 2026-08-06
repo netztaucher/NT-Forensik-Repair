@@ -67,6 +67,8 @@ Ohne Filter erzeugt Forensik auf gewachsenen Servern viel Rauschen. Bewusst hera
 | `plesk-ssh-terminal`-Keys bei Web-Usern | Plesk-Browser-Terminal | Key-Kommentar-Whitelist |
 | Plugin-Klassen wie `class.u.shell.php`, `*-bypass.php` | legitime Plugin-Dateinamen | Dateinamen-Check nur als ⚠️, Core/vendor/cache ausgeschlossen |
 | Joomla: `images/index.php`, `cache/index.php` | Joomlas eigene Schutzdateien gegen Directory-Listing | Größe + `_JEXEC`/`Restricted access` im Inhalt |
+| Joomla: Dateien in `cache/`, `administrator/cache/` | **Joomlas Zwischenspeicher besteht aus `.php`-Dateien** (`<?php die("Access Denied"); ?>#x#` + Daten). Der Datenteil ist beliebig groß, ein Größen-Guard greift nicht — auf einem realen Shop 3551 Fehlalarme | genau dieses Präfix ausschließen |
+| Joomla: `api/components/`, `api/language/` | Erweiterungen und Sprachpakete installieren dort **regulär** (Akeeba Backup, de-DE-Paket) | von der Kernfremd-Prüfung ausgenommen |
 | Joomla: `tmp_path`/`log_path` unterhalb des Webverzeichnisses | **Joomlas Werkseinstellung** — ein Test darauf allein feuert auf 100 % aller Installationen | zusätzlich muss eine schützende `.htaccess`/`web.config` fehlen |
 | Joomla: 20–40 aktive System-Plugins | normaler Bestand einer gepflegten Seite (Akeeba, RSFirewall, Regular Labs …) | kein Befund an sich; nur bei fehlendem Verzeichnis, Schadcode darin oder fehlendem Installationspaket |
 | Joomla: leeres `manifest_cache` | Joomlas `base.sql` liefert die Kern-Erweiterungen selbst mit leerem Feld aus — auf einer Neuinstallation ist es flächendeckend leer | Indikator gilt nur relativ zur selben Installation: erst wenn die Mehrheit ein Manifest hat, ist eine leere Zeile eine Abweichung |

@@ -2600,6 +2600,13 @@ for rel, (h, hs) in soll.items():
 # liegen legitim Dritt-Erweiterungen — dort waere jede Meldung Rauschen.
 REIN = ("includes", "administrator/includes", "libraries/src", "libraries/vendor",
         "api", "cli", "layouts")
+# ... aber auch INNERHALB dieser Zweige gibt es Stellen, an die Erweiterungen
+# und Sprachpakete regulaer installieren. Ohne diese Ausnahmen meldet jede
+# gewachsene Installation ihre Zusatzpakete als Hintertuer — auf einem realen
+# Kundensystem waren es Akeeba Backup unter api/components/ und ein deutsches
+# Sprachpaket unter api/language/ (Vorfall 2026-08-05).
+REIN_AUS = re.compile(r"^(api/components/|api/language/|api/modules/|"
+                      r"libraries/vendor/composer/|layouts/plugins/)")
 fremd = []
 for basis in REIN:
     bp = os.path.join(wurzel, basis)
@@ -2609,7 +2616,7 @@ for basis in REIN:
         for d in dateien:
             vp = os.path.join(wz, d)
             rel = os.path.relpath(vp, wurzel)
-            if rel not in soll and not NIE.match(rel):
+            if rel not in soll and not NIE.match(rel) and not REIN_AUS.match(rel):
                 fremd.append(rel)
 
 print("STATISTIK\t%d\t%d\t%d\t%d\t%d" % (len(soll), len(veraendert), len(fehlend), len(fremd), leerraum))
@@ -3053,10 +3060,10 @@ for zeile in sys.stdin.read().splitlines():
                \( -iname '*.php' -o -iname '*.phtml' -o -iname '*.php[3-8]' -o -iname '*.phar' \) \
                -newermt "-${DAYS_BACK} days" 2>/dev/null | nf_strip_self)
 
-    # PHP unterhalb von Verzeichnissen, die ausschließlich Medien, Zwischen-
-    # ablagen oder Zwischenspeicher enthalten dürfen. Der Guard-Filter aus 7.2
-    # verhindert Fehlalarme durch die winzigen Schutzdateien, die Joomla und
-    # viele Erweiterungen dort regulär ablegen.
+    # PHP im BILD-Verzeichnis. Dort hat ausführbarer Code nichts zu suchen —
+    # images/ nimmt Uploads auf, das ist die klassische Ablage der
+    # JCE-/Medien-Uploadlücken. Hier genügt die blosse Anwesenheit.
+    # Der Guard-Filter aus 7.2 hält die winzigen Schutzdateien heraus.
     while IFS= read -r f; do
       [[ -f "$f" ]] || continue
       fsize=$(stat -c%s "$f" 2>/dev/null || echo 999999)
@@ -3064,13 +3071,42 @@ for zeile in sys.stdin.read().splitlines():
          | grep -qiE "silence is golden|browsing the directory is not allowed|restricted access|^<\?php[[:space:]]*$"; then
         continue
       fi
-      # Joomlas eigene Schutzdatei: <?php die('Restricted access'); ?>
       [[ "$fsize" -lt 400 ]] && grep -qiE "_JEXEC|die\(.Restricted access" "$f" 2>/dev/null && continue
       jmal+="$f"$'\n'
-    done < <(find "$CURRENT_J_PATH"/images "$CURRENT_J_PATH"/tmp "$CURRENT_J_PATH"/cache \
-                  "$CURRENT_J_PATH"/administrator/cache "$CURRENT_J_PATH"/media \
+    done < <(find "$CURRENT_J_PATH"/images \
                -type f \( -iname '*.php' -o -iname '*.phtml' -o -iname '*.php[3-8]' -o -iname '*.phar' \) \
                2>/dev/null | nf_strip_self)
+
+    # Zwischenablage, Zwischenspeicher und media/: hier ist PHP NORMAL.
+    # Joomla legt seinen Zwischenspeicher als .php-Dateien ab (zwei Formate:
+    # '<?php die("Access Denied"); ?>#x#…' und '<?php defined(\'_JEXEC\')…
+    # return […]'), der Installer entpackt Erweiterungen nach tmp/install_*,
+    # und Erweiterungen liefern Code unter media/ aus.
+    # Die Anwesenheit einer PHP-Datei ist deshalb KEIN Befund — nur ihr
+    # Inhalt. Ohne diese Unterscheidung meldete ein realer Kundenshop 3455
+    # legitime Dateien als Schadcode (Vorfall 2026-08-05).
+    if [[ -n "${PATTERN_REGEX:-}" ]]; then
+      while IFS= read -r f; do
+        [[ -f "$f" ]] && jmal+="$f"$'\n'
+      done < <(grep -rlPi "${PATTERN_REGEX}" \
+                 "$CURRENT_J_PATH"/tmp "$CURRENT_J_PATH"/cache \
+                 "$CURRENT_J_PATH"/administrator/cache "$CURRENT_J_PATH"/media \
+                 --include='*.php' --include='*.phtml' --include='*.php[3-8]' --include='*.phar' \
+                 2>/dev/null | nf_strip_self)
+    fi
+
+    # Zurückgebliebene Installer-Verzeichnisse. Der Joomla-Installer entpackt
+    # jedes Paket nach tmp/install_<hex>/ und räumt danach auf — bleibt es
+    # liegen, steht der vollständige Quellcode der Erweiterung dauerhaft in
+    # einem web-erreichbaren Verzeichnis. Das ist ein Hygiene- und
+    # Informationsleck, aber KEIN Schadcode: deshalb eine Meldung je
+    # Verzeichnis statt tausender Dateibefunde.
+    _inst=$(find "$CURRENT_J_PATH/tmp" -maxdepth 1 -type d -name 'install_*' 2>/dev/null || true)
+    if [[ -n "$_inst" ]]; then
+      _n=$(printf '%s\n' "$_inst" | grep -c . || true)
+      warn "$site: ${_n} zurückgebliebene(s) Installations-Verzeichnis(se) unter tmp/ — sie enthalten den vollständigen Quellcode installierter Erweiterungen und sind über den Browser erreichbar; nach einem Update aufräumen" web
+      code "$(printf '%s' "$_inst" | sed "s|${CURRENT_J_PATH}/||")"
+    fi
 
     # Gemischte Groß-/Kleinschreibung der Endung (.pHp) — reine Umgehung von
     # Upload-Filtern, in einer gewachsenen Installation gibt es das nicht.
