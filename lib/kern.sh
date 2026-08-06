@@ -140,3 +140,54 @@ modul_gewaehlt() {
   fi
   return 0
 }
+
+# ── Fremdkunden aus dem Bericht halten ──────────────────────────────────────
+# Ein Bericht ueber EINEN Kunden darf keine Daten anderer Kunden enthalten.
+# Auf einem Shared-Host mit 482 vhosts standen in einem Lauf ueber ein einzelnes
+# Abo 112 fremde Kennungen: Domainnamen, Systembenutzer, deren Cronjobs und
+# SSH-Schluessel. Das ist nicht nur unsauber, es ist eine Weitergabe
+# personenbezogener Daten an einen Dritten.
+#
+# Geloescht wird nicht, sondern pseudonymisiert: aus jeder fremden Kennung wird
+# stabil derselbe Platzhalter. Damit bleibt erkennbar, dass zwei Zeilen denselben
+# Nachbarn betreffen — was fuer die Bewertung eines serverweiten Musters noetig
+# ist —, ohne dass jemand erfaehrt, WER dieser Nachbar ist.
+#
+# Die serverweiten Abschnitte behalten damit ihren Sinn: "27 shell-faehige
+# Benutzer" bleibt eine belastbare Aussage ueber den Server, ohne 27 Kundennamen.
+nf_fremdkunden_maskieren() {   # nf_fremdkunden_maskieren <datei>
+  local datei="$1"
+  [[ -r "$datei" ]] || return 0
+  [[ "$SCOPE_MODE" == "global" ]] && return 0   # Betreiberbericht darf alles
+  local eigene; eigene=$(printf '%s\n' "${SCAN_PATHS[@]}" | sed "s|.*/||" | grep -v '^$' | paste -sd'|' -)
+  [[ -n "${ABO_USER:-}" ]] && eigene="${eigene}|${ABO_USER}"
+  [[ -n "${DOMAIN:-}"   ]] && eigene="${eigene}|${DOMAIN}"
+  EIGENE_RE="$eigene" python3 - "$datei" <<'PY'
+import os, re, sys
+p = sys.argv[1]
+eigen = re.compile(r'^(' + os.environ.get("EIGENE_RE", "___nichts___") + r')$')
+txt = open(p, encoding="utf-8", errors="replace").read()
+zuordnung, zaehler = {}, [0]
+def platzhalter(name):
+    if name not in zuordnung:
+        zaehler[0] += 1
+        zuordnung[name] = "<anderer Kunde %d>" % zaehler[0]
+    return zuordnung[name]
+def ersetze_vhost(m):
+    name = m.group(1)
+    return m.group(0) if eigen.match(name) else "/var/www/vhosts/" + platzhalter(name)
+txt = re.sub(r'/var/www/vhosts/([^/\s"\'\)\],]+)', ersetze_vhost, txt)
+def ersetze_user(m):
+    name = m.group(0)
+    return name if eigen.match(name) else platzhalter(name)
+txt = re.sub(r'\bweb\d+\b', ersetze_user, txt)
+if zuordnung:
+    txt += ("\n\n---\n\n> **Hinweis zum Datenschutz.** Dieser Server beherbergt weitere Kunden. "
+            "Wo serverweite Prüfungen deren Domains oder Systemkonten berührten, stehen "
+            "Platzhalter (`<anderer Kunde N>`); derselbe Nachbar trägt dabei immer dieselbe "
+            "Nummer, sodass Zusammenhänge erkennbar bleiben. Betroffen waren %d fremde "
+            "Kennungen. Die unmaskierte Fassung verbleibt beim Betreiber.\n" % len(zuordnung))
+open(p, "w", encoding="utf-8").write(txt)
+print("  %d fremde Kennungen maskiert" % len(zuordnung))
+PY
+}
