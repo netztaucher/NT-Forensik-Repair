@@ -19,3 +19,6 @@ laeufe/
 
 # Serena (LSP-Sitzungsdaten, lokal)
 .serena/
+
+# Handover-Mechanik (lokale Logs)
+logs/
