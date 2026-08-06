@@ -40,6 +40,34 @@ mask_email(){ sed -E 's/([A-Za-z0-9])[A-Za-z0-9._%+-]*(@[A-Za-z0-9.-]+\.[A-Za-z]
 
 # Beleg sichern: schreibt Rohdaten nummeriert nach belege/
 # evidence "label" "inhalt"  → belege/NN_label.txt
+# Steckbrief einer belasteten Datei: woran sie erkannt wurde, wie sie aussieht,
+# und die Fundstelle im Klartext.
+#
+# Ein Befund ohne Fundstelle laesst Fehlalarm und Treffer nicht unterscheiden.
+# Am 06.08.2026 meldete ein Lauf drei "boesartige Plugins" — der Beleg enthielt
+# ausschliesslich Dateipfade. Zwei davon gehoerten zur legitimen elFinder-
+# Bibliothek eines echten Plugins, und niemand konnte das am Beleg erkennen;
+# die Bewertung blieb offen, bis jemand die Dateien selbst aufmachte. Genau
+# diese Arbeit soll der Beleg abnehmen.
+datei_steckbrief() {   # datei_steckbrief <kriterium> <regex> <datei>
+  local krit="$1" re="$2" f="$3" mtime=""
+  mtime=$(stat -c '%y' "$f" 2>/dev/null || stat -f '%Sm' "$f" 2>/dev/null || echo "unbekannt")
+  printf '── %s\n' "$f"
+  printf '   Kriterium : %s\n' "$krit"
+  printf '   Groesse   : %s Bytes\n' "$(wc -c < "$f" 2>/dev/null | tr -d ' ')"
+  printf '   Geaendert : %s\n' "${mtime%%.*}"
+  printf '   SHA256    : %s\n' "$(sha256sum "$f" 2>/dev/null | awk '{print $1}')"
+  printf '   Fundstelle (Zeile: Treffer im Kontext):\n'
+  local treffer
+  treffer=$(grep -nEio ".{0,60}(${re}).{0,60}" "$f" 2>/dev/null | head -5)
+  if [[ -n "$treffer" ]]; then
+    printf '%s\n' "$treffer" | sed 's/^/     /'
+  else
+    printf '     (Treffer nicht reproduzierbar — Datei seit dem Scan veraendert?)\n'
+  fi
+  printf '\n'
+}
+
 evidence() {
   EVIDENCE_IDX=$((EVIDENCE_IDX+1))
   local num; num=$(printf "%02d" "$EVIDENCE_IDX")
