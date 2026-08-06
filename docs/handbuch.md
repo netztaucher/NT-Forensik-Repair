@@ -43,14 +43,17 @@ Fehlt ein optionales Werkzeug, überspringt das Skript den betroffenen Punkt mit
 ## 3. Installation & Schnellstart
 
 ```bash
-# 1. Skript auf den Server bringen
-scp wp_plesk_forensik.sh root@SERVER:/root/
+# 1. Werkzeug auf den Server bringen — das GANZE Verzeichnis, nicht nur das
+#    Skript: ohne lib/ und module/ bricht der Lauf mit Code 3 ab.
+ssh root@SERVER "git clone --depth 1 https://github.com/netztaucher/NT-Forensik-Repair.git /root/nt-forensik"
+# ohne git auf dem Zielsystem:
+#   rsync -a --exclude laeufe --exclude .git ./ root@SERVER:/root/nt-forensik/
 
 # 2. Für eine bestimmte Domain ausführen
-ssh root@SERVER "bash /root/wp_plesk_forensik.sh kundendomain.tld"
+ssh root@SERVER "bash /root/nt-forensik/wp_plesk_forensik.sh kundendomain.tld"
 
 # 3. Oder: alle Domains des Servers prüfen
-ssh root@SERVER "bash /root/wp_plesk_forensik.sh"
+ssh root@SERVER "bash /root/nt-forensik/wp_plesk_forensik.sh --global --kein-menue"
 ```
 
 Beim ersten Lauf **installiert sich das Skript selbst** nach `/root/wartungsscripte/wp_plesk_forensik.sh`. Folgende Läufe startest du von dort:

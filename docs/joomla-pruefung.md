@@ -37,11 +37,11 @@ Dazu kommt die Lage: Seit Juni 2026 läuft eine Welle von Massenausnutzungen geg
 ## 2. Schnellstart
 
 ```bash
-# Skript und Datenbestand auf den Server bringen
-scp -r wp_plesk_forensik.sh lib module signaturen daten reportgen root@SERVER:/root/
+# Werkzeug samt Datenbestand auf den Server bringen
+ssh root@SERVER "git clone --depth 1 https://github.com/netztaucher/NT-Forensik-Repair.git /root/nt-forensik"
 
 # Eine Domain prüfen
-ssh root@SERVER "bash /root/wp_plesk_forensik.sh --domain kunde.tld"
+ssh root@SERVER "bash /root/nt-forensik/wp_plesk_forensik.sh --domain kunde.tld"
 ```
 
 Beim ersten Lauf installiert sich das Skript nach `/root/wartungsscripte/` und zieht `signaturen/`, `daten/` und `reportgen/` mit. Ab v3.8.0 werden diese Ordner bei **jedem** Lauf aufgefrischt — vorher blieb ein einmal installierter Host dauerhaft auf dem Erststand.
