@@ -221,7 +221,45 @@ else
       ROGUE_ADMINS+="=== $site ==="$'\n'"$NEW_ADMINS"$'\n'
       WPDB_FLAGS=$((WPDB_FLAGS+1))
     else
-      ok "$site: keine kürzlich angelegten Admins"
+      ok "$site: keine kürzlich angelegten Admins (Alterskriterium)"
+    fi
+
+    # c) Namens- und Adressmuster über ALLE Admins, unabhängig vom Alter.
+    # Das Alterskriterium allein hat auf einem echten Kundensystem versagt:
+    # "adminbackup <adminbackup@wordpress.org>" war 13 Monate alt und wurde
+    # deshalb nicht gemeldet — der Bericht gab an dieser Stelle Entwarnung.
+    # Ein Angreifer, der lange unentdeckt bleibt, ist nicht harmloser.
+    #
+    # Die Treffer landen NICHT in ROGUE_ADMINS. Dort stehen Konten, deren
+    # Anlagezeitpunkt sie belastet; ein Namensmuster ist ein Verdacht, kein
+    # Beweis. Ein Werkzeug, das daraufhin automatisch Konten entfernt, würde
+    # irgendwann den Betreiber aussperren, der sein Konto "wpservice" nennt.
+    MATCH_CRIT=$(echo "$ADMINS" | awk -F'\t' 'NF>=3 {print}' \
+      | awk -F'\t' -v l="$WP_ADMIN_LOGIN_CRIT" -v m="$WP_ADMIN_MAIL_CRIT" \
+          'tolower($2) ~ l || tolower($3) ~ m {print}' || true)
+    MATCH_WARN=$(echo "$ADMINS" | awk -F'\t' 'NF>=3 {print}' \
+      | awk -F'\t' -v l="$WP_ADMIN_LOGIN_WARN" -v m="$WP_ADMIN_MAIL_WARN" \
+          'tolower($2) ~ l || tolower($3) ~ m {print}' || true)
+    # Was Stufe 1 schon belastet, muss Stufe 2 nicht zusätzlich melden.
+    [[ -n "$MATCH_CRIT" ]] && MATCH_WARN=$(comm -23 <(sort <<<"$MATCH_WARN") <(sort <<<"$MATCH_CRIT") | grep -vE '^$' || true)
+
+    if [[ -n "$MATCH_CRIT" ]]; then
+      crit "$site: Administrator-Konto mit angreifertypischem Namen oder erfundener Adresse — unabhängig vom Alter prüfen" web
+      code "$MATCH_CRIT"
+      evidence "wpdb_admin_muster_$(echo "$site" | tr '/.' '__')" \
+        "Kriterium Login: ${WP_ADMIN_LOGIN_CRIT}
+Kriterium Mail:  ${WP_ADMIN_MAIL_CRIT}
+
+Treffer (ID / Login / Mail / registriert):
+${MATCH_CRIT}"
+      SUSPECT_ADMINS+="=== $site ==="$'\n'"$MATCH_CRIT"$'\n'
+      WPDB_FLAGS=$((WPDB_FLAGS+1))
+    elif [[ -n "$MATCH_WARN" ]]; then
+      warn "$site: Administrator-Konto mit auffälligem Namensmuster — erklärbar, aber prüfen"
+      code "$MATCH_WARN"
+      SUSPECT_ADMINS+="=== $site (nur Hinweis) ==="$'\n'"$MATCH_WARN"$'\n'
+    else
+      ok "$site: kein Administrator-Konto mit angreifertypischem Namen oder erfundener Adresse"
     fi
 
     # c) siteurl / home — Redirect-Hijack

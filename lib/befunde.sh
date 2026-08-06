@@ -26,6 +26,9 @@ DOORWAY_DIRS=""        # Verzeichnisse mit Doorway-.htaccess-Signatur
 CORE_INJECT_HITS=""    # Dateien mit @include base64_decode() (Bootstrap-Injektion)
 DISGUISED_PAYLOADS=""  # als Nicht-PHP getarnte Payloads (<?php in .ttf/.png/.gif/.css…)
 ROGUE_ADMINS=""        # via wp-cli-Fallback gefundene Angreifer-Admins
+SUSPECT_ADMINS=""      # Admins mit angreifertypischem Namen/Adresse — Verdacht,
+                       # kein Beweis. Bewusst getrennt von ROGUE_ADMINS, damit
+                       # eine automatische Bereinigung sie nie anfasst.
 SUSP_PLUGINS=""        # verdächtige Plugins/mu-Plugins (alle bewertet, auch inaktive)
 MU_PLUGINS=""          # alle mu-Plugins (laufen immer, ohne Aktivierung)
 TAMPERED_HTACCESS=""   # manipulierte .htaccess (Malware-Whitelist, bricht Admin/403)
