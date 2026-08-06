@@ -13,6 +13,17 @@
 RED='\033[0;31m'; YLW='\033[0;33m'; GRN='\033[0;32m'
 BLU='\033[0;34m'; CYN='\033[0;36m'; BOLD='\033[1m'; NC='\033[0m'
 
+# Markenblau fürs Banner. Das reine #003366 wäre auf dunklem Terminal
+# praktisch unlesbar — gemessener Kontrast 1,67:1 gegen Schwarz. #0073E6 hat
+# denselben Farbton (210°) und dieselbe Sättigung, nur mehr Helligkeit, und
+# ist die einzige Stufe dieser Reihe, die gegen Schwarz UND gegen Weiss über
+# 4,5:1 kommt (4,59 bzw. 4,57). Truecolor beherrscht nicht jedes Terminal;
+# ohne Nachweis bleibt es beim gewöhnlichen Blau statt bei kaputten Escapes.
+case "${COLORTERM:-}" in
+  truecolor|24bit) NT_BLAU='\033[38;2;0;115;230m' ;;
+  *)               NT_BLAU="$BLU" ;;
+esac
+
 # ── Feste Infrastruktur-Pfade (netztaucher Plesk-Standard) ──
 BASE_DIR="/root/wartungsscripte"
 FORENSIK_BASE="${BASE_DIR}/forensik"
@@ -55,7 +66,10 @@ MODUL_OHNE=""            # --ohne: Komma-Liste von Abschnittsnummern
 # Die Fassung kommt aus TOOL_VERSION — sie war frueher dreimal fest verdrahtet
 # und stand nach der Modularisierung dauerhaft auf einem alten Stand.
 banner_zeigen() {
-  echo -e "${BOLD}${BLU}"
+  # Kein BOLD: die Blockzeichen sind ohnehin flächig, und Fettschrift
+  # verschiebt in manchen Terminals die Farbe in eine hellere Palette —
+  # womit der gemessene Kontrast nicht mehr der wäre, den man gewählt hat.
+  echo -e "${NT_BLAU}"
   cat <<EOF
 ███████  ██████  ██████  ███████ ███    ██ ███████ ██ ██   ██
 ██      ██    ██ ██   ██ ██      ████   ██ ██      ██ ██  ██
