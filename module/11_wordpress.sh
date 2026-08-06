@@ -155,7 +155,37 @@ else
       crit "$site: ${spn} bösartige(s) Plugin/mu-Plugin (Fake-Signatur / eval(base64(\$_...)) / File-Manager-Webshell) — auch inaktive!" web
       code "$(echo "$SUSP_PLUG" | sed "s|$CURRENT_WP_PATH/||" | head -30)"
       SUSP_PLUGINS+="$SUSP_PLUG"$'\n'
-      evidence "boesartige_plugins_$(echo "$site" | tr '/.' '__')" "$SUSP_PLUG"
+      # Beleg mit Fundstelle statt blosser Pfadliste. Welche der drei
+      # Signaturgruppen angeschlagen hat, entscheidet ueber die Bewertung:
+      # eine Fake-Signatur ist praktisch beweisend, ein elFinder-Treffer kann
+      # auch die mitgelieferte Bibliothek eines echten Dateimanager-Plugins
+      # sein. Ohne diese Angabe ist der Befund nicht bewertbar.
+      _steckbriefe=""
+      while IFS= read -r _pf; do
+        [[ -n "$_pf" && -r "$_pf" ]] || continue
+        if grep -qF "$_pf" <<<"$FAKE_PLUGINS" 2>/dev/null; then
+          _steckbriefe+=$(datei_steckbrief \
+            "Gefaelschte Plugin-Signatur (Author: WordPress + Verweis auf wordpress.org/plugins) — praktisch nie legitim" \
+            "^[[:space:]]*Author:[[:space:]]*WordPress|wordpress\.org/plugins/" "$_pf")$'\n'
+        elif grep -qF "$_pf" <<<"$EVAL_BD" 2>/dev/null; then
+          _steckbriefe+=$(datei_steckbrief \
+            "eval(base64_decode(\$_GET/POST/REQUEST/COOKIE)) — Ausfuehrung von Angreifereingaben, nie legitim" \
+            "eval\(\s*base64_decode\(\s*\\\$_(POST|GET|REQUEST|COOKIE)" "$_pf")$'\n'
+        else
+          _steckbriefe+=$(datei_steckbrief \
+            "Dateimanager-/Webshell-Signatur. ACHTUNG: elFinder und TinyFileManager werden auch von legitimen Plugins mitgeliefert (z. B. wp-file-manager) — Plugin-Herkunft und Fassung pruefen, bevor bewertet wird" \
+            "tinyfilemanager|Tiny File Manager|\bFilesMan\b|elFinderConnector|H3K \||b374k|WSO[0-9. ]+shell" "$_pf")$'\n'
+        fi
+      done <<< "$SUSP_PLUG"
+      evidence "boesartige_plugins_$(echo "$site" | tr '/.' '__')" \
+        "Bewertete Verzeichnisse: ${PLUG_DIRS}
+
+${_steckbriefe}
+Hinweis zur Bewertung: eine gefaelschte Plugin-Signatur oder ein
+eval(base64_decode(\$_...)) sind fuer sich genommen belastend. Ein Treffer auf
+eine Dateimanager-Bibliothek ist es NICHT — dort entscheidet, ob das Plugin
+regulaer installiert wurde und ob die getroffenen Dateien dasselbe
+Aenderungsdatum tragen wie der Rest des Plugins."
     else
       ok "$site: keine bösartigen Plugins/mu-Plugins (alle bewertet, auch inaktive)"
     fi
