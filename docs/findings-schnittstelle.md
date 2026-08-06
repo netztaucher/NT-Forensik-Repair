@@ -1,0 +1,66 @@
+# findings.json — die Schnittstelle zu NT-Repair
+
+`findings.json` ist nicht nur Ausgabe, sondern **Vertrag**. NT-Repair liest die Datei
+und leitet daraus ab, was bereinigt wird. Eine Umbenennung oder ein entfernter Pfad
+bricht dort etwas, ohne dass in diesem Repo ein Test fehlschlägt.
+
+Geschrieben von [`module/14_berichte.sh`](../module/14_berichte.sh) in `emit_findings_json()`.
+Aktuelle Fassung: **schema_version 1.4**.
+
+## Wer liest was
+
+Drei Programme in NT-Repair greifen zu. Die folgenden Pfade sind belegt — sie stehen
+so im Quelltext und dürfen nicht ohne Anpassung dort wegfallen.
+
+### `nt_repair.sh` — die Bereinigung selbst
+
+| Pfad | Verwendung |
+|---|---|
+| `run_id` | Verknüpfung des Repair-Laufs mit dem Forensik-Lauf |
+| `host` | Zielserver, wenn `--host` fehlt |
+| `domain` | Kundendomain im Protokoll |
+| `verdicts.root.flags` | Schweregrad — steuert das zweistufige Freigabemodell |
+| `actionable.webshell_dropper` | Quarantäne-Kandidaten |
+| `actionable.php_in_uploads` | Quarantäne-Kandidaten |
+| `actionable.suid` | Quarantäne-Kandidaten |
+| `actionable.tmp_executables` | Quarantäne-Kandidaten |
+| `actionable.immutable` | Quarantäne-Kandidaten |
+| `actionable.ioc_ips.attacker` | IP-Sperren |
+| `actionable.ioc_ips.ssh_bruteforce` | IP-Sperren |
+
+### `lib/gen_report.sh` — die drei Berichte
+
+`verdicts.root.flags`, `verdicts.root.text`, `verdicts.wpdb.text`,
+`metrics.webshell_count`, `metrics.injected_core_files`, `metrics.doorway_dirs`,
+`metrics.rogue_wp_admins`
+
+### `lib/statusmail.py` — die Statusmail nach der Reparatur
+
+`domain`, `verdicts.root`, `metrics` — und aus dem **Kontrolllauf**
+(zweites findings.json, nach der Bereinigung erhoben): `counts`,
+`run.vollstaendig`, `run.module_uebersprungen`.
+
+Die letzten beiden entscheiden, ob die Mail Entwarnung geben darf. Ein Teillauf
+(`--nur`, `--ohne`, `--nur-joomla`) setzt `run.vollstaendig` auf `false`, und die
+Mail sagt das dann ausdrücklich. Fällt das Feld weg, liest sich ein Teillauf
+stillschweigend wie ein vollständiger Freispruch — der Fehlerfall, der zählt.
+
+## Regeln für Änderungen
+
+- **Feld hinzufügen** — unkritisch, kein Schema-Bump nötig. Beide Seiten lesen
+  defensiv (`.get(...) or {}` bzw. `|| echo ""`).
+- **Feld umbenennen oder entfernen** — Schema-Bump **und** Anpassung in NT-Repair,
+  im selben Zug. Die Tabelle oben ist die Prüfliste.
+- **Typ ändern** (Zahl → Zeichenkette, Objekt → Feld) — dasselbe. `verdicts.*.flags`
+  wird auf beiden Seiten als Zahl verglichen.
+
+Gegenprobe nach jeder Änderung an `emit_findings_json()`:
+
+```bash
+python3 -m json.tool < /root/wartungsscripte/forensik/<LAUF>/findings.json > /dev/null
+```
+
+Ungültiges JSON fällt sonst erst bei NT-Repair auf — und dort still, weil die
+Lesefunktionen Fehler abfangen und leer zurückgeben. Genau das ist in v3.8 passiert:
+Tabulatoren aus `mysql -N` machten die Datei ungültig, und zwar ausgerechnet dann,
+wenn es echte Funde gab.
