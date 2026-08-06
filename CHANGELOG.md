@@ -2,6 +2,84 @@
 
 Alle nennenswerten Änderungen an `wp_plesk_forensik.sh`.
 
+## [3.9.0] — 2026-08-06
+
+### ⚠️ Breaking — Aufruf ohne Argument
+Bisher bedeutete ein Aufruf ohne Argument implizit `--global`. Jetzt startet
+er das **Startmenü**. Ohne Terminal (Cronjob, `ssh` ohne `-t`) bricht der Lauf
+mit Code 2 und einer Erklärung ab, statt auf eine Eingabe zu warten.
+
+**Cronjobs und Skripte ohne Scope-Argument müssen angepasst werden:**
+
+```diff
+- bash /root/wartungsscripte/wp_plesk_forensik.sh
++ bash /root/wartungsscripte/wp_plesk_forensik.sh --global --kein-menue
+```
+
+Aufrufe **mit** Scope-Argument (`--domain`, `--path`, `--global`) laufen
+unverändert direkt durch — sie sind eine eindeutige Anweisung, dort erscheint
+nie ein Menü. Der dokumentierte SSH-Einzeiler bleibt gültig.
+
+### Neu — Modularer Aufbau
+Aus einer Datei mit 4412 Zeilen wurden ein Runner (114 Zeilen), fünf
+`lib/`-Dateien und 14 Module unter `module/`, eines je Prüfabschnitt.
+
+Anlass war doppelt: auf einem Server mit 482 Vhosts hing eine reine
+Joomla-Prüfung minutenlang im Log-Archiv von Abschnitt 2, und während der
+Joomla-Entwicklung musste jeder Testlauf den Abschnitt erst per `awk` aus dem
+Skript herausschneiden.
+
+Der Schnitt war mechanisch — Zeilen verschoben, keine Logik umgeschrieben.
+Nur so ließ er sich per Ausgabevergleich belegen. `lib/befunde.sh` macht den
+Vertrag zwischen den Modulen sichtbar, der vorher schon bestand: jede
+Ergebnisvariable mit neutralem Vorgabewert, damit ein übersprungener
+Abschnitt den Bericht unter `set -u` nicht abstürzen lässt.
+
+Aufbau und Erweiterung: [`docs/architektur.md`](docs/architektur.md).
+
+### Neu — Abschnittsauswahl
+
+```
+--nur 12              nur dieser Abschnitt
+--nur 7,11,12         mehrere
+--ohne 2,10           alle ausser diesen
+--nur-joomla          Kurzform für --nur 12
+--nur-website         nur die Abschnitte, die den Webauftritt prüfen
+```
+
+Abschnitt 14 läuft immer mit, ausser er wird per `--ohne 14` abgewählt.
+
+**Ein Teillauf weist sich als solcher aus.** Der Technikbericht bekommt einen
+Kasten mit den nicht ausgeführten Abschnitten und dem Hinweis, dass deren
+Fehlen keine Entwarnung ist; `findings.json` führt `run.vollstaendig`,
+`run.module_gelaufen` und `run.module_uebersprungen`. Berichte gehen an Kunden
+und ans BSI — eine Teilprüfung, die sich wie ein vollständiges Ergebnis liest,
+wäre schlimmer als gar keine.
+
+### Neu — Startmenü
+Erklärt die Abschnitte gruppiert nach Ebene mit Frage und Aufwand, fragt
+Umfang und Auswahl ab und gibt am Ende den gleichwertigen Befehl aus. Module
+beschreiben sich dafür im eigenen Kopf (`@nummer`, `@titel`, `@frage`,
+`@kosten`, `@ebene`) — eine zentrale Liste würde auseinanderlaufen.
+
+`--kein-menue` unterdrückt es, `--menue` erzwingt es.
+
+### Behoben — Werte, die nur in einem Abschnitt existierten
+`SCAN_PATH`, `PLESK_MYSQL_PW`, `PATTERN_REGEX` und `DROPPER_MAX_BYTES` wurden
+mitten in einem Prüfabschnitt gesetzt und von anderen gelesen. Sie stehen
+jetzt in `lib/konfig.sh` bzw. `lib/muster.sh`. Ohne das hätte jedes
+Überspringen dieser Abschnitte die folgenden mit `unbound variable` abgebrochen.
+
+Ebenso fehlten `ROOT_CUSTOMER_HINT` und `MALWARE_TOTAL` als Vorgabewerte —
+der Kundenbericht liest beide ungeschützt.
+
+### Behoben — Argumente kamen nicht an
+`source` aus einer Funktion heraus setzt `$@` auf die Argumente der Funktion,
+nicht des Skripts. Nach dem Schnitt kam damit keine einzige Option in
+`lib/konfig.sh` an; `--help` löste die Root-Prüfung aus statt die Hilfe zu
+zeigen. Der Runner sichert die Kommandozeile jetzt in `NT_ARGV`, bevor er
+irgendetwas einbindet.
+
 ## [3.8.0] — 2026-08-05
 
 ### Neu — Abschnitt 12: Joomla-Prüfung
