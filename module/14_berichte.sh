@@ -587,7 +587,7 @@ json_arr() {   # stdin: ein Item pro Zeile → JSON-Array von Strings
 }
 
 emit_findings_json() {
-  local ws php suid tmpx immu cron sysd persist procs wpc fkeys aips bips
+  local ws php suid tmpx immu cron sysd persist procs wpc fkeys aips bips suspadm
   local corei coresne doorw coreinj disg rogue
   corei=$(printf '%s\n' "${CORE_INJECTED:-}"      | json_arr)
   coresne=$(printf '%s\n' "${CORE_SNE:-}"         | json_arr)
@@ -595,6 +595,7 @@ emit_findings_json() {
   coreinj=$(printf '%s\n' "${CORE_INJECT_HITS:-}" | json_arr)
   disg=$(printf '%s\n' "${DISGUISED_PAYLOADS:-}"  | json_arr)
   rogue=$(printf '%s\n' "${ROGUE_ADMINS:-}"       | grep -vE '^=== |^$' | json_arr)
+  suspadm=$(printf '%s\n' "${SUSPECT_ADMINS:-}"   | grep -vE '^=== |^$' | json_arr)
   local suspp muplug tamphta
   suspp=$(printf '%s\n' "${SUSP_PLUGINS:-}"       | json_arr)
   muplug=$(printf '%s\n' "${MU_PLUGINS:-}"        | json_arr)
@@ -718,6 +719,7 @@ emit_findings_json() {
     "core_include_injection": ${coreinj:-[]},
     "disguised_payloads": ${disg:-[]},
     "rogue_wp_admins": ${rogue:-[]},
+    "suspect_wp_admins": ${suspadm:-[]},
     "suspicious_plugins": ${suspp:-[]},
     "mu_plugins": ${muplug:-[]},
     "tampered_htaccess": ${tamphta:-[]},
