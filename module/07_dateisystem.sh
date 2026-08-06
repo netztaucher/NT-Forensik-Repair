@@ -201,9 +201,17 @@ h2 "7.8 Ausführbare Dateien in tmp-Verzeichnissen"
 # Ausgeblendet wird nur der Entpack-Baum selbst, nicht das Verzeichnis darueber:
 # ein Angreifer, der den Dienst uebernimmt, legt seine Dateien nicht in einen
 # bei jedem Neustart neu erzeugten Ordner.
+# Collabora Office (Plesk/Nextcloud) legt bei jedem Start zwei Baeume unter
+# /tmp an: das entpackte AppImage und ein "systemplate" mit den dynamischen
+# Ladern. Beides sind Laufzeit-Artefakte, die bei jedem Neustart neu entstehen
+# — ein Angreifer legt dort nichts ab, was ueberleben soll. Auf einem echten
+# Kundensystem stellten sie erst 20, nach der ersten Fassung dieses Filters
+# noch 4 von 7 Quarantaene-Kandidaten. Ein Bereinigungslauf haette Collaboras
+# ld-linux mitgenommen und den Dienst zerlegt.
+TMP_LEGITIM='/appimage_extracted_[0-9a-f]+/|/coolwsd\.[A-Za-z0-9]+/systemplate/'
 TMP_ALLE=$(find /tmp /var/tmp /dev/shm -type f \( -perm -u+x -o -name "*.sh" -o -name "*.php" -o -name "*.py" -o -name "*.pl" \) 2>/dev/null | nf_strip_self || true)
 TMP_N_ALLE=$(printf '%s\n' "$TMP_ALLE" | grep -c . || true)
-TMP_EXECS=$(printf '%s\n' "$TMP_ALLE" | grep -vE '/appimage_extracted_[0-9a-f]+/' || true)
+TMP_EXECS=$(printf '%s\n' "$TMP_ALLE" | grep -vE "$TMP_LEGITIM" || true)
 TMP_N_ZEIG=$(printf '%s\n' "$TMP_EXECS" | grep -c . || true)
 TMP_N_AUS=$(( TMP_N_ALLE - TMP_N_ZEIG ))
 # Keine stille Deckelung: was nicht gezeigt wird, wird beziffert.
@@ -222,9 +230,9 @@ Davon als AppImage-Entpackung ausgeblendet: ${TMP_N_AUS}
 Bewertet: ${TMP_N_ZEIG}
 ${TMP_KAPPUNG}
 
-$(printf '%s\n' "$TMP_ALLE" | grep -vE '/appimage_extracted_[0-9a-f]+/' | xargs -r ls -la 2>/dev/null)
+$(printf '%s\n' "$TMP_ALLE" | grep -vE "$TMP_LEGITIM" | xargs -r ls -la 2>/dev/null)
 
-$(printf '%s\n' "$TMP_ALLE" | grep -vE '/appimage_extracted_[0-9a-f]+/' | xargs -r sha256sum 2>/dev/null)"
+$(printf '%s\n' "$TMP_ALLE" | grep -vE "$TMP_LEGITIM" | xargs -r sha256sum 2>/dev/null)"
 else
   ok "Keine ausführbaren Dateien in tmp-Verzeichnissen$([[ "$TMP_N_AUS" -gt 0 ]] && echo " (${TMP_N_AUS} AppImage-Dateien ausgeblendet)")"
 fi
