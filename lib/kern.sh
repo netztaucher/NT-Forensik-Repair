@@ -159,9 +159,18 @@ nf_fremdkunden_maskieren() {   # nf_fremdkunden_maskieren <datei>
   local datei="$1"
   [[ -r "$datei" ]] || return 0
   [[ "$SCOPE_MODE" == "global" ]] && return 0   # Betreiberbericht darf alles
-  local eigene; eigene=$(printf '%s\n' "${SCAN_PATHS[@]}" | sed "s|.*/||" | grep -v '^$' | paste -sd'|' -)
+  local eigene; eigene=$(printf '%s\n' "${SCAN_PATHS[@]:-}" | sed "s|.*/||" | grep -v '^$' | paste -sd'|' -)
   [[ -n "${ABO_USER:-}" ]] && eigene="${eigene}|${ABO_USER}"
   [[ -n "${DOMAIN:-}"   ]] && eigene="${eigene}|${DOMAIN}"
+  eigene="${eigene#|}"; eigene="${eigene%|}"
+  # Ohne Eigenliste waere ALLES fremd — auch die Domain des geprueften Kunden.
+  # Ein Bericht, in dem der eigene Kunde als "<anderer Kunde 1>" steht, ist
+  # wertlos, und der Fehler faellt erst beim Lesen auf. Lieber gar nicht
+  # maskieren als falsch: dann bleibt der Bericht wenigstens erkennbar roh.
+  if [[ -z "$eigene" ]]; then
+    echo "  Maskierung uebersprungen: kein eigener Bezug bestimmbar (SCAN_PATHS/DOMAIN leer)." >&2
+    return 1
+  fi
   EIGENE_RE="$eigene" python3 - "$datei" <<'PY'
 import os, re, sys
 p = sys.argv[1]
@@ -180,7 +189,47 @@ txt = re.sub(r'/var/www/vhosts/([^/\s"\'\)\],]+)', ersetze_vhost, txt)
 def ersetze_user(m):
     name = m.group(0)
     return name if eigen.match(name) else platzhalter(name)
-txt = re.sub(r'\bweb\d+\b', ersetze_user, txt)
+# Plesk leitet auch Mail- und FTP-Konten vom Systembenutzer ab: aus web179
+# wird web179p2. Ein Wortende nach der Ziffer laesst diese stehen — auf einem
+# echten Server blieb so "web179p2@..." im maskierten Beleg.
+txt = re.sub(r'\bweb\d+[a-z0-9_]*', ersetze_user, txt)
+
+# Fremde Kunden stehen nicht nur als vhost-Pfad im Bericht, sondern auch als
+# blanke Domain und als Mailadresse — in einem Beleg waren es 226 Domainnamen
+# ohne jeden Pfad davor. Eine Maskierung, die nur Pfade kennt, laesst die
+# Kundenliste des Servers unveraendert stehen.
+#
+# Umgekehrte Logik: alles was wie eine Domain aussieht wird maskiert, AUSSER
+# den eigenen und einer Liste technischer Domains. Eine Positivliste ist hier
+# richtig — bei einer Negativliste faellt jeder neue Kunde durchs Raster, und
+# das faellt niemandem auf.
+TECHNISCH = re.compile(r'\.(?:arpa|local|localdomain|invalid|test|example)$|^(?:'
+    r'wordpress\.(?:org|com)|w\.org|php\.net|debian\.org|ubuntu\.com|canonical\.com|'
+    r'plesk\.com|cloudlinux\.com|imunify360\.com|imunify\.com|letsencrypt\.org|'
+    r'googleapis\.com|google\.com|gstatic\.com|github\.com|githubusercontent\.com|'
+    r'schema\.org|gravatar\.com|jquery\.com|unpkg\.com|jsdelivr\.net|'
+    r'mysql\.com|oracle\.com|apache\.org|nginx\.org|openssl\.org|python\.org|'
+    r'kernel\.org|systemd\.io|freedesktop\.org|npmjs\.com|packagist\.org'
+    r')$', re.I)
+
+def _domain_frei(d):
+    dl = d.lower()
+    return bool(eigen.match(dl)) or bool(TECHNISCH.search(dl)) or dl.endswith(tuple(
+        '.' + e for e in (os.environ.get("EIGENE_RE","").split('|')) if e))
+
+def ersetze_mail(m):
+    lokal, dom = m.group(1), m.group(2)
+    if _domain_frei(dom):
+        return m.group(0)
+    return platzhalter(dom.lower()).replace("Kunde", "Adresse")
+txt = re.sub(r'\b([A-Za-z0-9._%+-]+)@([A-Za-z0-9.-]+\.[A-Za-z]{2,})\b', ersetze_mail, txt)
+
+def ersetze_domain(m):
+    d = m.group(0)
+    return d if _domain_frei(d) else platzhalter(d.lower())
+txt = re.sub(r'\b(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+'
+             r'(?:de|com|net|org|eu|info|shop|online|io|dev|at|ch|nl|fr|it|es|uk|live|xyz|top|site|club)\b',
+             ersetze_domain, txt)
 if zuordnung:
     txt += ("\n\n---\n\n> **Hinweis zum Datenschutz.** Dieser Server beherbergt weitere Kunden. "
             "Wo serverweite Prüfungen deren Domains oder Systemkonten berührten, stehen "
