@@ -88,11 +88,21 @@ bash werkzeuge/paket-bauen.sh 0.4.0
 ```
 
 Das Werkzeug erzeugt einen Schlüssel je Fassung, verschlüsselt, öffnet das Paket
-zur Gegenprobe wieder und gibt drei Dinge aus:
+zur Gegenprobe wieder und liefert drei zusammengehörige Dinge:
 
-1. **den Bundle-Schlüssel** → in die `config.php` des Lizenzservers unter
-   `release_keys['nt-repair']`. Er wird nirgends gespeichert und steht genau
-   einmal auf dem Bildschirm.
+1. **den Bundle-Schlüssel** → in `dist/schluessel-<fassung>.txt`, Rechte `0600`,
+   von `.gitignore` ausgeschlossen. Die Zeile daraus in die `config.php` des
+   Lizenzservers unter `release_keys['nt-repair']`, dann die Datei löschen:
+
+   ```bash
+   pbcopy < dist/schluessel-0.4.0.txt
+   rm -P dist/schluessel-0.4.0.txt
+   ```
+
+   Der Schlüssel wird **nicht** auf dem Bildschirm ausgegeben. Dort landet er
+   sonst im Scrollback, im Terminal-Protokoll oder im Mitschnitt einer Sitzung —
+   und ein Schlüssel, der irgendwo mitgeschrieben wurde, ist verbrannt, auch ohne
+   böse Absicht.
 2. **`PAKET_SHA256`** → in `nt_repair.sh` dieses Repos.
 3. **`dist/repair-<fassung>.enc`** → nach `paket/` dieses Repos, einchecken.
 
@@ -101,12 +111,6 @@ sichtbar und mit Begründung, nicht still.
 
 Ein Schlüssel je Fassung heißt: leakt einer, rotiert ihn die nächste Fassung weg,
 ohne dass ein Kunden-Lizenzschlüssel getauscht werden muss.
-
-> **Vor der ersten echten Auslieferung neu bauen.** Der Schlüssel des aktuell
-> eingecheckten Pakets ist bei der Entwicklung entstanden und stand dabei in einem
-> Sitzungsprotokoll. Ein Schlüssel, der irgendwo mitgeschrieben wurde, ist
-> verbrannt — auch wenn niemand Böses damit vorhatte. Einmal `paket-bauen.sh`
-> laufen lassen und alle drei Werte ersetzen.
 
 ## Wo nichts landet
 
