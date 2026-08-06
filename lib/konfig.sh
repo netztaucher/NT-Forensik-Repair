@@ -199,6 +199,22 @@ scan_path_bestimmen() {
   fi
 }
 
+# Welche vhost-Verzeichnisse dieser Lauf ansehen darf — eine Zeile je Pfad.
+#
+# Mehrere Abschnitte haben das frueher selbst entschieden, und zwar falsch:
+# sie verzweigten allein ueber $DOMAIN und fielen sonst auf ${VHOSTS_DIR}/*
+# zurueck. Damit war jeder Lauf ohne --domain serverweit, auch mit --path.
+# Auf k42 zog Abschnitt 11 so 57 fremde Installationen in einen Bericht, der
+# ein einzelnes Abo pruefen sollte. Die Entscheidung gehoert an EINE Stelle.
+scope_vhost_dirs() {
+  local d
+  if [[ "$SCOPE_MODE" == "global" ]]; then
+    for d in "${VHOSTS_DIR}"/*/; do [[ -d "$d" ]] && printf '%s\n' "${d%/}"; done
+  else
+    printf '%s\n' "${SCAN_PATHS[@]}"
+  fi
+}
+
 # Alle vhost-Verzeichnisse eines Plesk-Abos einsammeln.
 # Der Systembenutzer ist die verlässliche Klammer: Plesk legt für ein Abo einen
 # Benutzer (webNN) an, dem sämtliche vhost-Verzeichnisse gehören — Hauptdomain,

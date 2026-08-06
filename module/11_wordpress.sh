@@ -53,11 +53,11 @@ wp_sql() {
   wp_cli db query "$query" --skip-column-names 2>/dev/null
 }
 
-if [[ -n "$DOMAIN" ]]; then
-  WP_CONFIGS=$(find "${VHOSTS_DIR}/${DOMAIN}" -maxdepth 4 -name wp-config.php 2>/dev/null || true)
-else
-  WP_CONFIGS=$(find "$VHOSTS_DIR" -maxdepth 5 -name wp-config.php 2>/dev/null || true)
-fi
+# Suchen wird ausschliesslich im Scope. Frueher stand hier eine Verzweigung
+# ueber $DOMAIN, die ohne Domain auf ${VHOSTS_DIR} zurueckfiel — womit --path
+# und --webNN wirkungslos waren und auf einem Shared-Host alle Installationen
+# des Servers im Bericht landeten.
+WP_CONFIGS=$(find "${SCAN_PATHS[@]}" -maxdepth 5 -name wp-config.php 2>/dev/null || true)
 
 if [[ -z "$WP_CONFIGS" ]]; then
   h2 "11.1 WordPress-Installationen"
