@@ -34,8 +34,15 @@ DAYS_BACK=30   # Analysezeitraum in Tagen
 # Ohne Argument = --global (rückwärtskompatibel: leeres DOMAIN scannte schon
 # immer alle vhosts). Ein blankes Positionsargument bleibt = --domain.
 DOMAIN=""
-SCOPE_MODE="global"      # global | domain | path
+SCOPE_MODE="global"      # global | domain | path | abo
 SCAN_PATH_ARG=""         # nur bei --path
+ABO_USER=""              # nur bei --webNN / --abo: der Plesk-Systembenutzer
+ABO_MIT_SERVER=0         # --mit-server: serverweite Abschnitte trotz Abo-Scope
+SCAN_PATHS=()            # ALLE zu prüfenden Wurzeln. Ein Plesk-Abo besitzt oft
+                         # mehrere vhost-Verzeichnisse (Hauptdomain, Subdomains,
+                         # System-Domain) — ein einzelner Pfad würde sie
+                         # übersehen. SCAN_PATH bleibt der erste davon, damit
+                         # alles Bestehende unverändert weiterläuft.
 WANT_YARA=0              # 7.11 nur auf Wunsch (teuer auf großen Webspaces)
 WANT_ONLINE=0            # --online: Joomla-Prüfsummen/Schwachstellenliste nachladen
 SCOPE_GESETZT=0          # wurde ein Scope ausdrücklich angegeben? (steuert das Menü)
@@ -43,7 +50,25 @@ WANT_MENUE=-1            # -1 = automatisch, 0 = nie, 1 = erzwungen
 MODUL_NUR=""             # --nur:  Komma-Liste von Abschnittsnummern
 MODUL_OHNE=""            # --ohne: Komma-Liste von Abschnittsnummern
 
+# Banner. Steht hier und nicht im Runner, weil --help es ebenfalls ausgibt und
+# die Hilfe erscheint, lange bevor der Runner den Banner-Punkt erreicht.
+# Die Fassung kommt aus TOOL_VERSION — sie war frueher dreimal fest verdrahtet
+# und stand nach der Modularisierung dauerhaft auf einem alten Stand.
+banner_zeigen() {
+  echo -e "${BOLD}${BLU}"
+  cat <<EOF
+███████  ██████  ██████  ███████ ███    ██ ███████ ██ ██   ██
+██      ██    ██ ██   ██ ██      ████   ██ ██      ██ ██  ██
+█████   ██    ██ ██████  █████   ██ ██  ██ ███████ ██ █████
+██      ██    ██ ██   ██ ██      ██  ██ ██      ██ ██ ██  ██
+██       ██████  ██   ██ ███████ ██   ████ ███████ ██ ██   ██
+  WP-PLESK-FORENSIK v${TOOL_VERSION} — netztaucher | digital
+EOF
+  echo -e "${NC}"
+}
+
 usage() {
+  banner_zeigen
   cat <<USAGE
 wp_plesk_forensik.sh v${TOOL_VERSION} — read-only WordPress/Plesk-Forensik
 
@@ -52,8 +77,17 @@ Verwendung:
   sudo bash $0 kunde.tld                 # Kurzform für --domain kunde.tld
 
 Scope (eines):
+  --webNN                 EIN Plesk-Abo, z. B. --web43. Erfasst ALLE vhost-
+                          Verzeichnisse dieses Abos (Hauptdomain, Subdomains,
+                          System-Domain) und lässt die serverweiten Abschnitte
+                          weg — sonst stünden fremde Kunden im Bericht.
+                          Mit --mit-server kommen sie dazu.
+  --abo <benutzer>        Wie --webNN, für Abos ohne webNN-Namen
   --domain <domain.tld>   Einen Kunden prüfen; Kundenbericht nur mit dessen Daten
-  --path   <pfad>         Beliebigen Pfad/Webspace prüfen
+  --path   <pfad>         Beliebigen Pfad/Webspace prüfen. ACHTUNG: begrenzt nur
+                          die Abschnitte, die den Pfad auswerten (7, 11, 12);
+                          die serverweiten laufen weiter über den ganzen Server.
+                          Für "nur dieser Kunde" ist --webNN das richtige.
   --global                Alle vhosts (Standard): Betreiberbericht + je vhost
                           ein eigener, gefilterter Kundenbericht
 
@@ -61,8 +95,11 @@ Abschnittsauswahl:
   --nur <n[,n…]>          Nur diese Prüfabschnitte (z. B. --nur 12)
   --ohne <n[,n…]>         Alle ausser diesen (z. B. --ohne 2,10)
   --nur-joomla            Kurzform für --nur 12
+  --nojoomla              Joomla-Prüfung weglassen (= --ohne 12)
+  --nowordpress           WordPress-Prüfung weglassen (= --ohne 11)
   --nur-website           Nur die Abschnitte, die den Webauftritt prüfen
                           (überspringt die serverweiten — deutlich schneller)
+  --mit-server            Bei --webNN die serverweiten Abschnitte mitprüfen
 
 Optionen:
   --yara                  YARA-Signaturscan (7.11) aktivieren (langsam auf
@@ -78,9 +115,10 @@ Optionen:
 Ohne Scope-Argument startet das Menü. Wird ein Scope angegeben, läuft die
 Prüfung direkt durch — bestehende Aufrufe und Skripte bleiben unverändert.
 
-Die Server-/Rootebene wird in jedem Modus mitgeprüft, sofern nicht abgewählt.
-In Kundenberichten werden Rootbefunde nur allgemein (betroffen/nicht
-betroffen) genannt und IP-Adressen/E-Mails maskiert.
+Die Server-/Rootebene wird mitgeprüft — ausser bei --webNN, wo sie bewusst
+entfällt, damit keine fremden Kunden im Bericht stehen; mit --mit-server
+kommt sie dazu. In Kundenberichten werden Rootbefunde nur allgemein
+(betroffen/nicht betroffen) genannt und IP-Adressen/E-Mails maskiert.
 
 Der Berichtskopf weist immer aus, welche Abschnitte NICHT gelaufen sind —
 ein Teillauf darf sich nicht wie ein vollständiges Ergebnis lesen.
@@ -98,12 +136,21 @@ while [[ $# -gt 0 ]]; do
     --domain) SCOPE_MODE="domain"; DOMAIN="${2:-}"; SCOPE_GESETZT=1; shift 2 ;;
     --path)   SCOPE_MODE="path";   SCAN_PATH_ARG="${2:-}"; SCOPE_GESETZT=1; shift 2 ;;
     --global) SCOPE_MODE="global"; SCOPE_GESETZT=1; shift ;;
+    # Ein Plesk-Abo als Ganzes. --web43 ist die Kurzform, die dem entspricht,
+    # was in Plesk und im Gespraech tatsaechlich gesagt wird ("prüf mal web43").
+    # --abo <name> deckt Systembenutzer ab, die nicht webNN heissen.
+    --web[0-9]*) SCOPE_MODE="abo"; ABO_USER="${1#--}"; SCOPE_GESETZT=1; shift ;;
+    --abo)       SCOPE_MODE="abo"; ABO_USER="${2:-}";  SCOPE_GESETZT=1; shift 2 ;;
+    --mit-server)  ABO_MIT_SERVER=1; shift ;;
     --yara)   WANT_YARA=1; shift ;;
     --online) WANT_ONLINE=1; shift ;;
     --nur)    MODUL_NUR="${2:-}";  shift 2 ;;
     --ohne)   MODUL_OHNE="${2:-}"; shift 2 ;;
     --nur-joomla)  MODUL_NUR="12" ; shift ;;
     --nur-website) MODUL_NUR="ebene:website"; shift ;;
+    # Abwaehlen einzelner CMS, ohne Abschnittsnummern nachschlagen zu muessen.
+    --nojoomla|--ohne-joomla)       MODUL_OHNE="${MODUL_OHNE:+${MODUL_OHNE},}12"; shift ;;
+    --nowordpress|--ohne-wordpress) MODUL_OHNE="${MODUL_OHNE:+${MODUL_OHNE},}11"; shift ;;
     --kein-menue)  WANT_MENUE=0; shift ;;
     --menue)       WANT_MENUE=1; shift ;;
     -h|--help) usage; exit 0 ;;
@@ -127,12 +174,51 @@ fi
 # Der Runner ruft sie auf, nachdem das Menü durch ist.
 scan_path_bestimmen() {
   case "$SCOPE_MODE" in
-    path)   SCAN_PATH="$SCAN_PATH_ARG" ;;
-    domain) SCAN_PATH="${VHOSTS_DIR}/${DOMAIN}" ;;
-    *)      SCAN_PATH="$VHOSTS_DIR" ;;   # global
+    path)   SCAN_PATH="$SCAN_PATH_ARG"; SCAN_PATHS=("$SCAN_PATH") ;;
+    domain) SCAN_PATH="${VHOSTS_DIR}/${DOMAIN}"; SCAN_PATHS=("$SCAN_PATH") ;;
+    abo)    abo_pfade_bestimmen ;;
+    *)      SCAN_PATH="$VHOSTS_DIR"; SCAN_PATHS=("$SCAN_PATH") ;;   # global
   esac
   # Fallback: gesetzte Domain ohne existierenden vhost -> serverweit statt ins Leere
-  [[ "$SCOPE_MODE" == "domain" && ! -d "$SCAN_PATH" ]] && SCAN_PATH="$VHOSTS_DIR"
+  if [[ "$SCOPE_MODE" == "domain" && ! -d "$SCAN_PATH" ]]; then
+    SCAN_PATH="$VHOSTS_DIR"; SCAN_PATHS=("$SCAN_PATH")
+  fi
+}
+
+# Alle vhost-Verzeichnisse eines Plesk-Abos einsammeln.
+# Der Systembenutzer ist die verlässliche Klammer: Plesk legt für ein Abo einen
+# Benutzer (webNN) an, dem sämtliche vhost-Verzeichnisse gehören — Hauptdomain,
+# eigenständige Subdomains und die System-Domain webNN.<server>. Nur das
+# Home-Verzeichnis zu nehmen würde die Hauptdomain übersehen: auf k42 gehören
+# web43 die drei Verzeichnisse braue.de, reboot.braue.de und
+# web43.kundenserver42.de, und die eigentliche Website liegt NICHT im Home.
+abo_pfade_bestimmen() {
+  if ! id -u "$ABO_USER" >/dev/null 2>&1; then
+    echo "Fehler: Systembenutzer '${ABO_USER}' existiert nicht." >&2
+    echo "        Plesk-Abos heissen üblicherweise webNN — siehe 'getent passwd | grep vhosts'." >&2
+    exit 2
+  fi
+  local _uid _d
+  _uid="$(id -u "$ABO_USER")"
+  SCAN_PATHS=()
+  for _d in "${VHOSTS_DIR}"/*/; do
+    [[ -d "$_d" ]] || continue
+    if [[ "$(stat -c %u "$_d" 2>/dev/null || stat -f %u "$_d" 2>/dev/null)" == "$_uid" ]]; then
+      SCAN_PATHS+=("${_d%/}")
+    fi
+  done
+  if [[ ${#SCAN_PATHS[@]} -eq 0 ]]; then
+    echo "Fehler: Zu '${ABO_USER}' gehört kein Verzeichnis unter ${VHOSTS_DIR}." >&2
+    exit 2
+  fi
+  SCAN_PATH="${SCAN_PATHS[0]}"
+  # Ein Abo-Lauf meint den Kunden, nicht den Server. Die serverweiten Abschnitte
+  # (Benutzer, Cronjobs, Netzdienste, andere Domains) werten den Scope gar nicht
+  # aus und zögen bei 482 vhosts alles Fremde in den Bericht — genau der Grund,
+  # aus dem dieser Schalter entstanden ist. Wer beides will, nimmt --mit-server.
+  if [[ "$ABO_MIT_SERVER" != "1" && -z "$MODUL_NUR" ]]; then
+    MODUL_NUR="ebene:website"
+  fi
 }
 
 # ── Ablage einrichten ────────────────────────────────────────
