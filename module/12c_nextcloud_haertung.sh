@@ -24,12 +24,25 @@
 
 h1 "12c. NEXTCLOUD-HÄRTUNGSSTAND"
 
-NCH_INSTALLS=""
+# Sicherungskopien sind vollstaendige Nextcloud-Baeume mit occ und version.php
+# und damit von einer laufenden Instanz nicht zu unterscheiden — ausser am Pfad.
+# Der eingebaute Updater legt sie unter updater-<id>/backups/ ab. Ohne diesen
+# Filter meldet der Abschnitt jede Sicherung als eigene Installation und
+# vervielfacht damit jeden Befund; gemessen am 07.08.2026 auf k42: drei
+# vermeintliche Instanzen, alle drei Kopien derselben.
+NCH_KOPIE='/updater-[a-z0-9]+/backups/|/[a-z0-9_-]*backups?/|/\.?(quarantaene|quarantine|old|bak)/'
+
+NCH_INSTALLS=""; NCH_KOPIEN=0
 while IFS= read -r _occ; do
   _d="$(dirname "$_occ")"
-  [[ -f "${_d}/version.php" && -d "${_d}/apps" ]] && NCH_INSTALLS+="${_d}"$'\n'
+  [[ -f "${_d}/version.php" && -d "${_d}/apps" ]] || continue
+  if printf '%s' "$_d" | grep -qE "$NCH_KOPIE"; then
+    NCH_KOPIEN=$((NCH_KOPIEN + 1)); continue
+  fi
+  NCH_INSTALLS+="${_d}"$'\n'
 done < <(find "${SCAN_PATHS[@]}" -maxdepth 6 -name occ -type f 2>/dev/null | nf_strip_self)
 NCH_INSTALLS=$(printf '%s\n' "$NCH_INSTALLS" | grep -vE '^$' | sort -u || true)
+[[ "$NCH_KOPIEN" -gt 0 ]] && info "${NCH_KOPIEN} Sicherungskopie(n) übersprungen — sie werden nicht ausgeliefert und sind kein eigener Härtungsgegenstand"
 
 if [[ -z "$NCH_INSTALLS" ]]; then
   ok "Keine Nextcloud-Installation im Prüfumfang"
@@ -37,28 +50,42 @@ else
 
 _php_bin=$(command -v php 2>/dev/null || ls /opt/plesk/php/*/bin/php 2>/dev/null | sort -V | tail -1)
 
-while IFS= read -r NC; do
-  [[ -n "$NC" ]] || continue
-  _kurz="${NC#"$VHOSTS_DIR"/}"
+while IFS= read -r NCDIR; do
+  [[ -n "$NCDIR" ]] || continue
+  _kurz="${NCDIR#"$VHOSTS_DIR"/}"
   h2 "12c.1 ${_kurz}"
 
-  _own=$(stat -c %U "$NC" 2>/dev/null || echo "")
+  _own=$(stat -c %U "$NCDIR" 2>/dev/null || echo "")
   if [[ -z "$_own" || -z "$_php_bin" ]]; then
     info "${_kurz}: occ nicht ausführbar — Härtungsstand nicht messbar"
     continue
   fi
   # occ immer als Eigentuemer. Als root erzeugt es Cache-Dateien, die der
   # Instanz danach gehoeren muessten und es nicht tun.
-  _occ() { sudo -u "$_own" "$_php_bin" -d memory_limit=1024M "${NC}/occ" "$@" 2>/dev/null; }
+  _occ() { sudo -u "$_own" "$_php_bin" -d memory_limit=1024M "${NCDIR}/occ" "$@" 2>/dev/null; }
+
+  # occ antwortet nicht immer mit dem gefragten Wert. Passt die PHP-Fassung
+  # nicht zur Nextcloud-Fassung, gibt es statt eines Werts eine HTML-Meldung
+  # ("This version of Nextcloud requires at least PHP 8.2<br/>…") — und zwar
+  # auf STDOUT und mit Rueckgabewert 0. Ohne diese Sperre landet dieser Satz
+  # als Datenverzeichnis, als loglevel und als Protokoll im Kundenbericht.
+  # Gemessen am 07.08.2026 auf k42.
+  _probe=$(_occ status --output=json || true)
+  if ! printf '%s' "$_probe" | python3 -c "import json,sys;json.load(sys.stdin)" 2>/dev/null; then
+    _grund=$(printf '%s' "$_probe" | sed 's/<br\/*>/ /g' | tr -d '\n' | cut -c1-160)
+    warn "${_kurz}: occ liefert keine verwertbare Antwort — Härtungsstand NICHT gemessen${_grund:+ (${_grund})}"
+    NC_HAERTUNG+="${_kurz}: Härtungsstand nicht messbar (occ nicht lauffähig)"$'\n'
+    continue
+  fi
 
   # ── 1. Datenverzeichnis ─────────────────────────────────────
   _data=$(_occ config:system:get datadirectory | tr -d '\r' || true)
   if [[ -z "$_data" ]]; then
     info "${_kurz}: datadirectory nicht auslesbar"
-  elif [[ "$_data" == "${NC}"* ]]; then
+  elif [[ "$_data" == "${NCDIR}"* ]]; then
     # Innerhalb des Webroots. Ob das wirklich ausliefert, wird gemessen, nicht
     # vermutet: eine .htaccess kann greifen — oder eben nicht.
-    _rel="${_data#"${NC}"/}"
+    _rel="${_data#"${NCDIR}"/}"
     _url=""
     _dom=$(_occ config:system:get trusted_domains 0 | tr -d '\r' || true)
     [[ -n "$_dom" ]] && _url="https://${_dom}/${_rel}/.ocdata"
@@ -137,7 +164,7 @@ print(','.join(k for k in d if k.startswith('twofactor_')))" 2>/dev/null || true
   fi
 
   # ── 5. Rechte auf der Konfiguration ─────────────────────────
-  _cfg_r=$(stat -c '%a' "${NC}/config/config.php" 2>/dev/null || echo "")
+  _cfg_r=$(stat -c '%a' "${NCDIR}/config/config.php" 2>/dev/null || echo "")
   if [[ -n "$_cfg_r" && ! "$_cfg_r" =~ ^(600|640|660)$ ]]; then
     warn "${_kurz}: config/config.php hat Rechte ${_cfg_r} — sie enthält Datenbankzugang und Instanz-Salt"
     NC_HAERTUNG+="${_kurz}: config.php mit Rechten ${_cfg_r}"$'\n'
