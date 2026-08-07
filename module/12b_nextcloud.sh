@@ -167,7 +167,7 @@ done <<< "$NC_INSTALLS"
 # ist fast immer eine manipulierte .htaccess. Der Hinweis spart die falsche
 # Fehlersuche in der Nextcloud-Konfiguration.
 NC_AH=$(grep -rhoE 'AH01797[^"]*\/(remote|status)\.php|AH01797[^"]*\/ocs\/v2\.php' \
-        /var/www/vhosts/system/*/logs/error_log 2>/dev/null | head -5 || true)
+        "${VHOSTS_DIR}"/system/*/logs/error_log 2>/dev/null | head -5 || true)
 if [[ -n "$NC_AH" ]]; then
   warn "Apache meldet AH01797 auf Nextcloud-Endpunkten — deutet auf eine manipulierte .htaccess, nicht auf fehlende Rechte"
   code "$NC_AH"

@@ -42,6 +42,72 @@ else
       "betreiber/lauf.log"; do
     [[ -f "${RUN_DIR}/${_spur_dok}" ]] || continue
     printf '  %-34s' "$_spur_dok"
-    nf_fremdkunden_maskieren "${RUN_DIR}/${_spur_dok}" || echo "  (nichts zu maskieren)"
+    # Kein '|| echo "(nichts zu maskieren)"' mehr. Genau das stand hier bis
+    # v3.12 und meldete die VERWEIGERUNG der Maskierung als Erfolg: die
+    # Funktion gibt 1 zurueck, wenn sie den eigenen Bezug nicht bestimmen kann
+    # und deshalb lieber gar nicht maskiert. Der unmaskierte Bericht ging
+    # daraufhin raus, und im Protokoll stand, es sei nichts zu tun gewesen.
+    if ! nf_fremdkunden_maskieren "${RUN_DIR}/${_spur_dok}"; then
+      echo ""
+      MASKIERUNG_FEHLER+="${_spur_dok}"$'\n'
+    fi
   done
+fi
+
+# ── Endpruefung vor der Auslieferung ─────────────────────────
+# Der Riegel in befund_melden greift nur dort, wo ein Pfad uebergeben wurde.
+# Nicht jeder Befund hat einen, und Fliesstext kann eine fremde Kennung
+# enthalten, die keinem Pfad entstammt. Diese Pruefung schaut deshalb auf das
+# FERTIGE Dokument — sie ist die letzte Gelegenheit, bevor es das Haus
+# verlaesst.
+if [[ "$SCOPE_MODE" != "global" ]]; then
+  _rest=""
+  for _kd in "${KUNDE_DIR}"/*.md; do
+    [[ -f "$_kd" ]] || continue
+    # Dieselbe Erkennung wie die Maskierung, nur ohne zu schreiben. Bewusst
+    # keine eigene, engere Pruefung: die erste Fassung kannte nur vhost-Pfade
+    # und webNN-Kennungen und meldete "sauber", waehrend eine blanke URL eines
+    # fremden Kunden im Kundenbericht stand.
+    _t=$(nf_fremdkunden_maskieren "$_kd" pruefen) || \
+      _rest+="${_kd##*/}: $(printf '%s' "$_t" | tr '\n' ' ')"$'\n'
+  done
+
+  if [[ -n "$_rest" ]]; then
+    echo ""
+    crit "Kundenspur enthält fremde Kennungen — Auslieferung abgebrochen"
+    code "$_rest"
+    {
+      echo ""
+      echo -e "${RED}ABBRUCH:${NC} In den Kundendokumenten stehen Kennungen, die nicht zum"
+      echo    "         geprüften Umfang gehören. Sie werden NICHT ausgeliefert."
+      echo    "         Die Betreiberspur bleibt vollständig:"
+      echo    "         ${BETREIBER_DIR}"
+      printf '%s' "$_rest" | sed 's/^/         /'
+    } >&2
+    rm -f "${KUNDE_DIR}"/*.md "${KUNDE_DIR}"/*.pdf 2>/dev/null || true
+    cat > "${KUNDE_DIR}/00_ABBRUCH.txt" <<'ABBRUCH'
+AUSLIEFERUNG ABGEBROCHEN.
+
+In den Kundendokumenten standen Kennungen, die nicht zum geprueften Umfang
+gehoeren — Pfade, Domains, Systemkonten oder Mailadressen anderer Kunden
+desselben Servers. Sie wurden geloescht, statt sie auszuliefern.
+
+Die vollstaendigen Ergebnisse liegen unveraendert in betreiber/.
+Ursache pruefen, beheben, Lauf wiederholen.
+ABBRUCH
+  else
+    ok "Kundenspur enthält keine fremden Kennungen"
+  fi
+fi
+
+# ── Was zurueckgehalten wurde, gehoert in den Bericht ─────────
+if [[ -n "${KANAL_VERWEIGERT:-}" ]]; then
+  h2 "Zurückgehaltene Befunde"
+  info "Diese Befunde liegen außerhalb des geprüften Umfangs und wurden deshalb NICHT in den Kundenbericht übernommen. Sie stehen vollständig hier."
+  code "$(printf '%s' "$KANAL_VERWEIGERT")"
+fi
+
+if [[ -n "${MASKIERUNG_FEHLER:-}" ]]; then
+  crit "Maskierung fehlgeschlagen — Dokumente NICHT freigabefähig"
+  code "$(printf '%s' "$MASKIERUNG_FEHLER")"
 fi
