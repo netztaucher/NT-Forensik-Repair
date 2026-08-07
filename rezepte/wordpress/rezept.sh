@@ -77,7 +77,13 @@ _wp_bestand() {
 }
 
 rezept_version() {
-  local basis="${REZEPT_DIR}/wordpress/daten"
+  # WP_DATEN_DIR erlaubt einen Bestand ausserhalb der Installation. Gebraucht
+  # wird das vom Pruefstand, der einen eigenen, kleinen Bestand einspeist —
+  # ohne ihn koennte er den Trefferpfad dieser Pruefung nie ueben, und eine
+  # Pruefung ohne Abdeckung ist genau die Sorte, die unbemerkt kaputtgeht.
+  # Im Betrieb ebenso brauchbar, wenn mehrere Installationen sich einen
+  # gepflegten Bestand teilen sollen.
+  local basis="${WP_DATEN_DIR:-${REZEPT_DIR}/wordpress/daten}"
   local vergleicher="${SELF_DIR:-.}/lib/wp_schwachstellen.py"
   local bestand ergebnis n_betroffen n_unbewertbar alter
 

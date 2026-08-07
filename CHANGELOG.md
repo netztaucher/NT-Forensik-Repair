@@ -4,6 +4,29 @@ Alle nennenswerten Änderungen an `wp_plesk_forensik.sh`.
 
 ## [unveröffentlicht]
 
+### Neu — Der Prüfbaum trägt Plugins
+Bis hierher hatte keine der drei Installationen im Prüfbaum ein Plugin. Der
+Trefferpfad des Schwachstellenabgleichs war damit nicht erreichbar: der
+Prüfstand sah ausschliesslich den Fall „nichts zu vergleichen".
+
+Kunde 2 bekommt verwundbare Fassungen (eine mit belegter Ausnutzung, eine ohne,
+ein betroffenes Theme, ein Plugin ohne lesbaren Kopf), Kunde 3 als Gegenprobe
+die behobenen. Dazu ein eigener, winziger Datenbestand, den `goldmuster.sh` bei
+jedem Bau erzeugt — mit tagesaktuellem Stand, weil ein fester Stand nach
+`WP_DATEN_MAX_TAGE` veraltet wäre und der Prüfstand dann ohne jede
+Codeänderung ausschlüge.
+
+Alle Kennungen und CVE-Nummern im Fixture sind **frei erfunden**. Ein Prüfbaum
+darf keine Tatsachenbehauptung über ein echtes Plugin enthalten.
+
+Eine zweite Gegenprobe in der CI erklärt den Bestand für veraltet und erwartet,
+dass der Vergleich das bemerkt — sonst wüsste niemand, ob der Baum den
+Trefferpfad überhaupt erreicht.
+
+`WP_DATEN_DIR` erlaubt einen Datenbestand ausserhalb der Installation. Der
+Prüfstand braucht das; im Betrieb ist es brauchbar, wenn mehrere Installationen
+sich einen gepflegten Bestand teilen.
+
 ### Neu — Der Haken `rezept_version` wird aufgerufen
 `lib/rezepte.sh` nennt ihn seit der ersten Fassung als Haken, `module/12r_rezepte.sh`
 rief ihn nie auf und zog ihn auch im `unset -f` nicht zurück. Ein Rezept konnte
