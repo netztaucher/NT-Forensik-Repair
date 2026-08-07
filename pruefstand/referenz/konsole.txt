@@ -152,6 +152,6 @@
   2. BSI-Meldung ergänzen:   [AUSFÜLLEN]-Felder in <PRUEFSTAND>/ablage/forensik/<LAUF-ID>/bsi_meldung.md
   3. DSGVO-Meldung prüfen:   [AUSFÜLLEN]-Felder in <PRUEFSTAND>/ablage/forensik/<LAUF-ID>/dsgvo_meldung.md (eigener Meldeweg!)
   4. Archiv lokal sichern (Befehl auf der naechsten Zeile, ganz markieren):
-     [1mscp root@imac:<PRUEFSTAND>/ablage/forensik/<LAUF-ID>.tar.gz ~/Downloads/[0m
+     [1mscp <PRUEFSTAND>/ablage/forensik/<LAUF-ID>.tar.gz ~/Downloads/[0m
   5. Alle 🔴-Maßnahmen sofort umsetzen
 
