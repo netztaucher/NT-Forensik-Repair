@@ -157,7 +157,12 @@ evidence() {
 # nf_fetch <url> <zieldatei>  → 0 bei HTTP 200
 nf_fetch() {
   local url="$1" dest="$2" code sz sum
-  code=$(curl -fsSL --max-time 300 --retry 1 -o "$dest" -w '%{http_code}' "$url" 2>/dev/null || echo "000")
+  # `|| echo "000"` HINTER die Ersetzung zu haengen war falsch: -w gibt den
+  # Code auch bei -f-Fehlern aus, curl endet aber ungleich 0 — protokolliert
+  # wurde dadurch "404000". Fiel erst mit der Plugin-Pruefung in 11.8 auf, weil
+  # Premium-Plugins regelmaessig 404 liefern und der Beleg lesbar bleiben muss.
+  code=$(curl -fsSL --max-time 300 --retry 1 -o "$dest" -w '%{http_code}' "$url" 2>/dev/null) || true
+  [[ -n "${code:-}" ]] || code="000"
   sz=$(stat -c%s "$dest" 2>/dev/null || echo 0)
   sum=$(sha256sum "$dest" 2>/dev/null | awk '{print $1}')
   ONLINE_FETCHES+="$(date -u +"%Y-%m-%dT%H:%M:%SZ")  ${url}  HTTP=${code}  ${sz}B  SHA256=${sum:-–}"$'\n'

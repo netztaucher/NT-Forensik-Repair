@@ -42,6 +42,18 @@ emit_findings_json() {
   disg=$(printf '%s\n' "${DISGUISED_PAYLOADS:-}"  | json_arr)
   rogue=$(printf '%s\n' "${ROGUE_ADMINS:-}"       | grep -vE '^=== |^$' | json_arr)
   suspadm=$(printf '%s\n' "${SUSPECT_ADMINS:-}"   | grep -vE '^=== |^$' | json_arr)
+  # Plugin-Integritaet (11.8). wp_plugin_modified sind Neuinstallations-,
+  # KEINE Quarantaene-Kandidaten — die Datei gehoert zum Plugin, sie ist nur
+  # veraendert. NT-Repair liest den Schluessel deshalb (noch) nicht.
+  local wpmod wpxphp wpunv wpthunv n_wpmod n_wpunv n_wpthunv
+  wpmod=$(printf   '%s\n' "${WP_PLUGIN_MODIFIED:-}"     | json_arr)
+  wpxphp=$(printf  '%s\n' "${WP_PLUGIN_EXTRA_PHP:-}"    | json_arr)
+  # Grund steht nach einem Tabulator — als Trennstrich lesbarer im JSON.
+  wpunv=$(printf   '%s\n' "${WP_PLUGIN_UNVERIFIABLE:-}" | sed 's/\t/ — /' | json_arr)
+  wpthunv=$(printf '%s\n' "${WP_THEMES_UNVERIFIABLE:-}" | json_arr)
+  n_wpmod=$(printf   '%s\n' "${WP_PLUGIN_MODIFIED:-}"     | grep -c . 2>/dev/null)
+  n_wpunv=$(printf   '%s\n' "${WP_PLUGIN_UNVERIFIABLE:-}" | grep -c . 2>/dev/null)
+  n_wpthunv=$(printf '%s\n' "${WP_THEMES_UNVERIFIABLE:-}" | grep -c . 2>/dev/null)
   local suspp muplug tamphta
   suspp=$(printf '%s\n' "${SUSP_PLUGINS:-}"       | json_arr)
   muplug=$(printf '%s\n' "${MU_PLUGINS:-}"        | json_arr)
@@ -153,6 +165,7 @@ emit_findings_json() {
   "verdicts": {
     "root": { "flags": ${ROOT_FLAGS:-0}, "text": "$(json_str "${ROOT_VERDICT:-}")" },
     "wpdb": { "flags": ${WPDB_FLAGS:-0}, "text": "$(json_str "${WPDB_VERDICT:-}")" },
+    "wp_integrity": { "flags": ${WP_INTEGRITY_FLAGS:-0}, "text": "$(json_str "${WP_INTEGRITY_VERDICT:-}")" },
     "joomla": { "flags": ${JOOMLA_FLAGS:-0}, "text": "$(json_str "${JOOMLA_VERDICT:-}")" },
     "relay": { "flags": ${RELAY_FLAGS:-0}, "text": "$(json_str "${RELAY_VERDICT:-}")" }
   },
@@ -170,6 +183,10 @@ emit_findings_json() {
     "core_include_injections": ${n_coreinj:-0},
     "rogue_wp_admins": ${n_rogue:-0},
     "suspicious_plugins": ${n_suspp:-0},
+    "wp_plugins_checked": ${WP_PLUGIN_CHECKED:-0},
+    "wp_plugin_modified": ${n_wpmod:-0},
+    "wp_plugins_unverifiable": ${n_wpunv:-0},
+    "wp_themes_unverifiable": ${n_wpthunv:-0},
     "ssh_failed": ${SSH_FAILED_COUNT:-0},
     "wp_installs": ${WP_COUNT:-0},
     "joomla_installs": ${JOOMLA_COUNT:-0},
@@ -194,6 +211,10 @@ emit_findings_json() {
     "nextcloud_hardening": ${nchard:-[]},
     "htaccess_fremd": ${htafremd:-[]},
     "suspicious_plugins": ${suspp:-[]},
+    "wp_plugin_modified": ${wpmod:-[]},
+    "wp_plugin_extra_php": ${wpxphp:-[]},
+    "wp_plugin_unverifiable": ${wpunv:-[]},
+    "wp_themes_unverifiable": ${wpthunv:-[]},
     "mu_plugins": ${muplug:-[]},
     "tampered_htaccess": ${tamphta:-[]},
     "php_in_uploads": ${php:-[]},

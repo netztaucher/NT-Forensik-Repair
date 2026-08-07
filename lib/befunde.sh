@@ -46,6 +46,21 @@ SUSPECT_ADMINS=""      # Admins mit angreifertypischem Namen/Adresse — Verdach
                        # eine automatische Bereinigung sie nie anfasst.
 SUSP_PLUGINS=""        # verdächtige Plugins/mu-Plugins (alle bewertet, auch inaktive)
 MU_PLUGINS=""          # alle mu-Plugins (laufen immer, ohne Aktivierung)
+
+# ── Plugin-Integrität gegen wordpress.org (Abschnitt 11.8) ───
+# Nur mit --online befüllt. WP_PLUGIN_CHECKED ist der Nenner: ein leeres
+# WP_PLUGIN_MODIFIED bei WP_PLUGIN_CHECKED=0 heisst "nicht geprueft", nicht
+# "sauber". Wer das verwechselt, baut denselben Fehler wie eine Statusmail,
+# die einen Teillauf fuer vollstaendig haelt.
+WP_PLUGIN_MODIFIED=""      # veränderte Plugin-Codedateien (php/js) — kritisch
+WP_PLUGIN_SOFT=""          # veränderte Nicht-Codedateien (readme, Übersetzungen, CSS)
+WP_PLUGIN_EXTRA_PHP=""     # PHP in Plugin-Ordnern ohne Eintrag im Prüfsummensatz
+WP_PLUGIN_UNVERIFIABLE=""  # Plugin ohne Prüfsummensatz oder ohne lesbare Version
+WP_THEMES_UNVERIFIABLE=""  # Themes — für sie gibt es keine Prüfsummenquelle
+WP_PLUGIN_CHECKED=0        # tatsächlich gegen wordpress.org geprüfte Plugins
+WP_PLUGIN_SKIPPED=0        # Installationen ohne Integritätsprüfung
+WP_INTEGRITY_FLAGS=0       # harte Integritätsbefunde
+WP_INTEGRITY_VERDICT="⚪ Plugin-Integrität nicht geprüft."
 TAMPERED_HTACCESS=""   # manipulierte .htaccess (Malware-Whitelist, bricht Admin/403)
 
 # ── v3.11: Abschnitt 16 (.htaccess) ──────────────────────────
