@@ -26,6 +26,10 @@ DOORWAY_DIRS=""        # Verzeichnisse mit Doorway-.htaccess-Signatur
 CORE_INJECT_HITS=""    # Dateien mit @include base64_decode() (Bootstrap-Injektion)
 DISGUISED_PAYLOADS=""  # als Nicht-PHP getarnte Payloads (<?php in .ttf/.png/.gif/.css…)
 ROGUE_ADMINS=""        # via wp-cli-Fallback gefundene Angreifer-Admins
+NC_HTACCESS_MAL=""     # Nextcloud: .htaccess mit Angreifer-Merkmalen
+NC_MALWARE=""          # Nextcloud: bekannte Schaddateien und aufgeblaehte index.php
+NC_NESTED=""           # Nextcloud: verschachtelte Verzeichnisse (config/config)
+NC_INTEGRITY=""        # Nextcloud: Abweichungen laut occ integrity:check-core
 SUSPECT_ADMINS=""      # Admins mit angreifertypischem Namen/Adresse — Verdacht,
                        # kein Beweis. Bewusst getrennt von ROGUE_ADMINS, damit
                        # eine automatische Bereinigung sie nie anfasst.
