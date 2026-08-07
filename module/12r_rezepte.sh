@@ -28,6 +28,9 @@ for _rz in "${REZEPT_DIR}"/*/; do
   if [[ -n "${REZEPT_NUR:-}" ]]; then
     case ",${REZEPT_NUR}," in *",${_app},"*) : ;; *) continue ;; esac
   fi
+  if [[ -n "${REZEPT_OHNE:-}" ]]; then
+    case ",${REZEPT_OHNE}," in *",${_app},"*) continue ;; esac
+  fi
 
   _name="$(rezept_feld "$_rz" name)"; _name="${_name:-$_app}"
 
@@ -85,17 +88,26 @@ for _rz in "${REZEPT_DIR}"/*/; do
     # Alles Weitere braucht das Werkzeug der Anwendung. Der Rahmen zieht die
     # Probe, damit kein Rezept sie vergessen kann.
     if [[ -n "$_werkzeug" ]]; then
-      _own=$(stat -c %U "$REZ_PFAD" 2>/dev/null || stat -f %Su "$REZ_PFAD" 2>/dev/null || echo "")
-      _php=$(command -v php 2>/dev/null || ls /opt/plesk/php/*/bin/php 2>/dev/null | sort -V | tail -1)
-      if [[ -z "$_own" || -z "$_php" ]]; then
+      REZ_PHP=$(command -v php 2>/dev/null || ls /opt/plesk/php/*/bin/php 2>/dev/null | sort -V | tail -1)
+      _own=$(datei_meta "$REZ_PFAD" eigner); _own="${_own%%:*}"
+      # Zwei Arten von Werkzeug: mitgeliefert (occ liegt IN der Installation)
+      # oder extern (wp-cli liegt im PATH). Ohne die Unterscheidung suchte der
+      # Rahmen 'wp' im Webspace des Kunden und fand nichts.
+      if [[ "$(rezept_feld "$_rz" werkzeug_extern)" == "ja" ]]; then
+        REZ_WERKZEUG="$(command -v "$_werkzeug" 2>/dev/null || true)"
+      else
+        REZ_WERKZEUG="${REZ_PFAD}/${_werkzeug}"
+        [[ -f "$REZ_WERKZEUG" ]] || REZ_WERKZEUG=""
+      fi
+      if [[ -z "$_own" || "$_own" == "?" || -z "$REZ_PHP" || -z "$REZ_WERKZEUG" ]]; then
         befund_melden "$_app" erkennung unklar \
-          "${REZ_KURZ}: Eigentümer oder PHP nicht ermittelbar — ${_werkzeug} nicht ausführbar, Instanz nicht geprüft" "$REZ_PFAD" web
+          "${REZ_KURZ}: ${_werkzeug} nicht ausführbar (Werkzeug, PHP oder Eigentümer fehlt) — Instanz nur dateibasiert geprüft" "$REZ_PFAD" web
         continue
       fi
       # shellcheck disable=SC2086
-      OCC() { sudo -u "$_own" "$_php" -d memory_limit=1024M "${REZ_PFAD}/${_werkzeug}" "$@" 2>/dev/null; }
+      OCC() { sudo -u "$_own" "$REZ_PHP" -d memory_limit=1024M "$REZ_WERKZEUG" "$@" 2>/dev/null; }
       # shellcheck disable=SC2086
-      rezept_werkzeug_bereit "$_app" "$REZ_KURZ" sudo -u "$_own" "$_php" -d memory_limit=1024M "${REZ_PFAD}/${_werkzeug}" $_probe || continue
+      rezept_werkzeug_bereit "$_app" "$REZ_KURZ" sudo -u "$_own" "$REZ_PHP" -d memory_limit=1024M "$REZ_WERKZEUG" $_probe || continue
     fi
 
     declare -F rezept_kern   >/dev/null && rezept_kern

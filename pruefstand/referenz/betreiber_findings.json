@@ -8,17 +8,17 @@
   "generated_utc": "<UTC>",
   "run": {
     "vollstaendig": false,
-    "module_gelaufen": ["4","7","11","12","12r","13b","14"],
+    "module_gelaufen": ["4","7","12","12r","13b","14"],
     "module_uebersprungen": ["1. System-Übersicht","2. Logs sichern","3. Zugriffs-Analyse","5. Benutzer & Rechte","6. Cronjobs & Persistenz","8. Netzwerk & Dienste","9. Sicherheits-Dienste","10. Andere Domains","13. Root- & Eskalations-Prüfung"],
-    "nicht_messbar": ["grep ohne PCRE-Unterstützung (-P) — Zugangsdaten aus wp-config.php nicht lesbar, keine Datenbank-Prüfung möglich","kunde-zwei.example/cloud.kunde-zwei.example: Werkzeug antwortet nicht verwertbar — nicht geprüft"]
+    "nicht_messbar": ["kunde-zwei.example/cloud.kunde-zwei.example: Werkzeug antwortet nicht verwertbar — nicht geprüft","kunde-drei.example/httpdocs: wp nicht ausführbar (Werkzeug, PHP oder Eigentümer fehlt) — Instanz nur dateibasiert geprüft","kunde-eins.example/httpdocs: wp nicht ausführbar (Werkzeug, PHP oder Eigentümer fehlt) — Instanz nur dateibasiert geprüft","kunde-zwei.example/httpdocs: wp nicht ausführbar (Werkzeug, PHP oder Eigentümer fehlt) — Instanz nur dateibasiert geprüft"]
   },
   "htaccess_unwirksam": "nginx ohne Apache",
-  "befunde": {"nextcloud": {"schadcode": [{"schwere": "crit", "text": "kunde-zwei.example/cloud.kunde-zwei.example: bekannte Schaddatei der Nextcloud-Kampagne (filefuns.php)", "pfad": "<PRUEFSTAND>/vhosts/kunde-zwei.example/cloud.kunde-zwei.example/filefuns.php"}, {"schwere": "crit", "text": "kunde-zwei.example/cloud.kunde-zwei.example: Root-.htaccess trägt Angreifer-Merkmale (Freigabeliste mit fremden Dateinamen)", "pfad": "<PRUEFSTAND>/vhosts/kunde-zwei.example/cloud.kunde-zwei.example/.htaccess"}, {"schwere": "crit", "text": "kunde-zwei.example/cloud.kunde-zwei.example: verschachtelte Verzeichnisse (z. B. config/config) — typisch für diese Kampagne", "pfad": "<PRUEFSTAND>/vhosts/kunde-zwei.example/cloud.kunde-zwei.example/config/config"}], "erkennung": [{"schwere": "unklar", "text": "kunde-zwei.example/cloud.kunde-zwei.example: Werkzeug antwortet nicht verwertbar — nicht geprüft", "pfad": "kunde-zwei.example/cloud.kunde-zwei.example"}]}},
-  "verdikte": {"nextcloud": {"flags": 3, "text": "🔴 3 kritische Nextcloud-Befunde — Übernahme belegt oder dringend abzuklären."}},
-  "counts": { "crit": 9, "warn": 4, "ok": 12, "unknown": 2 },
+  "befunde": {"nextcloud": {"schadcode": [{"schwere": "crit", "text": "kunde-zwei.example/cloud.kunde-zwei.example: bekannte Schaddatei der Nextcloud-Kampagne (filefuns.php)", "pfad": "<PRUEFSTAND>/vhosts/kunde-zwei.example/cloud.kunde-zwei.example/filefuns.php"}, {"schwere": "crit", "text": "kunde-zwei.example/cloud.kunde-zwei.example: Root-.htaccess trägt Angreifer-Merkmale (Freigabeliste mit fremden Dateinamen)", "pfad": "<PRUEFSTAND>/vhosts/kunde-zwei.example/cloud.kunde-zwei.example/.htaccess"}, {"schwere": "crit", "text": "kunde-zwei.example/cloud.kunde-zwei.example: verschachtelte Verzeichnisse (z. B. config/config) — typisch für diese Kampagne", "pfad": "<PRUEFSTAND>/vhosts/kunde-zwei.example/cloud.kunde-zwei.example/config/config"}], "erkennung": [{"schwere": "unklar", "text": "kunde-zwei.example/cloud.kunde-zwei.example: Werkzeug antwortet nicht verwertbar — nicht geprüft", "pfad": "kunde-zwei.example/cloud.kunde-zwei.example"}]}, "wordpress": {"erkennung": [{"schwere": "unklar", "text": "kunde-drei.example/httpdocs: wp nicht ausführbar (Werkzeug, PHP oder Eigentümer fehlt) — Instanz nur dateibasiert geprüft", "pfad": "<PRUEFSTAND>/vhosts/kunde-drei.example/httpdocs"}, {"schwere": "unklar", "text": "kunde-eins.example/httpdocs: wp nicht ausführbar (Werkzeug, PHP oder Eigentümer fehlt) — Instanz nur dateibasiert geprüft", "pfad": "<PRUEFSTAND>/vhosts/kunde-eins.example/httpdocs"}, {"schwere": "unklar", "text": "kunde-zwei.example/httpdocs: wp nicht ausführbar (Werkzeug, PHP oder Eigentümer fehlt) — Instanz nur dateibasiert geprüft", "pfad": "<PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs"}], "schadcode": [{"schwere": "crit", "text": "kunde-zwei.example/httpdocs: 1 Datei(en) mit @include base64_decode() — getarnte Payload-Nachladung", "pfad": "<PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/mu-plugins/cache.php"}, {"schwere": "warn", "text": "kunde-zwei.example/httpdocs: 1 mu-Plugin(s) — laufen ohne Aktivierung und erscheinen in keiner Pluginliste", "pfad": "<PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/mu-plugins/cache.php"}]}},
+  "verdikte": {"nextcloud": {"flags": 3, "text": "🔴 3 kritische Nextcloud-Befunde — Übernahme belegt oder dringend abzuklären."}, "wordpress": {"flags": 1, "text": "🔴 1 kritische WordPress-Befunde — Kompromittierung belegt oder dringend abzuklären."}},
+  "counts": { "crit": 10, "warn": 5, "ok": 16, "unknown": 4 },
   "verdicts": {
     "root": { "flags": 0, "text": "⚪ Root-Prüfung nicht durchgeführt." },
-    "wpdb": { "flags": 0, "text": "🟢 **Keine Angreifer-Spuren in den WordPress-Datenbanken** (keine neuen Admins, keine manipulierten Optionen)." },
+    "wpdb": { "flags": 0, "text": "⚪ Keine WordPress-Installation im Scan-Pfad gefunden — keine Datenbank-Prüfung durchgeführt." },
     "joomla": { "flags": 0, "text": "🟢 **Keine Angreifer-Spuren in den Joomla-Installationen** — Version schlüssig, Konfiguration ohne kritische Schwächen, kein Hinweis auf einen Datenabfluss über die Programmschnittstelle." },
     "relay": { "flags": 0, "text": "⚪ Relay-Backdoor-Prüfung nicht durchgeführt." }
   },
@@ -37,7 +37,7 @@
     "rogue_wp_admins": 0,
     "suspicious_plugins": 0,
     "ssh_failed": 0,
-    "wp_installs": 4,
+    "wp_installs": 0,
     "joomla_installs": 1,
     "joomla_core_modified": 0,
     "joomla_vulnerable_extensions": 0,
@@ -70,7 +70,7 @@
     "systemd_suspect": [],
     "persistence": [],
     "proc_malicious": [],
-    "wp_configs": ["<PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-config.php","<PRUEFSTAND>/vhosts/kunde-eins.example/httpdocs/wp-config.php","<PRUEFSTAND>/vhosts/kunde-eins.example/backup/httpdocs/wp-config.php","<PRUEFSTAND>/vhosts/kunde-drei.example/httpdocs/wp-config.php"],
+    "wp_configs": [],
     "foreign_ssh_keys": [],
     "ioc_ips": { "attacker": [], "ssh_bruteforce": [] },
     "gsocket_hits": [],
