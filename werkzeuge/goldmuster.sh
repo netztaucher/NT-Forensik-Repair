@@ -42,7 +42,11 @@ REF_DIR="${SELF_DIR}/pruefstand/referenz"
 # und meldete den Pruefbaum selbst als Befund. Unter macOS faellt das nicht auf,
 # weil TMPDIR dort auf /var/folders zeigt — die CI hat es gezeigt. Ein
 # Pruefstand, der das Messergebnis veraendert, misst nicht mehr das Werkzeug.
-ARBEIT="${NT_GOLDMUSTER_DIR:-${HOME}/.nt-goldmuster}/lauf.$$"
+# Fester Name ohne Prozessnummer: config.php des Pruefbaums enthaelt den
+# absoluten Pfad, und eine unterschiedlich lange PID aendert damit die
+# DATEIGROESSE — 139 gegen 140 Bytes, gemeldet als Abweichung. Der Baum wird
+# zu Beginn ohnehin geloescht; parallele Laeufe sind kein Anwendungsfall.
+ARBEIT="${NT_GOLDMUSTER_DIR:-${HOME}/.nt-goldmuster}/lauf"
 AKTION="${1:-vergleichen}"
 
 # ── Der synthetische Baum ────────────────────────────────────
@@ -186,7 +190,7 @@ REGELN = [
     (r'\b[0-9a-f]{40}\b',                          '<SHA1>'),
     # Der Pruefstand liegt je nach Plattform unter /tmp, /private/tmp oder
     # /var/folders und traegt die Prozessnummer im Namen.
-    (r'\S*?[/.]nt-goldmuster/lauf\.\d+',           '<PRUEFSTAND>'),
+    (r'\S*?[/.]nt-goldmuster/lauf',                '<PRUEFSTAND>'),
     (r'^(Server|Server-IP|Ausführender|Beginn \(lokal\)):.*$', r'\1: <UMGEBUNG>'),
     # Ausgabe von `date` — Format haengt an der Spracheinstellung, deshalb
     # ueber die umgebende Beschriftung gefasst statt ueber das Datumsmuster.
