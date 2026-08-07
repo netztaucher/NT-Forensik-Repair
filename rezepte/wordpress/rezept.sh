@@ -166,6 +166,177 @@ rezept_version() {
   fi
 }
 
+# ── Plugin-Integrität gegen die Prüfsummen von wordpress.org ─
+# Das Gegenstück zu verify-checksums für den Kern, nur für Plugins. Es findet
+# VERÄNDERTE Dateien statt veralteter Fassungen — für eine Forensik die
+# stärkere Aussage: eine alte Version ist ein Risiko, eine veränderte
+# Plugin-Datei ist ein Befund.
+#
+# Warum nicht `wp plugin verify-checksums`: das Kommando zählt die Plugins über
+# die WordPress-Laufzeit auf, und genau darüber nimmt sich ein manipuliertes
+# Plugin per all_plugins-Filter selbst aus der Prüfung — derselbe Grund, aus
+# dem rezept_version die Fassungen aus Kopfzeilen liest. Ausserdem deckt es
+# weder mu-Plugins (checksum-command #27) noch Themes ab und gibt die
+# Prüfsummendatei nicht als Beleg heraus.
+#
+# Nur mit --online: je Plugin ein Abruf. Protokolliert über nf_fetch, damit in
+# findings.json steht, gegen welchen Stand geprüft wurde.
+_wp_plugin_integritaet() {
+  local cache liste ergebnis slug ver ziel pdir
+  local n_mod n_soft n_extra n_fehlt n_geprueft n_ohne
+
+  cache="${RUN_DIR}/.online/plugin-checksums"
+  mkdir -p "$cache"
+  liste=$(mktemp "${RUN_DIR}/.wpint.XXXXXX")
+  n_ohne=0
+
+  # Bestandsliste kommt aus rezept_version — dieselbe Erhebung, dieselbe
+  # Disziplin bei der Fassung. Themes bleiben aussen vor: für sie
+  # veröffentlicht wordpress.org keine Prüfsummen (theme-checksums → HTTP 404,
+  # nachgeprüft 06.08.2026).
+  while IFS=$'\t' read -r typ slug ver; do
+    [[ "$typ" == "plugin" ]] || continue
+    pdir="${REZ_PFAD}/wp-content/plugins/${slug}"
+    [[ -d "$pdir" ]] || continue
+    if [[ -z "$ver" ]]; then
+      n_ohne=$((n_ohne+1)); continue
+    fi
+    ziel="${cache}/${slug}-${ver}.json"
+    if [[ ! -s "$ziel" ]] \
+       && ! nf_fetch "https://downloads.wordpress.org/plugin-checksums/${slug}/${ver}.json" "$ziel"; then
+      rm -f "$ziel"
+      # Kein Prüfsummensatz. Zwei Ursachen, hier nicht unterscheidbar: das
+      # Plugin liegt nicht im wordpress.org-Verzeichnis (Premium, Fork,
+      # Eigenbau), oder die Fassung ist dort nicht veröffentlicht.
+      n_ohne=$((n_ohne+1)); continue
+    fi
+    printf '%s\t%s\t%s\t%s\n' "$slug" "$ver" "$pdir" "$ziel" >> "$liste"
+  done <<< "$(_wp_bestand)"
+
+  if [[ ! -s "$liste" ]]; then
+    rm -f "$liste"
+    [[ "$n_ohne" -gt 0 ]] && befund_melden wordpress kern unklar \
+      "${REZ_KURZ}: ${n_ohne} Plugin(s) ohne Prüfsummensatz bei wordpress.org — Unversehrtheit nicht feststellbar" "$REZ_PFAD" web
+    return 0
+  fi
+
+  ergebnis=$(python3 - "$liste" <<'PY' 2>/dev/null || true
+import hashlib, json, os, sys
+
+# Als Code gewertete Endungen. Eine Abweichung darin ist eine Codeaenderung am
+# ausgelieferten Plugin und damit kritisch; alles andere (readme.txt,
+# Uebersetzungen, Stilvorlagen, Bilder) ist eine weiche Abweichung. wp-cli
+# zieht dieselbe Grenze ueber seinen --strict-Schalter.
+CODE = {".php", ".phtml", ".php5", ".php7", ".inc", ".js", ".mjs"}
+
+def passt(soll, ist_md5, ist_sha):
+    # Das Format erlaubt je Datei MEHRERE gueltige Pruefsummen (Whitelist).
+    # Ein 1:1-Vergleich wuerde hier Falsch-Positive erzeugen.
+    for schluessel, ist in (("md5", ist_md5), ("sha256", ist_sha)):
+        wert = soll.get(schluessel)
+        if wert is None:
+            continue
+        kandidaten = wert if isinstance(wert, list) else [wert]
+        if any(str(k).lower() == ist for k in kandidaten):
+            return True
+    return False
+
+for zeile in open(sys.argv[1], encoding="utf-8", errors="replace").read().splitlines():
+    teile = zeile.split("\t")
+    if len(teile) != 4:
+        continue
+    slug, ver, pdir, jsondatei = teile
+    try:
+        with open(jsondatei, encoding="utf-8", errors="replace") as fh:
+            soll_dateien = (json.load(fh) or {}).get("files") or {}
+    except Exception:
+        print("\t".join(["OHNE", slug, ver, "Pruefsummendatei nicht lesbar"]))
+        continue
+    if not soll_dateien:
+        print("\t".join(["OHNE", slug, ver, "Pruefsummendatei ohne Dateiliste"]))
+        continue
+
+    gesehen = set()
+    for wurzel, _dirs, dateien in os.walk(pdir):
+        for name in dateien:
+            voll = os.path.join(wurzel, name)
+            if os.path.islink(voll):
+                continue
+            rel = os.path.relpath(voll, pdir)
+            gesehen.add(rel)
+            soll = soll_dateien.get(rel)
+            if soll is None:
+                # Nicht im Pruefsummensatz. Nur PHP ist erwaehnenswert — alles
+                # andere sind ueberwiegend Zwischenspeicher und Protokolle.
+                if os.path.splitext(name)[1].lower() in CODE:
+                    print("\t".join(["EXTRA", slug, ver, rel]))
+                continue
+            try:
+                with open(voll, "rb") as fh:
+                    roh = fh.read()
+            except Exception:
+                continue
+            if not passt(soll, hashlib.md5(roh).hexdigest(),
+                               hashlib.sha256(roh).hexdigest()):
+                art = "MOD" if os.path.splitext(name)[1].lower() in CODE else "SOFT"
+                print("\t".join([art, slug, ver, rel]))
+
+    for rel in sorted(set(soll_dateien) - gesehen):
+        print("\t".join(["FEHLT", slug, ver, rel]))
+
+    print("\t".join(["GEPRUEFT", slug, ver, str(len(soll_dateien))]))
+PY
+  )
+  rm -f "$liste"
+
+  n_geprueft=$(printf '%s\n' "$ergebnis" | grep -c '^GEPRUEFT' || true)
+  n_mod=$(printf   '%s\n' "$ergebnis" | grep -c '^MOD'   || true)
+  n_soft=$(printf  '%s\n' "$ergebnis" | grep -c '^SOFT'  || true)
+  n_extra=$(printf '%s\n' "$ergebnis" | grep -c '^EXTRA' || true)
+  n_fehlt=$(printf '%s\n' "$ergebnis" | grep -c '^FEHLT' || true)
+  n_ohne=$((n_ohne + $(printf '%s\n' "$ergebnis" | grep -c '^OHNE' || true)))
+
+  local basis="${REZ_PFAD}/wp-content/plugins/"
+  if [[ "${n_mod:-0}" -gt 0 ]]; then
+    local mods; mods=$(printf '%s\n' "$ergebnis" | awk -F'\t' -v p="$basis" '$1=="MOD"{print p $2 "/" $4}')
+    befund_melden wordpress kern crit \
+      "${REZ_KURZ}: ${n_mod} veränderte Plugin-Codedatei(en) gegenüber wordpress.org — Plugin neu installieren, Dateien vorher sichern" \
+      "$(printf '%s\n' "$mods" | head -1)" web
+    code "$(printf '%s\n' "$mods" | head -30)"
+    evidence "wp_plugin_veraendert_$(echo "$REZ_KURZ" | tr '/.' '__')" "$mods"
+  elif [[ "${n_geprueft:-0}" -gt 0 ]]; then
+    befund_melden wordpress kern ok \
+      "${REZ_KURZ}: ${n_geprueft} Plugin(s) gegen wordpress.org geprüft — keine veränderte Codedatei" "$REZ_PFAD"
+  fi
+
+  [[ "${n_soft:-0}" -gt 0 ]] && befund_melden wordpress kern warn \
+    "${REZ_KURZ}: ${n_soft} veränderte Nicht-Codedatei(en) in Plugins (readme, Übersetzungen, Stilvorlagen) — meist harmlos" "$REZ_PFAD"
+
+  [[ "${n_fehlt:-0}" -gt 0 ]] && befund_melden wordpress kern warn \
+    "${REZ_KURZ}: ${n_fehlt} im Prüfsummensatz geführte Plugin-Datei(en) fehlen auf der Platte" "$REZ_PFAD"
+
+  # Zusätzliche PHP-Dateien: vorerst nur Beleg. Plugins legen auch legitim PHP
+  # an (Zwischenspeicher, index.php-Wachen); erst nach Messung an echten
+  # Installationen entscheiden, ob daraus eine Warnung wird.
+  if [[ "${n_extra:-0}" -gt 0 ]]; then
+    info "${REZ_KURZ}: ${n_extra} PHP-Datei(en) in Plugin-Ordnern ohne Eintrag im Prüfsummensatz — Übersicht im Beleg"
+    evidence "wp_plugin_zusatz_php_$(echo "$REZ_KURZ" | tr '/.' '__')" \
+             "$(printf '%s\n' "$ergebnis" | awk -F'\t' '$1=="EXTRA"{print $2 "/" $4}')"
+  fi
+
+  # Nicht Prüfbares zu EINEM ⚪ — je Plugin würde das die Kundenampel auf fast
+  # jeder Seite dauerhaft blockieren. Themes stehen mit drin, weil es für sie
+  # überhaupt keine Prüfsummenquelle gibt.
+  [[ "${n_ohne:-0}" -gt 0 ]] && befund_melden wordpress kern unklar \
+    "${REZ_KURZ}: ${n_ohne} Plugin(s) ohne Prüfsummensatz und alle Themes — Unversehrtheit nicht feststellbar (Premium, Fork, Eigenbau; für Themes veröffentlicht wordpress.org keine Prüfsummen)" "$REZ_PFAD" web
+
+  # Ausdrücklich 0: die Funktion endet sonst auf dem Rückgabewert des letzten
+  # Tests und meldete auf der ERFOLGSBAHN eine 1, wenn nichts unbewertbar war.
+  # Heute liest das niemand aus; wer den Aufruf später verkettet, hätte einen
+  # Fehler, der nur bei sauberen Installationen auftritt.
+  return 0
+}
+
 # ── Kern-Integrität und die Doorway-Familie ──────────────────
 # Der Signatur-Webshell-Scan übersieht goto-obfuskierte Doorways, als Nicht-PHP
 # getarnte Nutzlasten und @include-Injektionen. verify-checksums plus
@@ -192,6 +363,24 @@ rezept_kern() {
     LISTE=$(echo "$CHK" | grep "should not exist" | sed "s|.*exist: |${REZ_PFAD}/|")
     befund_melden wordpress kern warn "${REZ_KURZ}: ${csne} Core-fremde Datei(en) in wp-admin/wp-includes — prüfen" "$REZ_PFAD" web
     evidence "wp_core_fremd_$(echo "$REZ_KURZ" | tr '/.' '__')" "$LISTE"
+  fi
+
+  # Dasselbe für die Plugins. verify-checksums deckt nur den Kern ab, und der
+  # ist selten das Einfallstor — die Nutzlast liegt fast immer im Plugin-Ordner.
+  #
+  # ACHTUNG bei der Platzierung: rezept_kern läuft erst NACH der Werkzeug-Probe
+  # des Rahmens, also nur mit lauffähigem wp-cli. Die Prüfsummen brauchen
+  # wp-cli nicht — sie lesen Dateien und rufen wordpress.org ab. Eine Instanz
+  # ohne wp-cli verliert damit eine Prüfung, die dort möglich wäre. Bewusst
+  # trotzdem hier, weil der Befund inhaltlich zur Kern-Integrität gehört;
+  # ungebunden wird er durch Verschieben des folgenden Aufrufs nach
+  # rezept_sonder, ohne weitere Änderung.
+  if [[ "${WANT_ONLINE:-0}" != "1" ]]; then
+    info "${REZ_KURZ}: Plugin-Integrität nicht geprüft — die Prüfsummen von wordpress.org brauchen --online"
+  elif ! werkzeug_da python3; then
+    befund_melden wordpress kern unklar "${REZ_KURZ}: python3 fehlt — Plugin-Integrität nicht prüfbar" "$REZ_PFAD" web
+  else
+    _wp_plugin_integritaet
   fi
 }
 

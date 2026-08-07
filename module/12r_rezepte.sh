@@ -4,7 +4,7 @@
 # @nummer:  12r
 # @titel:   Anwendungs-Prüfrezepte
 # @frage:   Ist eine der geprüften Anwendungen übernommen oder unzureichend gehärtet?
-# @kosten:  mittel — je gefundener Installation
+# @kosten:  mittel; HOCH mit --online — dann ein Prüfsummenabruf je WP-Plugin
 # @ebene:   website
 #
 # Die Nummer liegt vor 14, weil Abschnitt 14 die Berichte schreibt. Ein

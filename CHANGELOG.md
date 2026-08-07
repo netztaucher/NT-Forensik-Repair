@@ -10,6 +10,27 @@ rief ihn nie auf und zog ihn auch im `unset -f` nicht zurück. Ein Rezept konnte
 ihn also deklarieren, ohne dass je etwas passierte. Der Haken läuft jetzt vor
 `rezept_sonder` — dateibasiert, ohne Werkzeug der Anwendung.
 
+### Neu — WordPress: Plugin-Integrität gegen wordpress.org
+`rezept_kern` prüft nicht mehr nur den Kern. Die Dateien installierter Plugins
+werden gegen `downloads.wordpress.org/plugin-checksums/<slug>/<version>.json`
+abgeglichen (md5 **und** sha256 je Datei). Das findet **veränderte** Dateien
+statt veralteter Fassungen — für eine Forensik die stärkere Aussage, und der
+Kern ist selten das Einfallstor: die Nutzlast liegt fast immer im Plugin-Ordner.
+
+Nur mit `--online`, ein Abruf je Plugin, protokolliert über `nf_fetch`.
+
+Vier Befundklassen: veränderte `.php`/`.js` sind 🔴, veränderte Nicht-Codedateien
+und fehlende Dateien ⚠️, zusätzliche PHP-Dateien vorerst nur ein Beleg.
+
+Bewusst **nicht** über `wp plugin verify-checksums` — das Kommando zählt die
+Plugins über die WordPress-Laufzeit auf, und genau darüber nimmt sich ein
+manipuliertes Plugin per `all_plugins`-Filter selbst aus der Prüfung. Ausserdem
+deckt es weder mu-Plugins noch Themes ab.
+
+Plugins ohne Prüfsummensatz (Premium, Fork, Eigenbau) und Themes, für die
+wordpress.org grundsätzlich keine Prüfsummen veröffentlicht, werden zu **einem**
+⚪ zusammengefasst.
+
 ### Neu — WordPress: Abgleich gegen bekannte Schwachstellen
 Das Rezept nutzt den Haken und gleicht Kern, Plugins und Themes gegen den
 Datenbestand unter `rezepte/wordpress/daten/` ab. **Offline** — kein `--online`
@@ -37,8 +58,7 @@ Das Gegenstück zu `daten/joomla/` entsteht: `rezepte/wordpress/daten/` mit
 `werkzeuge/wordpress-daten-update.sh` als Pflegewerkzeug und
 `lib/wp_schwachstellen.py` als Vergleicher.
 
-**Noch nicht im Prüflauf eingebunden** — dieser Schritt liefert den Unterbau,
-das Scharfschalten in Abschnitt 11 folgt getrennt.
+Der Unterbau; das Scharfschalten geschieht im WordPress-Rezept (siehe oben).
 
 **Eigener Versionsvergleich statt `j_vernum`.** Das Joomla-Verfahren presst
 `a.b.c` in eine Zahl `aabbbccc`. Für Joomla trägt das; für WordPress-Plugins
