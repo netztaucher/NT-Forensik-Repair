@@ -57,6 +57,27 @@ unklar(){ echo -e "  ${CYN}⚪${NC} $1"; echo "- ⚪ **Nicht messbar: $1**" >> "
 # ein fehlendes Werkzeug ein eigener Zustand ist und kein Nullergebnis.
 werkzeug_da(){ command -v "$1" >/dev/null 2>&1; }
 
+# Einen Befehl als Eigentuemer einer Installation ausfuehren.
+#
+#   als_eigentuemer <benutzer> <befehl…>
+#
+# Im Betrieb laeuft das Werkzeug als root, und der Rechtewechsel ist noetig:
+# wp-cli und occ verweigern die Arbeit oder legen Dateien mit falschem
+# Eigentuemer an, wenn sie als root laufen.
+#
+# Sind wir aber ohnehin schon dieser Benutzer, ist 'sudo -u ich' nicht nur
+# ueberfluessig, sondern schaedlich: auf einer Maschine ohne NOPASSWD fragt es
+# nach einem Passwort und bleibt stehen. Genau daran waere der Pruefstand
+# haengengeblieben, sobald er ein Werkzeug im Baum findet.
+als_eigentuemer() {
+  local wer="$1"; shift
+  if [[ -z "$wer" || "$wer" == "$(id -un)" ]]; then
+    "$@"
+  else
+    sudo -u "$wer" "$@"
+  fi
+}
+
 # ── Scope-Pruefung (v3.13) ───────────────────────────────────
 #
 # Liegt ein Pfad innerhalb des geprueften Umfangs? Das entscheidet, ob ein

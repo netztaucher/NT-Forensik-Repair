@@ -109,12 +109,22 @@
   [0;32m✓[0m kunde-drei.example/httpdocs: keine bekannte Schwachstelle im vorliegenden Datenbestand (Stand 2026-08-07)
   [0;32m✓[0m kunde-drei.example/httpdocs: keine Doorway-.htaccess-Signatur
   [0;32m✓[0m kunde-drei.example/httpdocs: keine @include base64_decode()-Injektion
-  [0;36m⚪[0m kunde-drei.example/httpdocs: wp nicht ausführbar (Werkzeug, PHP oder Eigentümer fehlt) — Instanz nur dateibasiert geprüft
+/private/tmp/claude-502/-Volumes-daten-Dropbox--dev-WordPress--claude-worktrees-nt-repair-forensik-tests-6e0c52/f01ad5f4-9689-466c-8d7a-5d87d682f01f/scratchpad/ntfr-neu/rezepte/wordpress/rezept.sh: line 381: [[: 0
+0: syntax error in expression (error token is "0")
+  [0;32m✓[0m kunde-drei.example/httpdocs: WordPress-Core unverändert (verify-checksums)
+/private/tmp/claude-502/-Volumes-daten-Dropbox--dev-WordPress--claude-worktrees-nt-repair-forensik-tests-6e0c52/f01ad5f4-9689-466c-8d7a-5d87d682f01f/scratchpad/ntfr-neu/rezepte/wordpress/rezept.sh: line 390: [[: 0
+0: syntax error in expression (error token is "0")
+  [0;32m✓[0m kunde-drei.example/httpdocs: 2 Plugin(s) gegen wordpress.org geprüft — keine veränderte Codedatei
+  [0;36m⚪[0m kunde-drei.example/httpdocs: 1 Plugin(s) ohne Prüfsummensatz und alle Themes — Unversehrtheit nicht feststellbar (Premium, Fork, Eigenbau; für Themes veröffentlicht wordpress.org keine Prüfsummen)
 
 [0;36m▶ 12r.2.x kunde-eins.example/httpdocs[0m
   [0;32m✓[0m kunde-eins.example/httpdocs: keine Doorway-.htaccess-Signatur
   [0;32m✓[0m kunde-eins.example/httpdocs: keine @include base64_decode()-Injektion
-  [0;36m⚪[0m kunde-eins.example/httpdocs: wp nicht ausführbar (Werkzeug, PHP oder Eigentümer fehlt) — Instanz nur dateibasiert geprüft
+/private/tmp/claude-502/-Volumes-daten-Dropbox--dev-WordPress--claude-worktrees-nt-repair-forensik-tests-6e0c52/f01ad5f4-9689-466c-8d7a-5d87d682f01f/scratchpad/ntfr-neu/rezepte/wordpress/rezept.sh: line 381: [[: 0
+0: syntax error in expression (error token is "0")
+  [0;32m✓[0m kunde-eins.example/httpdocs: WordPress-Core unverändert (verify-checksums)
+/private/tmp/claude-502/-Volumes-daten-Dropbox--dev-WordPress--claude-worktrees-nt-repair-forensik-tests-6e0c52/f01ad5f4-9689-466c-8d7a-5d87d682f01f/scratchpad/ntfr-neu/rezepte/wordpress/rezept.sh: line 390: [[: 0
+0: syntax error in expression (error token is "0")
 
 [0;36m▶ 12r.2.x kunde-zwei.example/httpdocs[0m
   [0;33m⚠[0m  kunde-zwei.example/httpdocs: core wordpress 6.4.1 ist von einer bekannten Schwachstelle betroffen ([6.0 … 6.4.1]) CVE-2026-90004 — behoben in 6.4.2.
@@ -125,7 +135,10 @@
   [0;32m✓[0m kunde-zwei.example/httpdocs: keine Doorway-.htaccess-Signatur
   [0;31m✗[0m  [1mkunde-zwei.example/httpdocs: 1 Datei(en) mit @include base64_decode() — getarnte Payload-Nachladung[0m
   [0;33m⚠[0m  kunde-zwei.example/httpdocs: 1 mu-Plugin(s) — laufen ohne Aktivierung und erscheinen in keiner Pluginliste
-  [0;36m⚪[0m kunde-zwei.example/httpdocs: wp nicht ausführbar (Werkzeug, PHP oder Eigentümer fehlt) — Instanz nur dateibasiert geprüft
+  [0;31m✗[0m  [1mkunde-zwei.example/httpdocs: 1 veränderte Core-Datei(en) — Injektion oder Manipulation[0m
+  [0;33m⚠[0m  kunde-zwei.example/httpdocs: 1 Core-fremde Datei(en) in wp-admin/wp-includes — prüfen
+  [0;31m✗[0m  [1mkunde-zwei.example/httpdocs: 1 veränderte Plugin-Codedatei(en) gegenüber wordpress.org — Plugin neu installieren, Dateien vorher sichern[0m
+  [0;36m⚪[0m kunde-zwei.example/httpdocs: 1 Plugin(s) ohne Prüfsummensatz und alle Themes — Unversehrtheit nicht feststellbar (Premium, Fork, Eigenbau; für Themes veröffentlicht wordpress.org keine Prüfsummen)
   [0;36mübersprungen:[0m 13. Root- & Eskalations-Prüfung
 
 [1m[0;34m══════════════════════════════════════════[0m
@@ -161,13 +174,12 @@
 [1m[0;32m  ANALYSE ABGESCHLOSSEN — Lauf <LAUF-ID>[0m
 [1m[0;32m══════════════════════════════════════════[0m
 
-[1mBefunde:[0m       🔴 11 kritisch, ⚠️ 8 Warnungen, ✅ 18 ok, ⚪ 5 nicht messbar
-[0;33m               5 Prüfung(en) ohne Ergebnis — das ist keine Entwarnung.[0m
+[1mBefunde:[0m       🔴 13 kritisch, ⚠️ 9 Warnungen, ✅ 21 ok, ⚪ 4 nicht messbar
+[0;33m               4 Prüfung(en) ohne Ergebnis — das ist keine Entwarnung.[0m
                  kunde-zwei.example/cloud.kunde-zwei.example: Werkzeug antwortet nicht verwertbar — nicht geprüft
-                 kunde-drei.example/httpdocs: wp nicht ausführbar (Werkzeug, PHP oder Eigentümer fehlt) — Instanz nur dateibasiert geprüft
-                 kunde-eins.example/httpdocs: wp nicht ausführbar (Werkzeug, PHP oder Eigentümer fehlt) — Instanz nur dateibasiert geprüft
+                 kunde-drei.example/httpdocs: 1 Plugin(s) ohne Prüfsummensatz und alle Themes — Unversehrtheit nicht feststellbar (Premium, Fork, Eigenbau; für Themes veröffentlicht wordpress.org keine Prüfsummen)
                  kunde-zwei.example/httpdocs: 1 Bestandteil(e) ohne lesbare Fassung — für sie ist keine Aussage zur Angreifbarkeit möglich
-                 kunde-zwei.example/httpdocs: wp nicht ausführbar (Werkzeug, PHP oder Eigentümer fehlt) — Instanz nur dateibasiert geprüft
+                 kunde-zwei.example/httpdocs: 1 Plugin(s) ohne Prüfsummensatz und alle Themes — Unversehrtheit nicht feststellbar (Premium, Fork, Eigenbau; für Themes veröffentlicht wordpress.org keine Prüfsummen)
 
 [1mLauf-Ordner:[0m     <PRUEFSTAND>/ablage/forensik/<LAUF-ID>
 

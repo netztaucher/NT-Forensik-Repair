@@ -4,6 +4,32 @@ Alle nennenswerten Änderungen an `wp_plesk_forensik.sh`.
 
 ## [unveröffentlicht]
 
+### Neu — wp-cli-Attrappe im Prüfbaum
+Ohne ein `wp` im PATH bricht der Rahmen nach der Werkzeug-Probe ab, und
+`rezept_kern` läuft nie — Kern-Integrität und Plugin-Prüfsummen waren vom
+Prüfstand nicht erreichbar. Beides sind Prüfungen, die im Vorfall zählen.
+
+Die Attrappe ist ein PHP-Programm, weil echtes wp-cli eines ist und der Rahmen
+`php <datei>` aufruft. Sie beantwortet genau zwei Fragen und leitet ihre
+Antwort aus dem Pfad ab; wp-cli bildet sie nicht nach. Geprüft wird der Weg
+durch das Rezept, nicht ob wp-cli funktioniert.
+
+Dazu `WP_PRUEFSUMMEN_BASIS`: zeigt die Variable auf ein Verzeichnis statt auf
+wordpress.org, wird nachgeschlagen statt abgerufen — und das `--online`-Tor
+entfällt, weil es wegen des Netzzugriffs besteht. Der Prüfstand erzeugt seine
+Prüfsummen aus dem Baum, mit genau einer gewollten Abweichung.
+
+Drei Gegenproben in der CI schalten je eine Quelle ab und erwarten, dass der
+Vergleich es bemerkt. Ohne sie behauptete der Prüfstand Abdeckung, die es
+nicht gibt.
+
+### Behoben — `sudo -u` auf sich selbst
+Der Rahmen führte das Werkzeug immer per `sudo -u <eigentümer>` aus, auch wenn
+der Lauf schon diesem Benutzer gehört. Als root ist der Rechtewechsel nötig;
+als der Benutzer selbst ist er überflüssig und auf einer Maschine ohne
+NOPASSWD fragt er nach einem Passwort und bleibt stehen. `als_eigentuemer` in
+`lib/kern.sh` überspringt ihn in diesem Fall.
+
 ### Neu — Der Prüfbaum trägt Plugins
 Bis hierher hatte keine der drei Installationen im Prüfbaum ein Plugin. Der
 Trefferpfad des Schwachstellenabgleichs war damit nicht erreichbar: der

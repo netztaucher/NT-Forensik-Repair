@@ -113,9 +113,9 @@ for _rz in "${REZEPT_DIR}"/*/; do
         continue
       fi
       # shellcheck disable=SC2086
-      OCC() { sudo -u "$_own" "$REZ_PHP" -d memory_limit=1024M "$REZ_WERKZEUG" "$@" 2>/dev/null; }
+      OCC() { als_eigentuemer "$_own" "$REZ_PHP" -d memory_limit=1024M "$REZ_WERKZEUG" "$@" 2>/dev/null; }
       # shellcheck disable=SC2086
-      rezept_werkzeug_bereit "$_app" "$REZ_KURZ" sudo -u "$_own" "$REZ_PHP" -d memory_limit=1024M "$REZ_WERKZEUG" $_probe || continue
+      rezept_werkzeug_bereit "$_app" "$REZ_KURZ" als_eigentuemer "$_own" "$REZ_PHP" -d memory_limit=1024M "$REZ_WERKZEUG" $_probe || continue
     fi
 
     declare -F rezept_kern   >/dev/null && rezept_kern
