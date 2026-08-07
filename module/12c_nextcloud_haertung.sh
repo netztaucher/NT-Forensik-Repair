@@ -127,16 +127,21 @@ while IFS= read -r NCDIR; do
   fi
 
   # ── 3. Zwei-Faktor ──────────────────────────────────────────
+  # twofactor_backupcodes ist ab Werk aktiv und ist KEIN zweiter Faktor: es
+  # erzeugt nur Notfallcodes fuer den Fall, dass ein echter zweiter Faktor
+  # eingerichtet ist. Wird die App mitgezaehlt, meldet der Abschnitt bei jeder
+  # unveraenderten Nextcloud "Zwei-Faktor verfuegbar" — eine Entwarnung, die
+  # nichts deckt. Gemessen am 07.08.2026: genau dieser Fall.
   _2fa=$(_occ app:list --output=json \
          | python3 -c "
 import json,sys
 d=json.load(sys.stdin).get('enabled',{})
-print(','.join(k for k in d if k.startswith('twofactor_')))" 2>/dev/null || true)
+print(','.join(k for k in d if k.startswith('twofactor_') and k != 'twofactor_backupcodes'))" 2>/dev/null || true)
   if [[ -n "$_2fa" ]]; then
-    ok "${_kurz}: Zwei-Faktor verfügbar (${_2fa})"
+    ok "${_kurz}: zweiter Faktor verfügbar (${_2fa})"
   else
-    warn "${_kurz}: keine Zwei-Faktor-App aktiv — ein erbeutetes Passwort genügt für den vollen Zugang"
-    NC_HAERTUNG+="${_kurz}: keine Zwei-Faktor-Anmeldung aktiv"$'\n'
+    warn "${_kurz}: kein zweiter Faktor eingerichtet — ein erbeutetes Passwort genügt für den vollen Zugang (twofactor_backupcodes zählt nicht, das sind nur Notfallcodes)"
+    NC_HAERTUNG+="${_kurz}: kein zweiter Faktor eingerichtet"$'\n'
   fi
 
   # ── 4. Grundkonfiguration ───────────────────────────────────
