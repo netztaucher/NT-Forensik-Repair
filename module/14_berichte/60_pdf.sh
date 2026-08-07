@@ -10,7 +10,7 @@
 # reportgen/ muss neben dem Skript oder unter ${BASE_DIR} liegen. Fehlt
 # pandoc/weasyprint/reportgen, wird das PDF übersprungen — die Markdown-Berichte
 # bleiben vollständig und maßgeblich (Read-only-Versprechen, kein harter Fehler).
-PDF_FILE="${RUN_DIR}/abschlussbericht.pdf"
+PDF_FILE="${KUNDE_DIR}/abschlussbericht.pdf"
 REPORTGEN_DIR=""
 for _d in "$(dirname "$SELF_PATH")/reportgen" "${BASE_DIR}/reportgen"; do
   [[ -x "$_d/nt_report_pdf.sh" ]] && { REPORTGEN_DIR="$_d"; break; }

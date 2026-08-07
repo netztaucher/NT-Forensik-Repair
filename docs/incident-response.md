@@ -23,11 +23,12 @@ ssh root@SERVER "bash /root/nt-forensik/wp_plesk_forensik.sh betroffene-domain.t
 Der Lauf:
 - sichert **sofort alle Logs** (bevor Rotation zuschlägt),
 - erzeugt `kundenbericht.md`, `bsi_meldung.md`, `technik_bericht.md`,
-- legt SHA256-versiegelte Belege + Übergabe-Archiv an.
+- legt SHA256-versiegelte Belege an und packt **zwei** Archive:
+  `<LAUF>_kunde.tar.gz` (weitergabefähig) und `<LAUF>_betreiber.tar.gz` (nicht weitergeben).
 
 **Ergebnis sichten:**
 ```bash
-ssh root@SERVER "cat /root/wartungsscripte/forensik/<LAUF>/kundenbericht.md"
+ssh root@SERVER "cat /root/wartungsscripte/forensik/<LAUF>/kunde/kundenbericht.md"
 ```
 Achte auf: Gesamt-Ampel, **Dropper-Cluster** (welche Domain?), **Root-Verdikt**, **WP-DB-Verdikt**.
 

@@ -4,7 +4,13 @@
 und leitet daraus ab, was bereinigt wird. Eine Umbenennung oder ein entfernter Pfad
 bricht dort etwas, ohne dass in diesem Repo ein Test fehlschlägt.
 
-Geschrieben von [`module/14_berichte.sh`](../module/14_berichte.sh) in `emit_findings_json()`.
+Geschrieben von [`module/14_berichte/50_findings_json.sh`](../module/14_berichte/50_findings_json.sh)
+in `emit_findings_json()`.
+
+**Ablageort ab v3.11:** `<LAUF>/betreiber/findings.json` — nicht mehr flach im Laufordner.
+Die Datei enthält absolute Pfade und wird bewusst **nicht** maskiert, weil der
+Reparaturteil die echten Pfade braucht. Sie gehört damit in die Betreiberspur und
+nicht in die Kundenübergabe.
 Aktuelle Fassung: **schema_version 1.5**.
 
 ## Was sich in 1.5 geändert hat
@@ -85,7 +91,7 @@ stillschweigend wie ein vollständiger Freispruch — der Fehlerfall, der zählt
 Gegenprobe nach jeder Änderung an `emit_findings_json()`:
 
 ```bash
-python3 -m json.tool < /root/wartungsscripte/forensik/<LAUF>/findings.json > /dev/null
+python3 -m json.tool < /root/wartungsscripte/forensik/<LAUF>/betreiber/findings.json > /dev/null
 ```
 
 Ungültiges JSON fällt sonst erst bei NT-Repair auf — und dort still, weil die
