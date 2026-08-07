@@ -406,9 +406,16 @@ BETREIBER_HINWEIS
   #
   # lib/ und module/ gehören zwingend dazu: ohne sie ist die installierte Kopie
   # unter ${BASE_DIR} nicht lauffähig, weil der Runner nur noch einbindet.
+  #
+  # rezepte/ ebenso, seit die anwendungsspezifische Prüfung dort liegt (v3.13).
+  # Fehlte es, war der Ausfall lautlos: der Rahmen findet kein Rezept, meldet
+  # das als Hinweis und läuft mit Rückgabewert 0 weiter. Im Prüfbaum gemessen
+  # sind das 4 kritische Befunde und 2 Warnungen weniger — und, schlimmer, die
+  # Zahl der nicht messbaren Prüfungen fällt von 4 auf 0. Der Bericht liest
+  # sich dadurch VOLLSTÄNDIGER als der Lauf war.
   _srcdir="$SELF_DIR"
   if [[ "$_srcdir" != "$BASE_DIR" ]]; then   # sonst kopiert sich die installierte Kopie selbst
-    for _aux in signaturen reportgen daten lib module; do
+    for _aux in signaturen reportgen daten lib module rezepte; do
       if [[ -d "$_srcdir/$_aux" ]]; then
         mkdir -p "${BASE_DIR}/$_aux"
         # '/.' kopiert den INHALT — ohne den entsteht ${BASE_DIR}/daten/daten
