@@ -73,6 +73,7 @@
 
 [0;36m▶ 11.1 Gefundene WordPress-Installationen[0m
   [0m·  WordPress-Installationen: 4
+  [0;36m⚪[0m grep ohne PCRE-Unterstützung (-P) — Zugangsdaten aus wp-config.php nicht lesbar, keine Datenbank-Prüfung möglich
 
 [0;36m▶ 11.9 WordPress-DB-Verdikt[0m
   [0;32m✓[0m WP-DB-VERDIKT: unauffällig
@@ -111,7 +112,7 @@
   [0;31m✗[0m  [1mkunde-zwei.example/cloud.kunde-zwei.example: Root-.htaccess trägt Angreifer-Merkmale (Freigabeliste mit fremden Dateinamen)[0m
   [0;31m✗[0m  [1mkunde-zwei.example/cloud.kunde-zwei.example: bekannte Schaddateien der Nextcloud-Kampagne gefunden[0m
   [0;31m✗[0m  [1mkunde-zwei.example/cloud.kunde-zwei.example: verschachtelte Verzeichnisse (z. B. config/config) — typisch für diese Kampagne[0m
-  [0m·  kunde-zwei.example/cloud.kunde-zwei.example: occ nicht ausführbar (Eigentümer oder PHP nicht ermittelbar) — Kern nicht geprüft
+  [0;36m⚪[0m kunde-zwei.example/cloud.kunde-zwei.example: Eigentümer oder PHP nicht ermittelbar — Kern-Integrität nicht geprüft
 
 [1m[0;34m══════════════════════════════════════════[0m
 [1m[0;34m  12c. NEXTCLOUD-HÄRTUNGSSTAND[0m
@@ -136,7 +137,10 @@
 [1m[0;32m  ANALYSE ABGESCHLOSSEN — Lauf <LAUF-ID>[0m
 [1m[0;32m══════════════════════════════════════════[0m
 
-[1mBefunde:[0m       🔴 4 kritisch, ⚠️ 3 Warnungen, ✅ 12 ok
+[1mBefunde:[0m       🔴 4 kritisch, ⚠️ 3 Warnungen, ✅ 12 ok, ⚪ 2 nicht messbar
+[0;33m               2 Prüfung(en) ohne Ergebnis — das ist keine Entwarnung.[0m
+                 grep ohne PCRE-Unterstützung (-P) — Zugangsdaten aus wp-config.php nicht lesbar, keine Datenbank-Prüfung möglich
+                 kunde-zwei.example/cloud.kunde-zwei.example: Eigentümer oder PHP nicht ermittelbar — Kern-Integrität nicht geprüft
 
 [1mLauf-Ordner:[0m     <PRUEFSTAND>/ablage/forensik/<LAUF-ID>
 [1mKundenbericht:[0m   <PRUEFSTAND>/ablage/forensik/<LAUF-ID>/kundenbericht.md

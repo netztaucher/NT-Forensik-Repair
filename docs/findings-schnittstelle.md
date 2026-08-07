@@ -5,7 +5,35 @@ und leitet daraus ab, was bereinigt wird. Eine Umbenennung oder ein entfernter P
 bricht dort etwas, ohne dass in diesem Repo ein Test fehlschlägt.
 
 Geschrieben von [`module/14_berichte.sh`](../module/14_berichte.sh) in `emit_findings_json()`.
-Aktuelle Fassung: **schema_version 1.4**.
+Aktuelle Fassung: **schema_version 1.5**.
+
+## Was sich in 1.5 geändert hat
+
+Zwei neue Felder, beide **additiv** — bestehende Leser brechen nicht.
+
+| Feld | Typ | Bedeutung |
+|---|---|---|
+| `counts.unknown` | Zahl | Prüfungen, die kein Ergebnis geliefert haben |
+| `run.nicht_messbar` | Liste | welche das waren, im Klartext |
+
+**Warum das für den Reparaturteil zählt:** bis 1.4 war eine gescheiterte Messung
+von einem sauberen Befund nicht zu unterscheiden. Scheiterte `wp core
+verify-checksums`, war die Ausgabe leer, leer galt als „nichts gefunden", und der
+Bericht bescheinigte einen unveränderten Kern, der nie geprüft wurde. Ein Lauf, in
+dem *jede* Messung scheiterte, endete auf 🟢 UNAUFFÄLLIG.
+
+Ein Leser darf einer Entwarnung deshalb nur trauen, wenn `counts.unknown == 0` ist:
+
+```bash
+if [[ "$(jq '.counts.unknown' findings.json)" -gt 0 ]]; then
+  echo "Teilergebnis — nicht als Entwarnung behandeln:"
+  jq -r '.run.nicht_messbar[]' findings.json
+fi
+```
+
+`run.nicht_messbar` und `run.module_uebersprungen` sind nicht dasselbe:
+Übersprungen wurden ganze Abschnitte **auf Anweisung** (`--nur`/`--ohne`), nicht
+messbar sind Einzelprüfungen, die laufen **sollten** und nichts lieferten.
 
 ## Wer liest was
 

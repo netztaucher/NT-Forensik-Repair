@@ -14,7 +14,16 @@ h1 "6. CRONJOBS & PERSISTENZ"
 # ============================================================
 
 h2 "6.1 Root-Crontab"
-ROOT_CRON=$(crontab -l 2>/dev/null || echo "(leer)")
+# 'crontab -l' liefert Rueckgabewert 1 sowohl bei "keine Crontab vorhanden"
+# als auch bei "Zugriff verweigert" oder fehlendem cron. Der Unterschied
+# entscheidet, ob hier nichts steht oder ob nichts gelesen werden konnte.
+ROOT_CRON=$(crontab -l 2>&1); _cron_rc=$?
+if [[ $_cron_rc -ne 0 ]] && ! printf '%s' "$ROOT_CRON" | grep -qiE 'no crontab for'; then
+  unklar "Root-Crontab nicht lesbar — Persistenz ueber cron nicht geprueft ($(printf '%s' "$ROOT_CRON" | tr -d '\n' | cut -c1-80))"
+  ROOT_CRON=""
+elif [[ $_cron_rc -ne 0 ]]; then
+  ROOT_CRON="(keine Crontab fuer root)"
+fi
 code "$ROOT_CRON"
 
 h2 "6.2 System-Cronjobs"

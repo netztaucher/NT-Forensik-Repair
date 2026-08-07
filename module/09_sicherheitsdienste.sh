@@ -15,8 +15,16 @@ h1 "9. SICHERHEITS-DIENSTE"
 
 h2 "9.1 Fail2ban Status"
 if command -v fail2ban-client &>/dev/null; then
-  F2B_STATUS=$(fail2ban-client status 2>/dev/null || echo "Nicht erreichbar")
-  ok "Fail2ban installiert: $(fail2ban-client version 2>/dev/null || true)"
+  # Installiert heisst nicht laufend. Vorher meldete diese Stelle ein ok(),
+  # sobald das Binary existierte — auch wenn der Dienst tot war und damit
+  # niemanden sperrte.
+  F2B_STATUS=$(fail2ban-client status 2>&1 || true)
+  if ! printf '%s' "$F2B_STATUS" | grep -q 'Jail list'; then
+    unklar "Fail2ban installiert, antwortet aber nicht — Sperrstatus unbekannt ($(printf '%s' "$F2B_STATUS" | tr -d '\n' | cut -c1-80))"
+    F2B_STATUS=""
+  else
+    ok "Fail2ban installiert und erreichbar: $(fail2ban-client version 2>/dev/null || true)"
+  fi
   code "$F2B_STATUS"
   JAILS=$(echo "$F2B_STATUS" | grep "Jail list" | sed 's/.*Jail list://;s/,/ /g' | xargs || true)
   for jail in $JAILS; do
