@@ -486,8 +486,8 @@ if [[ -n "$IMU_BIN" ]] && command -v python3 &>/dev/null; then
     IMU_JSON=$("$IMU_BIN" malware malicious list --json --by-status found --limit 100000 2>/dev/null || true)
     # ALLE Pfade des Scopes, nicht nur den ersten. Ein Plesk-Abo hat mehrere
     # vhost-Verzeichnisse; SCAN_PATH ist davon willkuerlich das alphabetisch
-    # erste. Auf einem echten Kundensystem war das /var/www/vhosts/<domain>,
-    # waehrend der Schadcode unter <webNN>.<server>/httpdocs/<domain>/
+    # erste. Auf einem echten Kundensystem war das das Verzeichnis der
+    # Hauptdomain, waehrend der Schadcode unter der System-Domain des Abos
     # lag — der Filter warf damit ALLE sechs Imunify-Treffer weg und der
     # Bericht meldete "keine offenen Malware-Treffer im Pruef-Scope".
     IMU_REPORT=$(SCOPE_PATHS="$(printf '%s\n' "${SCAN_PATHS[@]}")" VHOSTS="$VHOSTS_DIR" python3 -c '

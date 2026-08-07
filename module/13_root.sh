@@ -102,6 +102,7 @@ fi
 h2 "13.4 Privilege-Escalation (sudo/su durch Nicht-Root)"
 # WICHTIG — nur der CALLER zählt: Eskalation ist ein Web-/Systemnutzer, der sudo
 # AUFRUFT (Caller = webNN). Die alte Regex 'sudo:.*web[0-9]' traf auch 'USER=webNN'
+# in der Ziel-Angabe und meldete damit jeden gewoehnlichen Plesk-Aufruf.
 # im TARGET-Feld — das ist root, der Rechte an einen Web-User ABGIBT (legitim),
 # u.a. NT-Forensik selbst (`sudo -u webNN wp core verify-checksums` in §11) und
 # jeder Plesk-interne root→User-Aufruf. Ergebnis war ein Root-Fehlalarm auf

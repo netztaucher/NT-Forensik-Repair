@@ -189,9 +189,10 @@ txt = re.sub(r'/var/www/vhosts/([^/\s"\'\)\],]+)', ersetze_vhost, txt)
 def ersetze_user(m):
     name = m.group(0)
     return name if eigen.match(name) else platzhalter(name)
-# Plesk leitet auch Mail- und FTP-Konten vom Systembenutzer ab: aus webNN
-# wird webNNpN. Ein Wortende nach der Ziffer laesst diese stehen — auf einem
-# echten Server blieb so "webNNpN@..." im maskierten Beleg.
+# Plesk leitet auch Mail- und FTP-Konten vom Systembenutzer ab: an die
+# Abo-Kennung haengt ein Suffix (webNN -> webNNpN). Ein Wortende nach der
+# Ziffer laesst diese Konten stehen — auf einem echten Server blieb so eine
+# Mailadresse der Form "webNNpN@..." im maskierten Beleg zurueck.
 txt = re.sub(r'\bweb\d+[a-z0-9_]*', ersetze_user, txt)
 
 # Fremde Kunden stehen nicht nur als vhost-Pfad im Bericht, sondern auch als
