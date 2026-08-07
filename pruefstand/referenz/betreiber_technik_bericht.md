@@ -231,6 +231,12 @@ php_value auto_prepend_file /var/www/vhosts/<anderer Kunde 1>/httpdocs/wp-conten
 ```
 
 - ⚪ **Nicht messbar: kunde-zwei.example/cloud.kunde-zwei.example: Eigentümer oder PHP nicht ermittelbar — Kern-Integrität nicht geprüft**
+- ⚠️  **Apache meldet AH01797 auf Nextcloud-Endpunkten — deutet auf eine manipulierte .htaccess, nicht auf fehlende Rechte**
+
+```
+AH01797: client denied by server configuration: /remote.php
+```
+
 
 ## 12c. NEXTCLOUD-HÄRTUNGSSTAND
 
@@ -298,7 +304,7 @@ php_value auto_prepend_file /var/www/vhosts/<anderer Kunde 2>  auto_prepend_file
 | Kategorie | Anzahl |
 |---|---|
 | 🔴 Kritische Befunde | 9 |
-| ⚠️ Warnungen | 4 |
+| ⚠️ Warnungen | 5 |
 | ✅ Unauffällige Prüfungen | 12 |
 | ⚪ Nicht messbar | 3 |
 
@@ -335,6 +341,7 @@ php_value auto_prepend_file /var/www/vhosts/<anderer Kunde 2>  auto_prepend_file
 ---
 
 > **Hinweis zum Datenschutz.** Dieser Server beherbergt weitere Kunden. Wo serverweite Prüfungen deren Domains oder Systemkonten berührten, stehen Platzhalter (`<anderer Kunde N>`); derselbe Nachbar trägt dabei immer dieselbe Nummer, sodass Zusammenhänge erkennbar bleiben. Betroffen waren 2 fremde Kennungen. Die unmaskierte Fassung verbleibt beim Betreiber.
+- ✅ Kundenspur enthält keine fremden Kennungen
   PDF übersprungen (pandoc/weasyprint/reportgen nicht verfügbar).
 
 > **Eingeschränkter Lauf.** Die folgenden Prüfabschnitte wurden auf ausdrückliche Auswahl hin NICHT ausgeführt. Ihre Ergebnisse fehlen in diesem Bericht — das ist keine Entwarnung für diese Bereiche:

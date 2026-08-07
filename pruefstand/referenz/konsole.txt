@@ -113,6 +113,7 @@
   [0;31m✗[0m  [1mkunde-zwei.example/cloud.kunde-zwei.example: bekannte Schaddateien der Nextcloud-Kampagne gefunden[0m
   [0;31m✗[0m  [1mkunde-zwei.example/cloud.kunde-zwei.example: verschachtelte Verzeichnisse (z. B. config/config) — typisch für diese Kampagne[0m
   [0;36m⚪[0m kunde-zwei.example/cloud.kunde-zwei.example: Eigentümer oder PHP nicht ermittelbar — Kern-Integrität nicht geprüft
+  [0;33m⚠[0m  Apache meldet AH01797 auf Nextcloud-Endpunkten — deutet auf eine manipulierte .htaccess, nicht auf fehlende Rechte
 
 [1m[0;34m══════════════════════════════════════════[0m
 [1m[0;34m  12c. NEXTCLOUD-HÄRTUNGSSTAND[0m
@@ -151,12 +152,13 @@
   betreiber/bsi_meldung.md            3 fremde Kennungen maskiert
   betreiber/dsgvo_meldung.md          0 fremde Kennungen maskiert
   betreiber/lauf.log                  0 fremde Kennungen maskiert
+  [0;32m✓[0m Kundenspur enthält keine fremden Kennungen
 
 [1m[0;32m══════════════════════════════════════════[0m
 [1m[0;32m  ANALYSE ABGESCHLOSSEN — Lauf <LAUF-ID>[0m
 [1m[0;32m══════════════════════════════════════════[0m
 
-[1mBefunde:[0m       🔴 9 kritisch, ⚠️ 4 Warnungen, ✅ 12 ok, ⚪ 3 nicht messbar
+[1mBefunde:[0m       🔴 9 kritisch, ⚠️ 5 Warnungen, ✅ 13 ok, ⚪ 3 nicht messbar
 [0;33m               3 Prüfung(en) ohne Ergebnis — das ist keine Entwarnung.[0m
                  grep ohne PCRE-Unterstützung (-P) — Zugangsdaten aus wp-config.php nicht lesbar, keine Datenbank-Prüfung möglich
                  kunde-zwei.example/cloud.kunde-zwei.example: Eigentümer oder PHP nicht ermittelbar — Kern-Integrität nicht geprüft

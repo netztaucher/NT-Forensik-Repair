@@ -57,6 +57,53 @@ unklar(){ echo -e "  ${CYN}⚪${NC} $1"; echo "- ⚪ **Nicht messbar: $1**" >> "
 # ein fehlendes Werkzeug ein eigener Zustand ist und kein Nullergebnis.
 werkzeug_da(){ command -v "$1" >/dev/null 2>&1; }
 
+# ── Scope-Pruefung (v3.13) ───────────────────────────────────
+#
+# Liegt ein Pfad innerhalb des geprueften Umfangs? Das entscheidet, ob ein
+# Befund in die Kundenspur darf.
+#
+# Bis v3.12 war der Datenschutz ein NACHTRAEGLICHES Netz: der Befund landete im
+# Kundenbericht, und die Maskierung machte fremde Kennungen hinterher
+# unkenntlich. Das setzt voraus, dass die Maskierung laeuft und greift. Am
+# 07.08.2026 lief sie nicht — ihr Fehlschlag wurde als "(nichts zu maskieren)"
+# gemeldet, und der unmaskierte Bericht ging raus.
+#
+# Ein Riegel ist besser als ein Netz: was gar nicht erst hineinkommt, muss
+# nicht unkenntlich gemacht werden.
+#
+# Kanonisiert wird ueber 'cd … && pwd -P' — das loest Symlinks und '..' auf und
+# funktioniert ohne 'realpath -m' (GNU-only). Existiert das Ziel nicht mehr,
+# wird das uebergeordnete Verzeichnis kanonisiert und der Name angehaengt.
+kanonisch() {   # kanonisch <pfad>
+  local p="$1" d b
+  [[ -n "$p" ]] || return 1
+  if [[ -d "$p" ]]; then
+    (cd "$p" 2>/dev/null && pwd -P) || printf '%s' "$p"
+  else
+    d="$(dirname "$p")"; b="$(basename "$p")"
+    if [[ -d "$d" ]]; then
+      printf '%s/%s' "$(cd "$d" 2>/dev/null && pwd -P || printf '%s' "$d")" "$b"
+    else
+      printf '%s' "$p"
+    fi
+  fi
+}
+
+im_scope() {   # im_scope <pfad> — 0 = innerhalb, 1 = ausserhalb, 2 = unbestimmbar
+  local p="$1" kp s ks
+  [[ -n "$p" ]] || return 2
+  # Im Betreiberlauf ueber alle vhosts gibt es kein "ausserhalb".
+  [[ "${SCOPE_MODE:-global}" == "global" ]] && return 0
+  [[ ${#SCAN_PATHS[@]} -gt 0 ]] || return 2
+  kp="$(kanonisch "$p")"
+  for s in "${SCAN_PATHS[@]}"; do
+    [[ -n "$s" ]] || continue
+    ks="$(kanonisch "$s")"; ks="${ks%/}"
+    [[ "$kp" == "$ks" || "$kp" == "$ks"/* ]] && return 0
+  done
+  return 1
+}
+
 # ── Befundschema (v3.12) ─────────────────────────────────────
 #
 # Bis hierher hatte jede Anwendung ihre eigenen Variablen: JOOMLA_MALWARE,
@@ -106,6 +153,26 @@ befund_melden() {   # befund_melden <app> <kategorie> <schwere> <text> <pfad|-> 
   # alles, was aus 'mysql -N' stammt, ist tabgetrennt.
   local sauber="${text//$'\t'/ }"
   BEFUNDE+="${app}"$'\t'"${kat}"$'\t'"${schwere}"$'\t'"${sauber}"$'\t'"${pfad}"$'\n'
+
+  # ── Der Riegel ─────────────────────────────────────────────
+  # Ein Befund darf nur dann in die Kundenspur, wenn sein Pfad nachweislich im
+  # Pruefumfang liegt. Liegt er ausserhalb, bleibt der Befund vollstaendig in
+  # der Betreiberspur und wird zusaetzlich in KANAL_VERWEIGERT vermerkt — so
+  # bleibt sichtbar, DASS etwas zurueckgehalten wurde. Stilles Weglassen waere
+  # eine zweite Unehrlichkeit.
+  if [[ "$kanal" == "web" && -n "$pfad" ]]; then
+    if ! im_scope "$pfad"; then
+      case $? in
+        1) KANAL_VERWEIGERT+="${app}"$'\t'"${pfad}"$'\t'"${sauber}"$'\n'
+           kanal="" ;;
+        2) # Unbestimmbar ist nicht dasselbe wie ausserhalb. Im Zweifel bleibt
+           # der Befund beim Betreiber: ein fehlender Kundenbefund ist
+           # aergerlich, ein fremder Kundenbefund ist ein Datenschutzverstoss.
+           KANAL_VERWEIGERT+="${app}"$'\t'"${pfad}"$'\t'"[Scope unbestimmbar] ${sauber}"$'\n'
+           kanal="" ;;
+      esac
+    fi
+  fi
 
   # Weiterleiten an den bestehenden Helfer. Die Zaehler, die Kundenspur und
   # die Ampel bleiben damit unveraendert — dieser Umbau aendert die ABLAGE,
@@ -285,8 +352,20 @@ modul_gewaehlt() {
 #
 # Die serverweiten Abschnitte behalten damit ihren Sinn: "27 shell-faehige
 # Benutzer" bleibt eine belastbare Aussage ueber den Server, ohne 27 Kundennamen.
-nf_fremdkunden_maskieren() {   # nf_fremdkunden_maskieren <datei>
-  local datei="$1"
+# nf_fremdkunden_maskieren <datei> [pruefen]
+#
+# Mit 'pruefen' als zweitem Argument wird NICHTS geschrieben — die Funktion
+# meldet nur, welche fremden Kennungen sie finden wuerde, und gibt 1 zurueck,
+# wenn es welche gibt. Das ist die Endpruefung vor der Auslieferung, und sie
+# nutzt bewusst DIESELBE Erkennung wie die Maskierung selbst.
+#
+# Der erste Entwurf hatte dafuer eine eigene, engere Pruefung: sie kannte nur
+# vhost-Pfade und webNN-Kennungen. Die Maskierung erkennt zusaetzlich blanke
+# Domains und Mailadressen — und genau so eine blanke URL stand im Testlauf im
+# Kundenbericht, waehrend die Endpruefung "sauber" meldete. Ein Riegel, der
+# enger greift als das Netz dahinter, ist keiner.
+nf_fremdkunden_maskieren() {   # nf_fremdkunden_maskieren <datei> [pruefen]
+  local datei="$1" NF_MODUS="${2:-schreiben}"
   [[ -r "$datei" ]] || return 0
   [[ "$SCOPE_MODE" == "global" ]] && return 0   # Betreiberbericht darf alles
   local eigene; eigene=$(printf '%s\n' "${SCAN_PATHS[@]:-}" | sed "s|.*/||" | grep -v '^$' | paste -sd'|' -)
@@ -301,7 +380,7 @@ nf_fremdkunden_maskieren() {   # nf_fremdkunden_maskieren <datei>
     echo "  Maskierung uebersprungen: kein eigener Bezug bestimmbar (SCAN_PATHS/DOMAIN leer)." >&2
     return 1
   fi
-  EIGENE_RE="$eigene" python3 - "$datei" <<'PY'
+  EIGENE_RE="$eigene" NF_MODUS="$NF_MODUS" python3 - "$datei" <<'PY'
 import os, re, sys
 p = sys.argv[1]
 eigen = re.compile(r'^(' + os.environ.get("EIGENE_RE", "___nichts___") + r')$')
@@ -361,6 +440,12 @@ def ersetze_domain(m):
 txt = re.sub(r'\b(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+'
              r'(?:de|com|net|org|eu|info|shop|online|io|dev|at|ch|nl|fr|it|es|uk|live|xyz|top|site|club)\b',
              ersetze_domain, txt)
+# Pruefmodus: nichts schreiben, nur melden, was gefunden wurde.
+if os.environ.get("NF_MODUS") == "pruefen":
+    if zuordnung:
+        print("\n".join(sorted(zuordnung)))
+    sys.exit(1 if zuordnung else 0)
+
 if zuordnung:
     txt += ("\n\n---\n\n> **Hinweis zum Datenschutz.** Dieser Server beherbergt weitere Kunden. "
             "Wo serverweite Prüfungen deren Domains oder Systemkonten berührten, stehen "
