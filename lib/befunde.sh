@@ -31,6 +31,9 @@ CUST_UNKNOWN_LIST=""
 BEFUNDE=""
 VERDIKTE=""
 KANAL_VERWEIGERT=""   # Befunde, denen die Kundenspur verwehrt wurde (ab v3.13)
+MASKIERUNG_FEHLER=""  # Dokumente, deren Maskierung scheiterte. Fruehere
+                      # Fassungen meldeten das als "(nichts zu maskieren)"
+                      # und lieferten den unmaskierten Bericht aus.
 EVIDENCE_IDX=0
 WPDB_FLAGS=0
 WPDB_VERDICT="⚪ Keine WordPress-Installation im Scan-Pfad gefunden — keine Datenbank-Prüfung durchgeführt."

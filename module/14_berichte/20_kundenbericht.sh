@@ -132,7 +132,7 @@ ${SCOPE_BANNER}
 | **Datum** | $(date +"%d.%m.%Y, %H:%M Uhr") |
 | **Geprüfter Server** | $(hostname -f 2>/dev/null || hostname) |
 | **Prüfungs-ID** | ${RUN_LABEL} |
-| **Befunde** | 🔴 ${N_CRIT} kritisch · ⚠️ ${N_WARN} auffällig · ✅ ${N_OK} geprüft |
+| **Befunde** | 🔴 ${N_CUST_CRIT} kritisch · ⚠️ ${N_CUST_WARN} auffällig · ⚪ ${N_CUST_UNKNOWN} nicht messbar |
 
 ---
 

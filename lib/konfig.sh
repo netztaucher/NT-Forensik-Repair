@@ -68,6 +68,9 @@ WANT_MENUE=-1            # -1 = automatisch, 0 = nie, 1 = erzwungen
 MODUL_NUR=""             # --nur:  Komma-Liste von Abschnittsnummern
 MODUL_OHNE=""            # --ohne: Komma-Liste von Abschnittsnummern
 NUR_ROOT=0               # --nur-root: nur die Root-Frage, kompakte Aussage
+REZEPT_NUR=""            # --nur-rezept: Komma-Liste von Rezeptnamen
+REZEPT_OHNE=""           # --nowordpress u. a.: Komma-Liste abgewaehlter Rezepte
+REZEPT_KOPIEN=0          # vom Rahmen je Rezept gesetzt
 
 # Banner. Steht hier und nicht im Runner, weil --help es ebenfalls ausgibt und
 # die Hilfe erscheint, lange bevor der Runner den Banner-Punkt erreicht.
@@ -118,16 +121,16 @@ Abschnittsauswahl:
   --nur <n[,n…]>          Nur diese Prüfabschnitte (z. B. --nur 12)
   --ohne <n[,n…]>         Alle ausser diesen (z. B. --ohne 2,10)
   --nur-joomla            Kurzform für --nur 12
-  --nur-nextcloud         Kurzform für --nur 12b,12c (Übernahme + Härtungsstand)
-  --nur-haertung          Kurzform für --nur 12c — nur der Nextcloud-Härtungsstand,
-                          ohne Suche nach Schadcode. Ändert nichts.
+  --nur-rezept <app>      Nur dieses Prüfrezept (z. B. --nur-rezept nextcloud).
+                          Verfügbare Rezepte: siehe Verzeichnis rezepte/
+  --nur-nextcloud         Kurzform für --nur-rezept nextcloud
   --nur-root              Nur die Root- und Eskalationsprüfung. Beantwortet die
                           eine serverweite Frage, die der Kunde braucht — ist
                           jemand über den Webspace hinausgekommen? — und legt
                           die Antwort als root_aussage.md ab, ohne Daten
                           anderer Kunden. Läuft in Minuten statt Stunden.
   --nojoomla              Joomla-Prüfung weglassen (= --ohne 12)
-  --nowordpress           WordPress-Prüfung weglassen (= --ohne 11)
+  --nowordpress           WordPress-Rezept weglassen
   --nur-website           Nur die Abschnitte, die den Webauftritt prüfen
                           (überspringt die serverweiten — deutlich schneller)
   --mit-server            Bei --webNN die serverweiten Abschnitte mitprüfen
@@ -181,8 +184,11 @@ while [[ $# -gt 0 ]]; do
     # Nextcloud getrennt ansprechbar: 12b sucht nach Uebernahme, 12c misst den
     # Haertungsstand. Beides ist einzeln waehlbar (--nur 12b / --nur 12c);
     # dieser Schalter nimmt beide, weil sie in der Praxis zusammen gefragt sind.
-    --nur-nextcloud) MODUL_NUR="12b,12c"; shift ;;
-    --nur-haertung)  MODUL_NUR="12c"; shift ;;
+    # Rezepte werden ueber ihren Namen gewaehlt, nicht ueber Abschnittsnummern.
+    # Ein neues Rezept ist damit sofort ansprechbar, ohne dass hier etwas
+    # nachgetragen werden muss.
+    --nur-rezept)    MODUL_NUR="12r"; REZEPT_NUR="${2:-}"; shift 2 ;;
+    --nur-nextcloud) MODUL_NUR="12r"; REZEPT_NUR="nextcloud"; shift ;;
     # Die Root-Frage getrennt beantworten. Sie ist die einzige serverweite
     # Aussage, die der Kunde wirklich braucht — "ist jemand ueber meinen
     # Webspace hinausgekommen?" —, und sie laesst sich ohne die uebrigen
@@ -193,7 +199,7 @@ while [[ $# -gt 0 ]]; do
     --nur-website) MODUL_NUR="ebene:website"; shift ;;
     # Abwaehlen einzelner CMS, ohne Abschnittsnummern nachschlagen zu muessen.
     --nojoomla|--ohne-joomla)       MODUL_OHNE="${MODUL_OHNE:+${MODUL_OHNE},}12"; shift ;;
-    --nowordpress|--ohne-wordpress) MODUL_OHNE="${MODUL_OHNE:+${MODUL_OHNE},}11"; shift ;;
+    --nowordpress|--ohne-wordpress) REZEPT_OHNE="${REZEPT_OHNE:+${REZEPT_OHNE},}wordpress"; shift ;;
     --kein-menue)  WANT_MENUE=0; shift ;;
     --menue)       WANT_MENUE=1; shift ;;
     -h|--help) usage; exit 0 ;;
@@ -223,8 +229,17 @@ scan_path_bestimmen() {
     *)      SCAN_PATH="$VHOSTS_DIR"; SCAN_PATHS=("$SCAN_PATH") ;;   # global
   esac
   # Fallback: gesetzte Domain ohne existierenden vhost -> serverweit statt ins Leere
+  # Eine --domain ohne existierendes vhost-Verzeichnis eskalierte hier
+  # STILLSCHWEIGEND auf serverweit: aus "pruefe diesen einen Kunden" wurde
+  # "pruefe alle", ohne dass es jemand erfuhr — auf einem Host mit 482 vhosts
+  # der denkbar groesste Datenschutzunfall. Ein Tippfehler in der Domain
+  # genuegte.
   if [[ "$SCOPE_MODE" == "domain" && ! -d "$SCAN_PATH" ]]; then
-    SCAN_PATH="$VHOSTS_DIR"; SCAN_PATHS=("$SCAN_PATH")
+    echo -e "${RED}Fehler:${NC} Für --domain ${DOMAIN} gibt es kein Verzeichnis unter ${VHOSTS_DIR}." >&2
+    echo    "        Tippfehler? Verfügbare Verzeichnisse:" >&2
+    ls -1d "${VHOSTS_DIR}"/*/ 2>/dev/null | sed "s|${VHOSTS_DIR}/||;s|/$||" | head -20 | sed 's/^/          /' >&2
+    echo    "        Für einen serverweiten Lauf ausdrücklich --global angeben." >&2
+    exit 2
   fi
 }
 

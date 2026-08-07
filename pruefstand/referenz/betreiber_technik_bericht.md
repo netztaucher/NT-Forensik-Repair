@@ -44,9 +44,12 @@
 <INODE> -rw-r--r-- <EIGNER> 169 <MTIME> <PRUEFSTAND>/vhosts/kunde-eins.example/backup/httpdocs/wp-config.php
 <INODE> -rw-r--r-- <EIGNER> 169 <MTIME> <PRUEFSTAND>/vhosts/kunde-eins.example/httpdocs/wp-config.php
 <INODE> -rw-r--r-- <EIGNER> 169 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-config.php
+<INODE> -rw-r--r-- <EIGNER> 17 <MTIME> <PRUEFSTAND>/vhosts/kunde-drei.example/httpdocs/wp-load.php
 <INODE> -rw-r--r-- <EIGNER> 17 <MTIME> <PRUEFSTAND>/vhosts/kunde-eins.example/httpdocs/index.php
+<INODE> -rw-r--r-- <EIGNER> 17 <MTIME> <PRUEFSTAND>/vhosts/kunde-eins.example/httpdocs/wp-load.php
 <INODE> -rw-r--r-- <EIGNER> 17 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/backups/updater-abc123/nextcloud-28.0.1.2-1700000000/filefuns.php
 <INODE> -rw-r--r-- <EIGNER> 17 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/cloud.kunde-zwei.example/filefuns.php
+<INODE> -rw-r--r-- <EIGNER> 17 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-load.php
 <INODE> -rw-r--r-- <EIGNER> 230 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/joomla.kunde-zwei.example/configuration.php
 <INODE> -rw-r--r-- <EIGNER> 34 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/joomla.kunde-zwei.example/libraries/src/Version.php
 <INODE> -rw-r--r-- <EIGNER> 37 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/backups/updater-abc123/nextcloud-28.0.1.2-1700000000/version.php
@@ -137,33 +140,6 @@ php_value auto_prepend_file /var/www/vhosts/<anderer Kunde 1>/httpdocs/wp-conten
 
   YARA-Scan nicht aktiviert — mit --yara einschalten (auf großen Webspaces langsam)
 
-## 11. WORDPRESS-DATENBANK-PRÜFUNG
-
-
-### 11.1 Gefundene WordPress-Installationen
-
-  WordPress-Installationen: 4
-
-```
-<PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-config.php
-<PRUEFSTAND>/vhosts/kunde-eins.example/httpdocs/wp-config.php
-<PRUEFSTAND>/vhosts/kunde-eins.example/backup/httpdocs/wp-config.php
-<PRUEFSTAND>/vhosts/kunde-drei.example/httpdocs/wp-config.php
-```
-
-- ⚪ **Nicht messbar: grep ohne PCRE-Unterstützung (-P) — Zugangsdaten aus wp-config.php nicht lesbar, keine Datenbank-Prüfung möglich**
-
-### 11.9 WordPress-DB-Verdikt
-
-- ✅ WP-DB-VERDIKT: unauffällig
-
-🟢 **Keine Angreifer-Spuren in den WordPress-Datenbanken** (keine neuen Admins, keine manipulierten Optionen).
-
-
-### 11.10 WP Toolkit — Instanz-Status (Plesk-eigene Bewertung, read-only)
-
-  WP Toolkit / python3 nicht verfügbar — Plesk-Instanzbewertung nicht abgefragt
-
 ## 12. JOOMLA-PRÜFUNG
 
 
@@ -197,19 +173,28 @@ php_value auto_prepend_file /var/www/vhosts/<anderer Kunde 1>/httpdocs/wp-conten
 🟢 **Keine Angreifer-Spuren in den Joomla-Installationen** — Version schlüssig, Konfiguration ohne kritische Schwächen, kein Hinweis auf einen Datenabfluss über die Programmschnittstelle.
 
 
-## 12b. NEXTCLOUD-PRÜFUNG
+## 12r. ANWENDUNGS-PRÜFREZEPTE
 
-- ⚠️  **1 Nextcloud-Sicherungskopie(n) nicht geprüft — sie werden nicht ausgeliefert, würden Schadcode beim Zurückspielen aber wiederherstellen**
-  Nextcloud-Installationen: 1
+
+### 12r.1 Nextcloud
+
+  Installationen: 1
 
 ```
 <PRUEFSTAND>/vhosts/kunde-zwei.example/cloud.kunde-zwei.example
 ```
 
+- ⚠️  **Nextcloud: 1 Sicherungskopie(n) nicht geprüft — sie werden nicht ausgeliefert, würden Schadcode beim Zurückspielen aber wiederherstellen**
 
-### 12b.1 kunde-zwei.example/cloud.kunde-zwei.example
+### 12r.1.x kunde-zwei.example/cloud.kunde-zwei.example
 
   Fassung: 28.0.1.2
+- 🔴 **KRITISCH: kunde-zwei.example/cloud.kunde-zwei.example: bekannte Schaddatei der Nextcloud-Kampagne (filefuns.php)**
+
+```
+<PRUEFSTAND>/vhosts/kunde-zwei.example/cloud.kunde-zwei.example/filefuns.php
+```
+
 - 🔴 **KRITISCH: kunde-zwei.example/cloud.kunde-zwei.example: Root-.htaccess trägt Angreifer-Merkmale (Freigabeliste mit fremden Dateinamen)**
 
 ```
@@ -218,28 +203,54 @@ php_value auto_prepend_file /var/www/vhosts/<anderer Kunde 1>/httpdocs/wp-conten
 ```
 
   Beleg: belege/04_nextcloud_htaccess_kunde-zwei_example_cloud_kunde-zwei_example.txt
-- 🔴 **KRITISCH: kunde-zwei.example/cloud.kunde-zwei.example: bekannte Schaddateien der Nextcloud-Kampagne gefunden**
-
-```
-<PRUEFSTAND>/vhosts/kunde-zwei.example/cloud.kunde-zwei.example/filefuns.php
-```
-
 - 🔴 **KRITISCH: kunde-zwei.example/cloud.kunde-zwei.example: verschachtelte Verzeichnisse (z. B. config/config) — typisch für diese Kampagne**
 
 ```
 <PRUEFSTAND>/vhosts/kunde-zwei.example/cloud.kunde-zwei.example/config/config
 ```
 
-- ⚪ **Nicht messbar: kunde-zwei.example/cloud.kunde-zwei.example: Eigentümer oder PHP nicht ermittelbar — Kern-Integrität nicht geprüft**
+- ⚪ **Nicht messbar: kunde-zwei.example/cloud.kunde-zwei.example: Werkzeug antwortet nicht verwertbar — nicht geprüft**
 
-## 12c. NEXTCLOUD-HÄRTUNGSSTAND
+### 12r.2 WordPress
 
-  1 Sicherungskopie(n) übersprungen — sie werden nicht ausgeliefert und sind kein eigener Härtungsgegenstand
+  Installationen: 3
 
-### 12c.1 kunde-zwei.example/cloud.kunde-zwei.example
+```
+<PRUEFSTAND>/vhosts/kunde-drei.example/httpdocs
+<PRUEFSTAND>/vhosts/kunde-eins.example/httpdocs
+<PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs
+```
 
-- ⚪ **Nicht messbar: kunde-zwei.example/cloud.kunde-zwei.example: occ nicht ausführbar — Härtungsstand nicht messbar**
-  Für die messbaren Instanzen keine Härtungslücken. Für die übrigen liegt kein Ergebnis vor — das ist keine Entwarnung.
+
+### 12r.2.x kunde-drei.example/httpdocs
+
+- ✅ kunde-drei.example/httpdocs: keine Doorway-.htaccess-Signatur
+- ✅ kunde-drei.example/httpdocs: keine @include base64_decode()-Injektion
+- ⚪ **Nicht messbar: kunde-drei.example/httpdocs: wp nicht ausführbar (Werkzeug, PHP oder Eigentümer fehlt) — Instanz nur dateibasiert geprüft**
+
+### 12r.2.x kunde-eins.example/httpdocs
+
+- ✅ kunde-eins.example/httpdocs: keine Doorway-.htaccess-Signatur
+- ✅ kunde-eins.example/httpdocs: keine @include base64_decode()-Injektion
+- ⚪ **Nicht messbar: kunde-eins.example/httpdocs: wp nicht ausführbar (Werkzeug, PHP oder Eigentümer fehlt) — Instanz nur dateibasiert geprüft**
+
+### 12r.2.x kunde-zwei.example/httpdocs
+
+- ✅ kunde-zwei.example/httpdocs: keine Doorway-.htaccess-Signatur
+- 🔴 **KRITISCH: kunde-zwei.example/httpdocs: 1 Datei(en) mit @include base64_decode() — getarnte Payload-Nachladung**
+
+```
+<PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/mu-plugins/cache.php
+```
+
+  Beleg: belege/05_wp_include_injektion_kunde-zwei_example_httpdocs.txt
+- ⚠️  **kunde-zwei.example/httpdocs: 1 mu-Plugin(s) — laufen ohne Aktivierung und erscheinen in keiner Pluginliste**
+
+```
+<PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/mu-plugins/cache.php
+```
+
+- ⚪ **Nicht messbar: kunde-zwei.example/httpdocs: wp nicht ausführbar (Werkzeug, PHP oder Eigentümer fehlt) — Instanz nur dateibasiert geprüft**
 
 ## 13b. .HTACCESS — SICHERUNG UND EINORDNUNG
 
@@ -259,7 +270,7 @@ Order allow,deny                                      Apache-2.2-Zugriffssyntax 
 <Files filefuns.php> … Allow from all                 Sperre fuer alles, Freigabe fuer genau diese eine PHP-Datei
 ```
 
-  Beleg: belege/05_htaccess_fremd_kunde-zwei_example_backups_updater-abc123_nextcloud-28_0_1_2-1700000000__htaccess.txt
+  Beleg: belege/06_htaccess_fremd_kunde-zwei_example_backups_updater-abc123_nextcloud-28_0_1_2-1700000000__htaccess.txt
 - 🔴 **KRITISCH: kunde-zwei.example/cloud.kunde-zwei.example/.htaccess (nextcloud): 3 Angreifer-Direktive(n) in der .htaccess**
 
 ```
@@ -268,7 +279,7 @@ Order allow,deny                                      Apache-2.2-Zugriffssyntax 
 <Files filefuns.php> … Allow from all                 Sperre fuer alles, Freigabe fuer genau diese eine PHP-Datei
 ```
 
-  Beleg: belege/06_htaccess_fremd_kunde-zwei_example_cloud_kunde-zwei_example__htaccess.txt
+  Beleg: belege/07_htaccess_fremd_kunde-zwei_example_cloud_kunde-zwei_example__htaccess.txt
 - 🔴 **KRITISCH: kunde-zwei.example/httpdocs/.htaccess (wordpress): 2 Angreifer-Direktive(n) in der .htaccess**
 
 ```
@@ -276,15 +287,15 @@ AddType application/x-httpd-php .jpg                  PHP-Ausfuehrung fuer eine 
 php_value auto_prepend_file /var/www/vhosts/<anderer Kunde 2>  auto_prepend_file auf eine Datei im Webspace
 ```
 
-  Beleg: belege/07_htaccess_fremd_kunde-zwei_example_httpdocs__htaccess.txt
+  Beleg: belege/08_htaccess_fremd_kunde-zwei_example_httpdocs__htaccess.txt
 - 🔴 **KRITISCH: kunde-zwei.example/httpdocs/wp-content/uploads/.htaccess (unbekannt): 1 Angreifer-Direktive(n) in der .htaccess**
 
 ```
 <Files bild.php> … Allow from all                     Freigabe fuer eine PHP-Datei in einem Verzeichnis, in das keine gehoert
 ```
 
-  Beleg: belege/08_htaccess_fremd_kunde-zwei_example_httpdocs_wp-content_uploads__htaccess.txt
-  Beleg: belege/09_htaccess_einordnung.txt
+  Beleg: belege/09_htaccess_fremd_kunde-zwei_example_httpdocs_wp-content_uploads__htaccess.txt
+  Beleg: belege/10_htaccess_einordnung.txt
 
 ### 13b.3 Wirksamkeit
 
@@ -297,17 +308,18 @@ php_value auto_prepend_file /var/www/vhosts/<anderer Kunde 2>  auto_prepend_file
 
 | Kategorie | Anzahl |
 |---|---|
-| 🔴 Kritische Befunde | 9 |
-| ⚠️ Warnungen | 4 |
-| ✅ Unauffällige Prüfungen | 12 |
-| ⚪ Nicht messbar | 3 |
+| 🔴 Kritische Befunde | 10 |
+| ⚠️ Warnungen | 5 |
+| ✅ Unauffällige Prüfungen | 16 |
+| ⚪ Nicht messbar | 4 |
 
-> **3 Prüfung(en) haben keine Aussage geliefert.** Ihr Ergebnis ist weder
+> **4 Prüfung(en) haben keine Aussage geliefert.** Ihr Ergebnis ist weder
 > ein Befund noch eine Entwarnung — der jeweilige Bereich ist ungeprüft:
 >
-> - grep ohne PCRE-Unterstützung (-P) — Zugangsdaten aus wp-config.php nicht lesbar, keine Datenbank-Prüfung möglich
-> - kunde-zwei.example/cloud.kunde-zwei.example: Eigentümer oder PHP nicht ermittelbar — Kern-Integrität nicht geprüft
-> - kunde-zwei.example/cloud.kunde-zwei.example: occ nicht ausführbar — Härtungsstand nicht messbar
+> - kunde-zwei.example/cloud.kunde-zwei.example: Werkzeug antwortet nicht verwertbar — nicht geprüft
+> - kunde-drei.example/httpdocs: wp nicht ausführbar (Werkzeug, PHP oder Eigentümer fehlt) — Instanz nur dateibasiert geprüft
+> - kunde-eins.example/httpdocs: wp nicht ausführbar (Werkzeug, PHP oder Eigentümer fehlt) — Instanz nur dateibasiert geprüft
+> - kunde-zwei.example/httpdocs: wp nicht ausführbar (Werkzeug, PHP oder Eigentümer fehlt) — Instanz nur dateibasiert geprüft
 
 ### 14.2 Empfohlene Sofortmaßnahmen
 
@@ -335,6 +347,7 @@ php_value auto_prepend_file /var/www/vhosts/<anderer Kunde 2>  auto_prepend_file
 ---
 
 > **Hinweis zum Datenschutz.** Dieser Server beherbergt weitere Kunden. Wo serverweite Prüfungen deren Domains oder Systemkonten berührten, stehen Platzhalter (`<anderer Kunde N>`); derselbe Nachbar trägt dabei immer dieselbe Nummer, sodass Zusammenhänge erkennbar bleiben. Betroffen waren 2 fremde Kennungen. Die unmaskierte Fassung verbleibt beim Betreiber.
+- ✅ Kundenspur enthält keine fremden Kennungen
   PDF übersprungen (pandoc/weasyprint/reportgen nicht verfügbar).
 
 > **Eingeschränkter Lauf.** Die folgenden Prüfabschnitte wurden auf ausdrückliche Auswahl hin NICHT ausgeführt. Ihre Ergebnisse fehlen in diesem Bericht — das ist keine Entwarnung für diese Bereiche:
