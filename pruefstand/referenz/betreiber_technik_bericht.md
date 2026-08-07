@@ -197,19 +197,28 @@ php_value auto_prepend_file /var/www/vhosts/<anderer Kunde 1>/httpdocs/wp-conten
 🟢 **Keine Angreifer-Spuren in den Joomla-Installationen** — Version schlüssig, Konfiguration ohne kritische Schwächen, kein Hinweis auf einen Datenabfluss über die Programmschnittstelle.
 
 
-## 12b. NEXTCLOUD-PRÜFUNG
+## 12r. ANWENDUNGS-PRÜFREZEPTE
 
-- ⚠️  **1 Nextcloud-Sicherungskopie(n) nicht geprüft — sie werden nicht ausgeliefert, würden Schadcode beim Zurückspielen aber wiederherstellen**
-  Nextcloud-Installationen: 1
+
+### 12r.1 Nextcloud
+
+  Installationen: 1
 
 ```
 <PRUEFSTAND>/vhosts/kunde-zwei.example/cloud.kunde-zwei.example
 ```
 
+- ⚠️  **Nextcloud: 1 Sicherungskopie(n) nicht geprüft — sie werden nicht ausgeliefert, würden Schadcode beim Zurückspielen aber wiederherstellen**
 
-### 12b.1 kunde-zwei.example/cloud.kunde-zwei.example
+### 12r.1.x kunde-zwei.example/cloud.kunde-zwei.example
 
   Fassung: 28.0.1.2
+- 🔴 **KRITISCH: kunde-zwei.example/cloud.kunde-zwei.example: bekannte Schaddatei der Nextcloud-Kampagne (filefuns.php)**
+
+```
+<PRUEFSTAND>/vhosts/kunde-zwei.example/cloud.kunde-zwei.example/filefuns.php
+```
+
 - 🔴 **KRITISCH: kunde-zwei.example/cloud.kunde-zwei.example: Root-.htaccess trägt Angreifer-Merkmale (Freigabeliste mit fremden Dateinamen)**
 
 ```
@@ -218,34 +227,13 @@ php_value auto_prepend_file /var/www/vhosts/<anderer Kunde 1>/httpdocs/wp-conten
 ```
 
   Beleg: belege/04_nextcloud_htaccess_kunde-zwei_example_cloud_kunde-zwei_example.txt
-- 🔴 **KRITISCH: kunde-zwei.example/cloud.kunde-zwei.example: bekannte Schaddateien der Nextcloud-Kampagne gefunden**
-
-```
-<PRUEFSTAND>/vhosts/kunde-zwei.example/cloud.kunde-zwei.example/filefuns.php
-```
-
 - 🔴 **KRITISCH: kunde-zwei.example/cloud.kunde-zwei.example: verschachtelte Verzeichnisse (z. B. config/config) — typisch für diese Kampagne**
 
 ```
 <PRUEFSTAND>/vhosts/kunde-zwei.example/cloud.kunde-zwei.example/config/config
 ```
 
-- ⚪ **Nicht messbar: kunde-zwei.example/cloud.kunde-zwei.example: Eigentümer oder PHP nicht ermittelbar — Kern-Integrität nicht geprüft**
-- ⚠️  **Apache meldet AH01797 auf Nextcloud-Endpunkten — deutet auf eine manipulierte .htaccess, nicht auf fehlende Rechte**
-
-```
-AH01797: client denied by server configuration: /remote.php
-```
-
-
-## 12c. NEXTCLOUD-HÄRTUNGSSTAND
-
-  1 Sicherungskopie(n) übersprungen — sie werden nicht ausgeliefert und sind kein eigener Härtungsgegenstand
-
-### 12c.1 kunde-zwei.example/cloud.kunde-zwei.example
-
-- ⚪ **Nicht messbar: kunde-zwei.example/cloud.kunde-zwei.example: occ nicht ausführbar — Härtungsstand nicht messbar**
-  Für die messbaren Instanzen keine Härtungslücken. Für die übrigen liegt kein Ergebnis vor — das ist keine Entwarnung.
+- ⚪ **Nicht messbar: kunde-zwei.example/cloud.kunde-zwei.example: Werkzeug antwortet nicht verwertbar — nicht geprüft**
 
 ## 13b. .HTACCESS — SICHERUNG UND EINORDNUNG
 
@@ -304,16 +292,15 @@ php_value auto_prepend_file /var/www/vhosts/<anderer Kunde 2>  auto_prepend_file
 | Kategorie | Anzahl |
 |---|---|
 | 🔴 Kritische Befunde | 9 |
-| ⚠️ Warnungen | 5 |
+| ⚠️ Warnungen | 4 |
 | ✅ Unauffällige Prüfungen | 12 |
-| ⚪ Nicht messbar | 3 |
+| ⚪ Nicht messbar | 2 |
 
-> **3 Prüfung(en) haben keine Aussage geliefert.** Ihr Ergebnis ist weder
+> **2 Prüfung(en) haben keine Aussage geliefert.** Ihr Ergebnis ist weder
 > ein Befund noch eine Entwarnung — der jeweilige Bereich ist ungeprüft:
 >
 > - grep ohne PCRE-Unterstützung (-P) — Zugangsdaten aus wp-config.php nicht lesbar, keine Datenbank-Prüfung möglich
-> - kunde-zwei.example/cloud.kunde-zwei.example: Eigentümer oder PHP nicht ermittelbar — Kern-Integrität nicht geprüft
-> - kunde-zwei.example/cloud.kunde-zwei.example: occ nicht ausführbar — Härtungsstand nicht messbar
+> - kunde-zwei.example/cloud.kunde-zwei.example: Werkzeug antwortet nicht verwertbar — nicht geprüft
 
 ### 14.2 Empfohlene Sofortmaßnahmen
 
