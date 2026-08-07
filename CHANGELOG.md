@@ -4,8 +4,36 @@ Alle nennenswerten Änderungen an `wp_plesk_forensik.sh`.
 
 ## [unveröffentlicht]
 
+### Neu — Der Haken `rezept_version` wird aufgerufen
+`lib/rezepte.sh` nennt ihn seit der ersten Fassung als Haken, `module/12r_rezepte.sh`
+rief ihn nie auf und zog ihn auch im `unset -f` nicht zurück. Ein Rezept konnte
+ihn also deklarieren, ohne dass je etwas passierte. Der Haken läuft jetzt vor
+`rezept_sonder` — dateibasiert, ohne Werkzeug der Anwendung.
+
+### Neu — WordPress: Abgleich gegen bekannte Schwachstellen
+Das Rezept nutzt den Haken und gleicht Kern, Plugins und Themes gegen den
+Datenbestand unter `rezepte/wordpress/daten/` ab. **Offline** — kein `--online`
+nötig, geprüft wird gegen das, was ausgeliefert wurde.
+
+Die Fassungen kommen aus Kopfzeilen im Dateisystem, nicht aus der Datenbank und
+nicht über wp-cli: ein manipuliertes Plugin nimmt sich über den
+`all_plugins`-Filter selbst aus jeder Laufzeitliste, und der Abgleich soll auch
+dort etwas sagen, wo wp-cli fehlt. Der Kern kommt aus `wp-includes/version.php`,
+Themes aus `style.css`.
+
+Bewertung: ein Treffer mit KEV-Kennzeichen ist 🔴 mit dem ausdrücklichen Hinweis
+auf die belegte Ausnutzung, sonst ⚠️. Bestandteile ohne lesbare Fassung werden zu
+**einem** ⚪ zusammengefasst — je Stück würde das die Kundenampel auf fast jeder
+Seite dauerhaft blockieren.
+
+**Ein veralteter Datenbestand ist gefährlicher als gar keiner**: er liefert ein
+ruhiges Ergebnis, das nach Prüfung aussieht. Über 30 Tage (`WP_DATEN_MAX_TAGE`)
+meldet das Rezept deshalb ⚪ und vergleicht nicht. Fehlt der Bestand ganz, ist es
+ein Hinweis — dann wurde nichts versucht, dieselbe Linie wie beim abgeschalteten
+YARA-Scan.
+
 ### Neu — Schwachstellen-Datenbestand und Vergleicher für WordPress
-Das Gegenstück zu `daten/joomla/` entsteht: `daten/wordpress/` mit
+Das Gegenstück zu `daten/joomla/` entsteht: `rezepte/wordpress/daten/` mit
 `werkzeuge/wordpress-daten-update.sh` als Pflegewerkzeug und
 `lib/wp_schwachstellen.py` als Vergleicher.
 
@@ -33,7 +61,7 @@ behoben wurde; auf „kleiner als" verkürzen lässt sich das nicht.
 darf nicht als „nicht betroffen" durchgehen, und ein fehlender Eintrag heißt
 „keine bekannte Schwachstelle im vorliegenden Bestand", nicht „sicher".
 
-### Neu — `daten/wordpress/`
+### Neu — `rezepte/wordpress/daten/`
 Enthält vorerst nur `kev/kev-wordpress.tsv`: die sechs WordPress-Einträge aus
 dem KEV-Katalog der CISA (gemeinfrei). Sie tragen die einzige Aussage, die eine
 Priorisierung wirklich rechtfertigt — diese Lücke wird nachweislich ausgenutzt.
