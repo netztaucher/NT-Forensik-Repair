@@ -272,14 +272,21 @@ ausgabe_einsammeln() {
   local lauf; lauf=$(find "${ABLAGE}/forensik" -maxdepth 1 -type d -name '2*' 2>/dev/null | head -1)
   [[ -n "$lauf" ]] || fail "Kein Laufordner unter ${ABLAGE}/forensik entstanden — siehe ${ABLAGE}/konsole.txt"
   mkdir -p "$ZIEL"
+  # Seit v3.11 zwei Spuren. Der Dateiname im Vergleichsordner traegt die Spur
+  # mit, damit eine Verschiebung zwischen kunde/ und betreiber/ als Aenderung
+  # auffaellt statt still durchzugehen.
   local d
-  for d in technik_bericht.md kundenbericht.md bsi_meldung.md dsgvo_meldung.md findings.json; do
-    [[ -f "${lauf}/${d}" ]] && normalisieren "${lauf}/${d}" > "${ZIEL}/${d}"
+  for d in kunde/kundenbericht.md kunde/befunde_details.md kunde/root_aussage.md \
+           betreiber/technik_bericht.md betreiber/bsi_meldung.md \
+           betreiber/dsgvo_meldung.md betreiber/findings.json; do
+    [[ -f "${lauf}/${d}" ]] && normalisieren "${lauf}/${d}" > "${ZIEL}/${d//\//_}"
   done
+  # Die Ordnerstruktur selbst ist Teil des Verhaltens.
+  (cd "$lauf" && find . -type f | sort) > "${ZIEL}/dateiliste.txt"
   normalisieren "${ABLAGE}/konsole.txt" > "${ZIEL}/konsole.txt"
   cp "${ABLAGE}/rueckgabewert.txt" "${ZIEL}/" 2>/dev/null || true
   # Die Belegdateinamen sind Teil des Verhaltens, ihr Inhalt nicht.
-  ls -1 "${lauf}/belege" 2>/dev/null | sort > "${ZIEL}/belege_dateiliste.txt" || true
+  ls -1 "${lauf}/betreiber/belege" 2>/dev/null | sort > "${ZIEL}/belege_dateiliste.txt" || true
 }
 
 # ── Hauptteil ────────────────────────────────────────────────

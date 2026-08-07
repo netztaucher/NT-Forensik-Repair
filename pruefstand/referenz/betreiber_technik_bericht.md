@@ -7,7 +7,7 @@
 | **Analysiert am** | <UMGEBUNG> |
 | **Server** | <UMGEBUNG> |
 | **Erstellt durch** | wp_plesk_forensik.sh <FASSUNG> |
-| **Belege** | <PRUEFSTAND>/ablage/forensik/<LAUF-ID>/belege |
+| **Belege** | <PRUEFSTAND>/ablage/forensik/<LAUF-ID>/betreiber/belege |
 
 ---
 
@@ -246,7 +246,7 @@
 ---
 *Bericht erstellt am: <ZEIT>*
 *Tool: wp_plesk_forensik.sh <FASSUNG> — netztaucher | digital*
-  findings.json geschrieben: <PRUEFSTAND>/ablage/forensik/<LAUF-ID>/findings.json
+  findings.json geschrieben: <PRUEFSTAND>/ablage/forensik/<LAUF-ID>/betreiber/findings.json
   PDF übersprungen (pandoc/weasyprint/reportgen nicht verfügbar).
 
 > **Eingeschränkter Lauf.** Die folgenden Prüfabschnitte wurden auf ausdrückliche Auswahl hin NICHT ausgeführt. Ihre Ergebnisse fehlen in diesem Bericht — das ist keine Entwarnung für diese Bereiche:

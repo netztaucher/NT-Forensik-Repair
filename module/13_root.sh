@@ -190,7 +190,7 @@ echo -e "\n### Verdikt Relay-Backdoor\n\n${RELAY_VERDICT}\n" >> "$REPORT_FILE"
 # Bericht und PDF-Deckblatt. Details bewusst NICHT in den laienlesbaren
 # Kundenbericht, sondern in die referenzierte Extradatei.
 # ============================================================
-DETAILS_FILE="${RUN_DIR}/befunde_details.md"
+DETAILS_FILE="${KUNDE_DIR}/befunde_details.md"
 CUST_ROOT="$SCAN_PATH"
 # Pfad relativ zum Kundenverzeichnis (nie absolut im Bericht/PDF)
 relpath(){ local p="$1"
