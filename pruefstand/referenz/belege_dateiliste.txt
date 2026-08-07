@@ -1,0 +1,5 @@
+00_manifest.txt
+01_veraenderte_php_dateien.txt
+02_php_in_uploads_mit_hashes.txt
+03_nextcloud_htaccess_kunde-zwei_example_cloud_kunde-zwei_example.txt
+SHA256SUMS

@@ -1,3 +1,4 @@
+# shellcheck shell=bash
 # NT-Forensik — Abschnitt 5: Benutzer & Rechte
 #
 # @nummer:  5

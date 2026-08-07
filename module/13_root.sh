@@ -1,3 +1,4 @@
+# shellcheck shell=bash
 # NT-Forensik — Abschnitt 13: Root- & Eskalations-Prüfung
 #
 # @nummer:  13

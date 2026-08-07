@@ -1,3 +1,4 @@
+# shellcheck shell=bash
 # NT-Forensik — Abschnitt 3: Zugriffs-Analyse
 #
 # @nummer:  3

@@ -1,3 +1,4 @@
+# shellcheck shell=bash
 # NT-Forensik — Abschnitt 2: Logs sichern
 #
 # @nummer:  2

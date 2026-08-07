@@ -1,3 +1,4 @@
+# shellcheck shell=bash
 # NT-Forensik — Abschnitt 6: Cronjobs & Persistenz
 #
 # @nummer:  6

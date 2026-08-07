@@ -136,6 +136,21 @@ cat > "$REPORT_FILE" <<HEADER
 ---
 HEADER
 
+# Ein Testlauf muss sich vom echten Lauf unterscheiden lassen — sonst wird der
+# Pruefstand selbst zur Fehlerquelle. Der Vermerk steht bewusst ganz oben und
+# nicht in einer Fussnote.
+if [[ "${TESTLAUF:-0}" == "1" ]]; then
+  cat >> "$REPORT_FILE" <<'TESTHINWEIS'
+> ⚠️ **TESTLAUF — kein Befund dieses Berichts ist belastbar.**
+> Erzeugt ohne Root-Rechte gegen einen synthetischen Verzeichnisbaum
+> (`werkzeuge/goldmuster.sh`). Die serverweiten Abschnitte hatten keinen
+> Zugriff auf ihre Quellen. Dieses Dokument dient ausschliesslich dem
+> Vergleich zweier Programmstaende und darf niemandem vorgelegt werden.
+
+---
+TESTHINWEIS
+fi
+
 # ============================================================
 
 # ── Pruefabschnitte ──────────────────────────────────────────

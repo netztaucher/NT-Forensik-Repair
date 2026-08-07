@@ -1,3 +1,4 @@
+# shellcheck shell=bash
 # NT-Forensik — Abschnitt 12: Joomla-Prüfung
 #
 # @nummer:  12

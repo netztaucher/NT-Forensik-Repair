@@ -1,3 +1,4 @@
+# shellcheck shell=bash
 # NT-Forensik — Abschnitt 9: Sicherheits-Dienste
 #
 # @nummer:  9
