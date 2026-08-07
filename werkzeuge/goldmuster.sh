@@ -287,6 +287,11 @@ echo -e "${BOLD}NT-Forensik · Goldmuster${NC}"
 echo -e "  Programmstand: $(cd "$SELF_DIR" && git rev-parse --short HEAD 2>/dev/null || echo '?')"
 
 BAUM="${ARBEIT}/vhosts"; ABLAGE="${ARBEIT}/ablage"
+# Zwingend vor jedem Lauf. Bleibt der Ordner eines fehlgeschlagenen Vergleichs
+# stehen, greift ausgabe_einsammeln per 'head -1' den ALTEN Laufordner und
+# vergleicht ihn gegen die Referenz — der naechste Lauf meldet dann eine
+# Abweichung, die es nicht gibt, oder verschweigt eine, die es gibt.
+rm -rf "$ARBEIT"
 mkdir -p "$ABLAGE"
 baum_bauen "$BAUM"
 info "Baum gebaut: $(find "$BAUM" -type f | wc -l | tr -d ' ') Dateien in $(find "$BAUM" -maxdepth 1 -type d | tail -n +2 | wc -l | tr -d ' ') vhosts"
