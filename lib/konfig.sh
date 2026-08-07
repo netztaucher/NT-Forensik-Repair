@@ -223,8 +223,17 @@ scan_path_bestimmen() {
     *)      SCAN_PATH="$VHOSTS_DIR"; SCAN_PATHS=("$SCAN_PATH") ;;   # global
   esac
   # Fallback: gesetzte Domain ohne existierenden vhost -> serverweit statt ins Leere
+  # Eine --domain ohne existierendes vhost-Verzeichnis eskalierte hier
+  # STILLSCHWEIGEND auf serverweit: aus "pruefe diesen einen Kunden" wurde
+  # "pruefe alle", ohne dass es jemand erfuhr — auf einem Host mit 482 vhosts
+  # der denkbar groesste Datenschutzunfall. Ein Tippfehler in der Domain
+  # genuegte.
   if [[ "$SCOPE_MODE" == "domain" && ! -d "$SCAN_PATH" ]]; then
-    SCAN_PATH="$VHOSTS_DIR"; SCAN_PATHS=("$SCAN_PATH")
+    echo -e "${RED}Fehler:${NC} Für --domain ${DOMAIN} gibt es kein Verzeichnis unter ${VHOSTS_DIR}." >&2
+    echo    "        Tippfehler? Verfügbare Verzeichnisse:" >&2
+    ls -1d "${VHOSTS_DIR}"/*/ 2>/dev/null | sed "s|${VHOSTS_DIR}/||;s|/$||" | head -20 | sed 's/^/          /' >&2
+    echo    "        Für einen serverweiten Lauf ausdrücklich --global angeben." >&2
+    exit 2
   fi
 }
 
