@@ -8,7 +8,7 @@
 | **Datum** | <ZEIT> |
 | **Geprüfter Server** | imac |
 | **Prüfungs-ID** | <LAUF-ID> |
-| **Befunde** | 🔴 9 kritisch · ⚠️ 4 auffällig · ✅ 13 geprüft |
+| **Befunde** | 🔴 9 kritisch · ⚠️ 4 auffällig · ✅ 12 geprüft |
 
 ---
 
