@@ -57,6 +57,40 @@ unklar(){ echo -e "  ${CYN}⚪${NC} $1"; echo "- ⚪ **Nicht messbar: $1**" >> "
 # ein fehlendes Werkzeug ein eigener Zustand ist und kein Nullergebnis.
 werkzeug_da(){ command -v "$1" >/dev/null 2>&1; }
 
+# Dateimetadaten portabel. GNU-stat kennt -c, BSD-stat -f — der Zielserver ist
+# Linux, der Pruefstand des Entwicklers ist macOS. Ohne Verzweigung liefert
+# 'stat -c' dort still einen Fehler, und die Angabe fehlt einfach. Genau so
+# standen mtime, ctime, Eigentuemer und Rechte im ersten Entwurf von
+# Abschnitt 16 leer im Beleg, ohne dass es auffiel.
+#
+#   datei_meta <datei> mtime|ctime|eigner|rechte|groesse
+#
+# Warum ctime getrennt von mtime: wer eine Datei zurueckdatiert, faelscht die
+# mtime. Die ctime laesst sich ohne Schreibrechte am Datentraeger nicht
+# faelschen und verraet den Eingriff.
+datei_meta() {
+  local f="$1" was="$2"
+  if stat -c %y "$f" >/dev/null 2>&1; then      # GNU
+    case "$was" in
+      mtime)   stat -c %y "$f" | cut -d. -f1 ;;
+      ctime)   stat -c %z "$f" | cut -d. -f1 ;;
+      eigner)  stat -c '%U:%G' "$f" ;;
+      rechte)  stat -c %a "$f" ;;
+      groesse) stat -c %s "$f" ;;
+    esac
+  elif stat -f %Sm "$f" >/dev/null 2>&1; then   # BSD
+    case "$was" in
+      mtime)   stat -f '%Sm' -t '%Y-%m-%d %H:%M:%S' "$f" ;;
+      ctime)   stat -f '%Sc' -t '%Y-%m-%d %H:%M:%S' "$f" ;;
+      eigner)  stat -f '%Su:%Sg' "$f" ;;
+      rechte)  stat -f '%OLp' "$f" ;;
+      groesse) stat -f '%z' "$f" ;;
+    esac
+  else
+    echo "?"
+  fi
+}
+
 # ── Maskierung für Kundenberichte (v3.5) ─────────────────────
 # Kundenberichte gehen an Dritte und müssen DSGVO-datensparsam sein: fremde
 # E-Mail-Adressen (etwa WP-Admin-Konten) werden pseudonymisiert. Angreifer-IPs

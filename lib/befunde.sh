@@ -48,6 +48,12 @@ SUSP_PLUGINS=""        # verdächtige Plugins/mu-Plugins (alle bewertet, auch in
 MU_PLUGINS=""          # alle mu-Plugins (laufen immer, ohne Aktivierung)
 TAMPERED_HTACCESS=""   # manipulierte .htaccess (Malware-Whitelist, bricht Admin/403)
 
+# ── v3.11: Abschnitt 16 (.htaccess) ──────────────────────────
+HTACCESS_FREMD=""      # .htaccess mit Angreifer-Direktiven
+HTACCESS_UNWIRKSAM=""  # Grund, warum .htaccess-Dateien gar nicht ausgewertet
+                       # werden (AllowOverride None, nginx ohne Apache). Eine
+                       # Datei, die niemand liest, gibt falsche Sicherheit.
+
 # ── v3.4: Relay-Backdoors — Variablen & Selbstausschluss ─────
 GSOCKET_HITS=""          # Dateien/Prozesse mit gsocket-Signatur
 MASQ_BINARIES=""         # ELF-Binaries getarnt als Schlüssel-/Konfigdatei

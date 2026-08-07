@@ -54,6 +54,12 @@ emit_findings_json() {
   ncnest=$(printf '%s\n' "${NC_NESTED:-}"       | json_arr)
   ncint=$(printf '%s\n'  "${NC_INTEGRITY:-}"    | grep '^=== ' | sed 's/^=== //; s/ ===$//' | json_arr)
   local nchard; nchard=$(printf '%s\n' "${NC_HAERTUNG:-}" | json_arr)
+  # Abschnitt 16. htaccess_fremd nennt die Dateien mit Angreifer-Direktiven;
+  # htaccess_unwirksam sagt, ob .htaccess ueberhaupt ausgewertet wird — ohne
+  # das koennte der Reparaturteil eine Datei saeubern, die niemand liest.
+  local htafremd htaunw
+  htafremd=$(printf '%s\n' "${HTACCESS_FREMD:-}" | json_arr)
+  htaunw=$(json_str "${HTACCESS_UNWIRKSAM:-}")
   local n_corei n_doorw n_coreinj n_rogue
   n_corei=$(printf '%s\n'   "${CORE_INJECTED:-}"     | grep -c . 2>/dev/null)
   n_doorw=$(printf '%s\n'   "${DOORWAY_DIRS:-}"      | grep -c . 2>/dev/null)
@@ -129,7 +135,7 @@ emit_findings_json() {
 
   cat > "$FINDINGS_FILE" <<JSON
 {
-  "schema_version": "1.5",
+  "schema_version": "1.6",
   "tool": "wp_plesk_forensik.sh",
   "tool_version": "${TOOL_VERSION}",
   "run_id": "$(json_str "$RUN_LABEL")",
@@ -142,6 +148,7 @@ emit_findings_json() {
     "module_uebersprungen": ${moduebr:-[]},
     "nicht_messbar": ${unmess:-[]}
   },
+  "htaccess_unwirksam": "${htaunw}",
   "counts": { "crit": ${N_CRIT:-0}, "warn": ${N_WARN:-0}, "ok": ${N_OK:-0}, "unknown": ${N_UNKNOWN:-0} },
   "verdicts": {
     "root": { "flags": ${ROOT_FLAGS:-0}, "text": "$(json_str "${ROOT_VERDICT:-}")" },
@@ -185,6 +192,7 @@ emit_findings_json() {
     "nextcloud_nested": ${ncnest:-[]},
     "nextcloud_core_modified": ${ncint:-[]},
     "nextcloud_hardening": ${nchard:-[]},
+    "htaccess_fremd": ${htafremd:-[]},
     "suspicious_plugins": ${suspp:-[]},
     "mu_plugins": ${muplug:-[]},
     "tampered_htaccess": ${tamphta:-[]},
