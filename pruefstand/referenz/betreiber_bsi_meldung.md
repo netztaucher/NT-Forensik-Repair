@@ -54,8 +54,8 @@
 
 | Indikator | Wert |
 |---|---|
-| Kritische Befunde | 9 |
-| Warnungen | 4 |
+| Kritische Befunde | 10 |
+| Warnungen | 5 |
 | Fehlgeschlagene SSH-Login-Versuche | 0 |
 | Scanner-Aktivität in Web-Logs (Treffer) | 0 |
 | Verdächtige POST-Requests (Webshell-Muster) | 0 |
@@ -65,9 +65,10 @@
 ### Kritische Einzelbefunde
 
 - PHP-Dateien in Upload-Verzeichnissen (nach Guard-Filter, extrem verdächtig)
+- kunde-zwei.example/cloud.kunde-zwei.example: bekannte Schaddatei der Nextcloud-Kampagne (filefuns.php)
 - kunde-zwei.example/cloud.kunde-zwei.example: Root-.htaccess trägt Angreifer-Merkmale (Freigabeliste mit fremden Dateinamen)
-- kunde-zwei.example/cloud.kunde-zwei.example: bekannte Schaddateien der Nextcloud-Kampagne gefunden
 - kunde-zwei.example/cloud.kunde-zwei.example: verschachtelte Verzeichnisse (z. B. config/config) — typisch für diese Kampagne
+- kunde-zwei.example/httpdocs: 1 Datei(en) mit @include base64_decode() — getarnte Payload-Nachladung
 - kunde-zwei.example/backups/updater-abc123/nextcloud-28.0.1.2-1700000000/.htaccess (nextcloud): 3 Angreifer-Direktive(n) in der .htaccess
 - kunde-zwei.example/cloud.kunde-zwei.example/.htaccess (nextcloud): 3 Angreifer-Direktive(n) in der .htaccess
 - kunde-zwei.example/httpdocs/.htaccess (wordpress): 2 Angreifer-Direktive(n) in der .htaccess

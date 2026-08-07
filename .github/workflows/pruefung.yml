@@ -97,16 +97,17 @@ jobs:
       - name: Gegenprobe — schlägt der Prüfstand bei einer echten Änderung an?
         run: |
           # Ein Prüfstand, der nie ausschlägt, ist keiner. Diese Stufe schaltet
-          # den Kopienfilter des Nextcloud-Abschnitts ab und erwartet, dass der
+          # den Kopienfilter des Nextcloud-Rezepts ab und erwartet, dass der
           # Vergleich das bemerkt. Am 07.08.2026 tat er das nicht — die
-          # Sicherungskopie im Prüfbaum lag tiefer als das -maxdepth des
-          # Abschnitts und wurde nie gefunden.
-          cp module/12b_nextcloud.sh /tmp/12b.sicherung
-          perl -i -pe "s/^NC_KOPIE='.*/NC_KOPIE='TRIFFT-NICHTS'/" module/12b_nextcloud.sh
+          # Sicherungskopie im Prüfbaum lag tiefer als das -maxdepth der
+          # Erkennung und wurde nie gefunden.
+          ZIEL=rezepte/nextcloud/rezept.conf
+          cp "$ZIEL" /tmp/rezept.sicherung
+          perl -i -pe "s/^kopien_regex.*/kopien_regex = TRIFFT-NICHTS/" "$ZIEL"
           if bash werkzeuge/goldmuster.sh vergleichen >/dev/null 2>&1; then
             echo "::error::Der Prüfstand ist blind für eine abgeschaltete Prüfung."
-            cp /tmp/12b.sicherung module/12b_nextcloud.sh
+            cp /tmp/rezept.sicherung "$ZIEL"
             exit 1
           fi
-          cp /tmp/12b.sicherung module/12b_nextcloud.sh
+          cp /tmp/rezept.sicherung "$ZIEL"
           bash werkzeuge/goldmuster.sh vergleichen

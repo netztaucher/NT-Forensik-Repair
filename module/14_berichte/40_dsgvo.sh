@@ -22,7 +22,15 @@ else
 fi
 
 # Betroffene WordPress-Datenbanken (potenzielle Datenquellen) für die Meldung
-DSGVO_DBS="${WP_CONFIGS:-}"
+# WP_CONFIGS ist im Global-Modus die Liste ALLER WordPress-Installationen des
+# Servers. Ungefiltert stuenden damit die Domains unbeteiligter Kunden als
+# "betroffene Datenquellen" in einem Dokument, das an eine Aufsichtsbehoerde
+# geht. Gefiltert wird ueber denselben Scope-Test wie der Kundenkanal.
+DSGVO_DBS=""
+while IFS= read -r _wc; do
+  [[ -n "$_wc" ]] || continue
+  im_scope "$_wc" && DSGVO_DBS+="${_wc}"$'\n'
+done <<< "${WP_CONFIGS:-}"
 [[ -n "$DSGVO_DBS" ]] && DSGVO_DBS=$(echo "$DSGVO_DBS" | sed "s|${VHOSTS_DIR}/||;s|/wp-config.php||" | sed 's/^/- /')
 
 cat > "$DSGVO_FILE" <<DSGVO

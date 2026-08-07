@@ -1,0 +1,8 @@
+# muster	schwere	was_es_ist
+# Dateinamen aus der Kampagne, die am 07.08.2026 auf einem Produktivsystem
+# bereinigt wurde. Die Muster stammen aus diesem Fall, nicht aus einer
+# Sammlung im Netz.
+filefuns.php	crit	bekannte Schaddatei der Nextcloud-Kampagne
+adminfuns.php	crit	bekannte Schaddatei der Nextcloud-Kampagne
+cjfuns.php	crit	bekannte Schaddatei der Nextcloud-Kampagne
+classsmtps.php	crit	bekannte Schaddatei der Nextcloud-Kampagne

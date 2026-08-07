@@ -68,20 +68,6 @@
   [0;36mübersprungen:[0m 10. Andere Domains
 
 [1m[0;34m══════════════════════════════════════════[0m
-[1m[0;34m  11. WORDPRESS-DATENBANK-PRÜFUNG[0m
-[1m[0;34m══════════════════════════════════════════[0m
-
-[0;36m▶ 11.1 Gefundene WordPress-Installationen[0m
-  [0m·  WordPress-Installationen: 4
-  [0;36m⚪[0m grep ohne PCRE-Unterstützung (-P) — Zugangsdaten aus wp-config.php nicht lesbar, keine Datenbank-Prüfung möglich
-
-[0;36m▶ 11.9 WordPress-DB-Verdikt[0m
-  [0;32m✓[0m WP-DB-VERDIKT: unauffällig
-
-[0;36m▶ 11.10 WP Toolkit — Instanz-Status (Plesk-eigene Bewertung, read-only)[0m
-  [0m·  WP Toolkit / python3 nicht verfügbar — Plesk-Instanzbewertung nicht abgefragt
-
-[1m[0;34m══════════════════════════════════════════[0m
 [1m[0;34m  12. JOOMLA-PRÜFUNG[0m
 [1m[0;34m══════════════════════════════════════════[0m
 
@@ -102,26 +88,38 @@
   [0;32m✓[0m JOOMLA-VERDIKT: unauffällig
 
 [1m[0;34m══════════════════════════════════════════[0m
-[1m[0;34m  12b. NEXTCLOUD-PRÜFUNG[0m
+[1m[0;34m  12r. ANWENDUNGS-PRÜFREZEPTE[0m
 [1m[0;34m══════════════════════════════════════════[0m
-  [0;33m⚠[0m  1 Nextcloud-Sicherungskopie(n) nicht geprüft — sie werden nicht ausgeliefert, würden Schadcode beim Zurückspielen aber wiederherstellen
-  [0m·  Nextcloud-Installationen: 1
 
-[0;36m▶ 12b.1 kunde-zwei.example/cloud.kunde-zwei.example[0m
+[0;36m▶ 12r.1 Nextcloud[0m
+  [0m·  Installationen: 1
+  [0;33m⚠[0m  Nextcloud: 1 Sicherungskopie(n) nicht geprüft — sie werden nicht ausgeliefert, würden Schadcode beim Zurückspielen aber wiederherstellen
+
+[0;36m▶ 12r.1.x kunde-zwei.example/cloud.kunde-zwei.example[0m
   [0m·  Fassung: 28.0.1.2
+  [0;31m✗[0m  [1mkunde-zwei.example/cloud.kunde-zwei.example: bekannte Schaddatei der Nextcloud-Kampagne (filefuns.php)[0m
   [0;31m✗[0m  [1mkunde-zwei.example/cloud.kunde-zwei.example: Root-.htaccess trägt Angreifer-Merkmale (Freigabeliste mit fremden Dateinamen)[0m
-  [0;31m✗[0m  [1mkunde-zwei.example/cloud.kunde-zwei.example: bekannte Schaddateien der Nextcloud-Kampagne gefunden[0m
   [0;31m✗[0m  [1mkunde-zwei.example/cloud.kunde-zwei.example: verschachtelte Verzeichnisse (z. B. config/config) — typisch für diese Kampagne[0m
-  [0;36m⚪[0m kunde-zwei.example/cloud.kunde-zwei.example: Eigentümer oder PHP nicht ermittelbar — Kern-Integrität nicht geprüft
+  [0;36m⚪[0m kunde-zwei.example/cloud.kunde-zwei.example: Werkzeug antwortet nicht verwertbar — nicht geprüft
 
-[1m[0;34m══════════════════════════════════════════[0m
-[1m[0;34m  12c. NEXTCLOUD-HÄRTUNGSSTAND[0m
-[1m[0;34m══════════════════════════════════════════[0m
-  [0m·  1 Sicherungskopie(n) übersprungen — sie werden nicht ausgeliefert und sind kein eigener Härtungsgegenstand
+[0;36m▶ 12r.2 WordPress[0m
+  [0m·  Installationen: 3
 
-[0;36m▶ 12c.1 kunde-zwei.example/cloud.kunde-zwei.example[0m
-  [0;36m⚪[0m kunde-zwei.example/cloud.kunde-zwei.example: occ nicht ausführbar — Härtungsstand nicht messbar
-  [0m·  Für die messbaren Instanzen keine Härtungslücken. Für die übrigen liegt kein Ergebnis vor — das ist keine Entwarnung.
+[0;36m▶ 12r.2.x kunde-drei.example/httpdocs[0m
+  [0;32m✓[0m kunde-drei.example/httpdocs: keine Doorway-.htaccess-Signatur
+  [0;32m✓[0m kunde-drei.example/httpdocs: keine @include base64_decode()-Injektion
+  [0;36m⚪[0m kunde-drei.example/httpdocs: wp nicht ausführbar (Werkzeug, PHP oder Eigentümer fehlt) — Instanz nur dateibasiert geprüft
+
+[0;36m▶ 12r.2.x kunde-eins.example/httpdocs[0m
+  [0;32m✓[0m kunde-eins.example/httpdocs: keine Doorway-.htaccess-Signatur
+  [0;32m✓[0m kunde-eins.example/httpdocs: keine @include base64_decode()-Injektion
+  [0;36m⚪[0m kunde-eins.example/httpdocs: wp nicht ausführbar (Werkzeug, PHP oder Eigentümer fehlt) — Instanz nur dateibasiert geprüft
+
+[0;36m▶ 12r.2.x kunde-zwei.example/httpdocs[0m
+  [0;32m✓[0m kunde-zwei.example/httpdocs: keine Doorway-.htaccess-Signatur
+  [0;31m✗[0m  [1mkunde-zwei.example/httpdocs: 1 Datei(en) mit @include base64_decode() — getarnte Payload-Nachladung[0m
+  [0;33m⚠[0m  kunde-zwei.example/httpdocs: 1 mu-Plugin(s) — laufen ohne Aktivierung und erscheinen in keiner Pluginliste
+  [0;36m⚪[0m kunde-zwei.example/httpdocs: wp nicht ausführbar (Werkzeug, PHP oder Eigentümer fehlt) — Instanz nur dateibasiert geprüft
   [0;36mübersprungen:[0m 13. Root- & Eskalations-Prüfung
 
 [1m[0;34m══════════════════════════════════════════[0m
@@ -151,16 +149,18 @@
   betreiber/bsi_meldung.md            3 fremde Kennungen maskiert
   betreiber/dsgvo_meldung.md          0 fremde Kennungen maskiert
   betreiber/lauf.log                  0 fremde Kennungen maskiert
+  [0;32m✓[0m Kundenspur enthält keine fremden Kennungen
 
 [1m[0;32m══════════════════════════════════════════[0m
 [1m[0;32m  ANALYSE ABGESCHLOSSEN — Lauf <LAUF-ID>[0m
 [1m[0;32m══════════════════════════════════════════[0m
 
-[1mBefunde:[0m       🔴 9 kritisch, ⚠️ 4 Warnungen, ✅ 12 ok, ⚪ 3 nicht messbar
-[0;33m               3 Prüfung(en) ohne Ergebnis — das ist keine Entwarnung.[0m
-                 grep ohne PCRE-Unterstützung (-P) — Zugangsdaten aus wp-config.php nicht lesbar, keine Datenbank-Prüfung möglich
-                 kunde-zwei.example/cloud.kunde-zwei.example: Eigentümer oder PHP nicht ermittelbar — Kern-Integrität nicht geprüft
-                 kunde-zwei.example/cloud.kunde-zwei.example: occ nicht ausführbar — Härtungsstand nicht messbar
+[1mBefunde:[0m       🔴 10 kritisch, ⚠️ 5 Warnungen, ✅ 17 ok, ⚪ 4 nicht messbar
+[0;33m               4 Prüfung(en) ohne Ergebnis — das ist keine Entwarnung.[0m
+                 kunde-zwei.example/cloud.kunde-zwei.example: Werkzeug antwortet nicht verwertbar — nicht geprüft
+                 kunde-drei.example/httpdocs: wp nicht ausführbar (Werkzeug, PHP oder Eigentümer fehlt) — Instanz nur dateibasiert geprüft
+                 kunde-eins.example/httpdocs: wp nicht ausführbar (Werkzeug, PHP oder Eigentümer fehlt) — Instanz nur dateibasiert geprüft
+                 kunde-zwei.example/httpdocs: wp nicht ausführbar (Werkzeug, PHP oder Eigentümer fehlt) — Instanz nur dateibasiert geprüft
 
 [1mLauf-Ordner:[0m     <PRUEFSTAND>/ablage/forensik/<LAUF-ID>
 
