@@ -14,16 +14,25 @@ h1 "3. ZUGRIFFS-ANALYSE"
 # ============================================================
 
 h2 "3.1 SSH-Logins (letzte 50)"
+# 'last' liest wtmp. Fehlt die Datei, ist sie rotiert oder das Werkzeug nicht
+# installiert, liefert der Aufruf leer — und "keine Root-Logins" waere dann
+# eine Aussage ueber die Datei, nicht ueber das System.
 SSH_LOGINS=$(last -n 50 2>/dev/null || true)
-code "$SSH_LOGINS"
-evidence "ssh_logins_last50" "$SSH_LOGINS"
-
-ROOT_LOGINS=$(echo "$SSH_LOGINS" | grep "^root" || true)
-if [[ -n "$ROOT_LOGINS" ]]; then
-  warn "Root-Logins gefunden (Details: technik_bericht.md §3.1)"
-  code "$ROOT_LOGINS"
+if ! werkzeug_da last; then
+  unklar "'last' nicht installiert — Anmeldungen nicht auswertbar"
+elif [[ -z "$SSH_LOGINS" ]]; then
+  unklar "'last' liefert keine Eintraege (wtmp fehlt, leer oder rotiert) — Anmeldungen nicht auswertbar"
 else
-  ok "Keine direkten Root-Logins via 'last'"
+  code "$SSH_LOGINS"
+  evidence "ssh_logins_last50" "$SSH_LOGINS"
+
+  ROOT_LOGINS=$(echo "$SSH_LOGINS" | grep "^root" || true)
+  if [[ -n "$ROOT_LOGINS" ]]; then
+    warn "Root-Logins gefunden (Details: technik_bericht.md §3.1)"
+    code "$ROOT_LOGINS"
+  else
+    ok "Keine direkten Root-Logins via 'last'"
+  fi
 fi
 
 h2 "3.2 Fehlgeschlagene SSH-Versuche"
