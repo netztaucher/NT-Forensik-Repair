@@ -156,3 +156,57 @@ rezept_signaturen() {   # rezept_signaturen <app> <rezeptverzeichnis> <installat
     code "$treffer"
   done < "$tsv"
 }
+
+# ── Datenbankzugang ──────────────────────────────────────────
+# Ein Satz Funktionen statt zweier fast gleicher. wp_sql und j_sql
+# unterschieden sich nur darin, dass Joomla keinen wp-cli-Rueckfall hat; der
+# Kommentar in module/12_joomla.sh trug sogar noch eine veraltete Zeilennummer
+# auf sein Vorbild — ein Beleg dafuer, dass die Kopie den Bezug zum Original
+# schon verloren hatte.
+#
+# Die Zugangsdaten kommen aus der Konfigurationsdatei der Anwendung. Welche
+# Datei und welche Syntax, sagt das Rezept:
+#
+#   konf_datei   = wp-config.php
+#   konf_muster  = define\(\s*['"]%s['"]\s*,\s*['"]\K[^'"]*
+#   konf_db_name = DB_NAME
+#   praefix_muster = \$table_prefix\s*=\s*['"]\K[^'"]*
+rezept_db_zugang() {   # rezept_db_zugang <rezeptverzeichnis> <konfigdatei>
+  local rz="$1" cfg="$2" m
+  m="$(rezept_feld "$rz" konf_muster)"
+  REZ_DB=$(rezept_konf_wert "$cfg" "$m" "$(rezept_feld "$rz" konf_db_name)")
+  REZ_DBUSER=$(rezept_konf_wert "$cfg" "$m" "$(rezept_feld "$rz" konf_db_user)")
+  REZ_DBPASS=$(rezept_konf_wert "$cfg" "$m" "$(rezept_feld "$rz" konf_db_pass)")
+  REZ_DBHOST=$(rezept_konf_wert "$cfg" "$m" "$(rezept_feld "$rz" konf_db_host)")
+  REZ_DBHOST="${REZ_DBHOST:-localhost}"
+
+  # Praefix-Haertung. Der Wert wird ROH in SQL-Zeichenketten interpoliert —
+  # Abschnitt 11 tat das bis v3.13 ungeprueft, Joomla haertete denselben Wert
+  # seit jeher. Derselbe Angriffsweg, einmal abgedeckt und einmal nicht: wer
+  # die wp-config.php schreiben kann, bekam damit beliebiges SQL in die
+  # Abfragen des Pruefwerkzeugs, das als root laeuft.
+  local pm; pm="$(rezept_feld "$rz" praefix_muster)"
+  REZ_PFX=""
+  if [[ -n "$pm" ]]; then
+    REZ_PFX=$(grep -oP "$pm" "$cfg" 2>/dev/null | head -1)
+  fi
+  REZ_PFX="${REZ_PFX:-$(rezept_feld "$rz" praefix_vorgabe)}"
+  if [[ -n "$REZ_PFX" && ! "$REZ_PFX" =~ ^[A-Za-z0-9_]+$ ]]; then
+    befund_melden "$(basename "$rz")" datenbank crit \
+      "${REZ_KURZ}: Tabellen-Präfix enthält unerwartete Zeichen (${REZ_PFX}) — Datenbankprüfung übersprungen, die Konfigurationsdatei ist möglicherweise manipuliert" "$cfg" web
+    return 1
+  fi
+  [[ -n "$REZ_DB" ]]
+}
+
+# SQL ausfuehren. Drei Stufen: Plesk-Admin, Zugangsdaten der Anwendung,
+# Werkzeug der Anwendung. Read-only — es werden ausschliesslich SELECTs
+# gestellt, das Werkzeug veraendert nie eine Kundendatenbank.
+rezept_sql() {   # rezept_sql <abfrage>
+  local q="$1"
+  if [[ -n "${PLESK_MYSQL_PW:-}" ]]; then
+    MYSQL_PWD="$PLESK_MYSQL_PW" mysql -u admin -N -e "USE \`${REZ_DB}\`; $q" 2>/dev/null && return 0
+  fi
+  MYSQL_PWD="$REZ_DBPASS" mysql -h "${REZ_DBHOST%%:*}" -u "$REZ_DBUSER" -N -e "$q" "$REZ_DB" 2>/dev/null && return 0
+  [[ -n "${REZ_CLI_SQL:-}" ]] && $REZ_CLI_SQL "$q" 2>/dev/null
+}
