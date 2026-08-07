@@ -375,8 +375,13 @@ PY
 rezept_kern() {
   local CHK cmod csne LISTE
   CHK=$(_wp core verify-checksums 2>&1 | grep "Warning:" || true)
-  cmod=$(echo "$CHK" | grep -c "doesn.t verify" 2>/dev/null || echo 0)
-  csne=$(echo "$CHK" | grep -c "should not exist" 2>/dev/null || echo 0)
+  # KEIN '|| echo 0': grep -c gibt bei null Treffern bereits eine 0 aus UND
+  # endet ungleich 0. Der Rueckfall haengte damit eine zweite Null an, cmod
+  # wurde "0\n0", und die naechste Zeile brach mit
+  #   [[: 0 0: syntax error in expression
+  # ab. Genau derselbe Fehler steckte in nf_fetch ("HTTP=404000").
+  cmod=$(echo "$CHK" | grep -c "doesn.t verify" 2>/dev/null) || true
+  csne=$(echo "$CHK" | grep -c "should not exist" 2>/dev/null) || true
 
   if [[ "${cmod:-0}" -gt 0 ]]; then
     LISTE=$(echo "$CHK" | grep "doesn.t verify" | sed "s|.*checksum: |${REZ_PFAD}/|")

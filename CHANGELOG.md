@@ -4,6 +4,25 @@ Alle nennenswerten Änderungen an `wp_plesk_forensik.sh`.
 
 ## [unveröffentlicht]
 
+### Behoben — `grep -c` mit `|| echo 0` ergab „0\n0"
+`rezept_kern` zählte die Meldungen von `verify-checksums` mit
+`grep -c … || echo 0`. `grep -c` gibt bei null Treffern aber **bereits** eine 0
+aus und endet trotzdem ungleich 0 — der Rückfall hängte eine zweite an. Der
+folgende Vergleich brach mit `[[: 0 0: syntax error in expression` ab, und die
+Kern-Integrität wurde für saubere Installationen nie ausgewertet.
+
+Derselbe Fehler steckte in `nf_fetch` (`HTTP=404000`) und ist dort schon
+behoben.
+
+### Behoben — der Prüfstand nahm Fehlermeldungen als erwartete Ausgabe
+Der Vergleich prüft auf Gleichheit. Eine Fehlermeldung, die in beiden Läufen
+steht, gilt ihm deshalb als unverändert — und genau so ist der Syntaxfehler
+oben in die eingecheckte Referenz gewandert und dort unbemerkt geblieben.
+
+`goldmuster.sh` prüft die Konsolenausgabe jetzt unabhängig vom Vergleich auf
+Meldungen des Interpreters (`syntax error`, `unbound variable`,
+`command not found`, `: line N:`) und bricht ab, statt sie aufzunehmen.
+
 ### Neu — wp-cli-Attrappe im Prüfbaum
 Ohne ein `wp` im PATH bricht der Rahmen nach der Werkzeug-Probe ab, und
 `rezept_kern` läuft nie — Kern-Integrität und Plugin-Prüfsummen waren vom
