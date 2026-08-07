@@ -110,6 +110,9 @@ Abschnittsauswahl:
   --nur <n[,n…]>          Nur diese Prüfabschnitte (z. B. --nur 12)
   --ohne <n[,n…]>         Alle ausser diesen (z. B. --ohne 2,10)
   --nur-joomla            Kurzform für --nur 12
+  --nur-nextcloud         Kurzform für --nur 12b,12c (Übernahme + Härtungsstand)
+  --nur-haertung          Kurzform für --nur 12c — nur der Nextcloud-Härtungsstand,
+                          ohne Suche nach Schadcode. Ändert nichts.
   --nur-root              Nur die Root- und Eskalationsprüfung. Beantwortet die
                           eine serverweite Frage, die der Kunde braucht — ist
                           jemand über den Webspace hinausgekommen? — und legt
@@ -167,6 +170,11 @@ while [[ $# -gt 0 ]]; do
     --nur)    MODUL_NUR="${2:-}";  shift 2 ;;
     --ohne)   MODUL_OHNE="${2:-}"; shift 2 ;;
     --nur-joomla)  MODUL_NUR="12" ; shift ;;
+    # Nextcloud getrennt ansprechbar: 12b sucht nach Uebernahme, 12c misst den
+    # Haertungsstand. Beides ist einzeln waehlbar (--nur 12b / --nur 12c);
+    # dieser Schalter nimmt beide, weil sie in der Praxis zusammen gefragt sind.
+    --nur-nextcloud) MODUL_NUR="12b,12c"; shift ;;
+    --nur-haertung)  MODUL_NUR="12c"; shift ;;
     # Die Root-Frage getrennt beantworten. Sie ist die einzige serverweite
     # Aussage, die der Kunde wirklich braucht — "ist jemand ueber meinen
     # Webspace hinausgekommen?" —, und sie laesst sich ohne die uebrigen
