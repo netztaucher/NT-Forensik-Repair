@@ -22,6 +22,13 @@ cat >> "$REPORT_FILE" <<SUMMARY
 | 🔴 Kritische Befunde | ${N_CRIT} |
 | ⚠️ Warnungen | ${N_WARN} |
 | ✅ Unauffällige Prüfungen | ${N_OK} |
+| ⚪ Nicht messbar | ${N_UNKNOWN} |
+
+$(if [[ "${N_UNKNOWN:-0}" -gt 0 ]]; then
+  printf '> **%s Prüfung(en) haben keine Aussage geliefert.** Ihr Ergebnis ist weder\n' "${N_UNKNOWN}"
+  printf '> ein Befund noch eine Entwarnung — der jeweilige Bereich ist ungeprüft:\n>\n'
+  printf '%s' "$UNKNOWN_LIST" | while IFS= read -r _z; do [[ -n "$_z" ]] && printf '> %s\n' "$_z"; done
+fi)
 
 ### 14.2 Empfohlene Sofortmaßnahmen
 
@@ -55,17 +62,33 @@ SUMMARY
 # an SEINER Website nichts Kritisches ist.
 N_CUST_CRIT=$(printf '%s' "$CUST_CRIT_LIST" | grep -c . || true)
 N_CUST_WARN=$(printf '%s' "$CUST_WARN_LIST" | grep -c . || true)
+N_CUST_UNKNOWN=$(printf '%s' "$CUST_UNKNOWN_LIST" | grep -c . || true)
+
+# Nicht messbare Pruefungen blockieren die gruene Ampel (v3.11). Vorher konnte
+# ein Lauf, in dem jede einzelne Messung scheiterte, auf 🟢 UNAUFFAELLIG enden
+# mit dem Satz "keine Hinweise auf eine Kompromittierung gefunden" — die
+# Abwesenheit eines Befunds wurde als Abwesenheit eines Problems ausgegeben.
+# Gruen bedeutet ab jetzt: geprueft UND nichts gefunden.
+UNKLAR_HINWEIS=""
+if [[ "${N_CUST_UNKNOWN:-0}" -gt 0 ]]; then
+  UNKLAR_HINWEIS=$(printf '\n\n**%s Prüfung(en) konnten nicht durchgeführt werden.** Für diese Bereiche liegt kein Ergebnis vor — weder ein Befund noch eine Entwarnung. Was dort nicht geprüft werden konnte, steht im Technik-Bericht.' "${N_CUST_UNKNOWN}")
+fi
+
 if [[ "${N_CUST_CRIT:-0}" -gt 0 || "${MALWARE_TOTAL:-0}" -gt 0 ]]; then
   AMPEL="🔴 KRITISCH"
   AMPEL_TEXT="**Ihr System wurde nachweislich kompromittiert.** Es liegen konkrete, technisch belegte Hinweise auf einen erfolgreichen Angriff vor. Ein Angreifer hatte oder hat Zugriff auf Ihren Webauftritt. **Es besteht akuter Handlungsbedarf** — bitte arbeiten Sie die Sofortmaßnahmen unten noch heute ab."
   DRINGLICHKEIT="**Warum das dringend ist:** Solange die Zugänge des Angreifers gültig sind, kann er jederzeit zurückkehren, weitere Hintertüren legen, Daten (auch Kundendaten) abgreifen, Spam über Ihre Domain versenden oder Ihre Seite für Betrug/Schadsoftware missbrauchen. Jede Stunde zählt."
 elif [[ "${N_CUST_WARN:-0}" -gt 0 ]]; then
   AMPEL="🟡 AUFFÄLLIG"
-  AMPEL_TEXT="Es wurden Auffälligkeiten gefunden, die auf Sicherheitsschwächen oder Angriffsversuche hindeuten. Ein erfolgreicher Einbruch ist nicht belegt, die Punkte sollten aber zeitnah geprüft und behoben werden."
+  AMPEL_TEXT="Es wurden Auffälligkeiten gefunden, die auf Sicherheitsschwächen oder Angriffsversuche hindeuten. Ein erfolgreicher Einbruch ist nicht belegt, die Punkte sollten aber zeitnah geprüft und behoben werden.${UNKLAR_HINWEIS}"
   DRINGLICHKEIT="**Warum das wichtig ist:** Die gefundenen Schwachstellen sind typische Einfallstore. Werden sie nicht geschlossen, ist ein erfolgreicher Angriff nur eine Frage der Zeit."
+elif [[ "${N_CUST_UNKNOWN:-0}" -gt 0 ]]; then
+  AMPEL="🟡 UNVOLLSTÄNDIG"
+  AMPEL_TEXT="In den Bereichen, die geprüft werden konnten, wurden keine Hinweise auf eine Kompromittierung gefunden. **Ein Teil der Prüfungen konnte jedoch nicht durchgeführt werden.** Dieses Ergebnis ist deshalb keine Entwarnung: für die betroffenen Bereiche liegt schlicht kein Ergebnis vor.${UNKLAR_HINWEIS}"
+  DRINGLICHKEIT="**Was jetzt zu tun ist:** Die Ursache der nicht durchführbaren Prüfungen klären und den Lauf wiederholen. Erst dann lässt sich sagen, ob Ihr System unauffällig ist."
 else
   AMPEL="🟢 UNAUFFÄLLIG"
-  AMPEL_TEXT="Bei dieser Prüfung wurden keine Hinweise auf eine Kompromittierung gefunden. Das ist eine Momentaufnahme und ersetzt keine laufende Absicherung."
+  AMPEL_TEXT="Alle vorgesehenen Prüfungen konnten durchgeführt werden, und keine davon ergab einen Hinweis auf eine Kompromittierung. Das ist eine Momentaufnahme und ersetzt keine laufende Absicherung."
   DRINGLICHKEIT=""
 fi
 
@@ -672,6 +695,11 @@ emit_findings_json() {
   local modgel moduebr
   modgel=$(printf '%s\n' ${MODULE_GELAUFEN:-} | json_arr)
   moduebr=$(printf '%s\n' "${MODULE_UEBERSPRUNGEN:-}" | json_arr)
+  # Nicht messbare Einzelpruefungen. 'module_uebersprungen' nennt ganze
+  # Abschnitte, die auf Anweisung nicht liefen; das hier nennt Pruefungen, die
+  # laufen SOLLTEN und kein Ergebnis lieferten. NT-Repair darf einer Entwarnung
+  # nicht trauen, solange diese Liste nicht leer ist.
+  local unmess; unmess=$(printf '%s\n' "${UNKNOWN_LIST:-}" | sed 's/^- //' | json_arr)
   local n_jcmod n_jvuln n_jsuper
   n_jcmod=$(printf  '%s\n' "${JOOMLA_CORE_MODIFIED:-}" | grep -c . 2>/dev/null)
   n_jvuln=$(printf  '%s\n' "${JOOMLA_VULN_EXT:-}"      | grep -c . 2>/dev/null)
@@ -679,7 +707,7 @@ emit_findings_json() {
 
   cat > "$FINDINGS_FILE" <<JSON
 {
-  "schema_version": "1.4",
+  "schema_version": "1.5",
   "tool": "wp_plesk_forensik.sh",
   "tool_version": "${TOOL_VERSION}",
   "run_id": "$(json_str "$RUN_LABEL")",
@@ -689,9 +717,10 @@ emit_findings_json() {
   "run": {
     "vollstaendig": $(if [[ -z "${MODULE_UEBERSPRUNGEN:-}" ]]; then echo true; else echo false; fi),
     "module_gelaufen": ${modgel:-[]},
-    "module_uebersprungen": ${moduebr:-[]}
+    "module_uebersprungen": ${moduebr:-[]},
+    "nicht_messbar": ${unmess:-[]}
   },
-  "counts": { "crit": ${N_CRIT:-0}, "warn": ${N_WARN:-0}, "ok": ${N_OK:-0} },
+  "counts": { "crit": ${N_CRIT:-0}, "warn": ${N_WARN:-0}, "ok": ${N_OK:-0}, "unknown": ${N_UNKNOWN:-0} },
   "verdicts": {
     "root": { "flags": ${ROOT_FLAGS:-0}, "text": "$(json_str "${ROOT_VERDICT:-}")" },
     "wpdb": { "flags": ${WPDB_FLAGS:-0}, "text": "$(json_str "${WPDB_VERDICT:-}")" },
@@ -951,7 +980,13 @@ echo -e "${BOLD}${GRN}═══════════════════�
 echo -e "${BOLD}${GRN}  ANALYSE ABGESCHLOSSEN — Lauf ${RUN_LABEL}${NC}"
 echo -e "${BOLD}${GRN}══════════════════════════════════════════${NC}"
 echo ""
-echo -e "${BOLD}Befunde:${NC}       🔴 ${N_CRIT} kritisch, ⚠️ ${N_WARN} Warnungen, ✅ ${N_OK} ok"
+echo -e "${BOLD}Befunde:${NC}       🔴 ${N_CRIT} kritisch, ⚠️ ${N_WARN} Warnungen, ✅ ${N_OK} ok, ⚪ ${N_UNKNOWN} nicht messbar"
+if [[ "${N_UNKNOWN:-0}" -gt 0 ]]; then
+  echo -e "${YLW}               ${N_UNKNOWN} Prüfung(en) ohne Ergebnis — das ist keine Entwarnung.${NC}"
+  printf '%s' "$UNKNOWN_LIST" | while IFS= read -r _z; do
+    [[ -n "$_z" ]] && echo -e "                 ${_z#- }"
+  done
+fi
 echo ""
 echo -e "${BOLD}Lauf-Ordner:${NC}     ${RUN_DIR}"
 echo -e "${BOLD}Kundenbericht:${NC}   ${KUNDE_FILE}"

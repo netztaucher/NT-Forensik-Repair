@@ -31,6 +31,32 @@ crit(){ echo -e "  ${RED}✗${NC}  ${BOLD}$1${NC}"; echo "- 🔴 **KRITISCH: $1*
 info(){ echo -e "  ${NC}·  $1"; echo "  $1" >> "$REPORT_FILE"; }
 code(){ echo -e "\n\`\`\`\n$1\n\`\`\`\n" >> "$REPORT_FILE"; }
 
+# ── Vierter Zustand: die Pruefung hat keine Aussage geliefert ─
+#
+# Bis v3.10 gab es drei Zustaende. Eine gescheiterte Messung fiel dabei
+# regelmaessig auf ok() zurueck: 'wp core verify-checksums' scheitert, die
+# Ausgabe ist leer, leer heisst "nichts gefunden", und der Bericht bescheinigt
+# einen unveraenderten Kern, der nie geprueft wurde. Dasselbe Muster bei
+# 'occ integrity:check-core', 'aide --check', 'last' und dem Imunify-Parser.
+#
+# Ein Lauf, in dem JEDE Messung scheitert, endete damit auf 🟢 UNAUFFAELLIG mit
+# dem Satz "keine Hinweise auf eine Kompromittierung gefunden". Fuer ein
+# Forensikwerkzeug ist das der teuerste denkbare Fehler — er wird als
+# Entwarnung ausgeliefert.
+#
+# unklar() sagt, was ok() nicht sagen kann: hier steht kein Ergebnis. Der
+# Zaehler ist getrennt, weil ein solcher Befund weder eine bestandene Pruefung
+# (ok) noch eine Auffaelligkeit (warn) ist. Er blockiert die gruene Ampel —
+# siehe module/14_berichte.sh.
+unklar(){ echo -e "  ${CYN}⚪${NC} $1"; echo "- ⚪ **Nicht messbar: $1**" >> "$REPORT_FILE"; \
+        N_UNKNOWN=$((N_UNKNOWN+1)); UNKNOWN_LIST+="- $1"$'\n'; \
+        [[ "${2:-}" == web ]] && CUST_UNKNOWN_LIST+="- $1"$'\n'; return 0; }
+
+# Existenzpruefung fuer externe Werkzeuge. Bewusst eine eigene Funktion und
+# nicht ueberall 'command -v' inline: so ist an der Aufrufstelle sichtbar, dass
+# ein fehlendes Werkzeug ein eigener Zustand ist und kein Nullergebnis.
+werkzeug_da(){ command -v "$1" >/dev/null 2>&1; }
+
 # ── Maskierung für Kundenberichte (v3.5) ─────────────────────
 # Kundenberichte gehen an Dritte und müssen DSGVO-datensparsam sein: fremde
 # E-Mail-Adressen (etwa WP-Admin-Konten) werden pseudonymisiert. Angreifer-IPs

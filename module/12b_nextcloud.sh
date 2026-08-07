@@ -136,18 +136,29 @@ while IFS= read -r NCDIR; do
   # uebersieht, weil an ihr nichts auffaellig aussieht.
   _owner=$(stat -c %U "$NCDIR" 2>/dev/null || echo "")
   _php=$(command -v php 2>/dev/null || ls /opt/plesk/php/*/bin/php 2>/dev/null | sort -V | tail -1)
-  if [[ -n "$_owner" && -n "$_php" ]]; then
-    _int=$(sudo -u "$_owner" "$_php" -d memory_limit=1024M "${NCDIR}/occ" integrity:check-core 2>/dev/null | head -40 || true)
-    if [[ -z "$_int" ]]; then
-      ok "${_kurz}: occ integrity:check-core meldet keine Abweichung"
-    else
-      crit "${_kurz}: occ integrity:check-core meldet Abweichungen im Kern" web
-      code "$(printf '%s\n' "$_int" | head -20)"
-      NC_INTEGRITY+="=== ${_kurz} ==="$'\n'"$_int"$'\n'
-      evidence "nextcloud_integritaet_$(echo "$_kurz" | tr '/.' '__')" "$_int"
-    fi
+  if [[ -z "$_owner" || -z "$_php" ]]; then
+    unklar "${_kurz}: Eigentümer oder PHP nicht ermittelbar — Kern-Integrität nicht geprüft" web
   else
-    info "${_kurz}: occ nicht ausführbar (Eigentümer oder PHP nicht ermittelbar) — Kern nicht geprüft"
+    # Probe vor der Messung, wie in Abschnitt 12c. Ohne sie galt eine leere
+    # Ausgabe als "keine Abweichung" — dabei antwortet occ bei unpassender
+    # PHP-Fassung mit einer HTML-Meldung auf STDOUT und Rueckgabewert 0, und
+    # bei aktivem Wartungsmodus mit gar nichts. Beides sah aus wie ein
+    # sauberer Kern.
+    _probe=$(sudo -u "$_owner" "$_php" -d memory_limit=1024M "${NCDIR}/occ" status --output=json 2>/dev/null || true)
+    if ! printf '%s' "$_probe" | python3 -c "import json,sys;json.load(sys.stdin)" 2>/dev/null; then
+      _grund=$(printf '%s' "$_probe" | sed 's/<br\/*>/ /g' | tr -d '\n' | cut -c1-120)
+      unklar "${_kurz}: occ liefert keine verwertbare Antwort — Kern-Integrität nicht geprüft${_grund:+ (${_grund})}" web
+    else
+      _int=$(sudo -u "$_owner" "$_php" -d memory_limit=1024M "${NCDIR}/occ" integrity:check-core 2>/dev/null | head -40 || true)
+      if [[ -z "$_int" ]]; then
+        ok "${_kurz}: occ integrity:check-core meldet keine Abweichung"
+      else
+        crit "${_kurz}: occ integrity:check-core meldet Abweichungen im Kern" web
+        code "$(printf '%s\n' "$_int" | head -20)"
+        NC_INTEGRITY+="=== ${_kurz} ==="$'\n'"$_int"$'\n'
+        evidence "nextcloud_integritaet_$(echo "$_kurz" | tr '/.' '__')" "$_int"
+      fi
+    fi
   fi
 done <<< "$NC_INSTALLS"
 

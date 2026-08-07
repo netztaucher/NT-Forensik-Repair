@@ -12,10 +12,17 @@
 
 # ── Zähler & Befund-Sammlung für Kunden-/BSI-Bericht ─────────
 N_CRIT=0; N_WARN=0; N_OK=0
+# Vierter Zustand (v3.11): die Pruefung lief, lieferte aber keine Aussage —
+# Werkzeug fehlt, Zugang verweigert, Antwort unlesbar. Getrennt gezaehlt, weil
+# das weder eine bestandene Pruefung noch eine Auffaelligkeit ist. Solange er
+# ueber 0 steht, kann die Kundenampel nicht auf gruen springen.
+N_UNKNOWN=0
 CRIT_LIST=""   # Markdown-Bullets (alle Befunde — Technik/Betreiber)
 WARN_LIST=""
+UNKNOWN_LIST=""
 CUST_CRIT_LIST=""   # nur WEBSITE-Befunde (Kundenbericht) — via crit "…" web
 CUST_WARN_LIST=""
+CUST_UNKNOWN_LIST=""
 EVIDENCE_IDX=0
 WPDB_FLAGS=0
 WPDB_VERDICT="⚪ Keine WordPress-Installation im Scan-Pfad gefunden — keine Datenbank-Prüfung durchgeführt."
