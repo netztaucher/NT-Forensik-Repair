@@ -16,7 +16,13 @@
 h1 "12r. ANWENDUNGS-PRÜFREZEPTE"
 
 if [[ ! -d "$REZEPT_DIR" ]]; then
-  info "Kein Rezept-Verzeichnis vorhanden (${REZEPT_DIR}) — keine anwendungsspezifische Prüfung"
+  # ⚪ und nicht 'info': ein fehlendes Rezept-Verzeichnis heisst, dass WordPress,
+  # Nextcloud und alles Weitere ueberhaupt nicht geprueft wurden. Als Hinweis
+  # ging das unter — der Lauf endete mit Rueckgabewert 0, und weil mit den
+  # Rezepten auch deren ⚪-Befunde entfallen, sank die Zahl der nicht messbaren
+  # Pruefungen im Pruefbaum von 4 auf 0. Der Bericht las sich damit
+  # VOLLSTAENDIGER als der Lauf war. Genau dafuer gibt es den vierten Zustand.
+  unklar "Kein Rezept-Verzeichnis vorhanden (${REZEPT_DIR}) — keine einzige anwendungsspezifische Prüfung durchgeführt" web
 else
 
 # --nur-nextcloud & Co. setzen REZEPT_NUR. Ohne Angabe laufen alle Rezepte.
