@@ -57,6 +57,75 @@ unklar(){ echo -e "  ${CYN}⚪${NC} $1"; echo "- ⚪ **Nicht messbar: $1**" >> "
 # ein fehlendes Werkzeug ein eigener Zustand ist und kein Nullergebnis.
 werkzeug_da(){ command -v "$1" >/dev/null 2>&1; }
 
+# ── Befundschema (v3.12) ─────────────────────────────────────
+#
+# Bis hierher hatte jede Anwendung ihre eigenen Variablen: JOOMLA_MALWARE,
+# NC_HTACCESS_MAL, WPDB_FLAGS und rund zwanzig weitere. lib/befunde.sh musste
+# sie deklarieren, module/14_berichte/50_findings_json.sh sie einzeln
+# verdrahten. Ein neuer Scanner kostete damit Aenderungen an drei Stellen im
+# Kern — und genau das macht eine Rezept-Schnittstelle wertlos, bei der ein
+# neues Rezept nichts als ein Verzeichnis sein soll.
+#
+#   befund_melden <app> <kategorie> <schwere> "<text>" <pfad|-> [web]
+#
+#     app        frei. 'wordpress', 'joomla', 'nextcloud', 'typo3', 'shopware'
+#     kategorie  FEST. Der Bericht sortiert und ueberschreibt danach; eine
+#                unbekannte Kategorie ist ein Fehler, kein stiller Einsortierer.
+#     schwere    crit | warn | ok | unklar — leitet an den jeweiligen Helfer
+#                weiter, die Zaehlung bleibt also unveraendert.
+#     pfad       Pfad des Befunds, oder '-' wenn keiner. PFLICHTSTELLE, damit
+#                die Position von 'web' eindeutig bleibt. Der Pfad ist der
+#                eigentliche Gewinn: er macht den Datenschutz-Riegel exakt,
+#                statt Prosa nach pfadartigen Token durchsuchen zu muessen.
+#     web        wie bisher bei crit/warn: nur so markierte Befunde erscheinen
+#                im Kundenbericht.
+#
+# Bewusst als Parameter und nicht als gesetzte Variable: eine Globale, die vor
+# dem Aufruf gesetzt und danach geleert werden muss, laesst genau einen
+# vergessenen Aufraeumschritt genuegen, damit ein fremder Befund im
+# Kundenbericht landet. An dieser Stelle ist das der teuerste denkbare Fehler.
+#
+# Ablageform ist eine Zeile mit Tabulatoren, kein verschachteltes Array: bash
+# 3.2 auf dem Arbeitsplatz kennt keine assoziativen Arrays mit Struktur, und
+# das ist dieselbe Fassung, die schon 'source <(...)' still scheitern liess.
+BEFUND_KATEGORIEN="erkennung version kern konfig datenbank schadcode logs haertung verdikt"
+
+befund_melden() {   # befund_melden <app> <kategorie> <schwere> <text> <pfad|-> [web]
+  local app="$1" kat="$2" schwere="$3" text="$4" pfad="${5:--}" kanal="${6:-}"
+  [[ "$pfad" == "-" ]] && pfad=""
+
+  case " ${BEFUND_KATEGORIEN} " in
+    *" ${kat} "*) : ;;
+    *) # Kein stilles Einsortieren: eine unbekannte Kategorie waere im Bericht
+       # unsichtbar, und der Befund ginge verloren.
+       warn "Programmfehler: unbekannte Befund-Kategorie '${kat}' (App ${app}) — Befund trotzdem gemeldet"
+       kat="schadcode" ;;
+  esac
+
+  # Tabulatoren im Text wuerden die Ablageform zerlegen. Sie kommen vor:
+  # alles, was aus 'mysql -N' stammt, ist tabgetrennt.
+  local sauber="${text//$'\t'/ }"
+  BEFUNDE+="${app}"$'\t'"${kat}"$'\t'"${schwere}"$'\t'"${sauber}"$'\t'"${pfad}"$'\n'
+
+  # Weiterleiten an den bestehenden Helfer. Die Zaehler, die Kundenspur und
+  # die Ampel bleiben damit unveraendert — dieser Umbau aendert die ABLAGE,
+  # nicht das Verhalten.
+  case "$schwere" in
+    crit)   crit   "$text" "$kanal" ;;
+    warn)   warn   "$text" "$kanal" ;;
+    unklar) unklar "$text" "$kanal" ;;
+    ok)     ok     "$text" ;;
+    *)      warn "Programmfehler: unbekannte Schwere '${schwere}' — als Warnung gemeldet: ${text}" ;;
+  esac
+}
+
+# Verdikt je Anwendung. Ersetzt WPDB_VERDICT/JOOMLA_VERDICT/RELAY_VERDICT und
+# schliesst zugleich eine Luecke: Abschnitt 12b hatte gar keins, obwohl
+# findings.json fuer die anderen ein {flags,text}-Paar liefert.
+verdikt_melden() {   # verdikt_melden <app> <flags> <text>
+  VERDIKTE+="${1}"$'\t'"${2}"$'\t'"${3//$'\t'/ }"$'\n'
+}
+
 # Dateimetadaten portabel. GNU-stat kennt -c, BSD-stat -f — der Zielserver ist
 # Linux, der Pruefstand des Entwicklers ist macOS. Ohne Verzweigung liefert
 # 'stat -c' dort still einen Fehler, und die Angabe fehlt einfach. Genau so

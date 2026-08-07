@@ -1,5 +1,5 @@
 {
-  "schema_version": "1.6",
+  "schema_version": "1.7",
   "tool": "wp_plesk_forensik.sh",
   "tool_version": "<FASSUNG>",
   "run_id": "<LAUF-ID>",
@@ -10,10 +10,12 @@
     "vollstaendig": false,
     "module_gelaufen": ["4","7","11","12","12b","12c","13b","14"],
     "module_uebersprungen": ["1. System-Übersicht","2. Logs sichern","3. Zugriffs-Analyse","5. Benutzer & Rechte","6. Cronjobs & Persistenz","8. Netzwerk & Dienste","9. Sicherheits-Dienste","10. Andere Domains","13. Root- & Eskalations-Prüfung"],
-    "nicht_messbar": ["grep ohne PCRE-Unterstützung (-P) — Zugangsdaten aus wp-config.php nicht lesbar, keine Datenbank-Prüfung möglich","kunde-zwei.example/cloud.kunde-zwei.example: Eigentümer oder PHP nicht ermittelbar — Kern-Integrität nicht geprüft"]
+    "nicht_messbar": ["grep ohne PCRE-Unterstützung (-P) — Zugangsdaten aus wp-config.php nicht lesbar, keine Datenbank-Prüfung möglich","kunde-zwei.example/cloud.kunde-zwei.example: Eigentümer oder PHP nicht ermittelbar — Kern-Integrität nicht geprüft","kunde-zwei.example/cloud.kunde-zwei.example: occ nicht ausführbar — Härtungsstand nicht messbar"]
   },
   "htaccess_unwirksam": "nginx ohne Apache",
-  "counts": { "crit": 9, "warn": 4, "ok": 13, "unknown": 2 },
+  "befunde": {"nextcloud": {"haertung": [{"schwere": "unklar", "text": "kunde-zwei.example/cloud.kunde-zwei.example: occ nicht ausführbar — Härtungsstand nicht messbar", "pfad": "<PRUEFSTAND>/vhosts/kunde-zwei.example/cloud.kunde-zwei.example"}]}},
+  "verdikte": {},
+  "counts": { "crit": 9, "warn": 4, "ok": 12, "unknown": 3 },
   "verdicts": {
     "root": { "flags": 0, "text": "⚪ Root-Prüfung nicht durchgeführt." },
     "wpdb": { "flags": 0, "text": "🟢 **Keine Angreifer-Spuren in den WordPress-Datenbanken** (keine neuen Admins, keine manipulierten Optionen)." },
