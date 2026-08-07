@@ -82,6 +82,14 @@ for _rz in "${REZEPT_DIR}"/*/; do
 
     # Signaturen: rein dateibasiert, brauchen kein Werkzeug.
     rezept_signaturen "$_app" "$_rz" "$REZ_PFAD" "$REZ_KURZ"
+    # Abgleich gegen bekannte Schwachstellen. Steht hier und nicht unten, weil
+    # er rein dateibasiert arbeitet: Fassungen kommen aus Kopfzeilen, der
+    # Bestand liegt offline im Rezept. Eine Instanz, deren Werkzeug fehlt,
+    # bekommt so trotzdem eine Aussage zur Angreifbarkeit.
+    #
+    # lib/rezepte.sh nennt rezept_version seit der ersten Fassung als Haken,
+    # aufgerufen wurde er nie — ein Haken, den kein Rezept nutzen konnte.
+    declare -F rezept_version >/dev/null && rezept_version
     # Kampagnenspezifisches ebenso.
     declare -F rezept_sonder >/dev/null && rezept_sonder
 
@@ -117,7 +125,7 @@ for _rz in "${REZEPT_DIR}"/*/; do
 
   declare -F rezept_verdikt >/dev/null && rezept_verdikt
   # Haken zurueckziehen, damit sie nicht ins naechste Rezept durchschlagen.
-  unset -f rezept_kern rezept_konfig rezept_db rezept_sonder rezept_verdikt 2>/dev/null || true
+  unset -f rezept_version rezept_kern rezept_konfig rezept_db rezept_sonder rezept_verdikt 2>/dev/null || true
 done
 
 [[ "$_rz_gelaufen" -eq 0 ]] && info "Keine der bekannten Anwendungen im Prüfumfang gefunden"
