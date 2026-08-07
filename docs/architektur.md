@@ -87,7 +87,7 @@ Zwei Variablen sind noch echte Abhängigkeiten zwischen Abschnitten: `ATTACK_IPS
 # @ebene:   website
 ```
 
-`@ebene` ist `system`, `website` oder `bericht` und steuert die Gruppierung im Menü sowie `--nur-website`. `@kosten` beginnt mit `HOCH`, wenn der Abschnitt spürbar Zeit kostet — das Menü hebt solche Einträge hervor. Diese Angabe hat im Vorfall auf k42 gefehlt.
+`@ebene` ist `system`, `website` oder `bericht` und steuert die Gruppierung im Menü sowie `--nur-website`. `@kosten` beginnt mit `HOCH`, wenn der Abschnitt spürbar Zeit kostet — das Menü hebt solche Einträge hervor. Diese Angabe hat im Vorfall auf einem Produktivsystem gefehlt.
 
 3. Ergebnisvariablen in `lib/befunde.sh` mit Vorgabewert eintragen.
 4. Ausgabe über die Primitiven aus `lib/kern.sh`: `h2`, `ok`, `info`, `warn`, `crit`, `code`, `evidence`.

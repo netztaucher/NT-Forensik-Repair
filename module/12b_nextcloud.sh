@@ -5,7 +5,7 @@
 # @ebene:   website
 #
 # Grundlage: die Bereinigung einer echten, uebernommenen Instanz
-# (/root/docs/nextcloud-cleanup-htaccess-guide.md auf k42, 08/2026). Die Muster
+# (interne Zuarbeit aus einem realen Vorfall, 08/2026). Die Muster
 # hier stammen aus diesem Fall, nicht aus einer Sammlung im Netz.
 #
 # Der Angriff arbeitete WordPress-artig: eine Root-.htaccess, die PHP pauschal
