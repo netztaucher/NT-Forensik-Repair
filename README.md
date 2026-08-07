@@ -24,7 +24,7 @@
 | | | |
 |---|---|---|
 | **`wp_plesk_forensik.sh`** | Analyse — was ist passiert? | frei, quelloffen, ohne Netz lauffähig |
-| **`nt_repair.sh`** | Bereinigung — was tun wir dagegen? | [lizenzgebunden](docs/lizenzierung.md) |
+| **`nt_repair.sh`** | Bereinigung — was tun wir dagegen? | [lizenzgebunden](docs/lizenz.md) |
 
 > 🔒 **Read-only by design.** Die Analyse **verändert den Webspace nicht** — sie liest, wertet aus und schreibt ausschließlich nach `/root/wartungsscripte/`. Beweise bleiben unangetastet. Das Entfernen von Schadcode ist ein bewusst getrennter Schritt **nach** der Sicherung; dafür gibt es [`nt_repair.sh`](#bereinigung--nt_repairsh), das ohne ausdrückliches Go pro Aktion nichts ändert und nie löscht, sondern verschiebt.
 
@@ -204,7 +204,8 @@ Im Ordner [`examples/`](examples/) liegen vollständige Beispielberichte eines *
 - **[`docs/incident-response.md`](docs/incident-response.md)** — Incident-Response-Playbook: 7 Phasen von der Beweissicherung bis zur Härtung.
 - **[`docs/runbook.md`](docs/runbook.md)** — Runbook für die manuelle Ad-hoc-Analyse einzelner Prüfpunkte.
 - **[`docs/findings-schnittstelle.md`](docs/findings-schnittstelle.md)** — `findings.json` als Vertrag: welche Feldpfade NT-Repair liest und was bei Schema-Änderungen zu tun ist.
-- **[`docs/lizenzierung.md`](docs/lizenzierung.md)** — Lizenzierung des Bereinigungsteils: was geschützt ist, was nicht, wie ein Arbeitsplatz freigeschaltet wird, was bei Serverausfall passiert.
+- **[`docs/lizenz.md`](docs/lizenz.md)** — Lizenz für den Bereinigungsteil: für wen, welcher Umfang, Einrichtung, Ausfallreserve, Nutzungsbedingungen.
+- **[`docs/lizenzierung-technik.md`](docs/lizenzierung-technik.md)** — das Schutzmodell dahinter: wie die Bindung funktioniert, wo ihre Grenzen liegen, wie eine Fassung ausgeliefert wird.
 
 ## Bereinigung — `nt_repair.sh`
 
@@ -280,8 +281,8 @@ erreichbar, greift eine Ausfallreserve von sieben Tagen, an denselben Arbeitspla
 Netz, mit offenem Quelltext. Im Vorfall ist die Analyse der dringende Teil; Bereinigen kann warten,
 bis wieder Netz da ist.
 
-Was die Verschlüsselung leistet und was nicht, steht ungeschönt in
-[`docs/lizenzierung.md`](docs/lizenzierung.md) — gegen den Ausführenden schützt sie nicht, und
+Umfang und Bedingungen: [`docs/lizenz.md`](docs/lizenz.md). Was die Verschlüsselung leistet
+und was nicht, steht ungeschönt in [`docs/lizenzierung-technik.md`](docs/lizenzierung-technik.md) — gegen den Ausführenden schützt sie nicht, und
 eine Doku, die etwas anderes behauptet, wäre eine Falle für den, der ihr glaubt.
 
 ## Sicherheit & Recht
