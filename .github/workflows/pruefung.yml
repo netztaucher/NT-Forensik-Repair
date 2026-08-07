@@ -50,6 +50,22 @@ jobs:
           done < <(git ls-files '*.py')
           exit $fehler
 
+      - name: Selbsttest des Versionsvergleichs
+        # Der Abgleich installierter Fassungen gegen Verwundbarkeitsbereiche
+        # steht und fällt mit der Ordnung der Versionen. Ist sie an einer
+        # Stelle falsch, meldet das Werkzeug entweder eine Lücke, die
+        # geschlossen ist, oder schweigt zu einer, die offen ist — beides sieht
+        # im Bericht plausibel aus und fällt im Betrieb nicht auf.
+        run: python3 lib/wp_schwachstellen.py --selbsttest
+
+      - name: Versionsvergleich gegen PHP
+        # Die eigentliche Absicherung: nicht gegen eine handgeschriebene
+        # Erwartungstabelle prüfen, sondern gegen die Umsetzung, die WordPress
+        # selbst benutzt. 30.000 Fälle je Lauf.
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq php-cli
+          bash werkzeuge/version_compare_gegentest.sh 30000
+
       - name: shellcheck
         run: |
           sudo apt-get update -qq && sudo apt-get install -y -qq shellcheck

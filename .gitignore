@@ -28,3 +28,7 @@ logs/
 
 # Arbeitsdateien der Datenpflege (werkzeuge/joomla-daten-update.sh)
 .vel_offen.tsv
+
+# Python-Zwischenstände (py_compile in der CI, Selbsttest lokal)
+__pycache__/
+*.pyc
