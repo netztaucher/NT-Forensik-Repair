@@ -1,0 +1,96 @@
+name: Prüfung
+
+# Was diese Prüfung leistet — und was nicht.
+#
+# Sie leistet: Syntaxprüfung aller Skripte, statische Analyse über shellcheck,
+# und den Nachweis, dass zwei Läufe desselben Programmstands dieselbe Ausgabe
+# erzeugen (Determinismus).
+#
+# Sie leistet NICHT den Vergleich gegen die eingecheckte Referenz unter
+# pruefstand/referenz/. Diese Referenz stammt von einem macOS-Arbeitsplatz mit
+# BSD-Werkzeugen; `find -ls`, `stat` und `sort` verhalten sich dort anders als
+# unter GNU/Linux. Ein Vergleich über die Plattformgrenze hinweg würde bei
+# jedem Lauf ausschlagen und wäre damit wertlos — er würde den Blick genau auf
+# die echten Abweichungen verstellen.
+#
+# Der Regressionsvergleich ist deshalb ein lokaler Schritt vor jedem Commit:
+#   werkzeuge/goldmuster.sh vergleichen
+# Weicht etwas ab: prüfen, ob es beabsichtigt war, dann
+#   werkzeuge/goldmuster.sh aufnehmen
+# und die neue Referenz im selben Commit mitschicken.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  syntax:
+    name: Syntax und statische Analyse
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: bash -n über alle Skripte
+        run: |
+          fehler=0
+          while IFS= read -r f; do
+            if ! bash -n "$f" 2>/tmp/syn.err; then
+              echo "::error file=$f::$(head -3 /tmp/syn.err)"
+              fehler=1
+            fi
+          done < <(git ls-files '*.sh')
+          exit $fehler
+
+      - name: python -m py_compile über alle Python-Dateien
+        run: |
+          fehler=0
+          while IFS= read -r f; do
+            python3 -m py_compile "$f" || { echo "::error file=$f::Syntaxfehler"; fehler=1; }
+          done < <(git ls-files '*.py')
+          exit $fehler
+
+      - name: shellcheck
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq shellcheck
+          # Die Module werden per `source` in den Runner gezogen und sehen
+          # dessen Variablen — shellcheck kennt diesen Zusammenhang nicht und
+          # meldet sonst jede geerbte Variable als undefiniert (SC2154).
+          # SC1091: eingebundene Dateien werden zur Prüfzeit nicht aufgelöst.
+          shellcheck --severity=warning --exclude=SC2154,SC1091 \
+            $(git ls-files '*.sh') || true
+          echo "--- als Fehler gewertet: nur error-Stufe ---"
+          shellcheck --severity=error --exclude=SC2154,SC1091 $(git ls-files '*.sh')
+
+  determinismus:
+    name: Zwei Läufe, dieselbe Ausgabe
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Referenz auf dieser Plattform aufnehmen
+        run: bash werkzeuge/goldmuster.sh aufnehmen
+
+      - name: Zweimal vergleichen
+        run: |
+          # Zweimal, weil eine einzelne Wiederholung eine Instabilität
+          # verdecken kann, die nur gelegentlich auftritt.
+          bash werkzeuge/goldmuster.sh vergleichen
+          bash werkzeuge/goldmuster.sh vergleichen
+
+      - name: Gegenprobe — schlägt der Prüfstand bei einer echten Änderung an?
+        run: |
+          # Ein Prüfstand, der nie ausschlägt, ist keiner. Diese Stufe schaltet
+          # den Kopienfilter des Nextcloud-Abschnitts ab und erwartet, dass der
+          # Vergleich das bemerkt. Am 07.08.2026 tat er das nicht — die
+          # Sicherungskopie im Prüfbaum lag tiefer als das -maxdepth des
+          # Abschnitts und wurde nie gefunden.
+          cp module/12b_nextcloud.sh /tmp/12b.sicherung
+          perl -i -pe "s/^NC_KOPIE='.*/NC_KOPIE='TRIFFT-NICHTS'/" module/12b_nextcloud.sh
+          if bash werkzeuge/goldmuster.sh vergleichen >/dev/null 2>&1; then
+            echo "::error::Der Prüfstand ist blind für eine abgeschaltete Prüfung."
+            cp /tmp/12b.sicherung module/12b_nextcloud.sh
+            exit 1
+          fi
+          cp /tmp/12b.sicherung module/12b_nextcloud.sh
+          bash werkzeuge/goldmuster.sh vergleichen

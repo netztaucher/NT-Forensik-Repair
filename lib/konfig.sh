@@ -25,9 +25,15 @@ case "${COLORTERM:-}" in
 esac
 
 # ── Feste Infrastruktur-Pfade (netztaucher Plesk-Standard) ──
-BASE_DIR="/root/wartungsscripte"
+# Ueberschreibbar ausschliesslich fuer den Pruefstand (werkzeuge/goldmuster.sh
+# und die CI). Ein echter Lauf setzt diese Variablen nicht — er findet die
+# Vorgaben vor, die dem Plesk-Standard entsprechen. Der Grund fuer die
+# Ueberschreibbarkeit: ohne sie laesst sich das Werkzeug nur auf einem echten
+# Produktivsystem ausfuehren, und genau das hat dazu gefuehrt, dass Fehler
+# regelmaessig erst dort auffielen statt in einem Testlauf.
+BASE_DIR="${NT_BASE_DIR:-/root/wartungsscripte}"
 FORENSIK_BASE="${BASE_DIR}/forensik"
-VHOSTS_DIR="/var/www/vhosts"
+VHOSTS_DIR="${NT_VHOSTS_DIR:-/var/www/vhosts}"
 PLESK_LOG_DIR="/var/log/plesk"
 PLESK_PANEL_LOG="${PLESK_LOG_DIR}/panel.log"
 
@@ -290,10 +296,22 @@ ablage_einrichten() {
   LOG_ARCHIVE="${BELEGE_DIR}/logs_sicherung.tar.gz"
 
   # ── Root-Check ───────────────────────────────────────────────
-  if [[ $EUID -ne 0 ]]; then
-    echo -e "${RED}Fehler: Skript muss als root ausgeführt werden.${NC}"
-    echo "  sudo bash $0 [domain.tld]"
-    exit 1
+  # NT_TESTLAUF=1 hebt ihn auf — aber nur zusammen mit NT_BASE_DIR, damit ein
+  # Testlauf nie in die Ablage eines echten Laufs schreiben kann. Und er sagt
+  # es in jedem erzeugten Dokument: ein Bericht aus einem Testlauf darf mit
+  # einem echten nicht verwechselbar sein, sonst ist der Pruefstand selbst
+  # eine Fehlerquelle.
+  if [[ "${NT_TESTLAUF:-}" == "1" && -n "${NT_BASE_DIR:-}" ]]; then
+    TESTLAUF=1
+    echo -e "${YLW}TESTLAUF${NC} — ohne Root-Rechte, Ablage unter ${BASE_DIR}."
+    echo -e "${YLW}        ${NC}  Serverweite Abschnitte liefern hier keine belastbaren Ergebnisse."
+  else
+    TESTLAUF=0
+    if [[ $EUID -ne 0 ]]; then
+      echo -e "${RED}Fehler: Skript muss als root ausgeführt werden.${NC}"
+      echo "  sudo bash $0 [domain.tld]"
+      exit 1
+    fi
   fi
 
   # ── Basis-Verzeichnisse anlegen ──────────────────────────────
