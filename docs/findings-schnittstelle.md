@@ -11,7 +11,52 @@ in `emit_findings_json()`.
 Die Datei enthält absolute Pfade und wird bewusst **nicht** maskiert, weil der
 Reparaturteil die echten Pfade braucht. Sie gehört damit in die Betreiberspur und
 nicht in die Kundenübergabe.
-Aktuelle Fassung: **schema_version 1.5**.
+Aktuelle Fassung: **schema_version 1.7**.
+
+## Was sich in 1.6 und 1.7 geändert hat
+
+Alles additiv — bestehende Leser brechen nicht.
+
+| Feld | Seit | Bedeutung |
+|---|---|---|
+| `actionable.htaccess_fremd` | 1.6 | `.htaccess`-Dateien mit Angreifer-Direktiven |
+| `htaccess_unwirksam` | 1.6 | Grund, warum `.htaccess` gar nicht ausgewertet wird (leer = wird ausgewertet) |
+| `befunde` | 1.7 | Befunde nach Anwendung und Kategorie, **mit Pfad** |
+| `verdikte` | 1.7 | Verdikt je Anwendung, `{flags, text}` |
+
+### `befunde` — das generische Schema
+
+```json
+"befunde": {
+  "nextcloud": {
+    "haertung": [
+      {"schwere": "unklar",
+       "text": "…: occ nicht ausführbar — Härtungsstand nicht messbar",
+       "pfad": "/var/www/vhosts/…/cloud.example"}
+    ]
+  }
+}
+```
+
+Die **Kategorien sind fest**: `erkennung version kern konfig datenbank schadcode
+logs haertung verdikt`. Die **Anwendungen sind frei** — ein neuer Scanner für
+TYPO3 oder Shopware taucht hier auf, ohne dass am Kern etwas geändert wird.
+
+`schwere` ist `crit`, `warn` oder `unklar`. **`ok` steht bewusst nicht drin:**
+unauffällige Einzelbefunde sind der Normalfall und würden die Datei um ein
+Vielfaches aufblähen; ihre Zahl steht in `counts.ok`.
+
+**`pfad` ist der eigentliche Zweck.** Er erlaubt es, einen Befund exakt einem
+Verzeichnis zuzuordnen — Grundlage sowohl für die Bereinigung als auch für den
+Datenschutz-Riegel, der entscheidet, ob ein Befund in die Kundenspur darf.
+
+### Migration
+
+Die anwendungsspezifischen Listen unter `actionable` (`nextcloud_malware`,
+`joomla_*`, `wp_configs` …) bleiben vorerst **parallel** bestehen und werden je
+Modul abgelöst, sobald es ohnehin angefasst wird. Ein Leser sollte neu
+geschriebenen Code gegen `befunde` bauen; `actionable` bleibt lesbar, bis die
+Migration abgeschlossen ist.
 
 ## Was sich in 1.5 geändert hat
 

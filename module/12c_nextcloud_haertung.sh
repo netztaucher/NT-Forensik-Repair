@@ -58,7 +58,7 @@ while IFS= read -r NCDIR; do
 
   _own=$(stat -c %U "$NCDIR" 2>/dev/null || echo "")
   if [[ -z "$_own" || -z "$_php_bin" ]]; then
-    info "${_kurz}: occ nicht ausführbar — Härtungsstand nicht messbar"
+    befund_melden nextcloud haertung unklar "${_kurz}: occ nicht ausführbar — Härtungsstand nicht messbar" "$NCDIR" web
     continue
   fi
   # occ immer als Eigentuemer. Als root erzeugt es Cache-Dateien, die der
@@ -74,7 +74,7 @@ while IFS= read -r NCDIR; do
   _probe=$(_occ status --output=json || true)
   if ! printf '%s' "$_probe" | python3 -c "import json,sys;json.load(sys.stdin)" 2>/dev/null; then
     _grund=$(printf '%s' "$_probe" | sed 's/<br\/*>/ /g' | tr -d '\n' | cut -c1-160)
-    warn "${_kurz}: occ liefert keine verwertbare Antwort — Härtungsstand NICHT gemessen${_grund:+ (${_grund})}"
+    befund_melden nextcloud haertung unklar "${_kurz}: occ liefert keine verwertbare Antwort — Härtungsstand NICHT gemessen${_grund:+ (${_grund})}" "$NCDIR" web
     NC_HAERTUNG+="${_kurz}: Härtungsstand nicht messbar (occ nicht lauffähig)"$'\n'
     continue
   fi
@@ -82,7 +82,7 @@ while IFS= read -r NCDIR; do
   # ── 1. Datenverzeichnis ─────────────────────────────────────
   _data=$(_occ config:system:get datadirectory | tr -d '\r' || true)
   if [[ -z "$_data" ]]; then
-    info "${_kurz}: datadirectory nicht auslesbar"
+    befund_melden nextcloud haertung unklar "${_kurz}: datadirectory nicht auslesbar — Lage des Datenverzeichnisses nicht geprüft" "$NCDIR" web
   elif [[ "$_data" == "${NCDIR}"* ]]; then
     # Innerhalb des Webroots. Ob das wirklich ausliefert, wird gemessen, nicht
     # vermutet: eine .htaccess kann greifen — oder eben nicht.
@@ -93,21 +93,21 @@ while IFS= read -r NCDIR; do
     if [[ -n "$_url" ]]; then
       _code=$(curl -sk -o /dev/null -w '%{http_code}' --max-time 12 "$_url" 2>/dev/null || echo "000")
       if [[ "$_code" == "200" ]]; then
-        crit "${_kurz}: Datenverzeichnis ist über das Netz abrufbar (HTTP 200 auf ${_url}) — sämtliche Nutzerdateien sind öffentlich" web
+        befund_melden nextcloud haertung crit "${_kurz}: Datenverzeichnis ist über das Netz abrufbar (HTTP 200 auf ${_url}) — sämtliche Nutzerdateien sind öffentlich" "$_data" web
         NC_HAERTUNG+="${_kurz}: Datenverzeichnis öffentlich abrufbar (HTTP 200)"$'\n'
       elif [[ "$_code" == "000" ]]; then
-        warn "${_kurz}: Datenverzeichnis liegt im Webroot (${_data}); Abruf nicht möglich — Schutz unbelegt"
+        befund_melden nextcloud haertung warn "${_kurz}: Datenverzeichnis liegt im Webroot (${_data}); Abruf nicht möglich — Schutz unbelegt" "$_data"
         NC_HAERTUNG+="${_kurz}: Datenverzeichnis im Webroot, Schutz nicht messbar"$'\n'
       else
-        warn "${_kurz}: Datenverzeichnis liegt im Webroot (${_data}), wird aber gesperrt (HTTP ${_code}) — der Schutz hängt an einer einzigen .htaccess"
+        befund_melden nextcloud haertung warn "${_kurz}: Datenverzeichnis liegt im Webroot (${_data}), wird aber gesperrt (HTTP ${_code}) — der Schutz hängt an einer einzigen .htaccess" "$_data"
         NC_HAERTUNG+="${_kurz}: Datenverzeichnis im Webroot, nur durch .htaccess geschützt"$'\n'
       fi
     else
-      warn "${_kurz}: Datenverzeichnis liegt im Webroot (${_data})"
+      befund_melden nextcloud haertung warn "${_kurz}: Datenverzeichnis liegt im Webroot (${_data})" "$_data"
       NC_HAERTUNG+="${_kurz}: Datenverzeichnis im Webroot"$'\n'
     fi
   else
-    ok "${_kurz}: Datenverzeichnis außerhalb des Webroots (${_data})"
+    befund_melden nextcloud haertung ok "${_kurz}: Datenverzeichnis außerhalb des Webroots (${_data})" "$_data"
   fi
 
   # ── 2. App-Passwörter ───────────────────────────────────────
@@ -121,7 +121,7 @@ while IFS= read -r NCDIR; do
              | python3 -c "import json,sys;print(len(json.load(sys.stdin).get('admin',[])))" 2>/dev/null || echo "?")
     info "${_kurz}: ${_n_user} Konten, davon ${_n_adm} mit Administrationsrechten"
     if [[ "$_n_adm" =~ ^[0-9]+$ && "$_n_adm" -gt 2 ]]; then
-      warn "${_kurz}: ${_n_adm} Administratorkonten — jedes davon ist ein vollwertiger Zugang"
+      befund_melden nextcloud haertung warn "${_kurz}: ${_n_adm} Administratorkonten — jedes davon ist ein vollwertiger Zugang" "$NCDIR"
       NC_HAERTUNG+="${_kurz}: ${_n_adm} Administratorkonten"$'\n'
     fi
     info "${_kurz}: App-Passwörter überleben jeden Passwortwechsel. Nach einem Vorfall müssen sie eigens widerrufen werden (occ user:auth-tokens:delete <konto> --all)."
@@ -139,9 +139,9 @@ import json,sys
 d=json.load(sys.stdin).get('enabled',{})
 print(','.join(k for k in d if k.startswith('twofactor_') and k != 'twofactor_backupcodes'))" 2>/dev/null || true)
   if [[ -n "$_2fa" ]]; then
-    ok "${_kurz}: zweiter Faktor verfügbar (${_2fa})"
+    befund_melden nextcloud haertung ok "${_kurz}: zweiter Faktor verfügbar (${_2fa})" "$NCDIR"
   else
-    warn "${_kurz}: kein zweiter Faktor eingerichtet — ein erbeutetes Passwort genügt für den vollen Zugang (twofactor_backupcodes zählt nicht, das sind nur Notfallcodes)"
+    befund_melden nextcloud haertung warn "${_kurz}: kein zweiter Faktor eingerichtet — ein erbeutetes Passwort genügt für den vollen Zugang (twofactor_backupcodes zählt nicht, das sind nur Notfallcodes)" "$NCDIR"
     NC_HAERTUNG+="${_kurz}: kein zweiter Faktor eingerichtet"$'\n'
   fi
 
@@ -149,10 +149,10 @@ print(','.join(k for k in d if k.startswith('twofactor_') and k != 'twofactor_ba
   # Wenige Werte, die nach einem Vorfall die Aufklaerung tragen — oder eben nicht.
   _loglvl=$(_occ config:system:get loglevel | tr -d '\r' || echo "")
   if [[ "$_loglvl" =~ ^[3-4]$ ]]; then
-    warn "${_kurz}: loglevel steht auf ${_loglvl} (nur Fehler) — Anmeldungen und Zugriffe werden nicht protokolliert, ein Vorfall ist später nicht rekonstruierbar"
+    befund_melden nextcloud logs warn "${_kurz}: loglevel steht auf ${_loglvl} (nur Fehler) — Anmeldungen und Zugriffe werden nicht protokolliert, ein Vorfall ist später nicht rekonstruierbar" "$NCDIR"
     NC_HAERTUNG+="${_kurz}: loglevel ${_loglvl} — zu grob für Nachvollziehbarkeit"$'\n'
   else
-    ok "${_kurz}: loglevel ${_loglvl:-Vorgabe}"
+    befund_melden nextcloud logs ok "${_kurz}: loglevel ${_loglvl:-Vorgabe}" "$NCDIR"
   fi
 
   _proto=$(_occ config:system:get overwriteprotocol | tr -d '\r' || echo "")
@@ -162,20 +162,20 @@ print(','.join(k for k in d if k.startswith('twofactor_') and k != 'twofactor_ba
   _td=$(_occ config:system:get trusted_domains | tr -d '\r' | grep -vE '^$' || true)
   _td_n=$(printf '%s\n' "$_td" | grep -c . || true)
   if [[ "$_td_n" -gt 3 ]]; then
-    warn "${_kurz}: ${_td_n} vertrauenswürdige Domains eingetragen — jede erlaubt den Betrieb der Instanz unter dieser Adresse"
+    befund_melden nextcloud konfig warn "${_kurz}: ${_td_n} vertrauenswürdige Domains eingetragen — jede erlaubt den Betrieb der Instanz unter dieser Adresse" "$NCDIR"
     code "$_td"
     NC_HAERTUNG+="${_kurz}: ${_td_n} trusted_domains"$'\n'
   else
-    ok "${_kurz}: ${_td_n} vertrauenswürdige Domain(s)"
+    befund_melden nextcloud konfig ok "${_kurz}: ${_td_n} vertrauenswürdige Domain(s)" "$NCDIR"
   fi
 
   # ── 5. Rechte auf der Konfiguration ─────────────────────────
   _cfg_r=$(stat -c '%a' "${NCDIR}/config/config.php" 2>/dev/null || echo "")
   if [[ -n "$_cfg_r" && ! "$_cfg_r" =~ ^(600|640|660)$ ]]; then
-    warn "${_kurz}: config/config.php hat Rechte ${_cfg_r} — sie enthält Datenbankzugang und Instanz-Salt"
+    befund_melden nextcloud konfig warn "${_kurz}: config/config.php hat Rechte ${_cfg_r} — sie enthält Datenbankzugang und Instanz-Salt" "${NCDIR}/config/config.php"
     NC_HAERTUNG+="${_kurz}: config.php mit Rechten ${_cfg_r}"$'\n'
   elif [[ -n "$_cfg_r" ]]; then
-    ok "${_kurz}: config/config.php Rechte ${_cfg_r}"
+    befund_melden nextcloud konfig ok "${_kurz}: config/config.php Rechte ${_cfg_r}" "${NCDIR}/config/config.php"
   fi
 
   # ── 6. Fassung ──────────────────────────────────────────────
@@ -187,9 +187,14 @@ print(','.join(k for k in d if k.startswith('twofactor_') and k != 'twofactor_ba
 
 done <<< "$NCH_INSTALLS"
 
-if [[ -z "$NC_HAERTUNG" ]]; then
-  ok "Keine Härtungslücken gefunden"
-else
+# 'Keine Luecken gefunden' setzt voraus, dass gesucht werden konnte. Der Satz
+# stand vorher direkt unter einem ⚪ 'nicht messbar' — zwei Zeilen, die sich
+# widersprechen, und die zweite laut genug, dass die erste ueberlesen wird.
+if [[ -n "$NC_HAERTUNG" ]]; then
   info "Die Härtungsbefunde sind Schwachstellen, keine Einbruchsbelege. Sie sagen, wie leicht ein Zugriff wäre — nicht, dass er stattgefunden hat."
+elif printf '%s' "${UNKNOWN_LIST:-}" | grep -q 'Härtungsstand'; then
+  info "Für die messbaren Instanzen keine Härtungslücken. Für die übrigen liegt kein Ergebnis vor — das ist keine Entwarnung."
+else
+  ok "Keine Härtungslücken gefunden"
 fi
 fi

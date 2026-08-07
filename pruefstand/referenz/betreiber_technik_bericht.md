@@ -238,8 +238,8 @@ php_value auto_prepend_file /var/www/vhosts/<anderer Kunde 1>/httpdocs/wp-conten
 
 ### 12c.1 kunde-zwei.example/cloud.kunde-zwei.example
 
-  kunde-zwei.example/cloud.kunde-zwei.example: occ nicht ausführbar — Härtungsstand nicht messbar
-- ✅ Keine Härtungslücken gefunden
+- ⚪ **Nicht messbar: kunde-zwei.example/cloud.kunde-zwei.example: occ nicht ausführbar — Härtungsstand nicht messbar**
+  Für die messbaren Instanzen keine Härtungslücken. Für die übrigen liegt kein Ergebnis vor — das ist keine Entwarnung.
 
 ## 13b. .HTACCESS — SICHERUNG UND EINORDNUNG
 
@@ -299,14 +299,15 @@ php_value auto_prepend_file /var/www/vhosts/<anderer Kunde 2>  auto_prepend_file
 |---|---|
 | 🔴 Kritische Befunde | 9 |
 | ⚠️ Warnungen | 4 |
-| ✅ Unauffällige Prüfungen | 13 |
-| ⚪ Nicht messbar | 2 |
+| ✅ Unauffällige Prüfungen | 12 |
+| ⚪ Nicht messbar | 3 |
 
-> **2 Prüfung(en) haben keine Aussage geliefert.** Ihr Ergebnis ist weder
+> **3 Prüfung(en) haben keine Aussage geliefert.** Ihr Ergebnis ist weder
 > ein Befund noch eine Entwarnung — der jeweilige Bereich ist ungeprüft:
 >
 > - grep ohne PCRE-Unterstützung (-P) — Zugangsdaten aus wp-config.php nicht lesbar, keine Datenbank-Prüfung möglich
 > - kunde-zwei.example/cloud.kunde-zwei.example: Eigentümer oder PHP nicht ermittelbar — Kern-Integrität nicht geprüft
+> - kunde-zwei.example/cloud.kunde-zwei.example: occ nicht ausführbar — Härtungsstand nicht messbar
 
 ### 14.2 Empfohlene Sofortmaßnahmen
 

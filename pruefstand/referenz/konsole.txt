@@ -120,8 +120,8 @@
   [0m·  1 Sicherungskopie(n) übersprungen — sie werden nicht ausgeliefert und sind kein eigener Härtungsgegenstand
 
 [0;36m▶ 12c.1 kunde-zwei.example/cloud.kunde-zwei.example[0m
-  [0m·  kunde-zwei.example/cloud.kunde-zwei.example: occ nicht ausführbar — Härtungsstand nicht messbar
-  [0;32m✓[0m Keine Härtungslücken gefunden
+  [0;36m⚪[0m kunde-zwei.example/cloud.kunde-zwei.example: occ nicht ausführbar — Härtungsstand nicht messbar
+  [0m·  Für die messbaren Instanzen keine Härtungslücken. Für die übrigen liegt kein Ergebnis vor — das ist keine Entwarnung.
   [0;36mübersprungen:[0m 13. Root- & Eskalations-Prüfung
 
 [1m[0;34m══════════════════════════════════════════[0m
@@ -156,10 +156,11 @@
 [1m[0;32m  ANALYSE ABGESCHLOSSEN — Lauf <LAUF-ID>[0m
 [1m[0;32m══════════════════════════════════════════[0m
 
-[1mBefunde:[0m       🔴 9 kritisch, ⚠️ 4 Warnungen, ✅ 13 ok, ⚪ 2 nicht messbar
-[0;33m               2 Prüfung(en) ohne Ergebnis — das ist keine Entwarnung.[0m
+[1mBefunde:[0m       🔴 9 kritisch, ⚠️ 4 Warnungen, ✅ 12 ok, ⚪ 3 nicht messbar
+[0;33m               3 Prüfung(en) ohne Ergebnis — das ist keine Entwarnung.[0m
                  grep ohne PCRE-Unterstützung (-P) — Zugangsdaten aus wp-config.php nicht lesbar, keine Datenbank-Prüfung möglich
                  kunde-zwei.example/cloud.kunde-zwei.example: Eigentümer oder PHP nicht ermittelbar — Kern-Integrität nicht geprüft
+                 kunde-zwei.example/cloud.kunde-zwei.example: occ nicht ausführbar — Härtungsstand nicht messbar
 
 [1mLauf-Ordner:[0m     <PRUEFSTAND>/ablage/forensik/<LAUF-ID>
 
