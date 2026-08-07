@@ -236,13 +236,15 @@ php_value auto_prepend_file /var/www/vhosts/<anderer Kunde 1>/httpdocs/wp-conten
 - ✅ kunde-drei.example/httpdocs: keine bekannte Schwachstelle im vorliegenden Datenbestand (Stand 2026-08-07)
 - ✅ kunde-drei.example/httpdocs: keine Doorway-.htaccess-Signatur
 - ✅ kunde-drei.example/httpdocs: keine @include base64_decode()-Injektion
-- ⚪ **Nicht messbar: kunde-drei.example/httpdocs: wp nicht ausführbar (Werkzeug, PHP oder Eigentümer fehlt) — Instanz nur dateibasiert geprüft**
+- ✅ kunde-drei.example/httpdocs: WordPress-Core unverändert (verify-checksums)
+- ✅ kunde-drei.example/httpdocs: 2 Plugin(s) gegen wordpress.org geprüft — keine veränderte Codedatei
+- ⚪ **Nicht messbar: kunde-drei.example/httpdocs: 1 Plugin(s) ohne Prüfsummensatz und alle Themes — Unversehrtheit nicht feststellbar (Premium, Fork, Eigenbau; für Themes veröffentlicht wordpress.org keine Prüfsummen)**
 
 ### 12r.2.x kunde-eins.example/httpdocs
 
 - ✅ kunde-eins.example/httpdocs: keine Doorway-.htaccess-Signatur
 - ✅ kunde-eins.example/httpdocs: keine @include base64_decode()-Injektion
-- ⚪ **Nicht messbar: kunde-eins.example/httpdocs: wp nicht ausführbar (Werkzeug, PHP oder Eigentümer fehlt) — Instanz nur dateibasiert geprüft**
+- ✅ kunde-eins.example/httpdocs: WordPress-Core unverändert (verify-checksums)
 
 ### 12r.2.x kunde-zwei.example/httpdocs
 
@@ -267,7 +269,23 @@ php_value auto_prepend_file /var/www/vhosts/<anderer Kunde 1>/httpdocs/wp-conten
 <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/mu-plugins/cache.php
 ```
 
-- ⚪ **Nicht messbar: kunde-zwei.example/httpdocs: wp nicht ausführbar (Werkzeug, PHP oder Eigentümer fehlt) — Instanz nur dateibasiert geprüft**
+- 🔴 **KRITISCH: kunde-zwei.example/httpdocs: 1 veränderte Core-Datei(en) — Injektion oder Manipulation**
+
+```
+<PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-includes/load.php
+```
+
+  Beleg: belege/08_wp_core_veraendert_kunde-zwei_example_httpdocs.txt
+- ⚠️  **kunde-zwei.example/httpdocs: 1 Core-fremde Datei(en) in wp-admin/wp-includes — prüfen**
+  Beleg: belege/09_wp_core_fremd_kunde-zwei_example_httpdocs.txt
+- 🔴 **KRITISCH: kunde-zwei.example/httpdocs: 1 veränderte Plugin-Codedatei(en) gegenüber wordpress.org — Plugin neu installieren, Dateien vorher sichern**
+
+```
+<PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/plugins/pruefstand-aktuell/pruefstand-aktuell.php
+```
+
+  Beleg: belege/10_wp_plugin_veraendert_kunde-zwei_example_httpdocs.txt
+- ⚪ **Nicht messbar: kunde-zwei.example/httpdocs: 1 Plugin(s) ohne Prüfsummensatz und alle Themes — Unversehrtheit nicht feststellbar (Premium, Fork, Eigenbau; für Themes veröffentlicht wordpress.org keine Prüfsummen)**
 
 ## 13b. .HTACCESS — SICHERUNG UND EINORDNUNG
 
@@ -287,7 +305,7 @@ Order allow,deny                                      Apache-2.2-Zugriffssyntax 
 <Files filefuns.php> … Allow from all                 Sperre fuer alles, Freigabe fuer genau diese eine PHP-Datei
 ```
 
-  Beleg: belege/08_htaccess_fremd_kunde-zwei_example_backups_updater-abc123_nextcloud-28_0_1_2-1700000000__htaccess.txt
+  Beleg: belege/11_htaccess_fremd_kunde-zwei_example_backups_updater-abc123_nextcloud-28_0_1_2-1700000000__htaccess.txt
 - 🔴 **KRITISCH: kunde-zwei.example/cloud.kunde-zwei.example/.htaccess (nextcloud): 3 Angreifer-Direktive(n) in der .htaccess**
 
 ```
@@ -296,7 +314,7 @@ Order allow,deny                                      Apache-2.2-Zugriffssyntax 
 <Files filefuns.php> … Allow from all                 Sperre fuer alles, Freigabe fuer genau diese eine PHP-Datei
 ```
 
-  Beleg: belege/09_htaccess_fremd_kunde-zwei_example_cloud_kunde-zwei_example__htaccess.txt
+  Beleg: belege/12_htaccess_fremd_kunde-zwei_example_cloud_kunde-zwei_example__htaccess.txt
 - 🔴 **KRITISCH: kunde-zwei.example/httpdocs/.htaccess (wordpress): 2 Angreifer-Direktive(n) in der .htaccess**
 
 ```
@@ -304,15 +322,15 @@ AddType application/x-httpd-php .jpg                  PHP-Ausfuehrung fuer eine 
 php_value auto_prepend_file /var/www/vhosts/<anderer Kunde 2>  auto_prepend_file auf eine Datei im Webspace
 ```
 
-  Beleg: belege/10_htaccess_fremd_kunde-zwei_example_httpdocs__htaccess.txt
+  Beleg: belege/13_htaccess_fremd_kunde-zwei_example_httpdocs__htaccess.txt
 - 🔴 **KRITISCH: kunde-zwei.example/httpdocs/wp-content/uploads/.htaccess (unbekannt): 1 Angreifer-Direktive(n) in der .htaccess**
 
 ```
 <Files bild.php> … Allow from all                     Freigabe fuer eine PHP-Datei in einem Verzeichnis, in das keine gehoert
 ```
 
-  Beleg: belege/11_htaccess_fremd_kunde-zwei_example_httpdocs_wp-content_uploads__htaccess.txt
-  Beleg: belege/12_htaccess_einordnung.txt
+  Beleg: belege/14_htaccess_fremd_kunde-zwei_example_httpdocs_wp-content_uploads__htaccess.txt
+  Beleg: belege/15_htaccess_einordnung.txt
 
 ### 13b.3 Wirksamkeit
 
@@ -325,19 +343,18 @@ php_value auto_prepend_file /var/www/vhosts/<anderer Kunde 2>  auto_prepend_file
 
 | Kategorie | Anzahl |
 |---|---|
-| 🔴 Kritische Befunde | 11 |
-| ⚠️ Warnungen | 8 |
-| ✅ Unauffällige Prüfungen | 17 |
-| ⚪ Nicht messbar | 5 |
+| 🔴 Kritische Befunde | 13 |
+| ⚠️ Warnungen | 9 |
+| ✅ Unauffällige Prüfungen | 20 |
+| ⚪ Nicht messbar | 4 |
 
-> **5 Prüfung(en) haben keine Aussage geliefert.** Ihr Ergebnis ist weder
+> **4 Prüfung(en) haben keine Aussage geliefert.** Ihr Ergebnis ist weder
 > ein Befund noch eine Entwarnung — der jeweilige Bereich ist ungeprüft:
 >
 > - kunde-zwei.example/cloud.kunde-zwei.example: Werkzeug antwortet nicht verwertbar — nicht geprüft
-> - kunde-drei.example/httpdocs: wp nicht ausführbar (Werkzeug, PHP oder Eigentümer fehlt) — Instanz nur dateibasiert geprüft
-> - kunde-eins.example/httpdocs: wp nicht ausführbar (Werkzeug, PHP oder Eigentümer fehlt) — Instanz nur dateibasiert geprüft
+> - kunde-drei.example/httpdocs: 1 Plugin(s) ohne Prüfsummensatz und alle Themes — Unversehrtheit nicht feststellbar (Premium, Fork, Eigenbau; für Themes veröffentlicht wordpress.org keine Prüfsummen)
 > - kunde-zwei.example/httpdocs: 1 Bestandteil(e) ohne lesbare Fassung — für sie ist keine Aussage zur Angreifbarkeit möglich
-> - kunde-zwei.example/httpdocs: wp nicht ausführbar (Werkzeug, PHP oder Eigentümer fehlt) — Instanz nur dateibasiert geprüft
+> - kunde-zwei.example/httpdocs: 1 Plugin(s) ohne Prüfsummensatz und alle Themes — Unversehrtheit nicht feststellbar (Premium, Fork, Eigenbau; für Themes veröffentlicht wordpress.org keine Prüfsummen)
 
 ### 14.2 Empfohlene Sofortmaßnahmen
 

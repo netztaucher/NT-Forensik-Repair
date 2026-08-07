@@ -21,7 +21,7 @@
 _wp() {
   local owner; owner=$(datei_meta "${REZ_PFAD}/wp-config.php" eigner)
   owner="${owner%%:*}"; owner="${owner:-root}"
-  sudo -u "$owner" "$REZ_PHP" "$REZ_WERKZEUG" "$@" \
+  als_eigentuemer "$owner" "$REZ_PHP" "$REZ_WERKZEUG" "$@" \
        --path="$REZ_PFAD" --skip-plugins --skip-themes 2>/dev/null
 }
 REZ_CLI_SQL="_wp db query --skip-column-names"
@@ -187,6 +187,29 @@ rezept_version() {
 #
 # Nur mit --online: je Plugin ein Abruf. Protokolliert über nf_fetch, damit in
 # findings.json steht, gegen welchen Stand geprüft wurde.
+
+# Woher die Prüfsummen kommen. Vorgabe ist wordpress.org; ein lokaler Pfad
+# ersetzt den Abruf durch ein Nachschlagen unter <basis>/<slug>/<fassung>.json.
+# Der Prüfstand nutzt das — anders liesse sich diese Prüfung nur mit
+# Netzzugriff in der CI abdecken, und ein Prüfstand, der von der Erreichbarkeit
+# eines fremden Dienstes abhängt, misst irgendwann dessen Ausfälle statt des
+# Werkzeugs.
+WP_PRUEFSUMMEN_BASIS="${WP_PRUEFSUMMEN_BASIS:-https://downloads.wordpress.org/plugin-checksums}"
+
+_wp_pruefsummen_aus_netz() {
+  [[ "$WP_PRUEFSUMMEN_BASIS" == http*://* ]]
+}
+
+_wp_pruefsummen_holen() {   # <slug> <fassung> <zieldatei>
+  if _wp_pruefsummen_aus_netz; then
+    nf_fetch "${WP_PRUEFSUMMEN_BASIS}/$1/$2.json" "$3"
+  else
+    local quelle="${WP_PRUEFSUMMEN_BASIS}/$1/$2.json"
+    [[ -s "$quelle" ]] || return 1
+    cp "$quelle" "$3" 2>/dev/null
+  fi
+}
+
 _wp_plugin_integritaet() {
   local cache liste ergebnis slug ver ziel pdir
   local n_mod n_soft n_extra n_fehlt n_geprueft n_ohne
@@ -208,8 +231,7 @@ _wp_plugin_integritaet() {
       n_ohne=$((n_ohne+1)); continue
     fi
     ziel="${cache}/${slug}-${ver}.json"
-    if [[ ! -s "$ziel" ]] \
-       && ! nf_fetch "https://downloads.wordpress.org/plugin-checksums/${slug}/${ver}.json" "$ziel"; then
+    if [[ ! -s "$ziel" ]] && ! _wp_pruefsummen_holen "$slug" "$ver" "$ziel"; then
       rm -f "$ziel"
       # Kein Prüfsummensatz. Zwei Ursachen, hier nicht unterscheidbar: das
       # Plugin liegt nicht im wordpress.org-Verzeichnis (Premium, Fork,
@@ -381,7 +403,10 @@ rezept_kern() {
   # trotzdem hier, weil der Befund inhaltlich zur Kern-Integrität gehört;
   # ungebunden wird er durch Verschieben des folgenden Aufrufs nach
   # rezept_sonder, ohne weitere Änderung.
-  if [[ "${WANT_ONLINE:-0}" != "1" ]]; then
+  # Das --online-Tor besteht wegen des Netzzugriffs. Zeigt WP_PRUEFSUMMEN_BASIS
+  # auf ein Verzeichnis, wird nichts abgerufen — dann wäre das Tor eine Hürde
+  # ohne Grund.
+  if _wp_pruefsummen_aus_netz && [[ "${WANT_ONLINE:-0}" != "1" ]]; then
     info "${REZ_KURZ}: Plugin-Integrität nicht geprüft — die Prüfsummen von wordpress.org brauchen --online"
   elif ! werkzeug_da python3; then
     befund_melden wordpress kern unklar "${REZ_KURZ}: python3 fehlt — Plugin-Integrität nicht prüfbar" "$REZ_PFAD" web
