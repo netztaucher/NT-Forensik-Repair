@@ -26,6 +26,146 @@ _wp() {
 }
 REZ_CLI_SQL="_wp db query --skip-column-names"
 
+# ── Abgleich gegen bekannte Schwachstellen ───────────────────
+# Der Bestand liegt offline unter daten/ dieses Rezepts, der Vergleich in
+# lib/wp_schwachstellen.py. Kein Netzzugriff, kein --online: was hier geprueft
+# wird, steht im ausgelieferten Datenbestand.
+#
+# Fassungen kommen aus Kopfzeilen im Dateisystem, NICHT aus der Datenbank und
+# nicht ueber wp-cli. Zwei Gruende: ein manipuliertes Plugin nimmt sich ueber
+# den all_plugins-Filter selbst aus jeder Laufzeitliste, und der Abgleich soll
+# auch dort etwas sagen, wo wp-cli fehlt.
+#
+# NICHT aus readme.txt: der dortige 'Stable tag' ist die im Verzeichnis als
+# stabil markierte Fassung, nicht die installierte.
+_wp_kopf_version() {   # $1 = Datei, $2 = Kennzeichen das vorkommen muss
+  grep -qiE "^[[:space:]]*\*?[[:space:]]*${2}[[:space:]]*:" "$1" 2>/dev/null || return 1
+  sed -nE 's/^[[:space:]]*\*?[[:space:]]*[Vv]ersion[[:space:]]*:[[:space:]]*([^[:space:]]+).*/\1/p' \
+      "$1" 2>/dev/null | head -1
+}
+
+# Bestandsliste erheben: typ<TAB>slug<TAB>version
+_wp_bestand() {
+  local d f ver
+
+  # Kern aus wp-includes/version.php. Das ist die Fassung, die laeuft — die
+  # Werkzeug-Probe des Rahmens laeuft erst spaeter und koennte fehlen.
+  if [[ -f "${REZ_PFAD}/wp-includes/version.php" ]]; then
+    ver=$(sed -nE "s/^[[:space:]]*\\\$wp_version[[:space:]]*=[[:space:]]*'([^']+)'.*/\\1/p" \
+          "${REZ_PFAD}/wp-includes/version.php" 2>/dev/null | head -1)
+    [[ -n "$ver" ]] && printf 'core\twordpress\t%s\n' "$ver"
+  fi
+
+  for d in "${REZ_PFAD}"/wp-content/plugins/*/; do
+    [[ -d "$d" ]] || continue
+    d="${d%/}"; ver=""
+    for f in "$d"/*.php; do
+      [[ -f "$f" ]] || continue
+      ver=$(_wp_kopf_version "$f" "Plugin Name") && [[ -n "$ver" ]] && break
+      ver=""
+    done
+    printf 'plugin\t%s\t%s\n' "$(basename "$d")" "$ver"
+  done
+
+  # Themes tragen ihre Fassung in style.css.
+  for d in "${REZ_PFAD}"/wp-content/themes/*/; do
+    [[ -d "$d" ]] || continue
+    d="${d%/}"; ver=""
+    [[ -f "$d/style.css" ]] && ver=$(_wp_kopf_version "$d/style.css" "Theme Name")
+    printf 'theme\t%s\t%s\n' "$(basename "$d")" "${ver:-}"
+  done
+}
+
+rezept_version() {
+  local basis="${REZEPT_DIR}/wordpress/daten"
+  local vergleicher="${SELF_DIR:-.}/lib/wp_schwachstellen.py"
+  local bestand ergebnis n_betroffen n_unbewertbar alter
+
+  if ! werkzeug_da python3; then
+    befund_melden wordpress version unklar \
+      "${REZ_KURZ}: python3 fehlt — Abgleich gegen bekannte Schwachstellen nicht möglich" "$REZ_PFAD" web
+    return 0
+  fi
+  if [[ ! -r "$vergleicher" ]]; then
+    befund_melden wordpress version unklar \
+      "${REZ_KURZ}: lib/wp_schwachstellen.py fehlt in der Installation — Abgleich nicht möglich" "$REZ_PFAD" web
+    return 0
+  fi
+
+  # Kein Datenbestand: Hinweis, kein ⚪. Es wurde nichts gemessen und nichts
+  # versucht — derselbe Fall wie ein abgeschalteter YARA-Scan. Ein ⚪ waere
+  # hier zwar streng, wuerde aber auf JEDEM Lauf stehen, solange der Bestand
+  # nicht erzeugt ist, und damit zu Rauschen. Sobald ein Bestand da ist,
+  # entscheidet sein Alter (unten) wieder ueber ⚪.
+  if ! ls "${basis}"/vuln/*.tsv >/dev/null 2>&1; then
+    # Einmal je Lauf, nicht je Installation: die Aussage gilt global, und auf
+    # einem Server mit vierzig Instanzen waeren vierzig gleiche Zeilen nur
+    # Rauschen. Die Variable ueberlebt die Schleife — der Rahmen zieht nur
+    # Funktionen zurueck, keine Variablen.
+    if [[ -z "${WP_DATEN_GEMELDET:-}" ]]; then
+      info "Kein WordPress-Schwachstellen-Datenbestand vorhanden — Abgleich übersprungen (werkzeuge/wordpress-daten-update.sh)"
+      WP_DATEN_GEMELDET=1
+    fi
+    return 0
+  fi
+
+  # Ein veralteter Bestand ist gefaehrlicher als gar keiner: er liefert ein
+  # ruhiges Ergebnis, das nach Pruefung aussieht. Deshalb ⚪ statt Hinweis.
+  if [[ -f "${basis}/VERSION" ]]; then
+    local stand; stand=$(sed -nE 's/^([0-9]{4}-[0-9]{2}-[0-9]{2}).*/\1/p' "${basis}/VERSION" | head -1)
+    if [[ -n "$stand" ]]; then
+      alter=$(( ( $(date -u +%s) - $(date -u -d "$stand" +%s 2>/dev/null \
+                    || date -u -j -f %Y-%m-%d "$stand" +%s 2>/dev/null || echo 0) ) / 86400 ))
+      if [[ "${alter:-0}" -gt "${WP_DATEN_MAX_TAGE:-30}" ]]; then
+        befund_melden wordpress version unklar \
+          "${REZ_KURZ}: Schwachstellen-Datenbestand ist ${alter} Tage alt — Ergebnis nicht belastbar, Bestand erneuern" "$REZ_PFAD" web
+        return 0
+      fi
+    fi
+  fi
+
+  bestand=$(_wp_bestand)
+  [[ -n "$bestand" ]] || return 0
+  ergebnis=$(printf '%s\n' "$bestand" | python3 "$vergleicher" --daten "$basis" 2>/dev/null || true)
+  [[ -n "$ergebnis" ]] || return 0
+
+  # Betroffene einzeln melden — anders als beim ⚪ unten ist hier jeder Fall
+  # eine eigene Handlung: dieses Plugin auf diese Fassung bringen.
+  while IFS=$'\t' read -r zustand typ slug version bereich behoben cve kev _quelle; do
+    [[ "$zustand" == "BETROFFEN" ]] || continue
+    local satz="${REZ_KURZ}: ${typ} ${slug} ${version} ist von einer bekannten Schwachstelle betroffen (${bereich})"
+    [[ -n "$cve" ]]     && satz+=" ${cve}"
+    [[ -n "$behoben" ]] && satz+=" — behoben in ${behoben}"
+    if [[ "$kev" == "ja" ]]; then
+      befund_melden wordpress version crit \
+        "${satz}. Diese Lücke wird nachweislich aktiv ausgenutzt — sofort handeln." "$REZ_PFAD" web
+    else
+      befund_melden wordpress version warn "${satz}." "$REZ_PFAD" web
+    fi
+  done <<< "$ergebnis"
+
+  n_betroffen=$(printf '%s\n' "$ergebnis" | grep -c '^BETROFFEN' || true)
+  n_unbewertbar=$(printf '%s\n' "$ergebnis" | grep -c '^UNBEWERTBAR' || true)
+
+  # Nicht bewertbares zu EINEM ⚪ zusammengefasst. Ein Plugin ohne lesbare
+  # Fassung gibt es auf fast jeder Seite; ein ⚪ je Stueck wuerde die
+  # Kundenampel dauerhaft blockieren und den vierten Zustand zu Rauschen
+  # machen, das niemand mehr liest.
+  if [[ "${n_unbewertbar:-0}" -gt 0 ]]; then
+    befund_melden wordpress version unklar \
+      "${REZ_KURZ}: ${n_unbewertbar} Bestandteil(e) ohne lesbare Fassung — für sie ist keine Aussage zur Angreifbarkeit möglich" "$REZ_PFAD" web
+    evidence "wp_version_nicht_bewertbar_$(echo "$REZ_KURZ" | tr '/.' '__')" \
+             "$(printf '%s\n' "$ergebnis" | grep '^UNBEWERTBAR')"
+  fi
+
+  if [[ "${n_betroffen:-0}" -eq 0 ]]; then
+    befund_melden wordpress version ok \
+      "${REZ_KURZ}: keine bekannte Schwachstelle im vorliegenden Datenbestand (Stand $(sed -n '1s/ .*//p' "${basis}/VERSION" 2>/dev/null))" "$REZ_PFAD"
+  else
+    evidence "wp_schwachstellen_$(echo "$REZ_KURZ" | tr '/.' '__')" "$ergebnis"
+  fi
+}
+
 # ── Kern-Integrität und die Doorway-Familie ──────────────────
 # Der Signatur-Webshell-Scan übersieht goto-obfuskierte Doorways, als Nicht-PHP
 # getarnte Nutzlasten und @include-Injektionen. verify-checksums plus

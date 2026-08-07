@@ -2,7 +2,7 @@
 """NT-Forensik — Abgleich installierter WordPress-Bestandteile gegen bekannte
 Schwachstellen.
 
-Liest den Datenbestand unter daten/wordpress/ und eine Bestandsliste auf der
+Liest den Datenbestand unter rezepte/wordpress/daten/ und eine Bestandsliste auf der
 Standardeingabe und meldet, welcher Bestandteil in einen bekannten
 Verwundbarkeitsbereich faellt.
 
@@ -344,7 +344,7 @@ def selbsttest():
 
 def main():
     p = argparse.ArgumentParser(add_help=True, description=__doc__)
-    p.add_argument("--daten", help="Verzeichnis daten/wordpress")
+    p.add_argument("--daten", help="Verzeichnis rezepte/wordpress/daten")
     p.add_argument("--selbsttest", action="store_true")
     args = p.parse_args()
 

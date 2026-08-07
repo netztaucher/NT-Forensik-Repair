@@ -140,7 +140,7 @@ wie sich der Bestand später nachweisen lässt.
 Diese Punkte sind **erledigt, bevor der erste Wordfence-Bestand eingecheckt
 wird** — nicht danach:
 
-1. **`daten/wordpress/LICENSE` anlegen** mit dem Copyright-Vermerk von Defiant
+1. **`rezepte/wordpress/daten/LICENSE` anlegen** mit dem Copyright-Vermerk von Defiant
    und dem Lizenztext. Die Bedingungen verlangen beides je Kopie; der Verweis je
    Zeile allein genügt nicht.
 2. **MITRE-Anzeigepflicht klären.** Wordfence nennt für CVE-Anteile eine

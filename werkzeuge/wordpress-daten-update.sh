@@ -6,7 +6,8 @@
 # Kundenserver. Deshalb liegt das Skript unter werkzeuge/ und wird von der
 # Selbst-Installation bewusst nicht mit ausgeliefert.
 #
-# Schreibt ausschliesslich nach daten/wordpress/.
+# Schreibt ausschliesslich nach rezepte/wordpress/daten/ — der Bestand gehoert
+# zum Rezept, damit ein Rezept weiterhin ein Verzeichnis ist und sonst nichts.
 #
 #   wordpress-daten-update.sh --wordfence    Schwachstellen (BRAUCHT SCHLUESSEL)
 #   wordpress-daten-update.sh --kev          aktiv ausgenutzte Luecken (CISA)
@@ -35,14 +36,14 @@
 #
 # Die Attributionsauflage von Defiant bleibt davon unberuehrt: jeder Datensatz
 # fuehrt seinen Verweis in der Spalte 'quelle' mit. VOR der ersten Auslieferung
-# eines Wordfence-Bestandes muss zusaetzlich daten/wordpress/LICENSE mit dem
-# Lizenztext angelegt werden — siehe daten/wordpress/QUELLEN.md, Abschnitt
+# eines Wordfence-Bestandes muss zusaetzlich rezepte/wordpress/daten/LICENSE mit dem
+# Lizenztext angelegt werden — siehe rezepte/wordpress/daten/QUELLEN.md, Abschnitt
 # 'Offen vor der ersten Auslieferung'.
 # ============================================================
 set -uo pipefail
 
 HIER="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-DATEN="${HIER}/daten/wordpress"
+DATEN="${HIER}/rezepte/wordpress/daten"
 
 WF_BASIS="https://www.wordfence.com/api/intelligence/v3/vulnerabilities"
 KEV_URL="https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json"
