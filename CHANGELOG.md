@@ -2,6 +2,53 @@
 
 Alle nennenswerten Änderungen an `wp_plesk_forensik.sh`.
 
+## [unveröffentlicht]
+
+### Neu — Schwachstellen-Datenbestand und Vergleicher für WordPress
+Das Gegenstück zu `daten/joomla/` entsteht: `daten/wordpress/` mit
+`werkzeuge/wordpress-daten-update.sh` als Pflegewerkzeug und
+`lib/wp_schwachstellen.py` als Vergleicher.
+
+**Noch nicht im Prüflauf eingebunden** — dieser Schritt liefert den Unterbau,
+das Scharfschalten in Abschnitt 11 folgt getrennt.
+
+**Eigener Versionsvergleich statt `j_vernum`.** Das Joomla-Verfahren presst
+`a.b.c` in eine Zahl `aabbbccc`. Für Joomla trägt das; für WordPress-Plugins
+nicht, weil dort vierstellige Fassungen (`1.2.3.4`) und Vorabkennungen
+(`2.0-beta1`, `3.1-RC2`) verbreitet sind — `j_vernum` liefert dafür `0` und
+überspringt den Vergleich. Bei Joomla ist das die richtige Vorsicht, bei
+WordPress wären es massenhaft Nicht-Bewertungen.
+
+Umgesetzt ist die Semantik von PHPs `version_compare`, also die Ordnung, die
+WordPress selbst benutzt: `1.0-dev < 1.0a1 < 1.0b1 < 1.0RC1 < 1.0 < 1.0pl1`.
+Geprüft wird sie nicht gegen eine handgeschriebene Erwartungstabelle, sondern
+gegen die echte PHP-Funktion — `werkzeuge/version_compare_gegentest.sh`
+vergleicht 30.000 Fassungspaare, und die CI führt das bei jeder Änderung aus.
+
+**Intervalle mit einzeln offenen Grenzen.** `>= 2.0 und <= 2.4.1` und
+`>= 2.0 und < 2.4.1` unterscheiden sich genau um die Fassung, in der die Lücke
+behoben wurde; auf „kleiner als" verkürzen lässt sich das nicht.
+
+**Drei Zustände.** `BETROFFEN`, `SAUBER`, `UNBEWERTBAR`. Eine unlesbare Version
+darf nicht als „nicht betroffen" durchgehen, und ein fehlender Eintrag heißt
+„keine bekannte Schwachstelle im vorliegenden Bestand", nicht „sicher".
+
+### Neu — `daten/wordpress/`
+Enthält vorerst nur `kev/kev-wordpress.tsv`: die sechs WordPress-Einträge aus
+dem KEV-Katalog der CISA (gemeinfrei). Sie tragen die einzige Aussage, die eine
+Priorisierung wirklich rechtfertigt — diese Lücke wird nachweislich ausgenutzt.
+Gegenstück zur Spalte `kev` in `daten/joomla/cve/joomla-ext-kritisch.tsv`.
+
+Die Schwachstellentabellen unter `vuln/` sind noch nicht erzeugt: der
+Wordfence-Feed verlangt seit v3 einen Schlüssel. `QUELLEN.md` führt die
+Lizenz-Ampel aller geprüften Quellen und die Punkte, die vor der ersten
+Auslieferung eines Wordfence-Bestandes zu erledigen sind.
+
+Nicht verwendet: WPScan (Speichern und Cachen vertraglich untersagt),
+Patchstack (kein offener Zugang), wpvulnerability.net (Lizenz der Daten nicht
+erklärt, keine Bulk-Schnittstelle), GitHub Advisory Database (lizenzrechtlich
+sauber, aber ohne verwertbare WordPress-Abdeckung).
+
 ## [3.9.0] — 2026-08-06
 
 ### ⚠️ Breaking — Aufruf ohne Argument

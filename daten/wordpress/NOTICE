@@ -1,0 +1,35 @@
+NT-Forensik — WordPress-Datenbestand
+====================================
+
+Dieses Verzeichnis enthaelt Daten aus fremden Quellen. Sie stehen NICHT unter
+der MIT-Lizenz des uebrigen Repositories. Herkunft, Lizenz und Umfang der
+Uebernahme je Datei: QUELLEN.md.
+
+Uebernommen werden ausschliesslich Tatsachen — Name, Kennung, Version, Status,
+CVE-Nummer, CVSS-Wert, Verweis. Beschreibungstexte aus fremden Quellen werden
+beim Einlesen verworfen.
+
+
+kev/kev-wordpress.tsv
+---------------------
+Quelle:  Katalog bekannt ausgenutzter Schwachstellen (Known Exploited
+         Vulnerabilities Catalog) der Cybersecurity and Infrastructure Security
+         Agency, cisa.gov
+Lizenz:  Werk einer US-Behoerde, gemeinfrei. Keine Auflagen.
+Aendrg.: gefiltert auf Eintraege mit WordPress-Bezug, in Tabellenform gebracht.
+
+
+vuln/wp-core.tsv, vuln/wp-plugins.tsv, vuln/wp-themes.tsv
+---------------------------------------------------------
+NOCH NICHT ERZEUGT. Sobald diese Dateien vorliegen, gilt:
+
+Quelle:  Wordfence Intelligence Vulnerability Database, Defiant, Inc.
+Lizenz:  Weitergabe ausdruecklich gestattet, unter Auflagen. VOR der ersten
+         Auslieferung ist daten/wordpress/LICENSE mit dem Copyright-Vermerk von
+         Defiant und dem Lizenztext anzulegen — der Verweis je Datensatz in der
+         Spalte 'quelle' allein genuegt der Auflage nicht.
+         Siehe QUELLEN.md, Abschnitt "Offen vor der ersten Auslieferung".
+Aendrg.: aus dem Feed abgeleitet und in Tabellenform gebracht; description,
+         remediation, researchers und cwe-Beschreibung wurden verworfen.
+
+CVE-Nummern und die zugehoerigen Angaben stammen mittelbar von MITRE.
