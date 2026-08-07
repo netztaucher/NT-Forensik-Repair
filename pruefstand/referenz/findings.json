@@ -1,5 +1,5 @@
 {
-  "schema_version": "1.4",
+  "schema_version": "1.5",
   "tool": "wp_plesk_forensik.sh",
   "tool_version": "<FASSUNG>",
   "run_id": "<LAUF-ID>",
@@ -9,9 +9,10 @@
   "run": {
     "vollstaendig": false,
     "module_gelaufen": ["4","7","11","12","12b","12c","14"],
-    "module_uebersprungen": ["1. System-Übersicht","2. Logs sichern","3. Zugriffs-Analyse","5. Benutzer & Rechte","6. Cronjobs & Persistenz","8. Netzwerk & Dienste","9. Sicherheits-Dienste","10. Andere Domains","13. Root- & Eskalations-Prüfung"]
+    "module_uebersprungen": ["1. System-Übersicht","2. Logs sichern","3. Zugriffs-Analyse","5. Benutzer & Rechte","6. Cronjobs & Persistenz","8. Netzwerk & Dienste","9. Sicherheits-Dienste","10. Andere Domains","13. Root- & Eskalations-Prüfung"],
+    "nicht_messbar": ["grep ohne PCRE-Unterstützung (-P) — Zugangsdaten aus wp-config.php nicht lesbar, keine Datenbank-Prüfung möglich","kunde-zwei.example/cloud.kunde-zwei.example: Eigentümer oder PHP nicht ermittelbar — Kern-Integrität nicht geprüft"]
   },
-  "counts": { "crit": 4, "warn": 3, "ok": 12 },
+  "counts": { "crit": 4, "warn": 3, "ok": 12, "unknown": 2 },
   "verdicts": {
     "root": { "flags": 0, "text": "⚪ Root-Prüfung nicht durchgeführt." },
     "wpdb": { "flags": 0, "text": "🟢 **Keine Angreifer-Spuren in den WordPress-Datenbanken** (keine neuen Admins, keine manipulierten Optionen)." },

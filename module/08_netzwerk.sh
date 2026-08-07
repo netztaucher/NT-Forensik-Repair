@@ -457,8 +457,16 @@ h2 "8.14 AIDE-Integritätsabgleich (dauerhafte FIM, falls eingerichtet)"
 if command -v aide &>/dev/null; then
     AIDE_DB=$(ls /var/lib/aide/aide.db /var/lib/aide/aide.db.gz 2>/dev/null | head -1 || true)
     if [[ -n "$AIDE_DB" ]]; then
-        AIDE_OUT=$(aide --check 2>/dev/null | grep -E '^(Added|Removed|Changed|Total|Number)' | head -40 || true)
-        if echo "$AIDE_OUT" | grep -qE '(Added|Removed|Changed).*entries:[[:space:]]*[1-9]'; then
+        # Die Rohausgabe getrennt vom Filter halten: aide --check liefert bei
+        # Abweichungen Rueckgabewert != 0, das ist KEIN Fehler sondern der
+        # Befund selbst. Ein echter Fehlschlag (unlesbare DB, abgebrochener
+        # Lauf) erzeugt dagegen gar keine Zusammenfassungszeilen — und genau
+        # das galt bisher als "keine Abweichungen".
+        AIDE_ROH=$(aide --check 2>&1 || true)
+        AIDE_OUT=$(printf '%s\n' "$AIDE_ROH" | grep -E '^(Added|Removed|Changed|Total|Number)' | head -40 || true)
+        if [[ -z "$AIDE_OUT" ]]; then
+            unklar "AIDE lieferte keine Zusammenfassung — Integritaets-Abgleich nicht durchgefuehrt ($(printf '%s' "$AIDE_ROH" | tr -d '\n' | cut -c1-100))"
+        elif echo "$AIDE_OUT" | grep -qE '(Added|Removed|Changed).*entries:[[:space:]]*[1-9]'; then
             crit "AIDE meldet Abweichungen zur Integritäts-Baseline"
             code "$AIDE_OUT"
             evidence "aide_check" "$AIDE_OUT"
@@ -521,6 +529,11 @@ for i in sel[:60]:
 Scope: $(printf '%s ' "${SCAN_PATHS[@]}")
 $IMU_LIST"
         IMUNIFY_HITS="$IMU_LIST"
+    elif [[ -z "${IMU_COUNT:-}" ]]; then
+        # Der Python-Block faengt jeden Fehler ab und beendet sich mit 0. Ohne
+        # COUNT= ist IMU_COUNT leer, und leer galt bisher als null Treffer —
+        # ein Parse-Fehler wurde damit zur Unbedenklichkeitsbescheinigung.
+        unklar "Imunify-Antwort nicht auswertbar — Malware-Status unbekannt" web
     else
         ok "Imunify: keine offenen Malware-Treffer im Prüf-Scope (Status found)"
     fi

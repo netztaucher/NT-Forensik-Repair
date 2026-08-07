@@ -118,6 +118,7 @@
 <PRUEFSTAND>/vhosts/kunde-drei.example/httpdocs/wp-config.php
 ```
 
+- ⚪ **Nicht messbar: grep ohne PCRE-Unterstützung (-P) — Zugangsdaten aus wp-config.php nicht lesbar, keine Datenbank-Prüfung möglich**
 
 ### 11.9 WordPress-DB-Verdikt
 
@@ -196,7 +197,7 @@
 <PRUEFSTAND>/vhosts/kunde-zwei.example/cloud.kunde-zwei.example/config/config
 ```
 
-  kunde-zwei.example/cloud.kunde-zwei.example: occ nicht ausführbar (Eigentümer oder PHP nicht ermittelbar) — Kern nicht geprüft
+- ⚪ **Nicht messbar: kunde-zwei.example/cloud.kunde-zwei.example: Eigentümer oder PHP nicht ermittelbar — Kern-Integrität nicht geprüft**
 
 ## 12c. NEXTCLOUD-HÄRTUNGSSTAND
 
@@ -217,6 +218,13 @@
 | 🔴 Kritische Befunde | 4 |
 | ⚠️ Warnungen | 3 |
 | ✅ Unauffällige Prüfungen | 12 |
+| ⚪ Nicht messbar | 2 |
+
+> **2 Prüfung(en) haben keine Aussage geliefert.** Ihr Ergebnis ist weder
+> ein Befund noch eine Entwarnung — der jeweilige Bereich ist ungeprüft:
+>
+> - grep ohne PCRE-Unterstützung (-P) — Zugangsdaten aus wp-config.php nicht lesbar, keine Datenbank-Prüfung möglich
+> - kunde-zwei.example/cloud.kunde-zwei.example: Eigentümer oder PHP nicht ermittelbar — Kern-Integrität nicht geprüft
 
 ### 14.2 Empfohlene Sofortmaßnahmen
 

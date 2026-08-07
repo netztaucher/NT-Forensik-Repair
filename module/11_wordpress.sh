@@ -27,6 +27,7 @@ WP_CLI=$(command -v wp 2>/dev/null || true)
 PHP_BIN=$(command -v php 2>/dev/null || ls /opt/plesk/php/*/bin/php 2>/dev/null | tail -1 || true)
 CURRENT_WP_PATH=""   # wird je Installation in der Schleife gesetzt
 
+
 # Ein WP-Config-Wert extrahieren: wpconf_get <file> <KONSTANTE>
 # Auskommentierte Zeilen (// # * /*) werden übersprungen — sonst greift head -1
 # fälschlich einen alten, auskommentierten define()-Wert (z. B. Migrations-Reste
@@ -69,6 +70,21 @@ else
   info "WordPress-Installationen: $WP_COUNT"
   code "$WP_CONFIGS"
 
+  # wpconf_get und das Praefix-Auslesen brauchen grep mit PCRE (-P). Fehlt die
+  # Unterstuetzung — busybox-grep, BSD-grep, manche Minimal-Container —,
+  # liefern beide leer, und die Schleife ueberspringt jede Installation mit
+  # '[[ -z "$db" ]] && continue' vollstaendig lautlos. Ein Server mit 40
+  # Instanzen haette dann einen Bericht ohne eine einzige Datenbankpruefung und
+  # ohne Hinweis darauf.
+  # Die Pruefung steht bewusst HIER und nicht am Modulanfang: ohne gefundene
+  # wp-config.php gibt es nichts zu lesen, und ein ⚪ waere dann selbst falsch —
+  # ein unberechtigtes "nicht messbar" blockiert die gruene Ampel genauso
+  # unberechtigt, wie ein falsches ✅ sie freigibt.
+  if ! echo "x" | grep -qoP 'x' 2>/dev/null; then
+    unklar "grep ohne PCRE-Unterstützung (-P) — Zugangsdaten aus wp-config.php nicht lesbar, keine Datenbank-Prüfung möglich" web
+    WPDB_VERDICT="⚪ Datenbank-Prüfung nicht möglich: grep beherrscht kein -P (PCRE)."
+  fi
+
   WPDB_REPORT=""
   while IFS= read -r cfg; do
     [[ -f "$cfg" ]] || continue
@@ -88,7 +104,28 @@ else
     # Lehre aus einem Kundenvorfall: der Signatur-Webshell-Scan (§7.3) übersieht
     # goto-obfuskierte Doorways, getarnte Nicht-PHP-Payloads und @include-Core-
     # Injektionen. verify-checksums + Doorway-Signatur decken die Familie auf.
-    if [[ -n "$WP_CLI" ]]; then
+    # Vor der Messung eine Probe. Ohne sie war der haeufigste Ausgang dieses
+    # Blocks eine Falschaussage: scheitert wp-cli (fehlendes PHP, kein sudo,
+    # falscher Eigentuemer), ist CHK leer, cmod=0, und der Bericht bescheinigt
+    # einen unveraenderten Kern, der nie geprueft wurde. 'core version' ist die
+    # billigste Abfrage, deren Antwort sich pruefen laesst — sie muss mit einer
+    # Versionsnummer beginnen. Vorbild: Abschnitt 12c fuer occ.
+    _wp_bereit=0
+    if [[ -z "$WP_CLI" ]]; then
+      unklar "$site: wp-cli nicht installiert — Kern-Integrität nicht geprüft" web
+    elif [[ -z "$PHP_BIN" ]]; then
+      unklar "$site: kein PHP-Interpreter gefunden — Kern-Integrität nicht geprüft" web
+    else
+      _wpv=$(wp_cli core version | tr -d '\r' | head -1)
+      if [[ "$_wpv" =~ ^[0-9]+\.[0-9]+ ]]; then
+        _wp_bereit=1
+        info "$site: WordPress ${_wpv} (wp-cli antwortet)"
+      else
+        unklar "$site: wp-cli liefert keine verwertbare Antwort — Kern-Integrität nicht geprüft${_wpv:+ (${_wpv:0:80})}" web
+      fi
+    fi
+
+    if [[ "$_wp_bereit" -eq 1 ]]; then
       CHK=$(wp_cli core verify-checksums 2>&1 | grep "Warning:" || true)
       cmod=$(echo "$CHK" | grep -c "doesn.t verify" 2>/dev/null || echo 0)
       csne=$(echo "$CHK" | grep -c "should not exist" 2>/dev/null || echo 0)
@@ -223,7 +260,16 @@ Aenderungsdatum tragen wie der Rest des Plugins."
       evidence "manipulierte_htaccess_$(echo "$site" | tr '/.' '__')" "$(echo "$BAD_HTA" | while read -r h; do echo "=== $h ==="; head -5 "$h"; done)"
     fi
 
-    # Verbindungstest (nach Integritäts-Checks; wp-cli-Fallback greift jetzt)
+    # Verbindungstest (nach Integritäts-Checks; wp-cli-Fallback greift jetzt).
+    # Fehlender mysql-Client und falsche Zugangsdaten wurden bisher beide als
+    # warn gemeldet — dabei ist das eine ein Werkzeugproblem des Pruefenden und
+    # das andere moeglicherweise ein Befund. Der Bericht muss das trennen:
+    # ohne Client wurde die Datenbank nicht geprueft, mit Client und ohne
+    # Zugang stimmen die hinterlegten Zugangsdaten nicht.
+    if ! werkzeug_da mysql && [[ -z "$WP_CLI" ]]; then
+      unklar "$site: weder mysql-Client noch wp-cli vorhanden — Datenbank nicht geprüft" web
+      continue
+    fi
     if ! wp_sql "$db" "$du" "$dp" "$dh" "SELECT 1;" >/dev/null 2>&1; then
       warn "$site: keine DB-Verbindung (Zugang prüfen) — DB-Abfragen übersprungen (Integrität oben wurde geprüft)"
       continue
