@@ -94,6 +94,48 @@ Zwei Variablen sind noch echte Abhängigkeiten zwischen Abschnitten: `ATTACK_IPS
 
 **Der zweite Parameter `web` ist tragend:** `crit "…" web` markiert einen Befund als Website-Befund. Nur so markierte Befunde erscheinen im Kundenbericht und zählen in dessen Ampel. Ohne ihn bleibt der Befund Technik- und Betreibersache — richtig für Server- und Root-Ebene, falsch für alles, was den Kunden betrifft.
 
+**Vier Zustände, nicht drei.** `ok` heißt geprüft und in Ordnung, `warn`/`crit` heißen etwas gefunden — und `unklar` heißt: die Prüfung hat kein Ergebnis geliefert. Wer eine Messung schreibt, deren Werkzeug fehlen oder scheitern kann, muss diesen Fall abfangen. Die Regel dazu: **vor der Messung eine Probe, deren Antwort sich prüfen lässt.**
+
+```bash
+if ! werkzeug_da occ; then
+  unklar "$site: occ nicht vorhanden — Kern-Integrität nicht geprüft" web
+else
+  probe=$(occ status --output=json 2>/dev/null || true)
+  if ! printf '%s' "$probe" | python3 -c 'import json,sys;json.load(sys.stdin)' 2>/dev/null; then
+    unklar "$site: occ antwortet nicht verwertbar — Kern-Integrität nicht geprüft" web
+  else
+    …hier messen…
+  fi
+fi
+```
+
+Ohne diese Trennung landet ein Fehlschlag bei `ok`, weil eine leere Ausgabe wie „nichts gefunden" aussieht. `N_UNKNOWN > 0` blockiert die grüne Ampel im Kundenbericht — ein unberechtigtes `unklar` ist deshalb genauso schädlich wie ein falsches `ok`.
+
+## Ein Modul aufteilen
+
+Wird ein Abschnitt zu groß, um ihn noch chirurgisch zu ändern, bekommt er ein
+gleichnamiges Verzeichnis:
+
+```
+module/
+├── 14_berichte.sh          Metadatenkopf + h1, sonst nichts
+└── 14_berichte/            wird nach dem Hauptmodul geladen
+    ├── 10_statistik.sh
+    ├── 20_kundenbericht.sh
+    └── …
+```
+
+Der Runner lädt `module/NN_name/*.sh` in Glob-Reihenfolge direkt nach
+`module/NN_name.sh` (`modul_teile_laden`). Die Metadaten bleiben am Hauptmodul,
+`modul_gewaehlt` entscheidet **einmal für die ganze Gruppe** — `--nur 14` und
+`--ohne 12` verhalten sich unverändert. Ein Unterabschnitt ist kein eigener
+Abschnitt, sondern ein Stück desselben, und teilt sich dessen Variablen.
+
+Die Nummernpräfixe der Teile bestimmen die Reihenfolge und sind bedeutsam,
+wo Teile aufeinander aufbauen: bei §14 bildet `20_kundenbericht.sh` die Ampel,
+die `60_pdf.sh` braucht, und `90_ausliefern.sh` maskiert und packt, muss also
+zuletzt laufen.
+
 ---
 
 ## Auswahl und Teilläufe
