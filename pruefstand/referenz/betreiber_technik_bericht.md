@@ -82,7 +82,40 @@
 
 ### 7.6 .htaccess-Dateien prüfen
 
-- ✅ Keine externen Weiterleitungen in .htaccess gefunden
+- ⚠️  **.htaccess mit externen Weiterleitungen gefunden**
+
+```
+<PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/.htaccess
+```
+
+
+```
+# BEGIN WordPress
+<IfModule mod_rewrite.c>
+RewriteEngine On
+RewriteBase /
+RewriteRule ^index\.php$ - [L]
+RewriteRule . /index.php [L]
+</IfModule>
+# END WordPress
+
+# BEGIN YOAST REDIRECTS
+Redirect 301 /alte-seite /neue-seite
+# END YOAST REDIRECTS
+
+Redirect 301 /shop https://shop.kunde-zwei.example/
+Header always set Strict-Transport-Security "max-age=31536000"
+AddType application/font-woff2 .woff2
+<Files "wp-config.php">
+  Require all denied
+</Files>
+
+# Angreiferzeilen darunter
+AddType application/x-httpd-php .jpg
+php_value auto_prepend_file /var/www/vhosts/<anderer Kunde 1>/httpdocs/wp-content/uploads/2026/03/bild.php
+```
+
+  Beleg: belege/03_htaccess_weiterleitungen.txt
 
 ### 7.7 SUID/SGID-Dateien in Webspace und tmp-Verzeichnissen
 
@@ -184,7 +217,7 @@
 2:<Files "filefuns.php">
 ```
 
-  Beleg: belege/03_nextcloud_htaccess_kunde-zwei_example_cloud_kunde-zwei_example.txt
+  Beleg: belege/04_nextcloud_htaccess_kunde-zwei_example_cloud_kunde-zwei_example.txt
 - 🔴 **KRITISCH: kunde-zwei.example/cloud.kunde-zwei.example: bekannte Schaddateien der Nextcloud-Kampagne gefunden**
 
 ```
@@ -208,6 +241,55 @@
   kunde-zwei.example/cloud.kunde-zwei.example: occ nicht ausführbar — Härtungsstand nicht messbar
 - ✅ Keine Härtungslücken gefunden
 
+## 13b. .HTACCESS — SICHERUNG UND EINORDNUNG
+
+
+### 13b.1 Sicherung
+
+- ✅ 5 von 5 .htaccess-Dateien gesichert (belege/htaccess/)
+
+### 13b.2 Einordnung der Direktiven
+
+- ✅ kunde-eins.example/httpdocs/.htaccess (wordpress): 2 eigene Direktive(n), nichts Fremdes
+- 🔴 **KRITISCH: kunde-zwei.example/backups/updater-abc123/nextcloud-28.0.1.2-1700000000/.htaccess (nextcloud): 3 Angreifer-Direktive(n) in der .htaccess**
+
+```
+Order allow,deny                                      Apache-2.2-Zugriffssyntax in einer Nextcloud — dort nie vom Kern erzeugt
+<Files "filefuns.php">                                Dateiname aus bekannter Schadcode-Kampagne
+<Files filefuns.php> … Allow from all                 Sperre fuer alles, Freigabe fuer genau diese eine PHP-Datei
+```
+
+  Beleg: belege/05_htaccess_fremd_kunde-zwei_example_backups_updater-abc123_nextcloud-28_0_1_2-1700000000__htaccess.txt
+- 🔴 **KRITISCH: kunde-zwei.example/cloud.kunde-zwei.example/.htaccess (nextcloud): 3 Angreifer-Direktive(n) in der .htaccess**
+
+```
+Order allow,deny                                      Apache-2.2-Zugriffssyntax in einer Nextcloud — dort nie vom Kern erzeugt
+<Files "filefuns.php">                                Dateiname aus bekannter Schadcode-Kampagne
+<Files filefuns.php> … Allow from all                 Sperre fuer alles, Freigabe fuer genau diese eine PHP-Datei
+```
+
+  Beleg: belege/06_htaccess_fremd_kunde-zwei_example_cloud_kunde-zwei_example__htaccess.txt
+- 🔴 **KRITISCH: kunde-zwei.example/httpdocs/.htaccess (wordpress): 2 Angreifer-Direktive(n) in der .htaccess**
+
+```
+AddType application/x-httpd-php .jpg                  PHP-Ausfuehrung fuer eine Nicht-PHP-Endung
+php_value auto_prepend_file /var/www/vhosts/<anderer Kunde 2>  auto_prepend_file auf eine Datei im Webspace
+```
+
+  Beleg: belege/07_htaccess_fremd_kunde-zwei_example_httpdocs__htaccess.txt
+- 🔴 **KRITISCH: kunde-zwei.example/httpdocs/wp-content/uploads/.htaccess (unbekannt): 1 Angreifer-Direktive(n) in der .htaccess**
+
+```
+<Files bild.php> … Allow from all                     Freigabe fuer eine PHP-Datei in einem Verzeichnis, in das keine gehoert
+```
+
+  Beleg: belege/08_htaccess_fremd_kunde-zwei_example_httpdocs_wp-content_uploads__htaccess.txt
+  Beleg: belege/09_htaccess_einordnung.txt
+
+### 13b.3 Wirksamkeit
+
+- 🔴 **KRITISCH: Kein Apache-Prozess, aber nginx läuft — .htaccess-Dateien werden NICHT ausgewertet und schützen nichts**
+
 ## 14. ZUSAMMENFASSUNG
 
 
@@ -215,9 +297,9 @@
 
 | Kategorie | Anzahl |
 |---|---|
-| 🔴 Kritische Befunde | 4 |
-| ⚠️ Warnungen | 3 |
-| ✅ Unauffällige Prüfungen | 12 |
+| 🔴 Kritische Befunde | 9 |
+| ⚠️ Warnungen | 4 |
+| ✅ Unauffällige Prüfungen | 13 |
 | ⚪ Nicht messbar | 2 |
 
 > **2 Prüfung(en) haben keine Aussage geliefert.** Ihr Ergebnis ist weder
@@ -247,6 +329,11 @@
 *Bericht erstellt am: <ZEIT>*
 *Tool: wp_plesk_forensik.sh <FASSUNG> — netztaucher | digital*
   findings.json geschrieben: <PRUEFSTAND>/ablage/forensik/<LAUF-ID>/betreiber/findings.json
+
+
+---
+
+> **Hinweis zum Datenschutz.** Dieser Server beherbergt weitere Kunden. Wo serverweite Prüfungen deren Domains oder Systemkonten berührten, stehen Platzhalter (`<anderer Kunde N>`); derselbe Nachbar trägt dabei immer dieselbe Nummer, sodass Zusammenhänge erkennbar bleiben. Betroffen waren 2 fremde Kennungen. Die unmaskierte Fassung verbleibt beim Betreiber.
   PDF übersprungen (pandoc/weasyprint/reportgen nicht verfügbar).
 
 > **Eingeschränkter Lauf.** Die folgenden Prüfabschnitte wurden auf ausdrückliche Auswahl hin NICHT ausgeführt. Ihre Ergebnisse fehlen in diesem Bericht — das ist keine Entwarnung für diese Bereiche:

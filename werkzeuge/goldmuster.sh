@@ -133,6 +133,49 @@ HTA
   mkdir -p "${k2n}/config/config"
   printf '<?php // nested\n' > "${k2n}/config/config/index.php"
 
+  # Eine .htaccess mit ECHTEN Eigenregeln neben dem Schadcode. Ohne sie
+  # prueft der Abschnitt nur, ob er Angreifer findet — nicht, ob er die Regeln
+  # des Betreibers stehen laesst. Genau daran entscheidet sich, ob eine
+  # spaetere Erneuerung die Website heil laesst.
+  cat > "${k2}/.htaccess" <<'HTA'
+# BEGIN WordPress
+<IfModule mod_rewrite.c>
+RewriteEngine On
+RewriteBase /
+RewriteRule ^index\.php$ - [L]
+RewriteRule . /index.php [L]
+</IfModule>
+# END WordPress
+
+# BEGIN YOAST REDIRECTS
+Redirect 301 /alte-seite /neue-seite
+# END YOAST REDIRECTS
+
+Redirect 301 /shop https://shop.kunde-zwei.example/
+Header always set Strict-Transport-Security "max-age=31536000"
+AddType application/font-woff2 .woff2
+<Files "wp-config.php">
+  Require all denied
+</Files>
+
+# Angreiferzeilen darunter
+AddType application/x-httpd-php .jpg
+php_value auto_prepend_file /var/www/vhosts/kunde-zwei.example/httpdocs/wp-content/uploads/2026/03/bild.php
+HTA
+
+  # Und eine mit Wordfence — die darf NICHT als Angriff gemeldet werden.
+  local k1h="${W}/kunde-eins.example/httpdocs"
+  cat > "${k1h}/.htaccess" <<'HTA'
+# BEGIN WordPress
+<IfModule mod_rewrite.c>
+RewriteEngine On
+RewriteRule . /index.php [L]
+</IfModule>
+# END WordPress
+php_value auto_prepend_file '/var/www/vhosts/kunde-eins.example/httpdocs/wordfence-waf.php'
+Redirect 301 /impressum /rechtliches
+HTA
+
   # ── Kunde 3: sauber, dient als Gegenprobe ───────────────────
   local k3="${W}/kunde-drei.example/httpdocs"
   mkdir -p "${k3}/wp-content/uploads" "${k3}/wp-admin"
@@ -190,7 +233,11 @@ REGELN = [
     (r'\b[0-9a-f]{40}\b',                          '<SHA1>'),
     # Der Pruefstand liegt je nach Plattform unter /tmp, /private/tmp oder
     # /var/folders und traegt die Prozessnummer im Namen.
-    (r'\S*?[/.]nt-goldmuster/lauf',                '<PRUEFSTAND>'),
+    # \S trifft auch " und [ — die Regel frass damit die oeffnende
+    # JSON-Syntax mit und machte die Referenz-findings.json ungueltig, ohne
+    # dass es auffiel. Zeichenklasse deshalb ohne Anfuehrungszeichen und
+    # Klammern.
+    (r'[^\s"\'\[\],]*?[/.]nt-goldmuster/lauf',      '<PRUEFSTAND>'),
     (r'^(Server|Server-IP|Ausführender|Beginn \(lokal\)):.*$', r'\1: <UMGEBUNG>'),
     # Ausgabe von `date` — Format haengt an der Spracheinstellung, deshalb
     # ueber die umgebende Beschriftung gefasst statt ueber das Datumsmuster.
@@ -283,6 +330,18 @@ ausgabe_einsammeln() {
   done
   # Die Ordnerstruktur selbst ist Teil des Verhaltens.
   (cd "$lauf" && find . -type f | sort) > "${ZIEL}/dateiliste.txt"
+  # findings.json ist die Maschinenschnittstelle zum Reparaturteil. Wird sie
+  # ungueltig, faellt das dort erst zur Laufzeit auf — im Vorfall, unter Druck.
+  # Geprueft wird die ECHTE Datei, nicht die normalisierte: der Normalisierer
+  # hat die Referenz schon einmal still zerstoert.
+  if [[ -f "${lauf}/betreiber/findings.json" ]]; then
+    if python3 -c 'import json,sys;json.load(open(sys.argv[1]))' "${lauf}/betreiber/findings.json"; then
+      echo "gueltig" > "${ZIEL}/findings_json_gueltig.txt"
+    else
+      echo "UNGUELTIG" > "${ZIEL}/findings_json_gueltig.txt"
+      warn "findings.json ist kein gueltiges JSON — die Schnittstelle zum Reparaturteil ist gebrochen."
+    fi
+  fi
   normalisieren "${ABLAGE}/konsole.txt" > "${ZIEL}/konsole.txt"
   cp "${ABLAGE}/rueckgabewert.txt" "${ZIEL}/" 2>/dev/null || true
   # Die Belegdateinamen sind Teil des Verhaltens, ihr Inhalt nicht.
