@@ -106,7 +106,7 @@
   [0m·  Installationen: 3
 
 [0;36m▶ 12r.2.x kunde-drei.example/httpdocs[0m
-  [0m·  Kein WordPress-Schwachstellen-Datenbestand vorhanden — Abgleich übersprungen (werkzeuge/wordpress-daten-update.sh)
+  [0;32m✓[0m kunde-drei.example/httpdocs: keine bekannte Schwachstelle im vorliegenden Datenbestand (Stand 2026-08-07)
   [0;32m✓[0m kunde-drei.example/httpdocs: keine Doorway-.htaccess-Signatur
   [0;32m✓[0m kunde-drei.example/httpdocs: keine @include base64_decode()-Injektion
   [0;36m⚪[0m kunde-drei.example/httpdocs: wp nicht ausführbar (Werkzeug, PHP oder Eigentümer fehlt) — Instanz nur dateibasiert geprüft
@@ -117,6 +117,11 @@
   [0;36m⚪[0m kunde-eins.example/httpdocs: wp nicht ausführbar (Werkzeug, PHP oder Eigentümer fehlt) — Instanz nur dateibasiert geprüft
 
 [0;36m▶ 12r.2.x kunde-zwei.example/httpdocs[0m
+  [0;33m⚠[0m  kunde-zwei.example/httpdocs: core wordpress 6.4.1 ist von einer bekannten Schwachstelle betroffen ([6.0 … 6.4.1]) CVE-2026-90004 — behoben in 6.4.2.
+  [0;33m⚠[0m  kunde-zwei.example/httpdocs: plugin pruefstand-alt 2.0.3 ist von einer bekannten Schwachstelle betroffen ([2.0 … 2.4.1]) CVE-2026-90002 — behoben in 2.5.
+  [0;31m✗[0m  [1mkunde-zwei.example/httpdocs: plugin pruefstand-kev 1.2 ist von einer bekannten Schwachstelle betroffen ((* … 2.0)) CVE-2026-90001 — behoben in 2.0. Diese Lücke wird nachweislich aktiv ausgenutzt — sofort handeln.[0m
+  [0;33m⚠[0m  kunde-zwei.example/httpdocs: theme pruefstand-thema 0.9 ist von einer bekannten Schwachstelle betroffen ((* … 1.0)) CVE-2026-90005 — behoben in 1.0.
+  [0;36m⚪[0m kunde-zwei.example/httpdocs: 1 Bestandteil(e) ohne lesbare Fassung — für sie ist keine Aussage zur Angreifbarkeit möglich
   [0;32m✓[0m kunde-zwei.example/httpdocs: keine Doorway-.htaccess-Signatur
   [0;31m✗[0m  [1mkunde-zwei.example/httpdocs: 1 Datei(en) mit @include base64_decode() — getarnte Payload-Nachladung[0m
   [0;33m⚠[0m  kunde-zwei.example/httpdocs: 1 mu-Plugin(s) — laufen ohne Aktivierung und erscheinen in keiner Pluginliste
@@ -156,11 +161,12 @@
 [1m[0;32m  ANALYSE ABGESCHLOSSEN — Lauf <LAUF-ID>[0m
 [1m[0;32m══════════════════════════════════════════[0m
 
-[1mBefunde:[0m       🔴 10 kritisch, ⚠️ 5 Warnungen, ✅ 17 ok, ⚪ 4 nicht messbar
-[0;33m               4 Prüfung(en) ohne Ergebnis — das ist keine Entwarnung.[0m
+[1mBefunde:[0m       🔴 11 kritisch, ⚠️ 8 Warnungen, ✅ 18 ok, ⚪ 5 nicht messbar
+[0;33m               5 Prüfung(en) ohne Ergebnis — das ist keine Entwarnung.[0m
                  kunde-zwei.example/cloud.kunde-zwei.example: Werkzeug antwortet nicht verwertbar — nicht geprüft
                  kunde-drei.example/httpdocs: wp nicht ausführbar (Werkzeug, PHP oder Eigentümer fehlt) — Instanz nur dateibasiert geprüft
                  kunde-eins.example/httpdocs: wp nicht ausführbar (Werkzeug, PHP oder Eigentümer fehlt) — Instanz nur dateibasiert geprüft
+                 kunde-zwei.example/httpdocs: 1 Bestandteil(e) ohne lesbare Fassung — für sie ist keine Aussage zur Angreifbarkeit möglich
                  kunde-zwei.example/httpdocs: wp nicht ausführbar (Werkzeug, PHP oder Eigentümer fehlt) — Instanz nur dateibasiert geprüft
 
 [1mLauf-Ordner:[0m     <PRUEFSTAND>/ablage/forensik/<LAUF-ID>

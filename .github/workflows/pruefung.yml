@@ -111,3 +111,16 @@ jobs:
           fi
           cp /tmp/rezept.sicherung "$ZIEL"
           bash werkzeuge/goldmuster.sh vergleichen
+
+      - name: Gegenprobe — deckt der Prüfstand den Schwachstellenabgleich ab?
+        run: |
+          # Der Prüfbaum trägt seit v3.14 Plugins und einen eigenen kleinen
+          # Datenbestand. Diese Stufe erklärt den Bestand für veraltet; das
+          # Rezept muss dann ⚪ melden statt zu vergleichen, und der Vergleich
+          # muss das bemerken. Ohne diese Stufe wüsste niemand, ob der Baum den
+          # Trefferpfad überhaupt erreicht.
+          if WP_DATEN_MAX_TAGE=-1 bash werkzeuge/goldmuster.sh vergleichen >/dev/null 2>&1; then
+            echo "::error::Der Prüfstand erreicht den Schwachstellenabgleich nicht."
+            exit 1
+          fi
+          bash werkzeuge/goldmuster.sh vergleichen
