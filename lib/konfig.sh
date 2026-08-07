@@ -68,6 +68,8 @@ WANT_MENUE=-1            # -1 = automatisch, 0 = nie, 1 = erzwungen
 MODUL_NUR=""             # --nur:  Komma-Liste von Abschnittsnummern
 MODUL_OHNE=""            # --ohne: Komma-Liste von Abschnittsnummern
 NUR_ROOT=0               # --nur-root: nur die Root-Frage, kompakte Aussage
+REZEPT_NUR=""            # --nur-rezept: Komma-Liste von Rezeptnamen
+REZEPT_KOPIEN=0          # vom Rahmen je Rezept gesetzt
 
 # Banner. Steht hier und nicht im Runner, weil --help es ebenfalls ausgibt und
 # die Hilfe erscheint, lange bevor der Runner den Banner-Punkt erreicht.
@@ -118,9 +120,9 @@ Abschnittsauswahl:
   --nur <n[,n…]>          Nur diese Prüfabschnitte (z. B. --nur 12)
   --ohne <n[,n…]>         Alle ausser diesen (z. B. --ohne 2,10)
   --nur-joomla            Kurzform für --nur 12
-  --nur-nextcloud         Kurzform für --nur 12b,12c (Übernahme + Härtungsstand)
-  --nur-haertung          Kurzform für --nur 12c — nur der Nextcloud-Härtungsstand,
-                          ohne Suche nach Schadcode. Ändert nichts.
+  --nur-rezept <app>      Nur dieses Prüfrezept (z. B. --nur-rezept nextcloud).
+                          Verfügbare Rezepte: siehe Verzeichnis rezepte/
+  --nur-nextcloud         Kurzform für --nur-rezept nextcloud
   --nur-root              Nur die Root- und Eskalationsprüfung. Beantwortet die
                           eine serverweite Frage, die der Kunde braucht — ist
                           jemand über den Webspace hinausgekommen? — und legt
@@ -181,8 +183,11 @@ while [[ $# -gt 0 ]]; do
     # Nextcloud getrennt ansprechbar: 12b sucht nach Uebernahme, 12c misst den
     # Haertungsstand. Beides ist einzeln waehlbar (--nur 12b / --nur 12c);
     # dieser Schalter nimmt beide, weil sie in der Praxis zusammen gefragt sind.
-    --nur-nextcloud) MODUL_NUR="12b,12c"; shift ;;
-    --nur-haertung)  MODUL_NUR="12c"; shift ;;
+    # Rezepte werden ueber ihren Namen gewaehlt, nicht ueber Abschnittsnummern.
+    # Ein neues Rezept ist damit sofort ansprechbar, ohne dass hier etwas
+    # nachgetragen werden muss.
+    --nur-rezept)    MODUL_NUR="12r"; REZEPT_NUR="${2:-}"; shift 2 ;;
+    --nur-nextcloud) MODUL_NUR="12r"; REZEPT_NUR="nextcloud"; shift ;;
     # Die Root-Frage getrennt beantworten. Sie ist die einzige serverweite
     # Aussage, die der Kunde wirklich braucht — "ist jemand ueber meinen
     # Webspace hinausgekommen?" —, und sie laesst sich ohne die uebrigen

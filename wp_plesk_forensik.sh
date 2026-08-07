@@ -65,6 +65,7 @@ lade lib/konfig.sh     # Pfade, Argumente, Laufordner, Selbst-Installation
 lade lib/befunde.sh    # Vorgabewerte aller Befund-Variablen
 lade lib/muster.sh     # Signaturen, Selbstausschluss
 lade lib/kern.sh       # Ausgabe- und Beleg-Funktionen
+lade lib/rezepte.sh    # Rahmen für die Prüfrezepte unter rezepte/
 lade lib/menue.sh      # Startmenü (nur wenn kein Prüfumfang angegeben wurde)
 
 # ── Startmenü ────────────────────────────────────────────────
