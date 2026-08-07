@@ -57,6 +57,40 @@ emit_findings_json() {
   # Abschnitt 16. htaccess_fremd nennt die Dateien mit Angreifer-Direktiven;
   # htaccess_unwirksam sagt, ob .htaccess ueberhaupt ausgewertet wird — ohne
   # das koennte der Reparaturteil eine Datei saeubern, die niemand liest.
+  # ── Generisches Befundschema (v3.12) ───────────────────────
+  # Gruppiert nach Anwendung und Kategorie. Der Bericht kennt die Kategorien,
+  # nicht die Anwendungsnamen — genau das macht einen neuen Scanner kernfrei.
+  local befgen verdgen
+  befgen=$(printf '%s' "${BEFUNDE:-}" | python3 -c '
+import json, sys
+raus = {}
+for z in sys.stdin.read().split("\n"):
+    if not z.strip():
+        continue
+    teil = z.split("\t")
+    if len(teil) < 5:
+        continue
+    app, kat, schwere, text, pfad = teil[0], teil[1], teil[2], teil[3], teil[4]
+    # Unauffaellige Einzelbefunde nicht mitschleppen: sie sind der Normalfall
+    # und blaehen die Datei um ein Vielfaches auf, ohne dass ein Leser damit
+    # etwas anfaengt. Die Zahl steht in counts.ok.
+    if schwere == "ok":
+        continue
+    raus.setdefault(app, {}).setdefault(kat, []).append(
+        {"schwere": schwere, "text": text, "pfad": pfad})
+print(json.dumps(raus, ensure_ascii=False))' 2>/dev/null || echo '{}')
+  verdgen=$(printf '%s' "${VERDIKTE:-}" | python3 -c '
+import json, sys
+raus = {}
+for z in sys.stdin.read().split("\n"):
+    if not z.strip():
+        continue
+    teil = z.split("\t")
+    if len(teil) < 3:
+        continue
+    raus[teil[0]] = {"flags": int(teil[1]) if teil[1].isdigit() else 0, "text": teil[2]}
+print(json.dumps(raus, ensure_ascii=False))' 2>/dev/null || echo '{}')
+
   local htafremd htaunw
   htafremd=$(printf '%s\n' "${HTACCESS_FREMD:-}" | json_arr)
   htaunw=$(json_str "${HTACCESS_UNWIRKSAM:-}")
@@ -135,7 +169,7 @@ emit_findings_json() {
 
   cat > "$FINDINGS_FILE" <<JSON
 {
-  "schema_version": "1.6",
+  "schema_version": "1.7",
   "tool": "wp_plesk_forensik.sh",
   "tool_version": "${TOOL_VERSION}",
   "run_id": "$(json_str "$RUN_LABEL")",
@@ -149,6 +183,8 @@ emit_findings_json() {
     "nicht_messbar": ${unmess:-[]}
   },
   "htaccess_unwirksam": "${htaunw}",
+  "befunde": ${befgen:-{\}},
+  "verdikte": ${verdgen:-{\}},
   "counts": { "crit": ${N_CRIT:-0}, "warn": ${N_WARN:-0}, "ok": ${N_OK:-0}, "unknown": ${N_UNKNOWN:-0} },
   "verdicts": {
     "root": { "flags": ${ROOT_FLAGS:-0}, "text": "$(json_str "${ROOT_VERDICT:-}")" },

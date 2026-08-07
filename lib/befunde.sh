@@ -23,6 +23,14 @@ UNKNOWN_LIST=""
 CUST_CRIT_LIST=""   # nur WEBSITE-Befunde (Kundenbericht) — via crit "…" web
 CUST_WARN_LIST=""
 CUST_UNKNOWN_LIST=""
+
+# ── Generisches Befundschema (v3.12) ─────────────────────────
+# Eine Zeile je Befund: app <TAB> kategorie <TAB> schwere <TAB> text <TAB> pfad.
+# Loest die rund zwanzig anwendungsspezifischen Variablen weiter unten ab —
+# schrittweise, je Modul, sobald es ohnehin angefasst wird.
+BEFUNDE=""
+VERDIKTE=""
+KANAL_VERWEIGERT=""   # Befunde, denen die Kundenspur verwehrt wurde (ab v3.13)
 EVIDENCE_IDX=0
 WPDB_FLAGS=0
 WPDB_VERDICT="⚪ Keine WordPress-Installation im Scan-Pfad gefunden — keine Datenbank-Prüfung durchgeführt."
