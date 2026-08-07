@@ -84,6 +84,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: php-cli
+        # Der Pruefbaum enthaelt eine wp-cli-Attrappe. Echtes wp-cli ist ein
+        # PHP-Programm, und der Rahmen ruft es als `php <datei>` auf — ohne PHP
+        # bricht er nach der Werkzeug-Probe ab und die Kern- sowie
+        # Plugin-Integritaet blieben wieder ungeprueft. Ausdruecklich
+        # installiert statt auf das Runner-Abbild zu vertrauen.
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq php-cli
+
       - name: Referenz auf dieser Plattform aufnehmen
         run: bash werkzeuge/goldmuster.sh aufnehmen
 
@@ -110,4 +118,21 @@ jobs:
             exit 1
           fi
           cp /tmp/rezept.sicherung "$ZIEL"
+          bash werkzeuge/goldmuster.sh vergleichen
+
+      - name: Gegenproben — erreicht der Prüfstand die WordPress-Prüfungen?
+        run: |
+          # Ein Prüfstand, der eine Prüfung nicht erreicht, behauptet Abdeckung,
+          # die es nicht gibt. Jede Stufe schaltet GENAU EINE Quelle ab und
+          # erwartet, dass der Vergleich es bemerkt.
+          gegenprobe() {   # <name> <variable=wert>
+            if env "$2" bash werkzeuge/goldmuster.sh vergleichen >/dev/null 2>&1; then
+              echo "::error::Der Prüfstand erreicht $1 nicht."
+              exit 1
+            fi
+            echo "  ok — $1 wird erreicht"
+          }
+          gegenprobe "den Schwachstellenabgleich"  WP_DATEN_MAX_TAGE=-1
+          gegenprobe "den Datenbestand"            WP_DATEN_DIR=/nicht/vorhanden
+          gegenprobe "die Plugin-Prüfsummen"       WP_PRUEFSUMMEN_BASIS=/nicht/vorhanden
           bash werkzeuge/goldmuster.sh vergleichen

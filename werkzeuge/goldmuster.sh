@@ -49,6 +49,146 @@ REF_DIR="${SELF_DIR}/pruefstand/referenz"
 ARBEIT="${NT_GOLDMUSTER_DIR:-${HOME}/.nt-goldmuster}/lauf"
 AKTION="${1:-vergleichen}"
 
+# ── Der Schwachstellen-Datenbestand des Pruefstands ──────────
+# Ein eigener, winziger Bestand statt des echten unter rezepte/wordpress/daten.
+# Zwei Gruende: der echte ist nicht eingecheckt (der Wordfence-Feed verlangt
+# einen Schluessel), und ein Pruefstand, dessen Erwartung sich mit jedem
+# Datenstand aendert, vergleicht nichts mehr.
+#
+# ALLE Kennungen und CVE-Nummern hier sind FREI ERFUNDEN. Der Bestand darf
+# keine Aussage ueber ein echtes Plugin enthalten.
+#
+# Der Stand wird bei jedem Bau auf HEUTE gesetzt. Ein fester Stand waere in
+# einem Monat aelter als WP_DATEN_MAX_TAGE, das Rezept meldete dann ⚪ statt zu
+# vergleichen — und der Pruefstand schlaege ohne jede Codeaenderung aus.
+wp_datenbestand_bauen() {
+  local D="$1"
+  rm -rf "$D"; mkdir -p "${D}/vuln"
+
+  # slug  von  von_inkl  bis  bis_inkl  behoben  cve  cvss  kev  quelle
+  cat > "${D}/vuln/wp-plugins.tsv" <<'TSV'
+# Pruefstand — frei erfundene Eintraege, keine Aussage ueber echte Plugins
+pruefstand-kev	*	0	2.0	0	2.0	CVE-2026-90001	9.8	ja	https://beispiel.invalid/1
+pruefstand-alt	2.0	1	2.4.1	1	2.5	CVE-2026-90002	6.5		https://beispiel.invalid/2
+pruefstand-aktuell	1.0	1	3.0	0	3.0	CVE-2026-90003	5.3		https://beispiel.invalid/3
+TSV
+
+  cat > "${D}/vuln/wp-core.tsv" <<'TSV'
+# Pruefstand — frei erfundene Eintraege
+wordpress	6.0	1	6.4.1	1	6.4.2	CVE-2026-90004	7.5		https://beispiel.invalid/4
+TSV
+
+  # Nicht leer lassen: eine leere Tabelle heisst fuer den Vergleicher "kein
+  # Datenbestand fuer diesen Typ", und dann faellt JEDES Theme in ⚪ — auch bei
+  # Kunde 3, der die Gegenprobe ist. Mit einem Eintrag wird stattdessen der
+  # Theme-Trefferpfad mitgeprueft.
+  cat > "${D}/vuln/wp-themes.tsv" <<'TSV'
+# Pruefstand — frei erfundene Eintraege
+pruefstand-thema	*	0	1.0	0	1.0	CVE-2026-90005	4.3		https://beispiel.invalid/5
+TSV
+  printf '%s | Pruefstand-Bestand, bei jedem Bau neu erzeugt\n' "$(date -u +%Y-%m-%d)" \
+    > "${D}/VERSION"
+}
+
+# ── wp-cli-Attrappe und lokale Plugin-Pruefsummen ────────────
+# Ohne ein 'wp' im PATH bricht der Rahmen nach der Werkzeug-Probe ab, und
+# rezept_kern laeuft nie. Die Kern-Integritaet und die Plugin-Pruefsummen waren
+# damit vom Pruefstand nicht erreichbar — beides Pruefungen, die im Vorfall
+# zaehlen.
+#
+# Die Attrappe ist bewusst dumm: sie beantwortet genau die zwei Fragen, die das
+# Rezept stellt, und leitet ihre Antwort aus dem Pfad ab. Sie bildet wp-cli
+# NICHT nach. Was sie prueft, ist der Weg durch das Rezept — nicht, ob wp-cli
+# funktioniert.
+attrappe_bauen() {
+  local B="$1"
+  rm -rf "$B"; mkdir -p "$B"
+  # PHP, nicht bash: der Rahmen ruft das Werkzeug als `php <datei> …` auf, weil
+  # echtes wp-cli ein PHP-Programm ist. Eine Bash-Attrappe wuerde von PHP
+  # gelesen und ihr eigener Quelltext landete als Antwort im Bericht — genau so
+  # ist es beim ersten Versuch passiert.
+  cat > "${B}/wp" <<'WPCLI'
+<?php
+# Pruefstand-Attrappe fuer wp-cli. Kein Ersatz, nur eine Antwort auf zwei
+# Fragen. Der Pfad entscheidet: kunde-zwei ist der Vorfall, alles andere sauber.
+$pfad = '';
+foreach ($argv as $a) {
+    if (strpos($a, '--path=') === 0) { $pfad = substr($a, 7); }
+}
+$befehl = ($argv[1] ?? '') . ' ' . ($argv[2] ?? '');
+if ($befehl === 'core version') {
+    # Der Rahmen prueft die Form: die Antwort muss mit einer Ziffer beginnen.
+    # Die Probe laeuft OHNE --path, deshalb hier ein fester Wert.
+    echo (strpos($pfad, 'kunde-drei') !== false ? "6.9.2" : "6.4.1"), "\n";
+    exit(0);
+}
+if ($befehl === 'core verify-checksums') {
+    if (strpos($pfad, 'kunde-zwei') !== false) {
+        echo "Warning: File doesn't verify against checksum: wp-includes/load.php\n";
+        echo "Warning: File should not exist: wp-admin/mu.php\n";
+        exit(1);
+    }
+    echo "Success: WordPress installation verifies against checksums.\n";
+    exit(0);
+}
+exit(0);
+WPCLI
+  chmod +x "${B}/wp"
+}
+
+# Die Pruefsummen, gegen die _wp_plugin_integritaet vergleicht. Erzeugt aus den
+# Dateien im Baum — mit genau einer gewollten Abweichung, damit der
+# Trefferpfad geuebt wird und nicht nur der Gutfall.
+pruefsummen_bauen() {   # <zielverzeichnis> <baum>
+  local P="$1" W="$2"
+  rm -rf "$P"; mkdir -p "$P"
+  python3 - "$P" "$W" <<'PY'
+import hashlib, json, os, sys
+ziel, baum = sys.argv[1], sys.argv[2]
+
+# Fuer jedes Plugin im Baum ein Pruefsummensatz — ausser 'pruefstand-aktuell'
+# bei Kunde 2: dort wird der Satz absichtlich mit einer falschen Pruefsumme
+# fuer die PHP-Datei erzeugt. Das ist der einzige erwartete 🔴 aus dieser
+# Pruefung. 'pruefstand-kopflos' bekommt keinen Satz (keine Fassung) und
+# 'pruefstand-alt' bei Kunde 3 ebenfalls nicht — das ist der ⚪-Fall
+# "kein Pruefsummensatz", den es auf jeder echten Seite gibt.
+ohne_satz = {("kunde-drei.example", "pruefstand-alt")}
+verfaelscht = {("kunde-zwei.example", "pruefstand-aktuell")}
+
+for kunde in sorted(os.listdir(baum)):
+    pdir = os.path.join(baum, kunde, "httpdocs", "wp-content", "plugins")
+    if not os.path.isdir(pdir):
+        continue
+    for slug in sorted(os.listdir(pdir)):
+        voll = os.path.join(pdir, slug)
+        if not os.path.isdir(voll):
+            continue
+        haupt = os.path.join(voll, slug + ".php")
+        if not os.path.isfile(haupt):
+            continue
+        fassung = ""
+        for zeile in open(haupt, encoding="utf-8", errors="replace"):
+            if zeile.strip().lower().startswith("version:"):
+                fassung = zeile.split(":", 1)[1].strip()
+        if not fassung or (kunde, slug) in ohne_satz:
+            continue
+        dateien = {}
+        for wurzel, _d, namen in os.walk(voll):
+            for n in namen:
+                p = os.path.join(wurzel, n)
+                roh = open(p, "rb").read()
+                rel = os.path.relpath(p, voll)
+                if (kunde, slug) in verfaelscht and rel.endswith(".php"):
+                    roh = roh + b"# abweichend"      # erzwungene Abweichung
+                dateien[rel] = {"md5": hashlib.md5(roh).hexdigest(),
+                                "sha256": hashlib.sha256(roh).hexdigest()}
+        d = os.path.join(ziel, slug)
+        os.makedirs(d, exist_ok=True)
+        with open(os.path.join(d, fassung + ".json"), "w", encoding="utf-8") as fh:
+            json.dump({"plugin": slug, "version": fassung, "files": dateien}, fh)
+PY
+}
+
 # ── Der synthetische Baum ────────────────────────────────────
 # Drei Kunden. Kunde 2 traegt gepflanzten Schadcode, Kunde 3 ist sauber und
 # dient als Gegenprobe: was bei ihm gemeldet wird, ist ein Falsch-Positiv.
@@ -192,6 +332,54 @@ PHP
 
   printf '<?php\n// wp-load\n' > "${k3}/wp-load.php"
 
+  # ── Erweiterungen fuer den Versionsabgleich ─────────────────
+  # Ohne Plugins im Baum konnte der Pruefstand den Trefferpfad von
+  # rezept_version nie ueben: er sah nur den Fall "nichts zu vergleichen".
+  #
+  # Die Kennungen sind FREI ERFUNDEN und die CVE-Nummern synthetisch. Ein
+  # Pruefbaum darf keine Tatsachenbehauptung ueber ein echtes Plugin
+  # enthalten — weder hier noch im dazugehoerigen Bestand in
+  # wp_datenbestand_bauen.
+  #
+  # Kunde 2 traegt die verwundbaren Fassungen, Kunde 3 die aktuellen. Damit
+  # deckt derselbe Baum beide Richtungen ab: Treffer und Gegenprobe.
+  wp_plugin() {   # wp_plugin <installation> <slug> <fassung|-> <anzeigename>
+    local ziel="$1/wp-content/plugins/$2"
+    mkdir -p "$ziel"
+    { printf '<?php\n/*\nPlugin Name: %s\n' "$4"
+      [[ "$3" != "-" ]] && printf 'Version: %s\n' "$3"
+      printf '*/\n// Pruefstand, ohne Funktion\n'
+    } > "${ziel}/$2.php"
+  }
+  wp_theme() {    # wp_theme <installation> <slug> <fassung> <anzeigename>
+    local ziel="$1/wp-content/themes/$2"
+    mkdir -p "$ziel"
+    printf '/*\nTheme Name: %s\nVersion: %s\n*/\n' "$4" "$3" > "${ziel}/style.css"
+  }
+
+  # Kunde 2: eine Luecke mit belegter Ausnutzung (🔴), eine ohne (⚠️), eine
+  # Fassung ausserhalb des Bereichs (✅) und eine ohne lesbaren Kopf (⚪).
+  wp_kern() {   # wp_kern <installation> <fassung>
+    mkdir -p "$1/wp-includes"
+    printf '<?php\n$wp_version = %s;\n' "'$2'" > "$1/wp-includes/version.php"
+  }
+  wp_kern "$k2" 6.4.1
+  wp_plugin "$k2" pruefstand-kev      1.2   "Pruefstand KEV"
+  wp_plugin "$k2" pruefstand-alt      2.0.3 "Pruefstand Alt"
+  # 4.1 statt 4.0: der Pruefsummensatz liegt je Slug UND Fassung. Haetten beide
+  # Kunden dieselbe Fassung, traefe die absichtliche Verfaelschung fuer Kunde 2
+  # auch Kunde 3 — und die Gegenprobe waere keine mehr.
+  wp_plugin "$k2" pruefstand-aktuell  4.1   "Pruefstand Aktuell"
+  wp_plugin "$k2" pruefstand-kopflos  -     "Pruefstand Kopflos"
+  wp_theme  "$k2" pruefstand-thema    0.9   "Pruefstand Thema"
+
+  # Kunde 3 ist die Gegenprobe: alles aktuell, nichts darf gemeldet werden.
+  wp_kern "$k3" 6.9.2
+  wp_plugin "$k3" pruefstand-kev      3.0 "Pruefstand KEV"
+  wp_plugin "$k3" pruefstand-alt      3.1 "Pruefstand Alt"
+  wp_plugin "$k3" pruefstand-aktuell  4.0 "Pruefstand Aktuell"
+  wp_theme  "$k3" pruefstand-thema    1.0 "Pruefstand Thema"
+
   # ── Sicherungskopien: duerfen NICHT als eigene Instanzen zaehlen ──
   # Die Tiefe ist Teil des Pruefgegenstands: Abschnitt 12b sucht mit
   # -maxdepth 6. Liegt die Kopie tiefer, wird sie ohnehin nie gefunden und der
@@ -309,6 +497,9 @@ lauf_ausfuehren() {
   NT_TESTLAUF=1 \
   NT_BASE_DIR="$ABLAGE" \
   NT_VHOSTS_DIR="$W" \
+  WP_DATEN_DIR="${WP_DATEN_DIR:-$WPDATEN}" \
+  WP_PRUEFSUMMEN_BASIS="${WP_PRUEFSUMMEN_BASIS:-$WPSUMMEN}" \
+  PATH="${ATTRAPPE}:$PATH" \
   bash "${SELF_DIR}/wp_plesk_forensik.sh" \
        --path "$W" --nur-website --kein-menue >"${ABLAGE}/konsole.txt" 2>&1
   local rc=$?
@@ -357,6 +548,16 @@ echo -e "${BOLD}NT-Forensik · Goldmuster${NC}"
 echo -e "  Programmstand: $(cd "$SELF_DIR" && git rev-parse --short HEAD 2>/dev/null || echo '?')"
 
 BAUM="${ARBEIT}/vhosts"; ABLAGE="${ARBEIT}/ablage"
+# Bewusst NEBEN dem Baum, nicht darin: was unter ${BAUM} liegt, wird gescannt,
+# und der Bestand wuerde sich sonst selbst als Fund melden.
+#
+# Beide Pfade lassen sich von aussen ueberschreiben (siehe lauf_ausfuehren).
+# Das ist der Hebel fuer die Gegenproben in der CI: zeigt eine Quelle ins
+# Leere, MUSS der Vergleich das bemerken. Ohne diesen Hebel liesse sich nicht
+# zeigen, dass der Baum die jeweilige Pruefung ueberhaupt erreicht.
+WPDATEN="${ARBEIT}/wpdaten"
+WPSUMMEN="${ARBEIT}/wpsummen"     # lokale Plugin-Pruefsummen statt wordpress.org
+ATTRAPPE="${ARBEIT}/bin"          # wp-cli-Attrappe, kommt vor den echten PATH
 # Zwingend vor jedem Lauf. Bleibt der Ordner eines fehlgeschlagenen Vergleichs
 # stehen, greift ausgabe_einsammeln per 'head -1' den ALTEN Laufordner und
 # vergleicht ihn gegen die Referenz — der naechste Lauf meldet dann eine
@@ -364,6 +565,9 @@ BAUM="${ARBEIT}/vhosts"; ABLAGE="${ARBEIT}/ablage"
 rm -rf "$ARBEIT"
 mkdir -p "$ABLAGE"
 baum_bauen "$BAUM"
+wp_datenbestand_bauen "$WPDATEN"
+attrappe_bauen "$ATTRAPPE"
+pruefsummen_bauen "$WPSUMMEN" "$BAUM"
 info "Baum gebaut: $(find "$BAUM" -type f | wc -l | tr -d ' ') Dateien in $(find "$BAUM" -maxdepth 1 -type d | tail -n +2 | wc -l | tr -d ' ') vhosts"
 
 case "$AKTION" in

@@ -4,11 +4,81 @@ Alle nennenswerten Änderungen an `wp_plesk_forensik.sh`.
 
 ## [unveröffentlicht]
 
+### Neu — wp-cli-Attrappe im Prüfbaum
+Ohne ein `wp` im PATH bricht der Rahmen nach der Werkzeug-Probe ab, und
+`rezept_kern` läuft nie — Kern-Integrität und Plugin-Prüfsummen waren vom
+Prüfstand nicht erreichbar. Beides sind Prüfungen, die im Vorfall zählen.
+
+Die Attrappe ist ein PHP-Programm, weil echtes wp-cli eines ist und der Rahmen
+`php <datei>` aufruft. Sie beantwortet genau zwei Fragen und leitet ihre
+Antwort aus dem Pfad ab; wp-cli bildet sie nicht nach. Geprüft wird der Weg
+durch das Rezept, nicht ob wp-cli funktioniert.
+
+Dazu `WP_PRUEFSUMMEN_BASIS`: zeigt die Variable auf ein Verzeichnis statt auf
+wordpress.org, wird nachgeschlagen statt abgerufen — und das `--online`-Tor
+entfällt, weil es wegen des Netzzugriffs besteht. Der Prüfstand erzeugt seine
+Prüfsummen aus dem Baum, mit genau einer gewollten Abweichung.
+
+Drei Gegenproben in der CI schalten je eine Quelle ab und erwarten, dass der
+Vergleich es bemerkt. Ohne sie behauptete der Prüfstand Abdeckung, die es
+nicht gibt.
+
+### Behoben — `sudo -u` auf sich selbst
+Der Rahmen führte das Werkzeug immer per `sudo -u <eigentümer>` aus, auch wenn
+der Lauf schon diesem Benutzer gehört. Als root ist der Rechtewechsel nötig;
+als der Benutzer selbst ist er überflüssig und auf einer Maschine ohne
+NOPASSWD fragt er nach einem Passwort und bleibt stehen. `als_eigentuemer` in
+`lib/kern.sh` überspringt ihn in diesem Fall.
+
+### Neu — Der Prüfbaum trägt Plugins
+Bis hierher hatte keine der drei Installationen im Prüfbaum ein Plugin. Der
+Trefferpfad des Schwachstellenabgleichs war damit nicht erreichbar: der
+Prüfstand sah ausschliesslich den Fall „nichts zu vergleichen".
+
+Kunde 2 bekommt verwundbare Fassungen (eine mit belegter Ausnutzung, eine ohne,
+ein betroffenes Theme, ein Plugin ohne lesbaren Kopf), Kunde 3 als Gegenprobe
+die behobenen. Dazu ein eigener, winziger Datenbestand, den `goldmuster.sh` bei
+jedem Bau erzeugt — mit tagesaktuellem Stand, weil ein fester Stand nach
+`WP_DATEN_MAX_TAGE` veraltet wäre und der Prüfstand dann ohne jede
+Codeänderung ausschlüge.
+
+Alle Kennungen und CVE-Nummern im Fixture sind **frei erfunden**. Ein Prüfbaum
+darf keine Tatsachenbehauptung über ein echtes Plugin enthalten.
+
+Eine zweite Gegenprobe in der CI erklärt den Bestand für veraltet und erwartet,
+dass der Vergleich das bemerkt — sonst wüsste niemand, ob der Baum den
+Trefferpfad überhaupt erreicht.
+
+`WP_DATEN_DIR` erlaubt einen Datenbestand ausserhalb der Installation. Der
+Prüfstand braucht das; im Betrieb ist es brauchbar, wenn mehrere Installationen
+sich einen gepflegten Bestand teilen.
+
 ### Neu — Der Haken `rezept_version` wird aufgerufen
 `lib/rezepte.sh` nennt ihn seit der ersten Fassung als Haken, `module/12r_rezepte.sh`
 rief ihn nie auf und zog ihn auch im `unset -f` nicht zurück. Ein Rezept konnte
 ihn also deklarieren, ohne dass je etwas passierte. Der Haken läuft jetzt vor
 `rezept_sonder` — dateibasiert, ohne Werkzeug der Anwendung.
+
+### Neu — WordPress: Plugin-Integrität gegen wordpress.org
+`rezept_kern` prüft nicht mehr nur den Kern. Die Dateien installierter Plugins
+werden gegen `downloads.wordpress.org/plugin-checksums/<slug>/<version>.json`
+abgeglichen (md5 **und** sha256 je Datei). Das findet **veränderte** Dateien
+statt veralteter Fassungen — für eine Forensik die stärkere Aussage, und der
+Kern ist selten das Einfallstor: die Nutzlast liegt fast immer im Plugin-Ordner.
+
+Nur mit `--online`, ein Abruf je Plugin, protokolliert über `nf_fetch`.
+
+Vier Befundklassen: veränderte `.php`/`.js` sind 🔴, veränderte Nicht-Codedateien
+und fehlende Dateien ⚠️, zusätzliche PHP-Dateien vorerst nur ein Beleg.
+
+Bewusst **nicht** über `wp plugin verify-checksums` — das Kommando zählt die
+Plugins über die WordPress-Laufzeit auf, und genau darüber nimmt sich ein
+manipuliertes Plugin per `all_plugins`-Filter selbst aus der Prüfung. Ausserdem
+deckt es weder mu-Plugins noch Themes ab.
+
+Plugins ohne Prüfsummensatz (Premium, Fork, Eigenbau) und Themes, für die
+wordpress.org grundsätzlich keine Prüfsummen veröffentlicht, werden zu **einem**
+⚪ zusammengefasst.
 
 ### Neu — WordPress: Abgleich gegen bekannte Schwachstellen
 Das Rezept nutzt den Haken und gleicht Kern, Plugins und Themes gegen den
@@ -37,8 +107,7 @@ Das Gegenstück zu `daten/joomla/` entsteht: `rezepte/wordpress/daten/` mit
 `werkzeuge/wordpress-daten-update.sh` als Pflegewerkzeug und
 `lib/wp_schwachstellen.py` als Vergleicher.
 
-**Noch nicht im Prüflauf eingebunden** — dieser Schritt liefert den Unterbau,
-das Scharfschalten in Abschnitt 11 folgt getrennt.
+Der Unterbau; das Scharfschalten geschieht im WordPress-Rezept (siehe oben).
 
 **Eigener Versionsvergleich statt `j_vernum`.** Das Joomla-Verfahren presst
 `a.b.c` in eine Zahl `aabbbccc`. Für Joomla trägt das; für WordPress-Plugins
