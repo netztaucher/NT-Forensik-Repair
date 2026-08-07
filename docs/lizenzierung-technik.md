@@ -1,4 +1,13 @@
-# Lizenzierung — was geschützt ist und was nicht
+# Schutzmodell — wie die Lizenzbindung technisch funktioniert
+
+> Dieses Dokument beschreibt die **Technik**. Umfang, Bedingungen und Bezug der Lizenz
+> stehen in [`lizenz.md`](lizenz.md).
+>
+> Es steht öffentlich, weil ein Sicherheitswerkzeug seine eigenen Grenzen benennen können
+> muss. Wer wissen will, ob er den Aussagen dieses Werkzeugs trauen kann, findet hier die
+> Antwort auf die härteste Frage zuerst.
+
+## Was geschützt ist und was nicht
 
 Dieses Repo enthält zwei Werkzeuge mit unterschiedlichem Status:
 
@@ -79,7 +88,7 @@ Auf einen anderen Rechner kopiert ist die Datei wertlos.
 Danach: kein Repair. Die Analyse läuft weiter — Bereinigen kann warten, bis
 wieder Netz da ist, Analysieren nicht.
 
-## Eine Fassung ausliefern
+## Eine Fassung ausliefern (nur Betreiber)
 
 Die vier geschützten Dateien liegen im **privaten** Repo `NT-Repair`. Dort:
 
