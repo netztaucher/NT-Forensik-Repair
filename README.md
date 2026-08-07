@@ -19,7 +19,7 @@
 
 # NT-Forensik-Repair
 
-**Forensische Incident-Response für WordPress/Plesk/Joomla-Server — Analyse und Bereinigung, strikt getrennt.**
+**Forensische Incident-Response für WordPress/Joomla/Nextcloud auf Plesk-Servern — Analyse und Bereinigung, strikt getrennt.**
 
 | | | |
 |---|---|---|
@@ -56,7 +56,7 @@ Nach einem WordPress-Einbruch ist die erste Stunde entscheidend: Logs rotieren, 
 
 ## Funktionsumfang
 
-Der Lauf gliedert sich in 14 Abschnitte:
+Der Lauf gliedert sich in 15 Abschnitte:
 
 | # | Abschnitt | Prüft u. a. |
 |---|---|---|
@@ -72,6 +72,7 @@ Der Lauf gliedert sich in 14 Abschnitte:
 | 10 | Andere Domains | Server-weite Betroffenheit |
 | 11 | **WordPress-Datenbank** | Fremde Admins, manipulierte Optionen, aktive Plugins, **WP-Toolkit-Infektionsstatus** |
 | 12 | **Joomla-Prüfung** | Version & Wartungsende, Härtung der `configuration.php`, ungeschützter API-Zugriff, **Kern-Integrität (Prüfsummen)**, **Datenbank-Persistenz (System-Plugins, Super-User, Vorlagen-Injektionen)**, Abgleich mit bekannten Schwachstellen, Joomla-typische Schaddateien, Angriffsspuren in den Protokollen |
+| 12b | **Nextcloud-Prüfung** | Manipulierte Root-`.htaccess` (WordPress-Freigabeliste), bekannte Schaddateien der Kampagne, verschachtelte Verzeichnisse (`config/config`), aufgeblähte `index.php`, **Kern-Integrität über `occ integrity:check-core`** |
 | 13 | **Root-/Eskalations-Prüfung** | Root-Logins, Fremd-Keys, Privilege-Escalation → Root-Verdikt |
 | 14 | Zusammenfassung | Befund-Statistik, Maßnahmenplan |
 
