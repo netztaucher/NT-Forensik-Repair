@@ -506,6 +506,24 @@ lauf_ausfuehren() {
   # Der Rueckgabewert wird mitgeschrieben: eine Aenderung, die den Lauf
   # abbrechen laesst, waere sonst als leeres Ergebnis nicht unterscheidbar.
   echo "$rc" > "${ABLAGE}/rueckgabewert.txt"
+
+  # Meldungen des Interpreters sind KEINE Ausgabe des Werkzeugs, sondern ein
+  # Defekt. Der Vergleich allein faengt sie nicht: er prueft auf Gleichheit,
+  # und eine Fehlermeldung, die in beiden Laeufen steht, gilt ihm als
+  # unveraendert. Genau so ist ein "[[: 0 0: syntax error in expression" aus
+  # rezept_kern in die eingecheckte Referenz gewandert und dort vier Laeufe
+  # lang unbemerkt geblieben.
+  #
+  # Deshalb hier eine eigene Pruefung, unabhaengig vom Vergleich.
+  local fund
+  fund=$(grep -nE 'syntax error|unbound variable|command not found|: line [0-9]+:' \
+              "${ABLAGE}/konsole.txt" 2>/dev/null | head -5 || true)
+  if [[ -n "$fund" ]]; then
+    echo -e "  ${RED}❌${NC} Der Lauf hat Interpreter-Fehler ausgegeben:" >&2
+    printf '     %s\n' "$fund" >&2
+    echo "     Das ist ein Defekt, keine Ausgabe. Beheben, nicht in die Referenz aufnehmen." >&2
+    return 1
+  fi
   return 0
 }
 
@@ -576,7 +594,7 @@ case "$AKTION" in
     exit 0 ;;
 
   aufnehmen)
-    lauf_ausfuehren "$BAUM" "$ABLAGE"
+    lauf_ausfuehren "$BAUM" "$ABLAGE" || fail "Lauf mit Interpreter-Fehlern — siehe oben"
     rm -rf "$REF_DIR"; ausgabe_einsammeln "$ABLAGE" "$REF_DIR"
     ok "Referenz abgelegt unter pruefstand/referenz/"
     ls -1 "$REF_DIR" | sed 's/^/     /'
@@ -585,7 +603,7 @@ case "$AKTION" in
 
   vergleichen)
     [[ -d "$REF_DIR" ]] || fail "Keine Referenz vorhanden — zuerst: werkzeuge/goldmuster.sh aufnehmen"
-    lauf_ausfuehren "$BAUM" "$ABLAGE"
+    lauf_ausfuehren "$BAUM" "$ABLAGE" || fail "Lauf mit Interpreter-Fehlern — siehe oben"
     NEU="${ARBEIT}/neu"; ausgabe_einsammeln "$ABLAGE" "$NEU"
     echo
     ABWEICHUNG=0
