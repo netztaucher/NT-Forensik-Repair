@@ -173,7 +173,11 @@ import re, sys
 REGELN = [
     (r'\b\d{8}_\d{6}_\w+',                         '<LAUF-ID>'),   # traegt die Uhrzeit
     (r'\b\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z',    '<UTC>'),
-    (r'\b\d{4}-\d{2}-\d{2} \d{2}:\d{2}(:\d{2})?',  '<ZEIT>'),
+    # GNU-`stat` haengt Nanosekunden und Zeitzonenversatz an
+    # ("2026-08-07 08:34:27.761970961 +0000"), BSD-`stat` nicht. Ohne den
+    # optionalen Schwanz weicht jeder Lauf unter Linux ab — lokal auf macOS
+    # war das nicht zu sehen, erst die CI hat es gezeigt.
+    (r'\b\d{4}-\d{2}-\d{2} \d{2}:\d{2}(:\d{2})?(\.\d+)?( ?[+-]\d{4})?', '<ZEIT>'),
     (r'\b[0-9a-f]{64}\b',                          '<SHA256>'),    # Hashes des Laufordners
     (r'\b[0-9a-f]{40}\b',                          '<SHA1>'),
     # Der Pruefstand liegt je nach Plattform unter /tmp, /private/tmp oder
