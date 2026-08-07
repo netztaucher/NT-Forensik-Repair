@@ -15,7 +15,7 @@
   "htaccess_unwirksam": "nginx ohne Apache",
   "befunde": {"nextcloud": {"haertung": [{"schwere": "unklar", "text": "kunde-zwei.example/cloud.kunde-zwei.example: occ nicht ausführbar — Härtungsstand nicht messbar", "pfad": "<PRUEFSTAND>/vhosts/kunde-zwei.example/cloud.kunde-zwei.example"}]}},
   "verdikte": {},
-  "counts": { "crit": 9, "warn": 4, "ok": 12, "unknown": 3 },
+  "counts": { "crit": 9, "warn": 5, "ok": 12, "unknown": 3 },
   "verdicts": {
     "root": { "flags": 0, "text": "⚪ Root-Prüfung nicht durchgeführt." },
     "wpdb": { "flags": 0, "text": "🟢 **Keine Angreifer-Spuren in den WordPress-Datenbanken** (keine neuen Admins, keine manipulierten Optionen)." },
