@@ -9,14 +9,25 @@
 # Ablage (fest):
 #   /root/wartungsscripte/                     ← Skript-Basis (wird angelegt)
 #   /root/wartungsscripte/forensik/<LAUF>/     ← ein Ordner pro Lauf
-#     ├── belege/                              ← Rohdaten, nummeriert, gehasht
-#     │   ├── 00_manifest.txt                  ← Chain-of-Custody
-#     │   ├── NN_*.txt / logs_sicherung.tar.gz
-#     │   └── SHA256SUMS
-#     ├── technik_bericht.md                   ← vollständiger Technik-Bericht
-#     ├── kundenbericht.md                     ← lesbar für den Kunden
-#     ├── bsi_meldung.md                       ← BSI-Meldung (Best Practice)
-#     └── lauf.log                             ← Ausführungsprotokoll
+#     ├── kunde/                               ← WEITERGABEFÄHIG
+#     │   ├── kundenbericht.md                 ← lesbar für den Kunden
+#     │   ├── befunde_details.md               ← Anlage, relative Pfade
+#     │   ├── root_aussage.md                  ← nur bei --nur-root
+#     │   └── abschlussbericht.pdf             ← optional
+#     └── betreiber/                           ← NICHT WEITERGEBEN
+#         ├── technik_bericht.md               ← vollständig, auch serverweit
+#         ├── bsi_meldung.md                   ← Entwurf
+#         ├── dsgvo_meldung.md                 ← Entwurf, eigener Meldeweg
+#         ├── findings.json                    ← Eingabe für die Bereinigung
+#         ├── lauf.log                         ← Ausführungsprotokoll
+#         └── belege/                          ← Rohdaten, gehasht, UNMASKIERT
+#             ├── 00_manifest.txt              ← Chain-of-Custody
+#             ├── NN_*.txt / logs_sicherung.tar.gz
+#             └── SHA256SUMS
+#
+#   Dazu zwei Archive: <LAUF>_kunde.tar.gz und <LAUF>_betreiber.tar.gz.
+#   Die Trennung ist der Punkt: ein einziges Archiv lädt dazu ein, es als
+#   Ganzes weiterzureichen — samt fremder vhosts und unmaskierter Rohbelege.
 #
 # Autor: netztaucher | digital
 # Nur read-only Analyse. Keine Lösch-/Schreiboperationen im Webspace.

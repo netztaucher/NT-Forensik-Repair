@@ -288,12 +288,28 @@ ablage_einrichten() {
   TIMESTAMP=$(date +%Y%m%d_%H%M%S)
   RUN_LABEL="${TIMESTAMP}_${DOMAIN:-${SCOPE_MODE}}"
   RUN_DIR="${FORENSIK_BASE}/${RUN_LABEL}"
-  BELEGE_DIR="${RUN_DIR}/belege"
-  REPORT_FILE="${RUN_DIR}/technik_bericht.md"
-  KUNDE_FILE="${RUN_DIR}/kundenbericht.md"
-  BSI_FILE="${RUN_DIR}/bsi_meldung.md"
-  DSGVO_FILE="${RUN_DIR}/dsgvo_meldung.md"
-  RUN_LOG="${RUN_DIR}/lauf.log"
+
+  # ── Zwei Spuren (v3.11) ──────────────────────────────────────
+  # Die Zuordnung eines Dokuments entscheidet, wer es sehen darf — und das
+  # gehoert in die Ablage, nicht in die Erinnerung des Bearbeiters. Bisher lag
+  # alles nebeneinander in einem Ordner, und wer den weitergab, gab auch den
+  # Technik-Bericht mit fremden vhosts und die unmaskierten Rohbelege mit.
+  #
+  # kunde/      geht an den Auftraggeber. Enthaelt nur, was ihn betrifft.
+  # betreiber/  bleibt beim Dienstleister. Behoerden-Entwuerfe liegen hier,
+  #             weil sie die vollstaendigen Befunde brauchen und der Kunde
+  #             sie nicht selbst versendet.
+  KUNDE_DIR="${RUN_DIR}/kunde"
+  BETREIBER_DIR="${RUN_DIR}/betreiber"
+
+  BELEGE_DIR="${BETREIBER_DIR}/belege"
+  REPORT_FILE="${BETREIBER_DIR}/technik_bericht.md"
+  BSI_FILE="${BETREIBER_DIR}/bsi_meldung.md"
+  DSGVO_FILE="${BETREIBER_DIR}/dsgvo_meldung.md"
+  RUN_LOG="${BETREIBER_DIR}/lauf.log"
+
+  KUNDE_FILE="${KUNDE_DIR}/kundenbericht.md"
+
   LOG_ARCHIVE="${BELEGE_DIR}/logs_sicherung.tar.gz"
 
   # ── Root-Check ───────────────────────────────────────────────
@@ -316,8 +332,38 @@ ablage_einrichten() {
   fi
 
   # ── Basis-Verzeichnisse anlegen ──────────────────────────────
-  mkdir -p "$BASE_DIR" "$FORENSIK_BASE" "$BELEGE_DIR"
-  chmod 700 "$BASE_DIR" "$FORENSIK_BASE" "$RUN_DIR" "$BELEGE_DIR"
+  mkdir -p "$BASE_DIR" "$FORENSIK_BASE" "$KUNDE_DIR" "$BELEGE_DIR"
+  chmod 700 "$BASE_DIR" "$FORENSIK_BASE" "$RUN_DIR" "$KUNDE_DIR" "$BETREIBER_DIR" "$BELEGE_DIR"
+
+  # Eine Datei, die sagt, was der jeweilige Ordner ist. Der Ordnername allein
+  # traegt die Aussage nicht weit genug: wer das Archiv entpackt und
+  # weiterleitet, hat den Zusammenhang oft nicht mehr vor Augen.
+  cat > "${KUNDE_DIR}/00_LIESMICH.txt" <<'KUNDE_HINWEIS'
+Diese Unterlagen sind fuer den Auftraggeber bestimmt und duerfen
+weitergegeben werden.
+
+Sie enthalten ausschliesslich Angaben zum geprueften Webauftritt. Daten
+anderer Kunden desselben Servers sind nicht enthalten.
+
+Der Ordner betreiber/ daneben ist NICHT zur Weitergabe bestimmt.
+KUNDE_HINWEIS
+
+  cat > "${BETREIBER_DIR}/00_LIESMICH.txt" <<'BETREIBER_HINWEIS'
+NICHT WEITERGEBEN.
+
+Dieser Ordner ist fuer den Dienstleister bestimmt. Er enthaelt:
+
+  technik_bericht.md   vollstaendige Befunde, auch serverweite
+  bsi_meldung.md       Entwurf, nicht geprueft
+  dsgvo_meldung.md     Entwurf, eigener Meldeweg (nicht ueber das BSI)
+  findings.json        maschinenlesbar, Eingabe fuer die Bereinigung
+  belege/              Rohbelege, BEWUSST unmaskiert (Beweismittel)
+  lauf.log             Protokoll des Laufs
+
+Auf einem Server mit mehreren Kunden koennen hier Pfade, Domains und
+Kennungen anderer Kunden stehen. Weitergabe an den Auftraggeber waere ein
+Datenschutzverstoss. Was an ihn geht, liegt in kunde/.
+BETREIBER_HINWEIS
 
   # ── Selbst-Installation nach /root/wartungsscripte ──────────
   # SELF_PATH und SELF_DIR setzt der Runner, bevor er diese Datei einbindet —

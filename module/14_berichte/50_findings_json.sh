@@ -7,7 +7,7 @@
 
 # ── Maschinenlesbarer Export für das Repair-Tool (findings.json) ──
 # Kein jq-Zwang; JSON von Hand aus vorhandenen Variablen/Belegen gebaut.
-FINDINGS_FILE="${RUN_DIR}/findings.json"
+FINDINGS_FILE="${BETREIBER_DIR}/findings.json"
 
 # JSON-Maskierung. Steuerzeichen MÜSSEN maskiert werden, sonst ist die Datei
 # ungültig (v3.8): Tabulatoren stecken in praktisch jeder Zeile, die aus

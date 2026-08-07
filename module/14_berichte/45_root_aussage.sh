@@ -1,6 +1,8 @@
 # shellcheck shell=bash
 # NT-Forensik — Abschnitt 14, Teil: Kompakte Root-Aussage fuer --nur-root
 #
+# Steht bewusst VOR der Maskierung (55): das Dokument geht an den Kunden,
+# und was nach der Maskierung entsteht, wird nicht mehr maskiert.
 # Unterabschnitt von module/14_berichte.sh. Wird vom Runner nach dem
 # Hauptmodul geladen (siehe modul_teile_laden in wp_plesk_forensik.sh) und
 # teilt sich dessen Variablen. Nicht einzeln ausfuehrbar.
@@ -12,7 +14,7 @@
 # IP, keinen Pfad. Die Einzelheiten sind Sache des Betreibers und stehen im
 # Beleg root_verdikt.
 if [[ "${NUR_ROOT:-0}" == "1" ]]; then
-  cat > "${RUN_DIR}/root_aussage.md" <<AUSSAGE
+  cat > "${KUNDE_DIR}/root_aussage.md" <<AUSSAGE
 # Prüfung der Serverebene — Ergebnis
 
 | | |
@@ -62,5 +64,5 @@ Website-Prüfung und eines eigenen Berichts.
 
 *netztaucher | digital*
 AUSSAGE
-  echo -e "\n${BOLD}Root-Aussage:${NC}   ${RUN_DIR}/root_aussage.md"
+  echo -e "\n${BOLD}Root-Aussage:${NC}   ${KUNDE_DIR}/root_aussage.md"
 fi

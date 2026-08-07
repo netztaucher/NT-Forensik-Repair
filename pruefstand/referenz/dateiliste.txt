@@ -1,0 +1,13 @@
+./betreiber/00_LIESMICH.txt
+./betreiber/belege/00_manifest.txt
+./betreiber/belege/01_veraenderte_php_dateien.txt
+./betreiber/belege/02_php_in_uploads_mit_hashes.txt
+./betreiber/belege/03_nextcloud_htaccess_kunde-zwei_example_cloud_kunde-zwei_example.txt
+./betreiber/belege/SHA256SUMS
+./betreiber/bsi_meldung.md
+./betreiber/dsgvo_meldung.md
+./betreiber/findings.json
+./betreiber/lauf.log
+./betreiber/technik_bericht.md
+./kunde/00_LIESMICH.txt
+./kunde/kundenbericht.md

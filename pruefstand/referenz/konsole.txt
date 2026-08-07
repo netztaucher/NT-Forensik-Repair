@@ -129,9 +129,11 @@
 [1m[0;34m══════════════════════════════════════════[0m
 
 [1mDatenschutz[0m
-  technik_bericht.md        0 fremde Kennungen maskiert
-  kundenbericht.md          1 fremde Kennungen maskiert
-  lauf.log                  0 fremde Kennungen maskiert
+  kunde/kundenbericht.md              1 fremde Kennungen maskiert
+  betreiber/technik_bericht.md        0 fremde Kennungen maskiert
+  betreiber/bsi_meldung.md            3 fremde Kennungen maskiert
+  betreiber/dsgvo_meldung.md          0 fremde Kennungen maskiert
+  betreiber/lauf.log                  0 fremde Kennungen maskiert
 
 [1m[0;32m══════════════════════════════════════════[0m
 [1m[0;32m  ANALYSE ABGESCHLOSSEN — Lauf <LAUF-ID>[0m
@@ -143,19 +145,24 @@
                  kunde-zwei.example/cloud.kunde-zwei.example: Eigentümer oder PHP nicht ermittelbar — Kern-Integrität nicht geprüft
 
 [1mLauf-Ordner:[0m     <PRUEFSTAND>/ablage/forensik/<LAUF-ID>
-[1mKundenbericht:[0m   <PRUEFSTAND>/ablage/forensik/<LAUF-ID>/kundenbericht.md
-[1mBSI-Meldung:[0m     <PRUEFSTAND>/ablage/forensik/<LAUF-ID>/bsi_meldung.md
-[1mDSGVO-Meldung:[0m   <PRUEFSTAND>/ablage/forensik/<LAUF-ID>/dsgvo_meldung.md
-[1mTechnik-Bericht:[0m <PRUEFSTAND>/ablage/forensik/<LAUF-ID>/technik_bericht.md
-[1mfindings.json:[0m   <PRUEFSTAND>/ablage/forensik/<LAUF-ID>/findings.json (maschinenlesbar, für NT-Repair)
-[1mBelege:[0m          <PRUEFSTAND>/ablage/forensik/<LAUF-ID>/belege (SHA256-versiegelt)
-[1mÜbergabe-Archiv:[0m <PRUEFSTAND>/ablage/forensik/<LAUF-ID>.tar.gz
+
+[1m[0;32m  kunde/[0m  — weitergabefähig
+    Kundenbericht:   <PRUEFSTAND>/ablage/forensik/<LAUF-ID>/kunde/kundenbericht.md
+    Archiv:          <PRUEFSTAND>/ablage/forensik/<LAUF-ID>.tar.gz
+
+[1m[0;33m  betreiber/[0m — NICHT weitergeben
+    Technik-Bericht: <PRUEFSTAND>/ablage/forensik/<LAUF-ID>/betreiber/technik_bericht.md
+    BSI-Meldung:     <PRUEFSTAND>/ablage/forensik/<LAUF-ID>/betreiber/bsi_meldung.md
+    DSGVO-Meldung:   <PRUEFSTAND>/ablage/forensik/<LAUF-ID>/betreiber/dsgvo_meldung.md
+    findings.json:   <PRUEFSTAND>/ablage/forensik/<LAUF-ID>/betreiber/findings.json (Eingabe für die Bereinigung)
+    Belege:          <PRUEFSTAND>/ablage/forensik/<LAUF-ID>/betreiber/belege (SHA256-versiegelt, unmaskiert)
+    Archiv:          <PRUEFSTAND>/ablage/forensik/<LAUF-ID>.tar.gz
 
 [0;33mNächste Schritte:[0m
-  1. Kundenbericht prüfen:   cat <PRUEFSTAND>/ablage/forensik/<LAUF-ID>/kundenbericht.md
-  2. BSI-Meldung ergänzen:   [AUSFÜLLEN]-Felder in <PRUEFSTAND>/ablage/forensik/<LAUF-ID>/bsi_meldung.md
-  3. DSGVO-Meldung prüfen:   [AUSFÜLLEN]-Felder in <PRUEFSTAND>/ablage/forensik/<LAUF-ID>/dsgvo_meldung.md (eigener Meldeweg!)
-  4. Archiv lokal sichern (Befehl auf der naechsten Zeile, ganz markieren):
+  1. Kundenbericht prüfen:   cat <PRUEFSTAND>/ablage/forensik/<LAUF-ID>/kunde/kundenbericht.md
+  2. BSI-Meldung ergänzen:   [AUSFÜLLEN]-Felder in <PRUEFSTAND>/ablage/forensik/<LAUF-ID>/betreiber/bsi_meldung.md
+  3. DSGVO-Meldung prüfen:   [AUSFÜLLEN]-Felder in <PRUEFSTAND>/ablage/forensik/<LAUF-ID>/betreiber/dsgvo_meldung.md (eigener Meldeweg!)
+  4. Kundenunterlagen holen (Befehl auf der naechsten Zeile, ganz markieren):
      [1mscp <PRUEFSTAND>/ablage/forensik/<LAUF-ID>.tar.gz ~/Downloads/[0m
   5. Alle 🔴-Maßnahmen sofort umsetzen
 

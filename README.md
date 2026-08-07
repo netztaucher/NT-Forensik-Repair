@@ -167,17 +167,26 @@ Das Skript installiert sich beim ersten Lauf nach `/root/wartungsscripte/` und l
 
 ```
 /root/wartungsscripte/forensik/<YYYYMMDD_HHMMSS>_<scope>/
-├── belege/                 # nummerierte Rohdaten, SHA256-versiegelt, Chain-of-Custody
-├── kundenbericht.md        # laienlesbar; im --global-Modus Betreiberbericht
-├── befunde_details.md      # Fundstellen relativ zum Kundenverzeichnis + Familie (nur bei Funden)
-├── zusammenfassung.md      # KPI-Kurzfassung (Teil 2 des PDF)
-├── abschlussbericht.pdf    # gebrandetes PDF (nur wenn pandoc+weasyprint da)
-├── bsi_meldung.md
-├── dsgvo_meldung.md
-├── technik_bericht.md
-├── findings.json
-└── lauf.log
+├── kunde/                      # WEITERGABEFÄHIG — nur Daten des geprüften Kunden
+│   ├── kundenbericht.md        # laienlesbar, mit Ampel
+│   ├── befunde_details.md      # Fundstellen relativ zum Kundenverzeichnis (nur bei Funden)
+│   ├── root_aussage.md         # nur bei --nur-root
+│   └── abschlussbericht.pdf    # gebrandetes PDF (nur wenn pandoc+weasyprint da)
+└── betreiber/                  # NICHT WEITERGEBEN
+    ├── technik_bericht.md      # vollständig, auch serverweite Befunde
+    ├── bsi_meldung.md          # Entwurf
+    ├── dsgvo_meldung.md        # Entwurf, eigener Meldeweg
+    ├── findings.json           # maschinenlesbar, Eingabe für die Bereinigung
+    ├── lauf.log
+    └── belege/                 # Rohdaten, SHA256-versiegelt, bewusst UNMASKIERT
 ```
+
+Dazu zwei Archive: `<LAUF>_kunde.tar.gz` und `<LAUF>_betreiber.tar.gz`.
+
+**Warum getrennt:** Ein einziges Archiv lädt dazu ein, es als Ganzes weiterzureichen — samt
+Technik-Bericht mit fremden vhosts und samt unmaskierter Rohbelege. In jedem der beiden
+Ordner liegt eine `00_LIESMICH.txt`, die sagt, wofür er gedacht ist; der Ordnername allein
+trägt die Aussage nicht weit genug, wenn jemand das Archiv später entpackt und weiterleitet.
 
 ### Voraussetzungen
 

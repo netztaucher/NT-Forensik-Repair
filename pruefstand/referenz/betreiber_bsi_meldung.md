@@ -3,8 +3,8 @@
 > **Entwurf — vor Versand prüfen und Platzhalter `[AUSFÜLLEN]` ergänzen.**
 >
 > **Meldewege:**
-> - Meldepflichtige Unternehmen (KRITIS / NIS2 / §32 BSIG): **BSI Melde- und Informationsportal** — https://mip.bsi.bund.de
-> - Freiwillige Meldung (alle Unternehmen): https://www.bsi.bund.de → "Cyber-Sicherheitsvorfall melden" bzw. E-Mail an meldestelle@bsi.bund.de
+> - Meldepflichtige Unternehmen (KRITIS / NIS2 / §32 BSIG): **BSI Melde- und Informationsportal** — https://<anderer Kunde 2>
+> - Freiwillige Meldung (alle Unternehmen): https://<anderer Kunde 3> → "Cyber-Sicherheitsvorfall melden" bzw. E-Mail an <anderer Adresse 1>
 > - Bei Straftatverdacht zusätzlich: **ZAC** (Zentrale Ansprechstelle Cybercrime) der Landespolizei — Strafanzeige empfohlen
 >
 > **Fristen (NIS2/BSIG):** Erstmeldung ≤ 24 h nach Kenntnis, Folgemeldung ≤ 72 h, Abschlussbericht ≤ 1 Monat.
@@ -136,3 +136,8 @@ Basierend auf der forensischen Analyse (in absteigender Wahrscheinlichkeit):
 ---
 *Entwurf maschinell erstellt am <ZEIT> — wp_plesk_forensik.sh <FASSUNG>, netztaucher | digital.*
 *Struktur orientiert an den Meldevorgaben des BSI (Erst-/Folgemeldung nach BSIG/NIS2) — vor Versand fachlich prüfen.*
+
+
+---
+
+> **Hinweis zum Datenschutz.** Dieser Server beherbergt weitere Kunden. Wo serverweite Prüfungen deren Domains oder Systemkonten berührten, stehen Platzhalter (`<anderer Kunde N>`); derselbe Nachbar trägt dabei immer dieselbe Nummer, sodass Zusammenhänge erkennbar bleiben. Betroffen waren 3 fremde Kennungen. Die unmaskierte Fassung verbleibt beim Betreiber.
