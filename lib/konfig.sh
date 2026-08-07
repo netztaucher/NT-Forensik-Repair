@@ -60,6 +60,7 @@ SCOPE_GESETZT=0          # wurde ein Scope ausdrücklich angegeben? (steuert das
 WANT_MENUE=-1            # -1 = automatisch, 0 = nie, 1 = erzwungen
 MODUL_NUR=""             # --nur:  Komma-Liste von Abschnittsnummern
 MODUL_OHNE=""            # --ohne: Komma-Liste von Abschnittsnummern
+NUR_ROOT=0               # --nur-root: nur die Root-Frage, kompakte Aussage
 
 # Banner. Steht hier und nicht im Runner, weil --help es ebenfalls ausgibt und
 # die Hilfe erscheint, lange bevor der Runner den Banner-Punkt erreicht.
@@ -109,6 +110,11 @@ Abschnittsauswahl:
   --nur <n[,n…]>          Nur diese Prüfabschnitte (z. B. --nur 12)
   --ohne <n[,n…]>         Alle ausser diesen (z. B. --ohne 2,10)
   --nur-joomla            Kurzform für --nur 12
+  --nur-root              Nur die Root- und Eskalationsprüfung. Beantwortet die
+                          eine serverweite Frage, die der Kunde braucht — ist
+                          jemand über den Webspace hinausgekommen? — und legt
+                          die Antwort als root_aussage.md ab, ohne Daten
+                          anderer Kunden. Läuft in Minuten statt Stunden.
   --nojoomla              Joomla-Prüfung weglassen (= --ohne 12)
   --nowordpress           WordPress-Prüfung weglassen (= --ohne 11)
   --nur-website           Nur die Abschnitte, die den Webauftritt prüfen
@@ -161,6 +167,13 @@ while [[ $# -gt 0 ]]; do
     --nur)    MODUL_NUR="${2:-}";  shift 2 ;;
     --ohne)   MODUL_OHNE="${2:-}"; shift 2 ;;
     --nur-joomla)  MODUL_NUR="12" ; shift ;;
+    # Die Root-Frage getrennt beantworten. Sie ist die einzige serverweite
+    # Aussage, die der Kunde wirklich braucht — "ist jemand ueber meinen
+    # Webspace hinausgekommen?" —, und sie laesst sich ohne die uebrigen
+    # serverweiten Abschnitte beantworten. Damit muss nicht mehr --mit-server
+    # laufen, das Benutzerlisten, Cronjobs und Domains fremder Kunden in den
+    # Bericht zieht, nur damit am Ende eine Zeile Verdikt darin steht.
+    --nur-root)    MODUL_NUR="13"; NUR_ROOT=1; SCOPE_GESETZT=1; shift ;;
     --nur-website) MODUL_NUR="ebene:website"; shift ;;
     # Abwaehlen einzelner CMS, ohne Abschnittsnummern nachschlagen zu muessen.
     --nojoomla|--ohne-joomla)       MODUL_OHNE="${MODUL_OHNE:+${MODUL_OHNE},}12"; shift ;;
