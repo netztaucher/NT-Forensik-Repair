@@ -4,7 +4,7 @@
 # @nummer:  11
 # @titel:   WordPress-Datenbank
 # @frage:   Ist eine WordPress-Installation übernommen?
-# @kosten:  mittel — je Installation
+# @kosten:  HOCH mit --online — ein Prüfsummenabruf je Plugin; sonst mittel
 # @ebene:   website
 #
 # Wird vom Runner eingebunden, nicht einzeln ausgefuehrt.
@@ -53,6 +53,200 @@ wp_sql() {
   MYSQL_PWD="$pass" mysql -h "${host%%:*}" -u "$user" -N -e "$query" "$db" 2>/dev/null && return 0
   # Fallback: wp-cli nutzt die DB-Zugangsdaten der Installation selbst.
   wp_cli db query "$query" --skip-column-names 2>/dev/null
+}
+
+# Die installierte Version eines Plugins aus dem Plugin-Kopf lesen.
+# NICHT aus readme.txt: der dortige "Stable tag" ist die im Verzeichnis als
+# stabil markierte Fassung, nicht die installierte. Ein Abgleich dagegen
+# meldet jede veraltete Installation mit der falschen Versionsnummer.
+# Der Kopf steht in der Hauptdatei — der .php im obersten Ordner, die
+# "Plugin Name:" fuehrt. Auskommentierte Zeilen zu ueberspringen waere hier
+# falsch: der Kopf STEHT in einem Block-Kommentar.
+# sed -nE statt grep -oP, damit die Funktion auch auf dem macOS-Pruefstand
+# laeuft — dieselbe Ueberlegung wie hinter datei_meta in lib/kern.sh.
+wp_plugin_version() {  # $1 = Plugin-Verzeichnis; gibt "hauptdatei\tversion" aus
+  local dir="$1" f ver
+  for f in "$dir"/*.php; do
+    [[ -f "$f" ]] || continue
+    grep -qiE '^[[:space:]]*\*?[[:space:]]*Plugin Name[[:space:]]*:' "$f" 2>/dev/null || continue
+    ver=$(sed -nE 's/^[[:space:]]*\*?[[:space:]]*[Vv]ersion[[:space:]]*:[[:space:]]*([^[:space:]]+).*/\1/p' "$f" 2>/dev/null | head -1)
+    [[ -n "${ver:-}" ]] && { printf '%s\t%s\n' "$f" "$ver"; return 0; }
+  done
+  return 1
+}
+
+# Plugin-Integritaet gegen die Pruefsummen von wordpress.org.
+#
+# Warum nicht `wp plugin verify-checksums`: das Kommando zaehlt die Plugins
+# ueber die WordPress-Laufzeit auf. Genau darueber nimmt sich ein
+# manipuliertes Plugin per all_plugins-Filter selbst aus der Pruefung —
+# derselbe Grund, aus dem die Signaturpruefung weiter unten den Plugin-Ordner
+# direkt liest statt active_plugins zu befragen. Ausserdem deckt es weder
+# mu-Plugins (checksum-command #27) noch Themes ab und gibt die
+# Pruefsummendatei nicht als Beleg heraus.
+#
+# Netzzugriff nur mit --online, protokolliert ueber nf_fetch. Ein Aufruf von
+# python3 je Installation, nicht je Datei.
+wp_plugin_integritaet() {  # $1 = site-Label
+  local site="$1" pdir slug rel ver liste ergebnis cachedir ziel
+  local n_mod n_soft n_extra n_unver n_geprueft n_fehlt
+  [[ -d "${CURRENT_WP_PATH}/wp-content/plugins" ]] || return 0
+
+  cachedir="${RUN_DIR}/.online/plugin-checksums"
+  mkdir -p "$cachedir"
+  liste=$(mktemp "${RUN_DIR}/.wpint.XXXXXX")
+
+  for pdir in "${CURRENT_WP_PATH}"/wp-content/plugins/*/; do
+    [[ -d "$pdir" ]] || continue
+    pdir="${pdir%/}"
+    slug=$(basename "$pdir")
+    if ! rel=$(wp_plugin_version "$pdir"); then
+      WP_PLUGIN_UNVERIFIABLE+="${site}/${slug}"$'\t'"keine Version im Plugin-Kopf"$'\n'
+      continue
+    fi
+    ver="${rel##*$'\t'}"
+    ziel="${cachedir}/${slug}-${ver}.json"
+    if [[ ! -s "$ziel" ]] \
+       && ! nf_fetch "https://downloads.wordpress.org/plugin-checksums/${slug}/${ver}.json" "$ziel"; then
+      rm -f "$ziel"
+      # Kein Pruefsummensatz. Zwei Ursachen, hier nicht unterscheidbar: das
+      # Plugin liegt nicht im wordpress.org-Verzeichnis (Premium, Fork,
+      # Eigenbau), oder die Fassung ist dort nicht veroeffentlicht. Beides
+      # heisst: nicht messbar — nicht: unauffaellig.
+      WP_PLUGIN_UNVERIFIABLE+="${site}/${slug} ${ver}"$'\t'"kein Prüfsummensatz bei wordpress.org"$'\n'
+      continue
+    fi
+    printf '%s\t%s\t%s\t%s\n' "$slug" "$ver" "$pdir" "$ziel" >> "$liste"
+  done
+
+  if [[ ! -s "$liste" ]]; then rm -f "$liste"; return 0; fi
+
+  ergebnis=$(python3 - "$liste" <<'PY' 2>/dev/null || true
+import hashlib, json, os, sys
+
+# Als Code gewertete Endungen. Eine Abweichung darin ist eine Codeaenderung am
+# ausgelieferten Plugin und damit ein kritischer Befund; alles andere
+# (readme.txt, Uebersetzungen, Stilvorlagen, Bilder) ist eine weiche
+# Abweichung. wp-cli zieht dieselbe Grenze ueber seinen --strict-Schalter.
+CODE = {".php", ".phtml", ".php5", ".php7", ".inc", ".js", ".mjs"}
+
+def passt(soll, ist_md5, ist_sha):
+    # Das Format erlaubt je Datei MEHRERE gueltige Pruefsummen (Whitelist).
+    # Ein 1:1-Vergleich wuerde hier Falsch-Positive erzeugen.
+    for schluessel, ist in (("md5", ist_md5), ("sha256", ist_sha)):
+        wert = soll.get(schluessel)
+        if wert is None:
+            continue
+        kandidaten = wert if isinstance(wert, list) else [wert]
+        if any(str(k).lower() == ist for k in kandidaten):
+            return True
+    return False
+
+for zeile in open(sys.argv[1], encoding="utf-8", errors="replace").read().splitlines():
+    teile = zeile.split("\t")
+    if len(teile) != 4:
+        continue
+    slug, ver, pdir, jsondatei = teile
+    try:
+        with open(jsondatei, encoding="utf-8", errors="replace") as fh:
+            soll_dateien = (json.load(fh) or {}).get("files") or {}
+    except Exception:
+        print("\t".join(["UNVER", slug, ver, "Prüfsummendatei nicht lesbar"]))
+        continue
+    if not soll_dateien:
+        print("\t".join(["UNVER", slug, ver, "Prüfsummendatei ohne Dateiliste"]))
+        continue
+
+    gesehen = set()
+    for wurzel, _dirs, dateien in os.walk(pdir):
+        for name in dateien:
+            voll = os.path.join(wurzel, name)
+            if os.path.islink(voll):
+                continue
+            rel = os.path.relpath(voll, pdir)
+            gesehen.add(rel)
+            soll = soll_dateien.get(rel)
+            if soll is None:
+                # Nicht im Pruefsummensatz. Nur PHP ist erwaehnenswert — alles
+                # andere sind ueberwiegend Zwischenspeicher und Protokolle.
+                if os.path.splitext(name)[1].lower() in CODE:
+                    print("\t".join(["EXTRA", slug, ver, rel]))
+                continue
+            try:
+                with open(voll, "rb") as fh:
+                    roh = fh.read()
+            except Exception:
+                continue
+            if not passt(soll, hashlib.md5(roh).hexdigest(),
+                               hashlib.sha256(roh).hexdigest()):
+                art = "MOD" if os.path.splitext(name)[1].lower() in CODE else "SOFT"
+                print("\t".join([art, slug, ver, rel]))
+
+    for rel in sorted(set(soll_dateien) - gesehen):
+        print("\t".join(["FEHLT", slug, ver, rel]))
+
+    print("\t".join(["GEPRUEFT", slug, ver, str(len(soll_dateien))]))
+PY
+  )
+  rm -f "$liste"
+
+  n_geprueft=$(printf '%s\n' "$ergebnis" | grep -c '^GEPRUEFT' || true)
+  n_mod=$(printf   '%s\n' "$ergebnis" | grep -c '^MOD'    || true)
+  n_soft=$(printf  '%s\n' "$ergebnis" | grep -c '^SOFT'   || true)
+  n_extra=$(printf '%s\n' "$ergebnis" | grep -c '^EXTRA'  || true)
+  n_unver=$(printf '%s\n' "$ergebnis" | grep -c '^UNVER'  || true)
+  n_fehlt=$(printf '%s\n' "$ergebnis" | grep -c '^FEHLT'  || true)
+  WP_PLUGIN_CHECKED=$((WP_PLUGIN_CHECKED + ${n_geprueft:-0}))
+
+  if [[ "${n_mod:-0}" -gt 0 ]]; then
+    local liste_mod
+    liste_mod=$(printf '%s\n' "$ergebnis" | awk -F'\t' -v p="${CURRENT_WP_PATH}/wp-content/plugins/" \
+                '$1=="MOD"{print p $2 "/" $4}')
+    crit "$site: ${n_mod} veränderte Plugin-Codedatei(en) gegenüber wordpress.org — Injektion prüfen" web
+    code "$(printf '%s\n' "$liste_mod" | head -30)"
+    WP_PLUGIN_MODIFIED+="$liste_mod"$'\n'
+    WP_INTEGRITY_FLAGS=$((WP_INTEGRITY_FLAGS+1))
+    # Steckbrief statt blosser Pfadliste: Groesse, Aenderungszeit und SHA256
+    # sind das, was eine Neuinstallation spaeter belegbar macht.
+    local _sb=""
+    while IFS= read -r _md; do
+      [[ -n "$_md" && -r "$_md" ]] || continue
+      _sb+=$(datei_steckbrief "Prüfsumme weicht von der Fassung auf wordpress.org ab" \
+                              '<\?php|eval|base64_decode' "$_md")$'\n'
+    done <<< "$(printf '%s\n' "$liste_mod" | head -20)"
+    evidence "wp_plugin_veraendert_$(echo "$site" | tr '/.' '__')" "${_sb:-$liste_mod}"
+  fi
+
+  if [[ "${n_soft:-0}" -gt 0 ]]; then
+    warn "$site: ${n_soft} veränderte Nicht-Codedatei(en) in Plugins (readme, Übersetzungen, Stilvorlagen) — meist harmlos, im Zweifel prüfen"
+    WP_PLUGIN_SOFT+="$(printf '%s\n' "$ergebnis" | awk -F'\t' -v p="${CURRENT_WP_PATH}/wp-content/plugins/" \
+                       '$1=="SOFT"{print p $2 "/" $4}')"$'\n'
+  fi
+
+  if [[ "${n_extra:-0}" -gt 0 ]]; then
+    # Vorerst nur Hinweis: Plugins legen auch legitim PHP an (Zwischenspeicher,
+    # index.php-Wachen). Erst nach Messung an echten Installationen hochstufen.
+    info "$site: ${n_extra} PHP-Datei(en) in Plugin-Ordnern ohne Eintrag im Prüfsummensatz — Übersicht im Beleg"
+    WP_PLUGIN_EXTRA_PHP+="$(printf '%s\n' "$ergebnis" | awk -F'\t' -v p="${CURRENT_WP_PATH}/wp-content/plugins/" \
+                            '$1=="EXTRA"{print p $2 "/" $4}')"$'\n'
+    evidence "wp_plugin_zusatz_php_$(echo "$site" | tr '/.' '__')" \
+             "$(printf '%s\n' "$ergebnis" | awk -F'\t' '$1=="EXTRA"{print $2 "/" $4}')"
+  fi
+
+  if [[ "${n_fehlt:-0}" -gt 0 ]]; then
+    warn "$site: ${n_fehlt} im Prüfsummensatz geführte Plugin-Datei(en) fehlen auf der Platte"
+    evidence "wp_plugin_fehlende_dateien_$(echo "$site" | tr '/.' '__')" \
+             "$(printf '%s\n' "$ergebnis" | awk -F'\t' '$1=="FEHLT"{print $2 "/" $4}')"
+  fi
+
+  if [[ "${n_unver:-0}" -gt 0 ]]; then
+    WP_PLUGIN_UNVERIFIABLE+="$(printf '%s\n' "$ergebnis" | awk -F'\t' -v s="$site" \
+                              '$1=="UNVER"{print s "/" $2 " " $3 "\t" $4}')"$'\n'
+  fi
+
+  if [[ "${n_mod:-0}" -eq 0 && "${n_geprueft:-0}" -gt 0 ]]; then
+    ok "$site: ${n_geprueft} Plugin(s) gegen wordpress.org geprüft — keine veränderte Codedatei"
+  fi
 }
 
 # Suchen wird ausschliesslich im Scope. Frueher stand hier eine Verzweigung
@@ -167,6 +361,35 @@ else
       evidence "core_include_injektion_$(echo "$site" | tr '/.' '__')" "$CI"
     else
       ok "$site: keine @include base64_decode()-Injektion"
+    fi
+
+    # ── Plugin-Integrität gegen wordpress.org ─────────────────────────
+    # Findet veränderte Dateien, nicht nur veraltete Fassungen. Für eine
+    # Forensik ist das die stärkere Aussage: eine alte Version ist ein Risiko,
+    # eine veränderte Plugin-Datei ist ein Befund.
+    #
+    # Ohne --online ein info und kein ⚪: der Betreiber hat die Netzabfrage
+    # bewusst nicht angefordert, das ist eine Entscheidung über den Prüfumfang
+    # und keine gescheiterte Messung. Dieselbe Linie zieht Abschnitt 7 beim
+    # abgeschalteten YARA-Scan. Das ⚪ kommt in 11.8 — dort, wo eine
+    # angeforderte Messung ohne Ergebnis blieb.
+    if [[ "${WANT_ONLINE:-0}" != "1" ]]; then
+      info "$site: Plugin-Integrität nicht geprüft — die Prüfsummen von wordpress.org brauchen --online"
+      WP_PLUGIN_SKIPPED=$((WP_PLUGIN_SKIPPED+1))
+    elif ! werkzeug_da python3; then
+      unklar "$site: python3 fehlt — Plugin-Integrität nicht prüfbar" web
+      WP_PLUGIN_SKIPPED=$((WP_PLUGIN_SKIPPED+1))
+    else
+      wp_plugin_integritaet "$site"
+    fi
+
+    # Themes haben KEINE Prüfsummenquelle: downloads.wordpress.org führt nur
+    # plugin-checksums, einen theme-checksums-Pfad gibt es nicht (HTTP 404,
+    # nachgeprüft am 06.08.2026). Das gehört ausgesprochen, sonst liest sich
+    # die fehlende Prüfung wie eine bestandene.
+    THEME_LIST=$(find "${CURRENT_WP_PATH}/wp-content/themes" -maxdepth 1 -mindepth 1 -type d 2>/dev/null || true)
+    if [[ -n "$THEME_LIST" ]]; then
+      WP_THEMES_UNVERIFIABLE+="$THEME_LIST"$'\n'
     fi
 
     # ── ALLE Plugins + mu-Plugins bewerten (nicht nur aktive) ──────────
@@ -372,6 +595,44 @@ ${MATCH_CRIT}"
   done <<< "$WP_CONFIGS"
 
   [[ -n "$WPDB_REPORT" ]] && evidence "wpdb_admin_uebersicht" "$WPDB_REPORT"
+
+  h2 "11.8 Plugin-Integrität — Zusammenfassung"
+  # Der Abschnitt sagt ausdrücklich, worauf sich das Urteil stützt und was
+  # ungeprüft blieb. Ein Bericht, in dem nur die Treffer stehen, lässt die
+  # Lücken wie Entwarnung aussehen.
+  #
+  # Das ⚪ wird BEWUSST zu EINEM Befund je Lauf zusammengefasst, nicht je
+  # Plugin gemeldet. Premium- und Eigenbau-Plugins gibt es auf fast jeder
+  # Kundenseite; ein ⚪ pro Stück würde die Kundenampel dauerhaft blockieren
+  # und den vierten Zustand zu Rauschen machen, das niemand mehr liest.
+  n_pmod=$(printf '%s\n' "${WP_PLUGIN_MODIFIED:-}"     | grep -c . || true)
+  n_punv=$(printf '%s\n' "${WP_PLUGIN_UNVERIFIABLE:-}" | grep -c . || true)
+  n_tunv=$(printf '%s\n' "${WP_THEMES_UNVERIFIABLE:-}" | grep -c . || true)
+  if [[ "${WANT_ONLINE:-0}" != "1" ]]; then
+    WP_INTEGRITY_VERDICT="⚪ **Plugin-Integrität nicht geprüft** — der Abgleich gegen die Prüfsummen von wordpress.org verlangt \`--online\`."
+    info "Plugin-Integrität nicht geprüft (ohne --online) — kein Ergebnis, weder gut noch schlecht"
+  else
+    info "Geprüfte Plugins: ${WP_PLUGIN_CHECKED:-0} · veränderte Codedateien: ${n_pmod:-0} · ohne Prüfsummensatz: ${n_punv:-0} · Themes ohne Prüfsummenquelle: ${n_tunv:-0}"
+    if [[ "${n_punv:-0}" -gt 0 || "${n_tunv:-0}" -gt 0 ]]; then
+      unklar "Unversehrtheit von ${n_punv} Plugin(s) und ${n_tunv} Theme(s) nicht feststellbar — für sie veröffentlicht wordpress.org keine Prüfsummen (Premium, Fork, Eigenbau; Themes grundsätzlich)" web
+      [[ -n "${WP_PLUGIN_UNVERIFIABLE:-}" ]] && evidence "wp_plugin_nicht_messbar" "${WP_PLUGIN_UNVERIFIABLE}"
+    fi
+    if [[ "${n_pmod:-0}" -gt 0 ]]; then
+      WP_INTEGRITY_VERDICT="🔴 **${n_pmod} veränderte Plugin-Codedatei(en)** gegenüber den Prüfsummen von wordpress.org. Betroffene Plugins neu installieren, veränderte Dateien vorher sichern."
+    elif [[ "${WP_PLUGIN_CHECKED:-0}" -eq 0 ]]; then
+      # Grün setzt einen Nenner voraus. Wurde kein einziges Plugin verglichen,
+      # ist "keine veränderte Datei" eine Aussage über die leere Menge — und
+      # liest sich trotzdem wie eine bestandene Prüfung. Der Fall tritt real
+      # ein: die Schleife bricht oberhalb per `continue` ab, wenn sich die
+      # Zugangsdaten aus wp-config.php nicht lesen lassen, und erreicht die
+      # Integritätsprüfung dann gar nicht.
+      WP_INTEGRITY_VERDICT="⚪ **Plugin-Integrität ohne Ergebnis** — trotz \`--online\` wurde kein Plugin verglichen. Mögliche Ursache: die Installation wurde vor der Prüfung übersprungen (wp-config.php nicht lesbar) oder es ist kein Plugin vorhanden."
+      unklar "Plugin-Integrität angefordert, aber kein Plugin verglichen — kein Ergebnis" web
+    else
+      WP_INTEGRITY_VERDICT="🟢 **Keine veränderte Plugin-Codedatei** in ${WP_PLUGIN_CHECKED} geprüften Plugins. Nicht geprüft: ${n_punv} Plugin(s) ohne Prüfsummensatz, ${n_tunv} Theme(s), sowie alle mu-Plugins — für diese ist das keine Entwarnung."
+    fi
+  fi
+  echo -e "\n$WP_INTEGRITY_VERDICT\n" >> "$REPORT_FILE"
 
   h2 "11.9 WordPress-DB-Verdikt"
   if [[ "$WPDB_FLAGS" -eq 0 ]]; then

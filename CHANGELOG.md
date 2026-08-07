@@ -2,6 +2,56 @@
 
 Alle nennenswerten Änderungen an `wp_plesk_forensik.sh`.
 
+## [unveröffentlicht]
+
+### Neu — Plugin-Integrität gegen wordpress.org (11.8)
+Abschnitt 11 gleicht die Dateien installierter Plugins gegen die offiziellen
+Prüfsummen ab (`downloads.wordpress.org/plugin-checksums/<slug>/<version>.json`,
+md5 **und** sha256 je Datei). Damit findet der Lauf **veränderte** Dateien und
+nicht nur veraltete Fassungen — für eine Forensik die stärkere Aussage.
+
+Nur mit `--online`. Der Abruf läuft über `nf_fetch` und landet mit URL,
+HTTP-Code und SHA256 in `findings.json` → `data_sources.network_fetches`; damit
+ist belegbar, gegen welchen Datenstand ein Befund entstand.
+
+Vier Befundklassen, um die Falsch-Positiv-Rate zu steuern:
+
+| Klasse | Bewertung |
+|---|---|
+| veränderte `.php`/`.js` | 🔴 kritisch, Website-Befund |
+| veränderte Nicht-Codedatei (readme, Übersetzung, Stilvorlage) | ⚠️ Hinweis |
+| fehlende Datei aus dem Prüfsummensatz | ⚠️ Hinweis |
+| zusätzliche PHP-Datei im Plugin-Ordner | Hinweis, vorerst nur als Beleg |
+
+Bewusst **nicht** über `wp plugin verify-checksums`: das Kommando zählt die
+Plugins über die WordPress-Laufzeit auf, und genau darüber nimmt sich ein
+manipuliertes Plugin per `all_plugins`-Filter selbst aus der Prüfung. Die
+Aufzählung liest den Plugin-Ordner direkt — wie die Signaturprüfung daneben.
+
+Die Version kommt aus dem Plugin-Kopf, **nicht** aus `readme.txt`: der dortige
+`Stable tag` ist die im Verzeichnis als stabil markierte Fassung, nicht die
+installierte.
+
+### Zum vierten Befundzustand
+Was sich nicht messen lässt, wird als ⚪ gemeldet: Plugins ohne Prüfsummensatz
+(Premium, Fork, Eigenbau) und Themes, für die wordpress.org grundsätzlich keine
+Prüfsummen veröffentlicht.
+
+Das ⚪ wird zu **einem** Befund je Lauf zusammengefasst, nicht je Plugin gemeldet.
+Ein ⚪ pro Stück würde die Kundenampel auf praktisch jeder Seite mit
+Premium-Plugins dauerhaft blockieren — ein Zustand, der nie grün werden kann,
+wird zu Rauschen und damit nicht mehr gelesen.
+
+Ohne `--online` gibt es kein ⚪, sondern einen Hinweis: der Betreiber hat die
+Netzabfrage nicht angefordert. Das ist eine Entscheidung über den Prüfumfang und
+keine gescheiterte Messung — dieselbe Linie wie beim abgeschalteten YARA-Scan
+in Abschnitt 7.
+
+### Behoben — `nf_fetch` protokollierte falsche HTTP-Codes
+`|| echo "000"` stand hinter der Ersetzung; `-w` gibt den Code aber auch bei
+`-f`-Fehlern aus. Protokolliert wurde dadurch `HTTP=404000`. Fiel erst mit der
+Plugin-Prüfung auf, weil Premium-Plugins regelmäßig 404 liefern.
+
 ## [3.9.0] — 2026-08-06
 
 ### ⚠️ Breaking — Aufruf ohne Argument

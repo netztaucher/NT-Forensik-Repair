@@ -75,6 +75,9 @@
   [0m·  WordPress-Installationen: 4
   [0;36m⚪[0m grep ohne PCRE-Unterstützung (-P) — Zugangsdaten aus wp-config.php nicht lesbar, keine Datenbank-Prüfung möglich
 
+[0;36m▶ 11.8 Plugin-Integrität — Zusammenfassung[0m
+  [0m·  Plugin-Integrität nicht geprüft (ohne --online) — kein Ergebnis, weder gut noch schlecht
+
 [0;36m▶ 11.9 WordPress-DB-Verdikt[0m
   [0;32m✓[0m WP-DB-VERDIKT: unauffällig
 

@@ -62,6 +62,31 @@ so im Quelltext und dürfen nicht ohne Anpassung dort wegfallen.
 | `actionable.ioc_ips.attacker` | IP-Sperren |
 | `actionable.ioc_ips.ssh_bruteforce` | IP-Sperren |
 
+### Noch von niemandem gelesen — Plugin-Integrität (11.8)
+
+Diese Felder sind neu und in NT-Repair **bewusst nicht angebunden**:
+
+| Pfad | Inhalt |
+|---|---|
+| `verdicts.wp_integrity.flags` / `.text` | Verdikt der Plugin-Integritätsprüfung |
+| `metrics.wp_plugins_checked` | tatsächlich gegen wordpress.org geprüfte Plugins |
+| `metrics.wp_plugin_modified` | veränderte Plugin-Codedateien |
+| `metrics.wp_plugins_unverifiable` / `wp_themes_unverifiable` | ohne Prüfsummensatz |
+| `actionable.wp_plugin_modified` | veränderte Plugin-Codedateien, voller Pfad |
+| `actionable.wp_plugin_extra_php` | PHP in Plugin-Ordnern ohne Eintrag im Prüfsummensatz |
+| `actionable.wp_plugin_unverifiable` / `wp_themes_unverifiable` | nicht messbar |
+
+`actionable.wp_plugin_modified` steht unter `actionable`, **ist aber kein
+Quarantäne-Kandidat.** Die Datei gehört zum Plugin, sie ist nur verändert; die
+Abhilfe ist eine Neuinstallation des Plugins, nicht das Verschieben der Datei.
+Wer den Schlüssel in NT-Repair anbindet, muss das berücksichtigen — sonst
+zerlegt die Bereinigung ein funktionierendes Plugin.
+
+**`wp_plugins_checked` ist der Nenner.** Ein leeres `wp_plugin_modified` bei
+`wp_plugins_checked == 0` heisst „nicht geprüft", nicht „sauber" — ohne
+`--online` ist das der Normalfall. Wer daraus eine Entwarnung ableitet, baut
+denselben Fehler wie eine Statusmail, die einen Teillauf für vollständig hält.
+
 ### `lib/gen_report.sh` — die drei Berichte
 
 `verdicts.root.flags`, `verdicts.root.text`, `verdicts.wpdb.text`,

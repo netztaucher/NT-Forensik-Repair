@@ -153,6 +153,13 @@ php_value auto_prepend_file /var/www/vhosts/<anderer Kunde 1>/httpdocs/wp-conten
 
 - ⚪ **Nicht messbar: grep ohne PCRE-Unterstützung (-P) — Zugangsdaten aus wp-config.php nicht lesbar, keine Datenbank-Prüfung möglich**
 
+### 11.8 Plugin-Integrität — Zusammenfassung
+
+  Plugin-Integrität nicht geprüft (ohne --online) — kein Ergebnis, weder gut noch schlecht
+
+⚪ **Plugin-Integrität nicht geprüft** — der Abgleich gegen die Prüfsummen von wordpress.org verlangt `--online`.
+
+
 ### 11.9 WordPress-DB-Verdikt
 
 - ✅ WP-DB-VERDIKT: unauffällig
