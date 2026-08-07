@@ -128,6 +128,11 @@ ssh root@SERVER "bash /root/nt-forensik/wp_plesk_forensik.sh --path /var/www/vho
 # NICHT für die Weitergabe an einzelne Kunden)
 ssh root@SERVER "bash /root/nt-forensik/wp_plesk_forensik.sh --global"
 
+# Nur die Root-Frage: ist jemand über den Webspace hinausgekommen?
+#   Beantwortet die eine serverweite Frage, die der Kunde braucht — ohne
+#   Benutzerlisten, Cronjobs und Domains anderer Kunden in den Bericht zu ziehen.
+ssh root@SERVER "bash /root/nt-forensik/wp_plesk_forensik.sh --nur-root --kein-menue"
+
 # Nur die Joomla-Prüfung — spart Log-Archiv und serverweiten Dateiscan
 ssh root@SERVER "bash /root/nt-forensik/wp_plesk_forensik.sh --domain kunde.tld --nur-joomla"
 
@@ -216,12 +221,68 @@ bash nt_repair.sh --from /root/wartungsscripte/forensik/<LAUF>
 bash nt_repair.sh --from /root/wartungsscripte/forensik/<LAUF> --apply
 ```
 
-Dieser Teil ist **kostenpflichtig und lizenzgebunden**: der Lader ist offen lesbar,
-der Inhalt liegt verschlüsselt in `paket/`, und der Schlüssel dazu kommt bei jedem
-Lauf vom Lizenzserver. Ohne gültige Lizenz startet die Bereinigung nicht.
+### Was die Bereinigung kann
 
-**Die Analyse ist davon unberührt.** `wp_plesk_forensik.sh` läuft vollständig, ohne
-Lizenz, ohne Netz, mit offenem Quelltext. Details: [`docs/lizenzierung.md`](docs/lizenzierung.md).
+| | |
+|---|---|
+| **Quarantäne** | verschiebt, löscht nie. SHA-256 vor jedem Eingriff, jede Datei rückholbar. Liest alle Befundlisten der Forensik — auch die von Imunify, YARA und der Plugin-Signaturprüfung |
+| **IOC-Sperren** | iptables, idempotent, persistiert |
+| **Zugangsdaten** | Systemkonto, WordPress-Konten, Datenbank und Plesk-Abo. Datenbank über `plesk bin database`, damit Plesk und MySQL synchron bleiben; `wp-config.php` über `wp config set`. Passwörter gehen nie über die Kommandozeile, jedes Ergebnis landet in 1Password und wird zurückgelesen |
+| **Berichte** | Kundenbericht, BSI-Abschlussmeldung, DSGVO-Nachmeldung, Statusmail als `.eml` |
+
+**Manipulierte Original-Dateien werden nicht verschoben.** Eine injizierte `wp-includes`-Datei
+zu entfernen legt die Seite lahm — richtig ist, den Kern neu einzuspielen. Solche Funde werden
+benannt und protokolliert, statt still zu verschwinden.
+
+**Jede Datei, die das Werkzeug ändert, bekommt einen Kommentarblock**: wann, durch welche Fassung,
+aus welchem Anlass, was und warum — mit Verweis auf das Protokoll und die Quelle des Werkzeugs.
+Eine unerklärte Änderung an einer Datei, die nach einem Vorfall angefasst wurde, ist sonst selbst
+ein Befund.
+
+### Werkzeugspezifische Bereinigung
+
+Was ein Fund bedeutet, hängt davon ab, wo er liegt. Die Bereinigung unterscheidet:
+
+- **WordPress** — Plugin vollständig deinstallieren statt nur Dateien entfernen (Eintrag in
+  `active_plugins`, Verzeichnisrest, Datenbank-Reste), Sicherheitsschlüssel erneuern, alle
+  Sitzungen beenden, Administratorkonten prüfen und entfernen
+- **Joomla** — System-Plugins und Vorlagen-Parameter in der Datenbank, wo die Nutzlast auch
+  ohne eine einzige Datei überlebt
+- **Datenbank-Werkzeuge** (Adminer, phpMyAdmin im Webroot) — als Datenzugriff eingestuft, nicht
+  als Sachschaden. Für die DSGVO-Bewertung ist das der Unterschied
+
+### Erkannte Schwachstellen
+
+Die Forensik ordnet gefundenen Erweiterungen bekannte Schwachstellen zu — aus einer gepflegten
+Liste, nicht aus einer Vermutung. Der Bericht sagt dazu ausdrücklich: er nennt den Weg, der bei
+dieser Erweiterung **bekannt** ist, nicht den, der benutzt wurde. Belegen ließe sich das nur
+über die Zugriffsprotokolle des Zeitraums.
+
+Für Joomla kommt der Abgleich aus dem mitgelieferten Datenbestand: **214 CVE-Bereiche** und
+**199 zugeordnete verwundbare Erweiterungen**, dazu Prüfsummen von 11 Kernfassungen. Für
+WordPress-Plugins pflegt die Bereinigung eine eigene Zuordnung (`daten/plugin-cve.tsv`).
+
+Ausdrücklich als Befund gilt auch **Wartungsende**: Joomla 3 und 4 bekommen keine
+Sicherheitspatches mehr, Advisories aus 2026 nennen 3.x weiterhin als betroffen. Solche
+Installationen sind nicht „veraltet", sondern dauerhaft angreifbar.
+
+### Lizenz
+
+Der Bereinigungsteil ist **kostenpflichtig**. Der Lader `nt_repair.sh` bleibt offen lesbar — er
+enthält kein Geheimnis. Der Inhalt liegt verschlüsselt in `paket/`; den Schlüssel liefert der
+Lizenzserver bei jedem Lauf, gebunden an den Arbeitsplatz, der die Bereinigung führt.
+
+Das ist bewusst so gebaut: eine Prüfung, die nur „gültig" zurückgibt, ließe sich aus dem offenen
+Lader herauspatchen. **Einen Schlüssel, den man nicht hat, nicht.** Ist der Lizenzserver nicht
+erreichbar, greift eine Ausfallreserve von sieben Tagen, an denselben Arbeitsplatz gebunden.
+
+**Die Analyse ist davon unberührt.** `wp_plesk_forensik.sh` läuft vollständig — ohne Lizenz, ohne
+Netz, mit offenem Quelltext. Im Vorfall ist die Analyse der dringende Teil; Bereinigen kann warten,
+bis wieder Netz da ist.
+
+Was die Verschlüsselung leistet und was nicht, steht ungeschönt in
+[`docs/lizenzierung.md`](docs/lizenzierung.md) — gegen den Ausführenden schützt sie nicht, und
+eine Doku, die etwas anderes behauptet, wäre eine Falle für den, der ihr glaubt.
 
 ## Sicherheit & Recht
 
