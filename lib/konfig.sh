@@ -138,9 +138,15 @@ Abschnittsauswahl:
 Optionen:
   --yara                  YARA-Signaturscan (7.11) aktivieren (langsam auf
                           großen Webspaces; ohne Flag übersprungen)
-  --online                Joomla-Prüfsummen und Schwachstellenliste bei Bedarf
-                          aus dem Netz nachladen. OHNE dieses Flag arbeitet der
-                          Lauf rein offline aus dem mitgelieferten Datenbestand.
+  --online                Prüfdaten bei Bedarf aus dem Netz nachladen: Joomla-
+                          Prüfsummen und Schwachstellenliste sowie die Plugin-
+                          Prüfsummen von wordpress.org (ein Abruf je Plugin,
+                          auf grossen Servern spürbar).
+                          OHNE dieses Flag arbeitet der Lauf rein offline aus
+                          dem mitgelieferten Datenbestand; die Plugin-Integrität
+                          bleibt dann ungeprüft und wird als solche ausgewiesen.
+                          Der Schwachstellen-Abgleich braucht das Flag NICHT —
+                          er arbeitet aus dem ausgelieferten Datenbestand.
                           Jeder Abruf wird im Bericht und als Beleg ausgewiesen.
   --kein-menue            Startmenü unterdrücken (für Cronjobs und Skripte)
   --menue                 Startmenü erzwingen
