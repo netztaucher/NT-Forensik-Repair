@@ -159,12 +159,35 @@ fi
 MODULE_GELAUFEN=""
 MODULE_UEBERSPRUNGEN=""
 
+# Ein Abschnitt darf sich auf mehrere Dateien verteilen: liegt neben
+# module/NN_name.sh ein Verzeichnis module/NN_name/, werden dessen *.sh nach
+# dem Hauptmodul in Glob-Reihenfolge nachgeladen.
+#
+# Warum ueberhaupt: 14_berichte.sh war 976 Zeilen lang und erzeugte sieben
+# verschiedene Dokumente, 12_joomla.sh 1083 Zeilen mit elf Unterabschnitten.
+# In Dateien dieser Groesse laesst sich nichts mehr chirurgisch aendern.
+#
+# Warum so und nicht mit einem zweiten Mechanismus: die Metadaten bleiben am
+# Hauptmodul, modul_gewaehlt entscheidet weiterhin EINMAL fuer die ganze
+# Gruppe. --nur 14 und --ohne 12 verhalten sich damit unveraendert; ein
+# Unterabschnitt ist kein eigener Abschnitt, sondern ein Stueck desselben.
+modul_teile_laden() {   # modul_teile_laden <hauptmodul-pfad>
+  local unterordner="${1%.sh}"
+  [[ -d "$unterordner" ]] || return 0
+  local teil
+  for teil in "$unterordner"/*.sh; do
+    [[ -r "$teil" ]] || continue
+    lade "module/$(basename "$unterordner")/$(basename "$teil")"
+  done
+}
+
 for _modul in "${SELF_DIR}"/module/*.sh; do
   [[ -r "$_modul" ]] || continue
   _nr=$(modul_feld "$_modul" nummer)
   if modul_gewaehlt "$_nr" "$(modul_feld "$_modul" ebene)"; then
     MODULE_GELAUFEN+="${_nr} "
     lade "module/$(basename "$_modul")"
+    modul_teile_laden "$_modul"
   else
     _t="${_nr}. $(modul_feld "$_modul" titel)"
     MODULE_UEBERSPRUNGEN+="${_t}"$'\n'
