@@ -109,22 +109,14 @@
   [0;32m✓[0m kunde-drei.example/httpdocs: keine bekannte Schwachstelle im vorliegenden Datenbestand (Stand 2026-08-07)
   [0;32m✓[0m kunde-drei.example/httpdocs: keine Doorway-.htaccess-Signatur
   [0;32m✓[0m kunde-drei.example/httpdocs: keine @include base64_decode()-Injektion
-/private/tmp/claude-502/-Volumes-daten-Dropbox--dev-WordPress--claude-worktrees-nt-repair-forensik-tests-6e0c52/f01ad5f4-9689-466c-8d7a-5d87d682f01f/scratchpad/ntfr-neu/rezepte/wordpress/rezept.sh: line 381: [[: 0
-0: syntax error in expression (error token is "0")
   [0;32m✓[0m kunde-drei.example/httpdocs: WordPress-Core unverändert (verify-checksums)
-/private/tmp/claude-502/-Volumes-daten-Dropbox--dev-WordPress--claude-worktrees-nt-repair-forensik-tests-6e0c52/f01ad5f4-9689-466c-8d7a-5d87d682f01f/scratchpad/ntfr-neu/rezepte/wordpress/rezept.sh: line 390: [[: 0
-0: syntax error in expression (error token is "0")
   [0;32m✓[0m kunde-drei.example/httpdocs: 2 Plugin(s) gegen wordpress.org geprüft — keine veränderte Codedatei
   [0;36m⚪[0m kunde-drei.example/httpdocs: 1 Plugin(s) ohne Prüfsummensatz und alle Themes — Unversehrtheit nicht feststellbar (Premium, Fork, Eigenbau; für Themes veröffentlicht wordpress.org keine Prüfsummen)
 
 [0;36m▶ 12r.2.x kunde-eins.example/httpdocs[0m
   [0;32m✓[0m kunde-eins.example/httpdocs: keine Doorway-.htaccess-Signatur
   [0;32m✓[0m kunde-eins.example/httpdocs: keine @include base64_decode()-Injektion
-/private/tmp/claude-502/-Volumes-daten-Dropbox--dev-WordPress--claude-worktrees-nt-repair-forensik-tests-6e0c52/f01ad5f4-9689-466c-8d7a-5d87d682f01f/scratchpad/ntfr-neu/rezepte/wordpress/rezept.sh: line 381: [[: 0
-0: syntax error in expression (error token is "0")
   [0;32m✓[0m kunde-eins.example/httpdocs: WordPress-Core unverändert (verify-checksums)
-/private/tmp/claude-502/-Volumes-daten-Dropbox--dev-WordPress--claude-worktrees-nt-repair-forensik-tests-6e0c52/f01ad5f4-9689-466c-8d7a-5d87d682f01f/scratchpad/ntfr-neu/rezepte/wordpress/rezept.sh: line 390: [[: 0
-0: syntax error in expression (error token is "0")
 
 [0;36m▶ 12r.2.x kunde-zwei.example/httpdocs[0m
   [0;33m⚠[0m  kunde-zwei.example/httpdocs: core wordpress 6.4.1 ist von einer bekannten Schwachstelle betroffen ([6.0 … 6.4.1]) CVE-2026-90004 — behoben in 6.4.2.
