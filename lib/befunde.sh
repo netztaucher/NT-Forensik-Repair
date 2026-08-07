@@ -30,6 +30,9 @@ NC_HTACCESS_MAL=""     # Nextcloud: .htaccess mit Angreifer-Merkmalen
 NC_MALWARE=""          # Nextcloud: bekannte Schaddateien und aufgeblaehte index.php
 NC_NESTED=""           # Nextcloud: verschachtelte Verzeichnisse (config/config)
 NC_INTEGRITY=""        # Nextcloud: Abweichungen laut occ integrity:check-core
+NC_HAERTUNG=""         # Nextcloud: Härtungslücken (Abschnitt 12c). Bewusst
+                       # getrennt von den Befunden oben: eine Lücke sagt, wie
+                       # leicht ein Zugriff wäre, nicht dass einer stattfand.
 SUSPECT_ADMINS=""      # Admins mit angreifertypischem Namen/Adresse — Verdacht,
                        # kein Beweis. Bewusst getrennt von ROGUE_ADMINS, damit
                        # eine automatische Bereinigung sie nie anfasst.

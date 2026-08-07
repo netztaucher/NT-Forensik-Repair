@@ -92,7 +92,8 @@ Verwendung:
   sudo bash $0 kunde.tld                 # Kurzform für --domain kunde.tld
 
 Scope (eines):
-  --webNN                 EIN Plesk-Abo, z. B. --web43. Erfasst ALLE vhost-
+  --webNN                 EIN Plesk-Abo (NN = Nummer des Plesk-Systembenutzers).
+                          Erfasst ALLE vhost-
                           Verzeichnisse dieses Abos (Hauptdomain, Subdomains,
                           System-Domain) und lässt die serverweiten Abschnitte
                           weg — sonst stünden fremde Kunden im Bericht.
@@ -110,6 +111,9 @@ Abschnittsauswahl:
   --nur <n[,n…]>          Nur diese Prüfabschnitte (z. B. --nur 12)
   --ohne <n[,n…]>         Alle ausser diesen (z. B. --ohne 2,10)
   --nur-joomla            Kurzform für --nur 12
+  --nur-nextcloud         Kurzform für --nur 12b,12c (Übernahme + Härtungsstand)
+  --nur-haertung          Kurzform für --nur 12c — nur der Nextcloud-Härtungsstand,
+                          ohne Suche nach Schadcode. Ändert nichts.
   --nur-root              Nur die Root- und Eskalationsprüfung. Beantwortet die
                           eine serverweite Frage, die der Kunde braucht — ist
                           jemand über den Webspace hinausgekommen? — und legt
@@ -156,8 +160,8 @@ while [[ $# -gt 0 ]]; do
     --domain) SCOPE_MODE="domain"; DOMAIN="${2:-}"; SCOPE_GESETZT=1; shift 2 ;;
     --path)   SCOPE_MODE="path";   SCAN_PATH_ARG="${2:-}"; SCOPE_GESETZT=1; shift 2 ;;
     --global) SCOPE_MODE="global"; SCOPE_GESETZT=1; shift ;;
-    # Ein Plesk-Abo als Ganzes. --web43 ist die Kurzform, die dem entspricht,
-    # was in Plesk und im Gespraech tatsaechlich gesagt wird ("prüf mal web43").
+    # Ein Plesk-Abo als Ganzes. --webNN ist die Kurzform, die dem entspricht,
+    # was in Plesk und im Gespraech tatsaechlich gesagt wird ("prüf mal das Abo").
     # --abo <name> deckt Systembenutzer ab, die nicht webNN heissen.
     --web[0-9]*) SCOPE_MODE="abo"; ABO_USER="${1#--}"; SCOPE_GESETZT=1; shift ;;
     --abo)       SCOPE_MODE="abo"; ABO_USER="${2:-}";  SCOPE_GESETZT=1; shift 2 ;;
@@ -167,6 +171,11 @@ while [[ $# -gt 0 ]]; do
     --nur)    MODUL_NUR="${2:-}";  shift 2 ;;
     --ohne)   MODUL_OHNE="${2:-}"; shift 2 ;;
     --nur-joomla)  MODUL_NUR="12" ; shift ;;
+    # Nextcloud getrennt ansprechbar: 12b sucht nach Uebernahme, 12c misst den
+    # Haertungsstand. Beides ist einzeln waehlbar (--nur 12b / --nur 12c);
+    # dieser Schalter nimmt beide, weil sie in der Praxis zusammen gefragt sind.
+    --nur-nextcloud) MODUL_NUR="12b,12c"; shift ;;
+    --nur-haertung)  MODUL_NUR="12c"; shift ;;
     # Die Root-Frage getrennt beantworten. Sie ist die einzige serverweite
     # Aussage, die der Kunde wirklich braucht — "ist jemand ueber meinen
     # Webspace hinausgekommen?" —, und sie laesst sich ohne die uebrigen
@@ -217,7 +226,7 @@ scan_path_bestimmen() {
 # Mehrere Abschnitte haben das frueher selbst entschieden, und zwar falsch:
 # sie verzweigten allein ueber $DOMAIN und fielen sonst auf ${VHOSTS_DIR}/*
 # zurueck. Damit war jeder Lauf ohne --domain serverweit, auch mit --path.
-# Auf k42 zog Abschnitt 11 so 57 fremde Installationen in einen Bericht, der
+# Auf einem Produktivsystem zog Abschnitt 11 so 57 fremde Installationen in einen Bericht, der
 # ein einzelnes Abo pruefen sollte. Die Entscheidung gehoert an EINE Stelle.
 scope_vhost_dirs() {
   local d
@@ -232,9 +241,10 @@ scope_vhost_dirs() {
 # Der Systembenutzer ist die verlässliche Klammer: Plesk legt für ein Abo einen
 # Benutzer (webNN) an, dem sämtliche vhost-Verzeichnisse gehören — Hauptdomain,
 # eigenständige Subdomains und die System-Domain webNN.<server>. Nur das
-# Home-Verzeichnis zu nehmen würde die Hauptdomain übersehen: auf k42 gehören
-# web43 die drei Verzeichnisse braue.de, reboot.braue.de und
-# web43.kundenserver42.de, und die eigentliche Website liegt NICHT im Home.
+# Home-Verzeichnis zu nehmen würde die Hauptdomain übersehen: auf einem real
+# geprüften Abo gehörten dem Benutzer drei Verzeichnisse — Hauptdomain,
+# eine Subdomain und die System-Domain —, und die eigentliche Website lag
+# NICHT im Home-Verzeichnis.
 abo_pfade_bestimmen() {
   if ! id -u "$ABO_USER" >/dev/null 2>&1; then
     echo "Fehler: Systembenutzer '${ABO_USER}' existiert nicht." >&2

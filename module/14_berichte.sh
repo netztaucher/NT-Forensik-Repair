@@ -600,6 +600,14 @@ emit_findings_json() {
   suspp=$(printf '%s\n' "${SUSP_PLUGINS:-}"       | json_arr)
   muplug=$(printf '%s\n' "${MU_PLUGINS:-}"        | json_arr)
   tamphta=$(printf '%s\n' "${TAMPERED_HTACCESS:-}" | json_arr)
+  # Nextcloud (Abschnitte 12b/12c). Ohne diese Zuweisungen greift unten
+  # ausnahmslos der Vorgabewert [] — die Schluessel stuenden dann auch bei
+  # echten Funden leer in der findings.json, und NT-Repair saehe nichts.
+  nchta=$(printf '%s\n'  "${NC_HTACCESS_MAL:-}" | json_arr)
+  ncmal=$(printf '%s\n'  "${NC_MALWARE:-}"      | json_arr)
+  ncnest=$(printf '%s\n' "${NC_NESTED:-}"       | json_arr)
+  ncint=$(printf '%s\n'  "${NC_INTEGRITY:-}"    | grep '^=== ' | sed 's/^=== //; s/ ===$//' | json_arr)
+  local nchard; nchard=$(printf '%s\n' "${NC_HAERTUNG:-}" | json_arr)
   local n_corei n_doorw n_coreinj n_rogue
   n_corei=$(printf '%s\n'   "${CORE_INJECTED:-}"     | grep -c . 2>/dev/null)
   n_doorw=$(printf '%s\n'   "${DOORWAY_DIRS:-}"      | grep -c . 2>/dev/null)
@@ -724,6 +732,7 @@ emit_findings_json() {
     "nextcloud_malware": ${ncmal:-[]},
     "nextcloud_nested": ${ncnest:-[]},
     "nextcloud_core_modified": ${ncint:-[]},
+    "nextcloud_hardening": ${nchard:-[]},
     "suspicious_plugins": ${suspp:-[]},
     "mu_plugins": ${muplug:-[]},
     "tampered_htaccess": ${tamphta:-[]},
@@ -957,6 +966,11 @@ echo -e "${YLW}Nächste Schritte:${NC}"
 echo -e "  1. Kundenbericht prüfen:   cat ${KUNDE_FILE}"
 echo -e "  2. BSI-Meldung ergänzen:   [AUSFÜLLEN]-Felder in ${BSI_FILE}"
 echo -e "  3. DSGVO-Meldung prüfen:   [AUSFÜLLEN]-Felder in ${DSGVO_FILE} (eigener Meldeweg!)"
-echo -e "  4. Archiv lokal sichern:   scp root@$(hostname -f 2>/dev/null || hostname):${RUN_ARCHIVE} ."
+echo -e "  4. Archiv lokal sichern (Befehl auf der naechsten Zeile, ganz markieren):"
+# Das Ziel steht ausgeschrieben statt als einzelnem '.'. Ein Punkt am Zeilenende
+# ist beim Kopieren unsichtbar und geht regelmaessig verloren — scp bekommt dann
+# nur eine Quelle und antwortet mit seiner Usage-Meldung, was wie ein Fehler im
+# Aufruf aussieht und keiner ist.
+echo -e "     ${BOLD}scp root@$(hostname -f 2>/dev/null || hostname):${RUN_ARCHIVE} ~/Downloads/${NC}"
 echo -e "  5. Alle 🔴-Maßnahmen sofort umsetzen"
 echo ""
