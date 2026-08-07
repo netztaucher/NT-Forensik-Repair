@@ -1,3 +1,4 @@
+# shellcheck shell=bash
 # NT-Forensik — Abschnitt 11: WordPress-Datenbank
 #
 # @nummer:  11

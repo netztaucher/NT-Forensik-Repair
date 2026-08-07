@@ -1,3 +1,4 @@
+# shellcheck shell=bash
 # NT-Forensik — Abschnitt 14: Zusammenfassung & Berichte
 #
 # @nummer:  14

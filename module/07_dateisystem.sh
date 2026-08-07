@@ -1,3 +1,4 @@
+# shellcheck shell=bash
 # NT-Forensik — Abschnitt 7: Dateisystem-Scan
 #
 # @nummer:  7
