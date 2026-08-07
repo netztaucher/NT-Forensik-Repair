@@ -587,7 +587,7 @@ json_arr() {   # stdin: ein Item pro Zeile → JSON-Array von Strings
 }
 
 emit_findings_json() {
-  local ws php suid tmpx immu cron sysd persist procs wpc fkeys aips bips suspadm
+  local ws php suid tmpx immu cron sysd persist procs wpc fkeys aips bips suspadm nchta ncmal ncnest ncint
   local corei coresne doorw coreinj disg rogue
   corei=$(printf '%s\n' "${CORE_INJECTED:-}"      | json_arr)
   coresne=$(printf '%s\n' "${CORE_SNE:-}"         | json_arr)
@@ -720,6 +720,10 @@ emit_findings_json() {
     "disguised_payloads": ${disg:-[]},
     "rogue_wp_admins": ${rogue:-[]},
     "suspect_wp_admins": ${suspadm:-[]},
+    "nextcloud_htaccess": ${nchta:-[]},
+    "nextcloud_malware": ${ncmal:-[]},
+    "nextcloud_nested": ${ncnest:-[]},
+    "nextcloud_core_modified": ${ncint:-[]},
     "suspicious_plugins": ${suspp:-[]},
     "mu_plugins": ${muplug:-[]},
     "tampered_htaccess": ${tamphta:-[]},
