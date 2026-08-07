@@ -1,3 +1,4 @@
+# shellcheck shell=bash
 # @nummer:  12c
 # @titel:   Nextcloud-Härtungsstand
 # @frage:   Ist die Nextcloud so eingerichtet, dass ein Einbruch schwer und ein Zugang widerrufbar ist?

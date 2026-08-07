@@ -1,3 +1,4 @@
+# shellcheck shell=bash
 # NT-Forensik — Abschnitt 1: System-Übersicht
 #
 # @nummer:  1

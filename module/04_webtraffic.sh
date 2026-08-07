@@ -1,3 +1,4 @@
+# shellcheck shell=bash
 # NT-Forensik — Abschnitt 4: Web-Traffic-Analyse
 #
 # @nummer:  4

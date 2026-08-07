@@ -1,3 +1,4 @@
+# shellcheck shell=bash
 # @nummer:  12b
 # @titel:   Nextcloud-Prüfung
 # @frage:   Ist eine Nextcloud-Installation übernommen oder ihre .htaccess manipuliert?

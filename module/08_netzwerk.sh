@@ -1,3 +1,4 @@
+# shellcheck shell=bash
 # NT-Forensik — Abschnitt 8: Netzwerk & Dienste
 #
 # @nummer:  8

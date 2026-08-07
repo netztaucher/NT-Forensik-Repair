@@ -1,3 +1,4 @@
+# shellcheck shell=bash
 # NT-Forensik — Abschnitt 10: Andere Domains
 #
 # @nummer:  10
