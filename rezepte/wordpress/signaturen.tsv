@@ -1,0 +1,9 @@
+# muster	schwere	was_es_ist
+# Dateinamen, die in echten Vorfällen als Webshell auftraten. Die
+# Ausnahmeliste in rezept.conf hält elFinder und vendor/ heraus.
+c99*.php	crit	bekannte Webshell-Familie (c99)
+r57*.php	crit	bekannte Webshell-Familie (r57)
+b374k*.php	crit	bekannte Webshell-Familie (b374k)
+wso*.php	crit	bekannte Webshell-Familie (WSO)
+adminfuns.php	crit	Schaddatei aus bekannter Kampagne
+filefuns.php	crit	Schaddatei aus bekannter Kampagne

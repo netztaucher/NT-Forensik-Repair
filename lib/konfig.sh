@@ -69,6 +69,7 @@ MODUL_NUR=""             # --nur:  Komma-Liste von Abschnittsnummern
 MODUL_OHNE=""            # --ohne: Komma-Liste von Abschnittsnummern
 NUR_ROOT=0               # --nur-root: nur die Root-Frage, kompakte Aussage
 REZEPT_NUR=""            # --nur-rezept: Komma-Liste von Rezeptnamen
+REZEPT_OHNE=""           # --nowordpress u. a.: Komma-Liste abgewaehlter Rezepte
 REZEPT_KOPIEN=0          # vom Rahmen je Rezept gesetzt
 
 # Banner. Steht hier und nicht im Runner, weil --help es ebenfalls ausgibt und
@@ -129,7 +130,7 @@ Abschnittsauswahl:
                           die Antwort als root_aussage.md ab, ohne Daten
                           anderer Kunden. Läuft in Minuten statt Stunden.
   --nojoomla              Joomla-Prüfung weglassen (= --ohne 12)
-  --nowordpress           WordPress-Prüfung weglassen (= --ohne 11)
+  --nowordpress           WordPress-Rezept weglassen
   --nur-website           Nur die Abschnitte, die den Webauftritt prüfen
                           (überspringt die serverweiten — deutlich schneller)
   --mit-server            Bei --webNN die serverweiten Abschnitte mitprüfen
@@ -198,7 +199,7 @@ while [[ $# -gt 0 ]]; do
     --nur-website) MODUL_NUR="ebene:website"; shift ;;
     # Abwaehlen einzelner CMS, ohne Abschnittsnummern nachschlagen zu muessen.
     --nojoomla|--ohne-joomla)       MODUL_OHNE="${MODUL_OHNE:+${MODUL_OHNE},}12"; shift ;;
-    --nowordpress|--ohne-wordpress) MODUL_OHNE="${MODUL_OHNE:+${MODUL_OHNE},}11"; shift ;;
+    --nowordpress|--ohne-wordpress) REZEPT_OHNE="${REZEPT_OHNE:+${REZEPT_OHNE},}wordpress"; shift ;;
     --kein-menue)  WANT_MENUE=0; shift ;;
     --menue)       WANT_MENUE=1; shift ;;
     -h|--help) usage; exit 0 ;;
