@@ -28,7 +28,7 @@ h1 "12c. NEXTCLOUD-HÄRTUNGSSTAND"
 # und damit von einer laufenden Instanz nicht zu unterscheiden — ausser am Pfad.
 # Der eingebaute Updater legt sie unter updater-<id>/backups/ ab. Ohne diesen
 # Filter meldet der Abschnitt jede Sicherung als eigene Installation und
-# vervielfacht damit jeden Befund; gemessen am 07.08.2026 auf k42: drei
+# vervielfacht damit jeden Befund; gemessen am 07.08.2026 auf einem Produktivsystem: drei
 # vermeintliche Instanzen, alle drei Kopien derselben.
 NCH_KOPIE='/updater-[a-z0-9]+/backups/|/[a-z0-9_-]*backups?/|/\.?(quarantaene|quarantine|old|bak)/'
 
@@ -69,7 +69,7 @@ while IFS= read -r NCDIR; do
   # ("This version of Nextcloud requires at least PHP 8.2<br/>…") — und zwar
   # auf STDOUT und mit Rueckgabewert 0. Ohne diese Sperre landet dieser Satz
   # als Datenverzeichnis, als loglevel und als Protokoll im Kundenbericht.
-  # Gemessen am 07.08.2026 auf k42.
+  # Gemessen am 07.08.2026 auf einem Produktivsystem.
   _probe=$(_occ status --output=json || true)
   if ! printf '%s' "$_probe" | python3 -c "import json,sys;json.load(sys.stdin)" 2>/dev/null; then
     _grund=$(printf '%s' "$_probe" | sed 's/<br\/*>/ /g' | tr -d '\n' | cut -c1-160)
