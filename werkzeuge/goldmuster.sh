@@ -38,7 +38,11 @@ info() { echo -e "  ${CYN}·${NC}  $1"; }
 
 SELF_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")/.." && pwd)"
 REF_DIR="${SELF_DIR}/pruefstand/referenz"
-ARBEIT="${TMPDIR:-/tmp}/nt-goldmuster.$$"
+# Bewusst NICHT unter /tmp: Abschnitt 7 sucht dort nach ausfuehrbaren Dateien
+# und meldete den Pruefbaum selbst als Befund. Unter macOS faellt das nicht auf,
+# weil TMPDIR dort auf /var/folders zeigt — die CI hat es gezeigt. Ein
+# Pruefstand, der das Messergebnis veraendert, misst nicht mehr das Werkzeug.
+ARBEIT="${NT_GOLDMUSTER_DIR:-${HOME}/.nt-goldmuster}/lauf.$$"
 AKTION="${1:-vergleichen}"
 
 # ── Der synthetische Baum ────────────────────────────────────
@@ -182,7 +186,7 @@ REGELN = [
     (r'\b[0-9a-f]{40}\b',                          '<SHA1>'),
     # Der Pruefstand liegt je nach Plattform unter /tmp, /private/tmp oder
     # /var/folders und traegt die Prozessnummer im Namen.
-    (r'(/private)?/(tmp|var/folders)/\S*?nt-goldmuster\.\d+', '<PRUEFSTAND>'),
+    (r'\S*?[/.]nt-goldmuster/lauf\.\d+',           '<PRUEFSTAND>'),
     (r'^(Server|Server-IP|Ausführender|Beginn \(lokal\)):.*$', r'\1: <UMGEBUNG>'),
     # Ausgabe von `date` — Format haengt an der Spracheinstellung, deshalb
     # ueber die umgebende Beschriftung gefasst statt ueber das Datumsmuster.
@@ -204,6 +208,10 @@ REGELN = [
     # Eigentuemer und Gruppe die des ausfuehrenden Kontos, der Zeitstempel der
     # des Laufs. Keiner davon sagt etwas ueber das Programmverhalten.
     (r'^\s*\d+\s+\d+\s+([-drwxst@+.]{10})\s+\d+\s+\S+\s+\S+\s+(\d+)\s+'
+     r'[A-Z][a-z]{2}\s+\d{1,2}\s+[\d:]+\s',        r'<INODE> \1 <EIGNER> \2 <MTIME> '),
+    # Dieselbe Sache in `ls -l`-Form, ohne Inode und Blockzahl. Kommt aus den
+    # Abschnitten, die nicht `find -ls` benutzen — beim ersten CI-Lauf uebersehen.
+    (r'^([-drwxst@+.]{10})\s+\d+\s+\S+\s+\S+\s+(\d+)\s+'
      r'[A-Z][a-z]{2}\s+\d{1,2}\s+[\d:]+\s',        r'<INODE> \1 <EIGNER> \2 <MTIME> '),
     # Die Werkzeugfassung steigt bei jedem Release. Bewusst NUR dort ersetzt,
     # wo sie als Fassung auftritt — ein blindes \d+\.\d+\.\d+ hat im ersten

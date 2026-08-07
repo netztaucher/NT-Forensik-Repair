@@ -118,7 +118,7 @@ Basierend auf der forensischen Analyse (in absteigender Wahrscheinlichkeit):
 
 ## 9. Bereits ergriffene Maßnahmen
 
-- Forensische Sicherung aller relevanten Logs (revisionssicher, SHA256-gehasht): `<PRUEFSTAND>/ablage/forensik/<LAUF-ID>`
+- Forensische Sicherung aller relevanten Logs (revisionssicher, SHA256-gehasht): <PRUEFSTAND>/ablage/forensik/<LAUF-ID>`
 - [AUSFÜLLEN — z. B. Passwörter rotiert, Webshell entfernt/quarantänisiert, Domain offline genommen]
 
 ## 10. Geplante Maßnahmen

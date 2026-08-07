@@ -36,6 +36,8 @@
   Kürzlich veränderte .php-Dateien:
 
 ```
+<INODE> -rw-r--r-- <EIGNER> 137 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/backups/updater-abc123/nextcloud-28.0.1.2-1700000000/config/config.php
+<INODE> -rw-r--r-- <EIGNER> 137 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/cloud.kunde-zwei.example/config/config.php
 <INODE> -rw-r--r-- <EIGNER> 16 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/backups/updater-abc123/nextcloud-28.0.1.2-1700000000/config/config/index.php
 <INODE> -rw-r--r-- <EIGNER> 16 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/cloud.kunde-zwei.example/config/config/index.php
 <INODE> -rw-r--r-- <EIGNER> 169 <MTIME> <PRUEFSTAND>/vhosts/kunde-drei.example/httpdocs/wp-config.php
@@ -45,8 +47,6 @@
 <INODE> -rw-r--r-- <EIGNER> 17 <MTIME> <PRUEFSTAND>/vhosts/kunde-eins.example/httpdocs/index.php
 <INODE> -rw-r--r-- <EIGNER> 17 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/backups/updater-abc123/nextcloud-28.0.1.2-1700000000/filefuns.php
 <INODE> -rw-r--r-- <EIGNER> 17 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/cloud.kunde-zwei.example/filefuns.php
-<INODE> -rw-r--r-- <EIGNER> 171 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/backups/updater-abc123/nextcloud-28.0.1.2-1700000000/config/config.php
-<INODE> -rw-r--r-- <EIGNER> 171 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/cloud.kunde-zwei.example/config/config.php
 <INODE> -rw-r--r-- <EIGNER> 230 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/joomla.kunde-zwei.example/configuration.php
 <INODE> -rw-r--r-- <EIGNER> 34 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/joomla.kunde-zwei.example/libraries/src/Version.php
 <INODE> -rw-r--r-- <EIGNER> 37 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/backups/updater-abc123/nextcloud-28.0.1.2-1700000000/version.php
