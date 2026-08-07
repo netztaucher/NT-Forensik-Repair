@@ -1,0 +1,157 @@
+[0;33mTESTLAUF[0m — ohne Root-Rechte, Ablage unter <PRUEFSTAND>/ablage.
+[0;33m        [0m  Serverweite Abschnitte liefern hier keine belastbaren Ergebnisse.
+[0;34m
+███████  ██████  ██████  ███████ ███    ██ ███████ ██ ██   ██
+██      ██    ██ ██   ██ ██      ████   ██ ██      ██ ██  ██
+█████   ██    ██ ██████  █████   ██ ██  ██ ███████ ██ █████
+██      ██    ██ ██   ██ ██      ██  ██ ██      ██ ██ ██  ██
+██       ██████  ██   ██ ███████ ██   ████ ███████ ██ ██   ██
+  WP-PLESK-FORENSIK v3.10.0 — netztaucher | digital
+[0m
+[1mAnalysiert:[0m  alle Domains
+[1mLauf:[0m        <LAUF-ID>
+[1mAblage:[0m      <PRUEFSTAND>/ablage/forensik/<LAUF-ID>
+[1mDatum:[0m       <ZEIT>
+
+  [0;36mübersprungen:[0m 1. System-Übersicht
+  [0;36mübersprungen:[0m 2. Logs sichern
+  [0;36mübersprungen:[0m 3. Zugriffs-Analyse
+
+[1m[0;34m══════════════════════════════════════════[0m
+[1m[0;34m  4. WEB-TRAFFIC ANALYSE[0m
+[1m[0;34m══════════════════════════════════════════[0m
+
+[0;36m▶ 4.1 Access-Logs auf Angriffsmuster prüfen[0m
+  [0;36mübersprungen:[0m 5. Benutzer & Rechte
+  [0;36mübersprungen:[0m 6. Cronjobs & Persistenz
+
+[1m[0;34m══════════════════════════════════════════[0m
+[1m[0;34m  7. DATEISYSTEM-SCAN[0m
+[1m[0;34m══════════════════════════════════════════[0m
+
+[0;36m▶ 7.1 Kürzlich veränderte PHP-Dateien (letzte 30 Tage)[0m
+  [0;33mDurchsuche Webspace (kann dauern...)[0m
+  [0m·  Kürzlich veränderte .php-Dateien:
+
+[0;36m▶ 7.2 PHP-Dateien in Upload-Verzeichnissen[0m
+  [0;31m✗[0m  [1mPHP-Dateien in Upload-Verzeichnissen (nach Guard-Filter, extrem verdächtig)[0m
+
+[0;36m▶ 7.3 Webshell-Muster (Inhalt) — zweistufig[0m
+  [0;33mScanne auf Webshell-Signaturen (inkl. obfuskierte Cookie-Backdoors)...[0m
+  [0;32m✓[0m Keine kleinen Obfuskations-Dropper gefunden
+
+[0;36m▶ 7.4 Versteckte Dateien und Verzeichnisse im Webspace[0m
+  [0;32m✓[0m Keine auffälligen versteckten Dateien
+
+[0;36m▶ 7.5 Verdächtige Dateinamen (namensbasiert, geringe Konfidenz → Warnung)[0m
+  [0;32m✓[0m Keine verdächtigen Dateinamen (außerhalb Core/vendor/cache/plugins)
+
+[0;36m▶ 7.6 .htaccess-Dateien prüfen[0m
+  [0;32m✓[0m Keine externen Weiterleitungen in .htaccess gefunden
+
+[0;36m▶ 7.7 SUID/SGID-Dateien in Webspace und tmp-Verzeichnissen[0m
+  [0;32m✓[0m Keine SUID/SGID-Dateien in Webspace oder tmp
+
+[0;36m▶ 7.8 Ausführbare Dateien in tmp-Verzeichnissen[0m
+  [0;32m✓[0m Keine ausführbaren Dateien in tmp-Verzeichnissen
+
+[0;36m▶ 7.9 Immutable-Flags im Webspace (chattr +i — Malware-Selbstschutz)[0m
+  [0;32m✓[0m Keine Immutable-Flags auf PHP-Dateien (Stichprobe max. 8000 Dateien)
+
+[0;36m▶ 7.10 Als Schlüssel-/Konfigdatei getarnte Binaries[0m
+  [0;32m✓[0m Keine als Schlüssel-/Konfigdatei getarnten Binaries
+
+[0;36m▶ 7.11 YARA-Signaturscan (optional)[0m
+  [0m·  YARA-Scan nicht aktiviert — mit --yara einschalten (auf großen Webspaces langsam)
+  [0;36mübersprungen:[0m 8. Netzwerk & Dienste
+  [0;36mübersprungen:[0m 9. Sicherheits-Dienste
+  [0;36mübersprungen:[0m 10. Andere Domains
+
+[1m[0;34m══════════════════════════════════════════[0m
+[1m[0;34m  11. WORDPRESS-DATENBANK-PRÜFUNG[0m
+[1m[0;34m══════════════════════════════════════════[0m
+
+[0;36m▶ 11.1 Gefundene WordPress-Installationen[0m
+  [0m·  WordPress-Installationen: 4
+
+[0;36m▶ 11.9 WordPress-DB-Verdikt[0m
+  [0;32m✓[0m WP-DB-VERDIKT: unauffällig
+
+[0;36m▶ 11.10 WP Toolkit — Instanz-Status (Plesk-eigene Bewertung, read-only)[0m
+  [0m·  WP Toolkit / python3 nicht verfügbar — Plesk-Instanzbewertung nicht abgefragt
+
+[1m[0;34m══════════════════════════════════════════[0m
+[1m[0;34m  12. JOOMLA-PRÜFUNG[0m
+[1m[0;34m══════════════════════════════════════════[0m
+
+[0;36m▶ 12.1 Gefundene Joomla-Installationen[0m
+  [0m·  Joomla-Installationen: 1
+  [0m·  Joomla-Datenbestand: Stand 2026-08-05 (0 Tage alt)
+  [0;36mJoomla-Prüfung:[0m kunde-zwei.example/joomla.kunde-zwei.example (prefix=jos_)
+  [0;33m⚠[0m  kunde-zwei.example/joomla.kunde-zwei.example: Joomla-Version nicht bestimmbar (weder joomla.xml noch Version.php lesbar)
+  [0;33m⚠[0m  kunde-zwei.example/joomla.kunde-zwei.example: Standard-Tabellenpräfix jos_ (macht SQL-Injection-Angriffe zielgenau ohne Vorab-Erkundung)
+  [0m·  kunde-zwei.example/joomla.kunde-zwei.example: kein Datenbankname bzw. kein gültiges Präfix — Datenbank-Prüfung übersprungen
+
+[0;36m▶ 12.7 Abgleich mit bekannten Schwachstellen — kunde-zwei.example/joomla.kunde-zwei.example[0m
+
+[0;36m▶ 12.8 Joomla-typische Schaddateien — kunde-zwei.example/joomla.kunde-zwei.example[0m
+  [0;32m✓[0m kunde-zwei.example/joomla.kunde-zwei.example: keine Joomla-typischen Schaddateien gefunden
+
+[0;36m▶ 12.10 Joomla-Verdikt[0m
+  [0;32m✓[0m JOOMLA-VERDIKT: unauffällig
+
+[1m[0;34m══════════════════════════════════════════[0m
+[1m[0;34m  12b. NEXTCLOUD-PRÜFUNG[0m
+[1m[0;34m══════════════════════════════════════════[0m
+  [0;33m⚠[0m  1 Nextcloud-Sicherungskopie(n) nicht geprüft — sie werden nicht ausgeliefert, würden Schadcode beim Zurückspielen aber wiederherstellen
+  [0m·  Nextcloud-Installationen: 1
+
+[0;36m▶ 12b.1 kunde-zwei.example/cloud.kunde-zwei.example[0m
+  [0m·  Fassung: 28.0.1.2
+  [0;31m✗[0m  [1mkunde-zwei.example/cloud.kunde-zwei.example: Root-.htaccess trägt Angreifer-Merkmale (Freigabeliste mit fremden Dateinamen)[0m
+  [0;31m✗[0m  [1mkunde-zwei.example/cloud.kunde-zwei.example: bekannte Schaddateien der Nextcloud-Kampagne gefunden[0m
+  [0;31m✗[0m  [1mkunde-zwei.example/cloud.kunde-zwei.example: verschachtelte Verzeichnisse (z. B. config/config) — typisch für diese Kampagne[0m
+  [0m·  kunde-zwei.example/cloud.kunde-zwei.example: occ nicht ausführbar (Eigentümer oder PHP nicht ermittelbar) — Kern nicht geprüft
+
+[1m[0;34m══════════════════════════════════════════[0m
+[1m[0;34m  12c. NEXTCLOUD-HÄRTUNGSSTAND[0m
+[1m[0;34m══════════════════════════════════════════[0m
+  [0m·  1 Sicherungskopie(n) übersprungen — sie werden nicht ausgeliefert und sind kein eigener Härtungsgegenstand
+
+[0;36m▶ 12c.1 kunde-zwei.example/cloud.kunde-zwei.example[0m
+  [0m·  kunde-zwei.example/cloud.kunde-zwei.example: occ nicht ausführbar — Härtungsstand nicht messbar
+  [0;32m✓[0m Keine Härtungslücken gefunden
+  [0;36mübersprungen:[0m 13. Root- & Eskalations-Prüfung
+
+[1m[0;34m══════════════════════════════════════════[0m
+[1m[0;34m  14. ZUSAMMENFASSUNG[0m
+[1m[0;34m══════════════════════════════════════════[0m
+
+[1mDatenschutz[0m
+  technik_bericht.md        0 fremde Kennungen maskiert
+  kundenbericht.md          1 fremde Kennungen maskiert
+  lauf.log                  0 fremde Kennungen maskiert
+
+[1m[0;32m══════════════════════════════════════════[0m
+[1m[0;32m  ANALYSE ABGESCHLOSSEN — Lauf <LAUF-ID>[0m
+[1m[0;32m══════════════════════════════════════════[0m
+
+[1mBefunde:[0m       🔴 4 kritisch, ⚠️ 3 Warnungen, ✅ 12 ok
+
+[1mLauf-Ordner:[0m     <PRUEFSTAND>/ablage/forensik/<LAUF-ID>
+[1mKundenbericht:[0m   <PRUEFSTAND>/ablage/forensik/<LAUF-ID>/kundenbericht.md
+[1mBSI-Meldung:[0m     <PRUEFSTAND>/ablage/forensik/<LAUF-ID>/bsi_meldung.md
+[1mDSGVO-Meldung:[0m   <PRUEFSTAND>/ablage/forensik/<LAUF-ID>/dsgvo_meldung.md
+[1mTechnik-Bericht:[0m <PRUEFSTAND>/ablage/forensik/<LAUF-ID>/technik_bericht.md
+[1mfindings.json:[0m   <PRUEFSTAND>/ablage/forensik/<LAUF-ID>/findings.json (maschinenlesbar, für NT-Repair)
+[1mBelege:[0m          <PRUEFSTAND>/ablage/forensik/<LAUF-ID>/belege (SHA256-versiegelt)
+[1mÜbergabe-Archiv:[0m <PRUEFSTAND>/ablage/forensik/<LAUF-ID>.tar.gz
+
+[0;33mNächste Schritte:[0m
+  1. Kundenbericht prüfen:   cat <PRUEFSTAND>/ablage/forensik/<LAUF-ID>/kundenbericht.md
+  2. BSI-Meldung ergänzen:   [AUSFÜLLEN]-Felder in <PRUEFSTAND>/ablage/forensik/<LAUF-ID>/bsi_meldung.md
+  3. DSGVO-Meldung prüfen:   [AUSFÜLLEN]-Felder in <PRUEFSTAND>/ablage/forensik/<LAUF-ID>/dsgvo_meldung.md (eigener Meldeweg!)
+  4. Archiv lokal sichern (Befehl auf der naechsten Zeile, ganz markieren):
+     [1mscp root@imac:<PRUEFSTAND>/ablage/forensik/<LAUF-ID>.tar.gz ~/Downloads/[0m
+  5. Alle 🔴-Maßnahmen sofort umsetzen
+

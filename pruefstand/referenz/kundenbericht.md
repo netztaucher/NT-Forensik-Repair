@@ -1,0 +1,144 @@
+# Sicherheitsvorfall — Bericht
+
+
+| | |
+|---|---|
+| **Einstufung** | 🔴 KRITISCH |
+| **Erstellt durch** | netztaucher \| digital |
+| **Datum** | <ZEIT> |
+| **Geprüfter Server** | imac |
+| **Prüfungs-ID** | <LAUF-ID> |
+| **Befunde** | 🔴 4 kritisch · ⚠️ 3 auffällig · ✅ 12 geprüft |
+
+---
+
+## 1. Das Wichtigste in einem Satz
+
+**Ihr System wurde nachweislich kompromittiert.** Es liegen konkrete, technisch belegte Hinweise auf einen erfolgreichen Angriff vor. Ein Angreifer hatte oder hat Zugriff auf Ihren Webauftritt. **Es besteht akuter Handlungsbedarf** — bitte arbeiten Sie die Sofortmaßnahmen unten noch heute ab.
+
+**Warum das dringend ist:** Solange die Zugänge des Angreifers gültig sind, kann er jederzeit zurückkehren, weitere Hintertüren legen, Daten (auch Kundendaten) abgreifen, Spam über Ihre Domain versenden oder Ihre Seite für Betrug/Schadsoftware missbrauchen. Jede Stunde zählt.
+
+## 2. ⏱️ Sofortmaßnahmen — bitte noch heute
+
+| # | Maßnahme | Frist |
+|---|---|---|
+| 1 | **Alle Passwörter ändern**: WordPress-Admin, Hosting-/Plesk-Panel, FTP/SFTP, SSH, Datenbank. Nicht nur eines — alle. | sofort (< 24 h) |
+| 2 | **Alle aktiven Sitzungen beenden** (WordPress-Sicherheitsschlüssel/Salts neu erzeugen), damit gestohlene Logins ungültig werden. | sofort (< 24 h) |
+| 3 | **Verwundbare Zugänge/Plugins abschalten**, über die der Angriff lief (siehe Abschnitt 4). | sofort (< 24 h) |
+| 4 | **Angreifer-IP-Adressen sperren** (siehe Abschnitt 4). | sofort (< 24 h) |
+| 5 | **Prüfen, ob personenbezogene Daten betroffen sind** — falls ja, greift die 72-Stunden-Meldepflicht (siehe Abschnitt 6). | < 72 h |
+
+> Diese Schritte stoppen den akuten Zugriff. Die vollständige Bereinigung (Abschnitt 5) folgt danach.
+
+## 3. Was wir technisch gefunden haben
+
+- Keine akuten technischen Kompromittierungs-Indikatoren an Ihrer Website in diesem Lauf.
+
+
+
+**Kritische Einzelbefunde:**
+
+- PHP-Dateien in Upload-Verzeichnissen (nach Guard-Filter, extrem verdächtig)
+- kunde-zwei.example/cloud.kunde-zwei.example: Root-.htaccess trägt Angreifer-Merkmale (Freigabeliste mit fremden Dateinamen)
+- kunde-zwei.example/cloud.kunde-zwei.example: bekannte Schaddateien der Nextcloud-Kampagne gefunden
+- kunde-zwei.example/cloud.kunde-zwei.example: verschachtelte Verzeichnisse (z. B. config/config) — typisch für diese Kampagne
+**Auffälligkeiten (zeitnah beheben):**
+
+- kunde-zwei.example/joomla.kunde-zwei.example: Joomla-Version nicht bestimmbar (weder joomla.xml noch Version.php lesbar)
+- kunde-zwei.example/joomla.kunde-zwei.example: Standard-Tabellenpräfix jos_ (macht SQL-Injection-Angriffe zielgenau ohne Vorab-Erkundung)
+
+## 4. Reichweite des Angriffs — war nur Ihre Website oder der ganze Server betroffen?
+
+Die Reichweite auf Serverebene wurde in diesem Lauf nicht geprüft.
+
+> **Was das bedeutet:** „Serverebene" (Root) ist die Administratorebene des
+> gesamten Servers, auf dem neben Ihrer auch andere Websites liegen. Blieb ein
+> Angreifer darunter (nur auf Ebene Ihrer Website), ist der Schaden auf Ihren
+> Webauftritt begrenzt. Die technische Detailbewertung der Serverebene liegt beim
+> Serverbetreiber; sie ist nicht Teil dieses Kundenberichts.
+
+**WordPress-Datenbank:** 🟢 **Keine Angreifer-Spuren in den WordPress-Datenbanken** (keine neuen Admins, keine manipulierten Optionen).
+
+**Joomla:** 🟢 **Keine Angreifer-Spuren in den Joomla-Installationen** — Version schlüssig, Konfiguration ohne kritische Schwächen, kein Hinweis auf einen Datenabfluss über die Programmschnittstelle.
+**Fernzugriff / Relay-Backdoor:** ⚪ Relay-Backdoor-Prüfung nicht durchgeführt.
+
+## 5. Angriffshergang & Angreifer
+
+> *Die folgenden Angaben sind maschinell aus den Protokollen dieses Laufs abgeleitet.
+> Die endgültige Zuordnung (konkreter Angreifer-Login, exaktes Einfallstor) bestätigen
+> wir bei der manuellen Auswertung; alle Rohdaten liegen revisionssicher in `belege/`.*
+
+**Auffällige IP-Adressen:**
+
+In den vorliegenden Protokollen wurden keine eindeutig auffälligen IP-Adressen automatisch isoliert (ggf. Log-Reichweite zu kurz).
+
+**Wahrscheinliches Einfallstor (aus der Befundlage):**
+
+  - Kein eindeutiger Vektor aus den Automatik-Daten ableitbar — manuelle Log-Auswertung erforderlich.
+
+**Zeitliche Einordnung:** Analysezeitraum dieses Laufs: letzte 30 Tage. Der genaue Zugriffszeitraum ergibt sich aus der manuellen Log-Auswertung und den Datei-Zeitstempeln (siehe `belege/`).
+
+**Beobachtete Angreifer-Aktivität:** Aus den Automatik-Daten keine konkrete Angreifer-Aktion belegt — bei der manuellen Auswertung zu prüfen.
+
+
+
+## 6. Bereinigung & dauerhafte Absicherung
+
+**Bereits von uns durchgeführt:**
+
+- Vollständige forensische Sicherung aller Protokolle und Beweise (revisionssicher, mit Prüfsummen) — Lauf-ID `<LAUF-ID>`.
+- Vollständiger Scan von Dateisystem, Prozessen, Persistenz-Mechanismen und Datenbanken.
+
+
+**Als Nächstes nötig:**
+
+1. Gefundene Schadcode-Dateien entfernen (aus Quarantäne, nach Beweissicherung).
+2. Betroffenes WordPress **aus einem nachweislich sauberen Backup** (vor dem Einbruch) neu aufsetzen — ein reines "Überschreiben" reicht bei Hintertüren nicht.
+3. Alle Plugins/Themes aktualisieren, ungenutzte entfernen.
+4. Server härten: SSH auf Schlüssel-Login umstellen, Fail2ban/ModSecurity aktivieren, PHP-Funktionen einschränken.
+5. Datei-Integritäts-Überwachung und automatische Malware-Scans einrichten.
+
+## 7. Rechtliche Pflichten (bitte beachten)
+
+> **Datenschutz (DSGVO Art. 33):** Wenn bei diesem Vorfall personenbezogene Daten
+> betroffen sein **könnten** (Kundendaten, Bestellungen, E-Mail-Adressen in der
+> Website-Datenbank), müssen Sie das der zuständigen Datenschutz-Aufsichtsbehörde
+> **innerhalb von 72 Stunden nach Bekanntwerden** melden. Die Frist läuft bereits.
+> Ein vorbereiteter Entwurf liegt in `dsgvo_meldung.md`.
+
+> **Meldung an das BSI:** Eine vorbereitete Meldung liegt in `bsi_meldung.md`
+> (**eigener Meldeweg**, getrennt von der Datenschutzmeldung). Ob eine Pflicht besteht,
+> hängt von Ihrer Einstufung ab — im Zweifel ist eine freiwillige Meldung sinnvoll.
+
+Wir unterstützen Sie bei allen Meldungen — sprechen Sie uns umgehend an.
+
+## 8. Ihre Unterlagen zu diesem Vorfall
+
+| Dokument | Zweck |
+|---|---|
+| `kundenbericht.md` | Dieses Dokument |
+| `technik_bericht.md` | Vollständiger technischer Bericht (alle Prüfpunkte, inkl. Root-Prüfung §13) |
+| `bsi_meldung.md` | Vorbereitete BSI-Meldung (BSIG/NIS2) |
+| `dsgvo_meldung.md` | Vorbereitete DSGVO-Meldung (Art. 33, eigener Meldeweg an die Datenschutzbehörde) |
+| `belege/` | Alle Rohdaten & Beweismittel, mit SHA256-Prüfsummen versiegelt |
+
+
+
+---
+
+### Über netztaucher | digital
+
+Diese Analyse stammt aus unserer laufenden **WordPress-Betreuung und -Absicherung**.
+Wir übernehmen Wartung, Härtung, Monitoring und Notfall-Forensik für WordPress- und
+Rootserver — damit Vorfälle wie dieser gar nicht erst entstehen oder im Ernstfall
+sauber und dokumentiert behoben werden.
+
+**→ https://<anderer Kunde 1>/wordpress**
+
+---
+*netztaucher | digital — maschinell erstellt (wp_plesk_forensik.sh <FASSUNG>) und dokumentiert den Zustand zum Prüfzeitpunkt. Der Angriffshergang (Abschnitt 5/6) wird nach manueller Auswertung ergänzt.*
+
+
+---
+
+> **Hinweis zum Datenschutz.** Dieser Server beherbergt weitere Kunden. Wo serverweite Prüfungen deren Domains oder Systemkonten berührten, stehen Platzhalter (`<anderer Kunde N>`); derselbe Nachbar trägt dabei immer dieselbe Nummer, sodass Zusammenhänge erkennbar bleiben. Betroffen waren 1 fremde Kennungen. Die unmaskierte Fassung verbleibt beim Betreiber.
