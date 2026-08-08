@@ -436,6 +436,15 @@ REGELN = [
     (r'(\*Bericht erstellt am:).*?(\*)',            r'\1 <ZEIT>\2'),
     (r'(\| \*\*Lauf\*\* \|).*$',                    r'\1 <ZEIT> |'),
     (r'(Datum:\S*\s+).*$',                          r'\1<ZEIT>'),   # Kopfzeile der Konsole
+    # Der Datenstand des Schwachstellenbestands. Er GEHOERT in den Bericht —
+    # ein Befund ist nur so viel wert, wie sich der Bestand nachweisen laesst.
+    # Nur: der Pruefstand erzeugt seinen Bestand bei jedem Bau mit dem Datum
+    # von HEUTE (sonst waere er nach 30 Tagen "veraltet" und das Rezept
+    # vergliche nicht mehr). Ohne diese Regel stimmt die eingecheckte Referenz
+    # deshalb genau an dem Tag, an dem sie aufgenommen wurde, und schlaegt ab
+    # dem naechsten Morgen aus — was dazu verfuehrt, sie einfach neu
+    # aufzunehmen, bis niemand mehr hinsieht.
+    (r'(Datenbestand \(Stand )\d{4}-\d{2}-\d{2}(\))', r'\1<STAND>\2'),
     # Die Ausgabe von `date` erscheint an einem halben Dutzend Stellen mit je
     # eigener Beschriftung. Statt jede einzeln zu fassen, wird die Form selbst
     # erkannt: Wochentag, Monat, Tag, Uhrzeit, Zeitzone, Jahr. Eng genug, dass
