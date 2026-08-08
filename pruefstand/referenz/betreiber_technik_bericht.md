@@ -233,7 +233,7 @@ php_value auto_prepend_file /var/www/vhosts/<anderer Kunde 1>/httpdocs/wp-conten
 
 ### 12r.2.x kunde-drei.example/httpdocs
 
-- ✅ kunde-drei.example/httpdocs: keine bekannte Schwachstelle im vorliegenden Datenbestand (Stand 2026-08-07)
+- ✅ kunde-drei.example/httpdocs: keine bekannte Schwachstelle im vorliegenden Datenbestand (Stand <STAND>)
 - ✅ kunde-drei.example/httpdocs: keine Doorway-.htaccess-Signatur
 - ✅ kunde-drei.example/httpdocs: keine @include base64_decode()-Injektion
 - ✅ kunde-drei.example/httpdocs: WordPress-Core unverändert (verify-checksums)

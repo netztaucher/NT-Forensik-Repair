@@ -106,7 +106,7 @@
   [0m·  Installationen: 3
 
 [0;36m▶ 12r.2.x kunde-drei.example/httpdocs[0m
-  [0;32m✓[0m kunde-drei.example/httpdocs: keine bekannte Schwachstelle im vorliegenden Datenbestand (Stand 2026-08-07)
+  [0;32m✓[0m kunde-drei.example/httpdocs: keine bekannte Schwachstelle im vorliegenden Datenbestand (Stand <STAND>)
   [0;32m✓[0m kunde-drei.example/httpdocs: keine Doorway-.htaccess-Signatur
   [0;32m✓[0m kunde-drei.example/httpdocs: keine @include base64_decode()-Injektion
   [0;32m✓[0m kunde-drei.example/httpdocs: WordPress-Core unverändert (verify-checksums)

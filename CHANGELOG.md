@@ -4,6 +4,22 @@ Alle nennenswerten Änderungen an `wp_plesk_forensik.sh`.
 
 ## [unveröffentlicht]
 
+### Behoben — die Prüfstand-Referenz galt nur am Tag ihrer Aufnahme
+Die ok-Zeile des Schwachstellenabgleichs nennt den Datenstand, und der
+Prüfstand erzeugt seinen Bestand bei jedem Bau mit dem Datum von **heute**
+(sonst wäre er nach 30 Tagen „veraltet" und das Rezept vergliche nicht mehr).
+Die eingecheckte Referenz stimmte damit genau an dem Tag, an dem sie
+aufgenommen wurde, und schlug ab dem nächsten Morgen aus.
+
+Die CI merkt das nie — sie nimmt ihre Referenz je Lauf selbst auf. Betroffen
+war nur der lokale Vergleich vor dem Commit, also genau der Schritt, der
+Regressionen fangen soll. Und eine Abweichung, die jeden Morgen von selbst
+auftaucht, verführt dazu, die Referenz einfach neu aufzunehmen — bis niemand
+mehr hinsieht.
+
+`goldmuster.sh` normalisiert den Datenstand jetzt wie die übrigen
+Zeitangaben. Der Wert bleibt im echten Bericht stehen, wo er hingehört.
+
 ### Behoben — `grep -c` mit `|| echo 0` ergab „0\n0"
 `rezept_kern` zählte die Meldungen von `verify-checksums` mit
 `grep -c … || echo 0`. `grep -c` gibt bei null Treffern aber **bereits** eine 0
