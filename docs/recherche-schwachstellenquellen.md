@@ -27,7 +27,8 @@ Quellen, die **nicht** verwendet werden, und die Regelwerke fremder Scanner.
 | Lizenz-Nachweis des ausgelieferten Bestands | [`rezepte/wordpress/daten/QUELLEN.md`](../rezepte/wordpress/daten/QUELLEN.md) |
 
 Offen ist der erste echte Abruf des Wordfence-Feeds — er braucht einen
-Schlüssel und ist zugleich der erste Formattest des Normalisierers.
+Schlüssel und ist zugleich der erste Formattest des Normalisierers (#62), sowie
+das Lizenz-Gate davor (#63).
 
 ---
 
@@ -64,7 +65,8 @@ und ein Bezugsrecht, das jederzeit widerrufbar ist. `irrevocable` schützt nur
 bereits bezogene Kopien.
 
 **Das ist ein Klumpenrisiko.** Fällt Wordfence weg, gibt es nach heutigem Stand
-keinen Ersatz, der Weitergabe erlaubt.
+keinen Ersatz, der Weitergabe erlaubt. Eine zweite Quelle als Abfragepfad zur
+Laufzeit wird in #67 geprüft.
 
 ### Warum die anderen ausscheiden
 
@@ -95,7 +97,7 @@ die Attribution lässt sich durch einen Link erfüllen). Nur: WordPress-Plugins
 sind dort keinem OSV-Ökosystem zugeordnet und tragen deshalb keine
 `affected`-Angaben. Es gibt schlicht nichts zu vergleichen. Bleibt sinnvoll für
 Composer-Abhängigkeiten in `wp-content/plugins/*/vendor/` — ein eigener
-Prüfschritt, noch nicht gebaut.
+Prüfschritt, noch nicht gebaut (#69).
 
 **NVD über CPE** — dieselbe Erfahrung wie bei Joomla: die CPE-Abdeckung für
 WP-Plugins ist lückenhaft und die Treffermenge verrauscht. Als Prädikat
@@ -152,7 +154,7 @@ Bericht, der an Kunden und ans BSI geht, eine Fremdkennung, die dort
 erklärungsbedürftig ist.
 
 **Machbar wäre es.** Es setzt voraus, dass das Befundschema ein Autorenfeld je
-Regel führt und die Berichte es ausgeben. Solange das nicht existiert, ist die
+Regel führt und die Berichte es ausgeben — festgehalten in #68. Solange das nicht existiert, ist die
 Klausel nicht erfüllbar, und ein Regelwerk unter DRL darf nicht übernommen
 werden. Dieselbe Überlegung hat schon dazu geführt, dass die `signature-base`
 für Joomla nicht verwendet wurde (siehe `QUELLEN.md`, „Bewusst nicht
@@ -211,7 +213,10 @@ Regelformat übernehmen würde.
    lizenzbehaftete Fläche klein und ist bei Joomla wie bei WordPress derselbe
    Grundsatz.
 3. **Abdeckung auszählen, nicht schätzen.** Für keine der Quellen ist bisher
-   belegt, welchen Anteil der aktiven wordpress.org-Plugins sie erfasst.
+   belegt, welchen Anteil der aktiven wordpress.org-Plugins sie erfasst (#63).
+
+Der Stand der Umsetzung wird über die Issues geführt, nicht in diesem Dokument —
+eine Doku, die Aufgaben verwaltet, läuft dem Tracker hinterher.
 
 ---
 *netztaucher | digital*
