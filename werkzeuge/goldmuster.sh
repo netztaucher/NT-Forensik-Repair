@@ -22,7 +22,14 @@
 # WAS NORMALISIERT WIRD — UND WARUM DAS EHRLICH BLEIBEN MUSS
 #
 # Jeder Lauf traegt Zeitstempel, Lauf-IDs, Hostnamen und Pruefsummen. Die
-# aendern sich immer und muessen vor dem Vergleich raus. Die Versuchung ist
+# aendern sich immer und muessen vor dem Vergleich raus.
+#
+# Nicht alles davon laesst sich wegnormalisieren. Die Abschnitte 1, 3, 5, 6, 8,
+# 9 und 13b lesen den Live-Systemzustand; wo daraus ein BEFUND wird, hilft nur
+# eine Vorgabe. 13b.3 entscheidet ueber laufende Webserver-Prozesse und wird
+# deshalb ueber NT_WEBSERVER festgehalten (siehe lauf_ausfuehren) — sonst haengt
+# ein kritischer Befund daran, ob auf der Maschine gerade nginx laeuft.
+# Vollstaendige Liste und Begruendung: docs/architektur.md. Die Versuchung ist
 # gross, bei jeder unerwarteten Abweichung eine weitere Regel zu ergaenzen,
 # bis nichts mehr uebrig ist, das abweichen koennte. Deshalb steht jede Regel
 # hier einzeln mit Begruendung, und die Zahl der ersetzten Stellen wird
@@ -436,6 +443,15 @@ REGELN = [
     (r'(\*Bericht erstellt am:).*?(\*)',            r'\1 <ZEIT>\2'),
     (r'(\| \*\*Lauf\*\* \|).*$',                    r'\1 <ZEIT> |'),
     (r'(Datum:\S*\s+).*$',                          r'\1<ZEIT>'),   # Kopfzeile der Konsole
+    # Der Datenstand des Schwachstellenbestands. Er GEHOERT in den Bericht —
+    # ein Befund ist nur so viel wert, wie sich der Bestand nachweisen laesst.
+    # Nur: der Pruefstand erzeugt seinen Bestand bei jedem Bau mit dem Datum
+    # von HEUTE (sonst waere er nach 30 Tagen "veraltet" und das Rezept
+    # vergliche nicht mehr). Ohne diese Regel stimmt die eingecheckte Referenz
+    # deshalb genau an dem Tag, an dem sie aufgenommen wurde, und schlaegt ab
+    # dem naechsten Morgen aus — was dazu verfuehrt, sie einfach neu
+    # aufzunehmen, bis niemand mehr hinsieht.
+    (r'(Datenbestand \(Stand )\d{4}-\d{2}-\d{2}(\))', r'\1<STAND>\2'),
     # Die Ausgabe von `date` erscheint an einem halben Dutzend Stellen mit je
     # eigener Beschriftung. Statt jede einzeln zu fassen, wird die Form selbst
     # erkannt: Wochentag, Monat, Tag, Uhrzeit, Zeitzone, Jahr. Eng genug, dass
@@ -499,6 +515,7 @@ lauf_ausfuehren() {
   NT_VHOSTS_DIR="$W" \
   WP_DATEN_DIR="${WP_DATEN_DIR:-$WPDATEN}" \
   WP_PRUEFSUMMEN_BASIS="${WP_PRUEFSUMMEN_BASIS:-$WPSUMMEN}" \
+  NT_WEBSERVER="${NT_WEBSERVER:-nginx}" \
   PATH="${ATTRAPPE}:$PATH" \
   bash "${SELF_DIR}/wp_plesk_forensik.sh" \
        --path "$W" --nur-website --kein-menue >"${ABLAGE}/konsole.txt" 2>&1
@@ -568,6 +585,12 @@ echo -e "  Programmstand: $(cd "$SELF_DIR" && git rev-parse --short HEAD 2>/dev/
 BAUM="${ARBEIT}/vhosts"; ABLAGE="${ARBEIT}/ablage"
 # Bewusst NEBEN dem Baum, nicht darin: was unter ${BAUM} liegt, wird gescannt,
 # und der Bestand wuerde sich sonst selbst als Fund melden.
+#
+# NT_WEBSERVER haelt Abschnitt 13b.3 fest: ohne die Vorgabe entscheidet, ob auf
+# der Maschine gerade nginx oder Apache laeuft, und die Referenz waere
+# maschinenabhaengig. 'nginx' ist gewaehlt, weil dieser Zweig einen kritischen
+# Befund erzeugt — der Pruefstand soll den Trefferpfad ueben, nicht das
+# Schweigen.
 #
 # Beide Pfade lassen sich von aussen ueberschreiben (siehe lauf_ausfuehren).
 # Das ist der Hebel fuer die Gegenproben in der CI: zeigt eine Quelle ins

@@ -158,7 +158,9 @@ Der Runner lädt alles relativ zum eigenen Verzeichnis (`SELF_DIR`). Damit läuf
 
 ## Wie geprüft wird, dass ein Umbau nichts verändert hat
 
-Ein byte-genauer Vergleich des Technikberichts ist **nicht möglich**: die Abschnitte 1, 3, 5, 6, 8 und 9 lesen den Live-Systemzustand (Uptime, Load, Auth-Log, systemd-Timer). Zwei Läufe derselben Fassung unterscheiden sich dort zwangsläufig.
+Ein byte-genauer Vergleich des Technikberichts ist **nicht möglich**: die Abschnitte 1, 3, 5, 6, 8, 9 und 13b lesen den Live-Systemzustand (Uptime, Load, Auth-Log, systemd-Timer, laufende Webserver-Prozesse). Zwei Läufe derselben Fassung unterscheiden sich dort zwangsläufig.
+
+**Wer einen Abschnitt schreibt, der den Live-Zustand liest, gehört in diese Liste — und braucht eine Überschreibung für den Prüfstand.** 13b hat beides zunächst nicht bekommen: der Abschnitt entscheidet über `pgrep`, ob Apache oder nginx läuft. Die eingecheckte Referenz war damit maschinenabhängig und meldete auf jedem Rechner ohne nginx einen **fehlenden kritischen Befund** — die teuerste Falschmeldung, die ein Prüfstand erzeugen kann, weil sie wie eine Regression aussieht und keine ist. Aufgefallen am 08.08.2026, behoben über `NT_WEBSERVER` nach dem Muster von `NT_BASE_DIR`/`NT_VHOSTS_DIR` in `lib/konfig.sh`.
 
 Verglichen wird deshalb, was das Werkzeug **aussagt**, nicht was das System gerade meldet:
 

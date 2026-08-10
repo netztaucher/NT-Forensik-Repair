@@ -4,6 +4,40 @@ Alle nennenswerten Änderungen an `wp_plesk_forensik.sh`.
 
 ## [unveröffentlicht]
 
+### Behoben — Abschnitt 13b machte die Prüfstand-Referenz maschinenabhängig
+13b.3 entscheidet über `pgrep`, ob Apache oder nginx läuft. Der Befund „Kein
+Apache-Prozess, aber nginx läuft" hing damit am Zustand der Maschine, auf der
+die Referenz aufgenommen wurde — und fehlte auf jeder anderen. Ein **fehlender
+kritischer Befund** ist die teuerste Falschmeldung eines Prüfstands: sie sieht
+aus wie eine Regression und ist keine.
+
+Die CI merkt es nicht, weil sie ihre Referenz je Lauf selbst aufnimmt und auf
+dem Runner keiner der Dienste läuft.
+
+`NT_WEBSERVER=apache|nginx|keiner` hält den Zustand fest, nach dem Muster von
+`NT_BASE_DIR`/`NT_VHOSTS_DIR`. Der Prüfstand setzt `nginx` — der Zweig, der den
+kritischen Befund erzeugt, gehört geübt, nicht der, der schweigt.
+
+`docs/architektur.md` führt 13b jetzt in der Liste der Abschnitte, die den
+Live-Systemzustand lesen, mit der Regel: wer so einen Abschnitt schreibt,
+braucht eine Überschreibung für den Prüfstand.
+
+### Behoben — die Prüfstand-Referenz galt nur am Tag ihrer Aufnahme
+Die ok-Zeile des Schwachstellenabgleichs nennt den Datenstand, und der
+Prüfstand erzeugt seinen Bestand bei jedem Bau mit dem Datum von **heute**
+(sonst wäre er nach 30 Tagen „veraltet" und das Rezept vergliche nicht mehr).
+Die eingecheckte Referenz stimmte damit genau an dem Tag, an dem sie
+aufgenommen wurde, und schlug ab dem nächsten Morgen aus.
+
+Die CI merkt das nie — sie nimmt ihre Referenz je Lauf selbst auf. Betroffen
+war nur der lokale Vergleich vor dem Commit, also genau der Schritt, der
+Regressionen fangen soll. Und eine Abweichung, die jeden Morgen von selbst
+auftaucht, verführt dazu, die Referenz einfach neu aufzunehmen — bis niemand
+mehr hinsieht.
+
+`goldmuster.sh` normalisiert den Datenstand jetzt wie die übrigen
+Zeitangaben. Der Wert bleibt im echten Bericht stehen, wo er hingehört.
+
 ### Behoben — `grep -c` mit `|| echo 0` ergab „0\n0"
 `rezept_kern` zählte die Meldungen von `verify-checksums` mit
 `grep -c … || echo 0`. `grep -c` gibt bei null Treffern aber **bereits** eine 0

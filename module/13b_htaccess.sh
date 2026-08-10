@@ -312,8 +312,33 @@ ${HTA_BERICHT}"
 # 'AllowOverride None' oder einem reinen nginx-Aufbau ist sie Dekoration — und
 # ein Bericht, der "durch .htaccess geschuetzt" schreibt, waere dann falsch.
 h2 "13b.3 Wirksamkeit"
-if ! pgrep -x apache2 >/dev/null 2>&1 && ! pgrep -x httpd >/dev/null 2>&1; then
-  if pgrep -x nginx >/dev/null 2>&1; then
+
+# Welcher Webserver laeuft? Ueberschreibbar ausschliesslich fuer den Pruefstand
+# ueber NT_WEBSERVER=apache|nginx|keiner — aus demselben Grund wie NT_BASE_DIR
+# und NT_VHOSTS_DIR in lib/konfig.sh.
+#
+# Ohne die Ueberschreibung haengt dieser Abschnitt am Live-Zustand der
+# Maschine, und die eingecheckte Pruefstand-Referenz waere je nach laufenden
+# Diensten eine andere. Real eingetreten am 08.08.2026: die Referenz wurde
+# aufgenommen, waehrend lokal nginx lief, und meldete danach auf jeder Maschine
+# ohne nginx einen FEHLENDEN kritischen Befund. Ein fehlender kritischer Befund
+# ist die teuerste Falschmeldung, die ein Pruefstand erzeugen kann — sie sieht
+# aus wie eine Regression und ist keine.
+webserver_lauft() {   # webserver_lauft apache|nginx
+  case "${NT_WEBSERVER:-}" in
+    apache) [[ "$1" == apache ]]; return ;;
+    nginx)  [[ "$1" == nginx  ]]; return ;;
+    keiner) return 1 ;;
+  esac
+  if [[ "$1" == apache ]]; then
+    pgrep -x apache2 >/dev/null 2>&1 || pgrep -x httpd >/dev/null 2>&1
+  else
+    pgrep -x nginx >/dev/null 2>&1
+  fi
+}
+
+if ! webserver_lauft apache; then
+  if webserver_lauft nginx; then
     crit "Kein Apache-Prozess, aber nginx läuft — .htaccess-Dateien werden NICHT ausgewertet und schützen nichts" web
     HTACCESS_UNWIRKSAM="nginx ohne Apache"
   else
