@@ -10,6 +10,9 @@
 # Wird vom Runner eingebunden, nicht einzeln ausgefuehrt.
 # Vorgabewerte der hier gefuellten Variablen: lib/befunde.sh
 
+# Belegstufe dieses Abschnitts (#1). SSH-, FTP- und Panel-Zugriffe sind serverweit.
+BELEG_STUFE=server
+
 h1 "3. ZUGRIFFS-ANALYSE"
 # ============================================================
 
@@ -49,7 +52,7 @@ if [[ -n "$AUTH_LOG" ]]; then
 
   TOP_FAIL_IPS=$(grep -E "Failed password|Invalid user" "$AUTH_LOG" 2>/dev/null \
     | grep -oE '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}' \
-    | sort | uniq -c | sort -rn | head -10 || true)
+    | LC_ALL=C sort | uniq -c | LC_ALL=C sort -rn | awk 'NR<=10' || true)
 
   if [[ -n "$TOP_FAIL_IPS" ]]; then
     warn "SSH-Brute-Force-Aktivität: $SSH_FAILED_COUNT Fehlversuche"
@@ -89,7 +92,7 @@ done
 
 if [[ -n "$FTP_LOG" ]]; then
   FTP_IPS=$(awk '{print $NF}' "$FTP_LOG" 2>/dev/null | grep -oE '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}' \
-    | sort | uniq -c | sort -rn | head -15 || true)
+    | LC_ALL=C sort | uniq -c | LC_ALL=C sort -rn | awk 'NR<=15' || true)
   info "FTP-Zugriffs-IPs (häufigste):"
   code "$FTP_IPS"
   FTP_RECENT=$(tail -30 "$FTP_LOG" 2>/dev/null || true)

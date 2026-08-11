@@ -4,6 +4,172 @@ Alle nennenswerten Änderungen an `wp_plesk_forensik.sh`.
 
 ## [unveröffentlicht]
 
+### Neu — `werkzeuge/kundenpaket.sh` (#4)
+
+Schnürt aus einem Lauf ein übergabefähiges Paket:
+`01_Kundenunterlagen` · `02_Meldungen` · `03_Technik` · `04_Belege` ·
+`05_Bereinigung`. Belege der Stufe `kunde` gehen maskiert mit und werden
+lückenlos neu nummeriert; `server` nur mit `--mit-server`, `betreiber` nie.
+
+Immer draussen, ohne Schalter: `findings.json` (Maschinendatei),
+das Log-Archiv (im Anlassfall 527 MB Zugriffe aller Domains des Servers) und
+die BSI-Meldung (Meldeweg des Betreibers). Die DSGVO-Meldung geht mit — sie
+ist die Pflicht des Kunden als Verantwortlichem, nicht die des Betreibers.
+
+Weil die Belege maskiert und neu nummeriert werden, stimmen die Prüfsummen des
+Laufs nicht mehr. Das Paket bekommt deshalb ein **eigenes** SHA256SUMS und ein
+LIESMICH, das den Unterschied benennt und auf das Originalsiegel beim
+Betreiber verweist — sonst sieht eine gewollte Änderung wie ein gebrochenes
+Siegel aus. `04_Belege/00_verzeichnis.tsv` nennt zu jedem Beleg seine
+ursprüngliche Nummer.
+
+Ein Betreiberlauf (`scope_mode=global`) wird abgelehnt: es gäbe niemanden,
+gegen den maskiert werden könnte. Dafür trägt `findings.json` ab v3.12 den
+Prüfumfang (`run.scope_mode`, `run.abo_user`, `run.scan_paths`).
+
+`werkzeuge/kundenpaket-pruefstand.sh` prüft elf Soll-Werte, darunter die
+Gegenprobe zu `--mit-server`: ein Werkzeug, das grundsätzlich nichts
+übernimmt, würde die Sperren sonst genauso „bestehen".
+
+### Behoben — der Kundenbericht nannte Betreiber-Dokumente „Ihre Unterlagen"
+
+Abschnitt 8 führte `technik_bericht.md`, `bsi_meldung.md`, `dsgvo_meldung.md`
+und `belege/` auf. Alle vier liegen in `betreiber/` und sind laut
+`lib/konfig.sh` ausdrücklich **nicht** zur Weitergabe bestimmt. Der Bericht
+nennt jetzt, was tatsächlich im Paket liegt — und sagt, was nicht darin ist
+und warum.
+
+### Neu — Belege tragen eine Einstufung (#1)
+
+`evidence` nimmt einen dritten Parameter: `kunde`, `server` oder `betreiber`.
+
+| Stufe | Bedeutung |
+|---|---|
+| `kunde` | betrifft den geprüften Webauftritt — darf übergeben werden |
+| `server` | serverweit — nur maskiert und nur, wenn der Befund es braucht |
+| `betreiber` | rein intern — geht nie mit |
+
+Anlass: beim Zusammenstellen eines Kundenpakets ging `03_admin_changelog.txt`
+mit — der Betreiber-Changelog mit SSL-Arbeiten am Server-Host und internen
+Betriebsnotizen. Von 45 Belegen nannten 26 den geprüften Kunden überhaupt
+nicht.
+
+Statt 113 Aufrufe einzeln zu ändern, setzt jeder Abschnitt seine Stufe einmal
+am Kopf; einzelne Aufrufe überschreiben sie. Der Runner setzt `BELEG_STUFE`
+**vor jedem Modul** auf `betreiber` zurück — ohne das erbte ein Abschnitt ohne
+eigene Angabe die Einstufung des vorherigen, und zwar unsichtbar.
+
+Zwei CI-Stufen halten das offen: jedes Modul, das Belege erhebt, muss seine
+Stufe benennen, und ein Abschnitt der Ebene `system` darf nichts als `kunde`
+einstufen. Der Prüfstand läuft mit `--nur-website` und erreicht diese
+Abschnitte nicht — die Einstufung wäre sonst von keinem Vergleich gedeckt.
+
+Dazu `belege/00_verzeichnis.tsv` (Nummer, Stufe, Bezeichner, Datei) und eine
+Zusammenfassung im Manifest. Die Nummerierung ist auf `%03d` umgestellt: bei
+über hundert Belegen sortierte `10_` vor `9_`.
+
+Die Belege im Laufordner bleiben **unmaskiert** — sie sind Beweismittel des
+Betreibers. Maskiert wird beim Schnüren des Kundenpakets (#4).
+
+### Behoben — `sort: write failed: Broken pipe` mitten im Bericht
+
+`… | sort | head -5` schliesst die Pipe, sobald `head` genug hat; `sort`
+bekommt EPIPE und schreibt eine Fehlermeldung nach stderr — **nicht immer,
+sondern je nachdem, ob die Ausgabe noch in den Pipe-Puffer passt**. In der CI
+trug die aufgenommene Referenz die Zeile, der Vergleichslauf desselben Standes
+nicht. Ein Prüfstand, der bei gleichem Programmstand mal so und mal so
+ausschlägt, taugt nichts; und in einem forensischen Beleg hat eine
+Interpreter-Meldung ohnehin nichts verloren.
+
+Betroffen waren sechs Stellen (7.14, 3.x, 4.x, `baumscan.sh`). `awk` begrenzt
+jetzt selbst und liest die Eingabe zu Ende. Bei der Gelegenheit `LC_ALL=C` vor
+jedes beteiligte `sort` — dieselbe Falle wie in 7.1.
+
+### Behoben — die Befund-Einordnung lief bei `--nur-website` überhaupt nicht (#3)
+
+Der Block, der jedem Fund eine Familie und ein Geschäftsmodell zuordnet und
+`befunde_details.md` schreibt, stand am Ende von Abschnitt 13. Abschnitt 13
+trägt die Ebene `system` und läuft bei `--nur-website` nicht — also entstand
+ausgerechnet im häufigsten Fall, der Prüfung eines einzelnen Kundenauftritts,
+gar keine Detaildatei. Der Kundenbericht verwies trotzdem darauf.
+
+Der Block liegt jetzt als `module/14_berichte/05_einordnung.sh` bei den
+Berichten. Er liest nur Befundvariablen und schreibt nur Berichtstext; dort
+gehört er hin.
+
+### Behoben — der einzige bash-4-Code im Werkzeug
+
+Dieselbe Einordnung benutzte vier assoziative Arrays (`declare -A`, ab bash 4).
+Aufgefallen ist das nie, weil der Block auf dem Entwicklungsrechner (macOS,
+bash 3.2) nie lief — siehe oben. Beim Verschieben brach der erste Lauf sofort
+mit `declare: -A: invalid option` ab; auf einem Zielsystem mit bash 3.2 hätte
+derselbe Fehler mitten im Bericht gestanden. Ersetzt durch tabgetrennte Listen
+und `awk`. Eine CI-Stufe hält die Sprachgrenze offen.
+
+### Behoben — Fundlisten, die seit dem Rezept-Umzug leer blieben (#3, #2)
+
+Beim Umzug der WordPress- und Nextcloud-Prüfungen von `module/11_wordpress.sh`
+und `module/12b_nextcloud.sh` nach `rezepte/` blieben zwölf Befundvariablen
+stehen, wurden aber von niemandem mehr gefüllt: `CORE_INJECTED`, `CORE_SNE`,
+`DOORWAY_DIRS`, `CORE_INJECT_HITS`, `MU_PLUGINS`, `TAMPERED_HTACCESS`,
+`ROGUE_ADMINS`, `SUSPECT_ADMINS`, `NC_MALWARE`, `NC_HTACCESS_MAL`,
+`NC_NESTED`, `NC_INTEGRITY`.
+
+Sichtbar wurde das nirgends. `findings.json` gab die Schlüssel weiter aus, nur
+eben als leere Listen — und eine leere Liste liest sich wie „nichts gefunden".
+Der Reparaturteil bekam keine Quarantäne-Kandidaten mehr, und
+`metrics.rogue_wp_admins` stand dauerhaft auf 0, auch wenn derselbe Bericht die
+Angreifer-Konten namentlich auflistete. Die Rezepte füllen sie wieder.
+
+Zwei Listen kamen neu hinzu, weil es ihre Quelle vorher gar nicht gab:
+`SIGNATUR_TREFFER` (Treffer aus `signaturen.tsv` — bis hierher stand nur der
+**erste** je Muster irgendwo maschinenlesbar) und `PLUGIN_VERAENDERT`. Beide
+auch in `findings.json` unter `actionable`.
+
+### Behoben — `metrics.wp_installs` war immer 0
+
+`WP_COUNT` wurde nirgends mehr zugewiesen. `module/14_berichte/40_dsgvo.sh`
+entscheidet anhand desselben Werts, ob ein WordPress-Absatz in die Meldung
+gehört — die Bedingung war damit dauerhaft falsch. Der Rezept-Rahmen zählt
+jetzt wieder.
+
+### Neu — `metrics.schadcode_gesamt` und ein zweiter Rang (#2)
+
+`metrics.webshell_count` erfasst nur klassische Dropper-Signaturen aus
+Abschnitt 7. Ein Bericht, der daraus „0 Schadcode-Dateien" ableitet, während
+zehn Dateien in Quarantäne liegen, beschädigt jede andere Zahl darin.
+`schadcode_gesamt` zählt alle dateibasierten Fundstellen, quellenübergreifend
+und **ohne Doppelzählung** — dieselbe Datei steht regelmässig in mehreren
+Listen. `webshell_count` bleibt unverändert bestehen.
+
+Getrennt davon `zu_pruefen_gesamt`: kernfremde Dateien, mu-Plugins,
+Ausführbares in `/tmp`. Deren Quelle meldet selbst nur `warn`. Sie stehen mit
+eigener Überschrift in `befunde_details.md`, zählen aber nicht als Schadcode —
+wer sie mitzählt, baut die Übertreibung ein, die #2 in der Gegenrichtung
+beklagt.
+
+Die BSI-Meldung führt beide Zahlen. Der Kundenbericht sagt „**N**
+Schadcode-Fundstelle(n)", wo bisher die Entwarnung „Keine akuten technischen
+Kompromittierungs-Indikatoren" stand — die erschien nämlich immer, sobald die
+technische Kurzfassung leer blieb, auch eine Zeile über einer Tabelle mit
+dreizehn Fundstellen.
+
+### Geändert — Plugin-Prüfsummen hängen nicht mehr an wp-cli (#10)
+
+`_wp_plugin_integritaet` wurde aus `rezept_kern` nach `rezept_sonder`
+verschoben. `rezept_kern` läuft erst nach der Werkzeug-Probe des Rahmens, also
+nur mit lauffähigem wp-cli — gebraucht wird wp-cli hier aber nirgends: die
+Bestandsliste kommt aus `version.php` und den Plugin-Kopfzeilen, verglichen
+wird mit `python3`. Eine Instanz ohne wp-cli verlor damit ausgerechnet die
+Prüfung, die den Plugin-Ordner abdeckt.
+
+Preis: die Befunde stehen im Bericht nicht mehr neben der Kern-Integrität. Die
+Kategorie in `befund_melden` bleibt `kern`, nur die Reihenfolge ändert sich.
+
+Nachgewiesen in der CI: ein Lauf mit `NT_PRUEFSTAND_OHNE_WPCLI=1` muss die
+Prüfsummen-Aussage trotzdem in der Konsole zeigen. Gegen den alten Stand
+gemessen — dort erscheint sie nicht.
+
 ### Behoben — der Wächter-Filter in 7.2 war auf BSD vollständig wirkungslos
 
 Die Dateigrösse wurde mit `stat -c%s` gelesen, und `stat -c` ist GNU. Auf BSD

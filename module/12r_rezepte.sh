@@ -13,6 +13,11 @@
 #
 # Wird vom Runner eingebunden, nicht einzeln ausgefuehrt.
 
+# Belegstufe dieses Abschnitts (#1). Gilt fuer alle Rezepte: sie pruefen je EINE Installation im Pruefumfang.
+# Die Rezeptdateien selbst setzen nichts — sie werden hier hineingeladen und
+# laufen unter dieser Vorgabe.
+BELEG_STUFE=kunde
+
 h1 "12r. ANWENDUNGS-PRÜFREZEPTE"
 
 if [[ ! -d "$REZEPT_DIR" ]]; then
@@ -55,6 +60,15 @@ for _rz in "${REZEPT_DIR}"/*/; do
   _rz_gelaufen=$((_rz_gelaufen + 1))
 
   _n=$(printf '%s\n' "$_inst" | grep -c . || true)
+  # Der Zaehler je Anwendung. WP_COUNT wurde beim Umzug von module/11 nach
+  # rezepte/ nirgends mehr gesetzt: findings.json meldete "wp_installs": 0
+  # auch auf einem Server mit 68 Installationen, und 40_dsgvo.sh entschied
+  # anhand desselben Werts, ob ein WordPress-Absatz in die Meldung gehoert —
+  # die Bedingung war damit dauerhaft falsch. JOOMLA_COUNT setzt Abschnitt 12
+  # weiterhin selbst, deshalb hier nur die Rezept-Anwendungen.
+  case "$_app" in
+    wordpress) WP_COUNT=$(( ${WP_COUNT:-0} + _n )) ;;
+  esac
   h2 "12r.${_rz_gelaufen} ${_name}"
   info "Installationen: ${_n}"
   code "$_inst"

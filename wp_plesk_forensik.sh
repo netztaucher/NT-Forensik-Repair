@@ -198,6 +198,13 @@ for _modul in "${SELF_DIR}"/module/*.sh; do
   _nr=$(modul_feld "$_modul" nummer)
   if modul_gewaehlt "$_nr" "$(modul_feld "$_modul" ebene)"; then
     MODULE_GELAUFEN+="${_nr} "
+    # Belegstufe vor JEDEM Modul zuruecksetzen (#1). Die Module werden
+    # nacheinander in denselben Interpreter gezogen; ohne diese Zeile erbte ein
+    # Modul ohne eigene Angabe die Einstufung des vorherigen — und zwar
+    # unsichtbar. `betreiber` ist die sichere Richtung: ein Beleg, der
+    # faelschlich intern bleibt, ist aergerlich; einer, der faelschlich
+    # mitgeht, ist ein Datenschutzverstoss.
+    BELEG_STUFE=betreiber
     lade "module/$(basename "$_modul")"
     modul_teile_laden "$_modul"
   else

@@ -39,6 +39,9 @@ rezept_kern() {
     befund_melden nextcloud kern crit "${REZ_KURZ}: occ integrity:check-core meldet Abweichungen im Kern" "$REZ_PFAD" web
     code "$(printf '%s\n' "$_int" | head -20)"
     evidence "nextcloud_integritaet_$(echo "$REZ_KURZ" | tr '/.' '__')" "$_int"
+    # findings.json liest daraus NUR die Kopfzeilen (grep '^=== ') und macht
+    # daraus die Liste betroffener Instanzen — nicht den occ-Text selbst.
+    NC_INTEGRITY+="=== ${REZ_KURZ} ==="$'\n'"$_int"$'\n'
   fi
 }
 
@@ -140,6 +143,7 @@ rezept_sonder() {
     if [[ -n "$_mal" ]]; then
       befund_melden nextcloud schadcode crit "${REZ_KURZ}: Root-.htaccess trägt Angreifer-Merkmale (Freigabeliste mit fremden Dateinamen)" "$_ht" web
       code "$_mal"
+      NC_HTACCESS_MAL+="${_ht}"$'\n'
       evidence "nextcloud_htaccess_$(echo "$REZ_KURZ" | tr '/.' '__')" \
         "$(datei_steckbrief 'Root-.htaccess mit WordPress-Freigabeliste — bei Nextcloud nie legitim' \
            'filefuns|adminfuns|cjfuns|classsmtps|wp-login\.php|Order allow,deny' "$_ht")"
@@ -165,6 +169,7 @@ rezept_sonder() {
   if [[ -n "$_nest" ]]; then
     befund_melden nextcloud schadcode crit "${REZ_KURZ}: verschachtelte Verzeichnisse (z. B. config/config) — typisch für diese Kampagne" "$(printf '%s' "$_nest" | head -1)" web
     code "$_nest"
+    NC_NESTED+="$_nest"$'\n'
   else
     befund_melden nextcloud schadcode ok "${REZ_KURZ}: keine verschachtelten Verzeichnisse" "$REZ_PFAD"
   fi
@@ -175,6 +180,7 @@ rezept_sonder() {
     local _sz; _sz=$(wc -c < "${REZ_PFAD}/index.php" | tr -d ' ')
     if [[ "$_sz" -gt 20000 ]]; then
       befund_melden nextcloud schadcode crit "${REZ_KURZ}: index.php ist ${_sz} Bytes groß (Nextcloud liefert rund 3.700)" "${REZ_PFAD}/index.php" web
+      NC_MALWARE+="${REZ_PFAD}/index.php"$'\n'
       evidence "nextcloud_index_$(echo "$REZ_KURZ" | tr '/.' '__')" \
         "$(datei_steckbrief 'index.php um ein Vielfaches zu gross — Nextcloud liefert rund 3.700 Bytes' \
            'goto |\\x[0-9a-f]{2}|eval|base64_decode' "${REZ_PFAD}/index.php")"

@@ -32,9 +32,23 @@
 
 ## 3. Was wir technisch gefunden haben
 
-- Keine akuten technischen Kompromittierungs-Indikatoren an Ihrer Website in diesem Lauf.
+- **13 Schadcode-Fundstelle(n)** in Ihrem Webauftritt. Was jede einzelne ist und wozu sie dient, steht in der Einordnung unten und vollständig in `befunde_details.md`.
+- 1 weitere Fundstelle(n) sind noch einzuordnen — sie sind kein belegter Schadcode, aber auch nicht abgehakt. Liste in `befunde_details.md`.
 
+**Schadcode-Einordnung — 13 Fundstelle(n):**
 
+| Art | Anzahl | Was damit bezweckt wird |
+|---|---|---|
+| Manipulierte .htaccess | 4 | Zugriffsregeln zugunsten des Angreifers — hält seine Dateien erreichbar und sperrt Mitbewerber aus |
+| Code-Injection | 2 | Schadcode in legitime Dateien eingeschleust |
+| Getarnte Payload | 2 | Nachladbarer Schadcode in Nicht-PHP-Datei |
+| PHP im Upload-Verzeichnis | 2 | Ausführbarer Code dort, wo nur Dateien liegen sollen — der klassische Weg einer hochgeladenen Shell |
+| Bekannte Schaddatei | 1 | Nach Namensmuster erkanntes Angriffswerkzeug (Dateimanager, Uploader, Shell) |
+| Tarnstruktur | 1 | Angelegte Verzeichnisse, die echte nachahmen — Ablage für Nutzlasten |
+| Verändertes Plugin | 1 | Fremder Code in einem legitimen Plugin — nachträglich eingebaute Hintertür |
+
+> Die vollständige Liste der betroffenen Dateien — mit Pfaden **relativ zu Ihrem
+> Verzeichnis** — liegt in der Datei `befunde_details.md` bei Ihren Unterlagen.
 
 **Kritische Einzelbefunde:**
 
@@ -46,8 +60,8 @@
 - kunde-zwei.example/cloud.kunde-zwei.example: verschachtelte Verzeichnisse (z. B. config/config) — typisch für diese Kampagne
 - kunde-zwei.example/httpdocs: plugin pruefstand-kev 1.2 ist von einer bekannten Schwachstelle betroffen ((* … 2.0)) CVE-2026-90001 — behoben in 2.0. Diese Lücke wird nachweislich aktiv ausgenutzt — sofort handeln.
 - kunde-zwei.example/httpdocs: 1 Datei(en) mit @include base64_decode() — getarnte Payload-Nachladung
-- kunde-zwei.example/httpdocs: 1 veränderte Core-Datei(en) — Injektion oder Manipulation
 - kunde-zwei.example/httpdocs: 1 veränderte Plugin-Codedatei(en) gegenüber wordpress.org — Plugin neu installieren, Dateien vorher sichern
+- kunde-zwei.example/httpdocs: 1 veränderte Core-Datei(en) — Injektion oder Manipulation
 - kunde-zwei.example/backups/updater-abc123/nextcloud-28.0.1.2-1700000000/.htaccess (nextcloud): 3 Angreifer-Direktive(n) in der .htaccess
 - kunde-zwei.example/cloud.kunde-zwei.example/.htaccess (nextcloud): 3 Angreifer-Direktive(n) in der .htaccess
 - kunde-zwei.example/httpdocs/.htaccess (wordpress): 2 Angreifer-Direktive(n) in der .htaccess
@@ -134,10 +148,17 @@ Wir unterstützen Sie bei allen Meldungen — sprechen Sie uns umgehend an.
 | Dokument | Zweck |
 |---|---|
 | `kundenbericht.md` | Dieses Dokument |
-| `technik_bericht.md` | Vollständiger technischer Bericht (alle Prüfpunkte, inkl. Root-Prüfung §13) |
-| `bsi_meldung.md` | Vorbereitete BSI-Meldung (BSIG/NIS2) |
-| `dsgvo_meldung.md` | Vorbereitete DSGVO-Meldung (Art. 33, eigener Meldeweg an die Datenschutzbehörde) |
-| `belege/` | Alle Rohdaten & Beweismittel, mit SHA256-Prüfsummen versiegelt |
+| `befunde_details.md` | Vollständige Fundstellen-Liste (Pfade relativ zu Ihrem Verzeichnis, Familie, Signatur) |
+| `root_aussage.md` | Aussage dazu, ob der Vorfall über Ihren Webauftritt hinausreicht |
+| `02_Meldungen/` | Entwurf Ihrer DSGVO-Meldung (Art. 33) — von Ihnen zu prüfen und abzusenden |
+| `04_Belege/` | Die Rohbelege zu den Befunden, maskiert und mit eigenen SHA256-Prüfsummen |
+
+> **Was Sie hier NICHT finden — und warum.** Der vollständige Technik-Bericht,
+> die BSI-Meldung und die unmaskierten Rohbelege liegen beim Betreiber Ihres
+> Servers. Sie enthalten serverweite Angaben und, auf einem Server mit mehreren
+> Kunden, Pfade und Kennungen anderer Kunden. Was davon Sie betrifft, steht
+> vollständig in diesem Bericht. Den Technik-Bericht können Sie bei Bedarf
+> anfordern; er wird dann maskiert beigelegt.
 
 
 

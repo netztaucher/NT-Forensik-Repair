@@ -10,6 +10,9 @@
 # Wird vom Runner eingebunden, nicht einzeln ausgefuehrt.
 # Vorgabewerte der hier gefuellten Variablen: lib/befunde.sh
 
+# Belegstufe dieses Abschnitts (#1). Konten, Schluessel und sudo-Regeln des Servers.
+BELEG_STUFE=server
+
 h1 "5. BENUTZER & RECHTE"
 # ============================================================
 

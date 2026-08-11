@@ -10,6 +10,11 @@
 # Wird vom Runner eingebunden, nicht einzeln ausgefuehrt.
 # Vorgabewerte der hier gefuellten Variablen: lib/befunde.sh
 
+# Belegstufe dieses Abschnitts (#1). Bewusst `server` und nicht `kunde`, obwohl die Belege nach Domain benannt
+# sind: im Betreiberlauf stehen darin die Logzeilen ALLER Domains, auch
+# fremder. Was davon zum Kunden darf, entscheidet die Maskierung im Paket.
+BELEG_STUFE=server
+
 h1 "4. WEB-TRAFFIC ANALYSE"
 # ============================================================
 
@@ -65,7 +70,7 @@ analyze_access_log() {
 
   # Top-IPs
   local top_ips
-  top_ips=$(awk '{print $1}' "$logfile" 2>/dev/null | sort | uniq -c | sort -rn | head -10 || true)
+  top_ips=$(awk '{print $1}' "$logfile" 2>/dev/null | LC_ALL=C sort | uniq -c | LC_ALL=C sort -rn | awk 'NR<=10' || true)
   info "Top-IPs nach Request-Anzahl:"
   code "$top_ips"
 
@@ -75,7 +80,7 @@ analyze_access_log() {
   if [[ "$wplogin" -gt 20 ]]; then
     warn "$domain_label: Möglicher wp-login Brute-Force ($wplogin POST-Requests)" web
     local wp_ips
-    wp_ips=$(grep -E "POST.*wp-login" "$logfile" 2>/dev/null | awk '{print $1}' | sort | uniq -c | sort -rn | head -10 || true)
+    wp_ips=$(grep -E "POST.*wp-login" "$logfile" 2>/dev/null | awk '{print $1}' | LC_ALL=C sort | uniq -c | LC_ALL=C sort -rn | awk 'NR<=10' || true)
     code "$wp_ips"
     evidence "wplogin_bruteforce_${domain_label}" "$wp_ips"
   else
@@ -114,7 +119,7 @@ fi
 
 # Angreifer-IP-Liste konsolidieren (für BSI-Meldung / IOCs)
 ATTACK_IPS_UNIQ=$(echo "$ATTACK_IPS_ALL" | grep -oE '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}' \
-  | sort | uniq -c | sort -rn | head -20 || true)
+  | LC_ALL=C sort | uniq -c | LC_ALL=C sort -rn | awk 'NR<=20' || true)
 if [[ -n "$ATTACK_IPS_UNIQ" ]]; then
   evidence "angreifer_ips_konsolidiert" "$ATTACK_IPS_UNIQ"
 fi

@@ -59,6 +59,23 @@ SUSP_PLUGINS=""        # verdächtige Plugins/mu-Plugins (alle bewertet, auch in
 MU_PLUGINS=""          # alle mu-Plugins (laufen immer, ohne Aktivierung)
 TAMPERED_HTACCESS=""   # manipulierte .htaccess (Malware-Whitelist, bricht Admin/403)
 
+# ── v3.12: Fundlisten der Rezepte ────────────────────────────
+# Beim Umzug der WordPress- und Nextcloud-Pruefungen von module/11 und
+# module/12b nach rezepte/ blieben die Variablen darueber stehen, wurden aber
+# von niemandem mehr gefuellt. Auffallen konnte das nirgends: findings.json
+# gibt sie weiter aus, nur eben als leere Listen — und eine leere Liste liest
+# sich wie "nichts gefunden". Der Reparaturteil bekam damit keine
+# Quarantaene-Kandidaten mehr, und metrics.rogue_wp_admins stand dauerhaft auf
+# 0, auch wenn im selben Bericht Angreifer-Admins benannt waren (#2).
+#
+# Die Rezepte fuellen sie seit v3.12 wieder. Zwei Listen kamen neu hinzu, weil
+# es ihre Quelle vorher nicht gab:
+PLUGIN_VERAENDERT=""   # Plugin-Codedateien, die von wordpress.org abweichen
+SIGNATUR_TREFFER=""    # Treffer aus rezepte/*/signaturen.tsv (alle Anwendungen)
+WP_COUNT=0             # gefundene WordPress-Installationen. Wurde nach dem
+                       # Umzug nach rezepte/ nirgends mehr gesetzt und stand
+                       # dauerhaft auf 0 — auch in findings.json (#2).
+
 # ── v3.11: Abschnitt 16 (.htaccess) ──────────────────────────
 HTACCESS_FREMD=""      # .htaccess mit Angreifer-Direktiven
 HTACCESS_UNWIRKSAM=""  # Grund, warum .htaccess-Dateien gar nicht ausgewertet
