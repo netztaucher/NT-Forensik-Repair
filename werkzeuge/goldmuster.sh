@@ -263,16 +263,55 @@ PHP
     printf '\x89PNG\r\n\x1a\nIHDR-nur-Bilddaten-kein-PHP\n' \
       > "${k2}/wp-content/plugins/beispiel-plugin/assets/banner.png"
   fi
+  # Gefaehrliche Funktionen OHNE Obfuskation, in einer kleinen Datei.
+  #
+  # Faellt durch PATTERN_REGEX: kein eval, kein base64, kein Aufruf aus einer
+  # Superglobalen. Der Anlassfall war eine Filemanager-Shell, die shell_exec
+  # voellig offen nutzte und deshalb unsichtbar blieb. Erkennbar erst ueber
+  # PATTERN_REGEX_MED, und nur weil die Datei klein ist — dieselben Aufrufe in
+  # einem Framework sind alltaeglich.
+  if [[ "${NT_PRUEFSTAND_OHNE_FUNKTIONSPROBE:-0}" != "1" ]]; then
+    cat > "${k2}/wp-content/uploads/2026/03/hilfe.php" <<'PHP'
+<?php
+$bots = ['Googlebot', 'bingbot', 'curl'];
+if (preg_match('/' . implode('|', $bots) . '/i', $_SERVER['HTTP_USER_AGENT'])) {
+    header('HTTP/1.0 404 Not Found');
+    exit;
+}
+echo shell_exec('id');
+PHP
+  else
+    printf '<?php\n// harmlos\n' > "${k2}/wp-content/uploads/2026/03/hilfe.php"
+  fi
+
+  # Massenhaft gleiche Zeitstempel — Spurenverwischung.
+  #
+  # Im Anlassfall trugen 59.472 Dateien dieselbe gefaelschte mtime. Hier reicht
+  # knapp ueber der Schwelle. Fester Zeitpunkt, damit der Vergleich
+  # deterministisch bleibt; er entspricht dem Datum des Anlassfalls.
+  local zc="${k2}/wp-content/cache"
+  mkdir -p "$zc"
+  if [[ "${NT_PRUEFSTAND_OHNE_ZEITCLUSTER:-0}" != "1" ]]; then
+    local i
+    for i in $(seq 1 520); do : > "${zc}/eintrag-${i}.dat"; done
+    touch -t 202311200232.19 "${zc}"/eintrag-*.dat 2>/dev/null || true
+  fi
+
   # mu-Plugin: laeuft ohne Aktivierung.
   printf '<?php @include base64_decode("L3RtcC94");\n' \
     > "${k2}/wp-content/mu-plugins/cache.php"
   # .htaccess mit Freigabeliste — sperrt PHP und gibt genau die eigene Datei frei.
+  # NT_PRUEFSTAND_OHNE_HTACCESSPROBE=1 legt stattdessen eine harmlose Datei ab.
+  if [[ "${NT_PRUEFSTAND_OHNE_HTACCESSPROBE:-0}" != "1" ]]; then
   cat > "${k2}/wp-content/uploads/.htaccess" <<'HTA'
 Order allow,deny
 <Files "bild.php">
   Allow from all
 </Files>
 HTA
+  else
+    printf "Options -Indexes\n" > "${k2}/wp-content/uploads/.htaccess"
+  fi
 
   local k2j="${W}/kunde-zwei.example/joomla.kunde-zwei.example"
   mkdir -p "${k2j}/administrator" "${k2j}/libraries/src"

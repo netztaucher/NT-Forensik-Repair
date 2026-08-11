@@ -50,6 +50,7 @@
 <INODE> -rw-r--r-- <EIGNER> 17 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/backups/updater-abc123/nextcloud-28.0.1.2-1700000000/filefuns.php
 <INODE> -rw-r--r-- <EIGNER> 17 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/cloud.kunde-zwei.example/filefuns.php
 <INODE> -rw-r--r-- <EIGNER> 17 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-load.php
+<INODE> -rw-r--r-- <EIGNER> 202 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/uploads/2026/03/hilfe.php
 <INODE> -rw-r--r-- <EIGNER> 230 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/joomla.kunde-zwei.example/configuration.php
 <INODE> -rw-r--r-- <EIGNER> 29 <MTIME> <PRUEFSTAND>/vhosts/kunde-drei.example/httpdocs/wp-includes/version.php
 <INODE> -rw-r--r-- <EIGNER> 29 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-includes/version.php
@@ -75,6 +76,7 @@
 
 ```
 <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/uploads/2026/03/bild.php
+<PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/uploads/2026/03/hilfe.php
 
 ```
 
@@ -83,6 +85,7 @@
 ### 7.3 Webshell-Muster (Inhalt) — zweistufig
 
 - ✅ Keine kleinen Obfuskations-Dropper gefunden
+- ✅ Keine gefährlichen Funktionen in kleinen PHP-Dateien
 
 ### 7.4 Versteckte Dateien und Verzeichnisse im Webspace
 
@@ -128,6 +131,31 @@ php_value auto_prepend_file /var/www/vhosts/<anderer Kunde 1>/httpdocs/wp-conten
 ```
 
   Beleg: belege/03_htaccess_weiterleitungen.txt
+- 🔴 **KRITISCH: .htaccess gibt gezielt einzelne PHP-Datei(en) frei — typisch für abgesicherte Webshells (3)**
+
+```
+=== <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/uploads/.htaccess ===
+Order allow,deny
+<Files "bild.php">
+  Allow from all
+</Files>
+
+=== <PRUEFSTAND>/vhosts/kunde-zwei.example/cloud.kunde-zwei.example/.htaccess ===
+Order allow,deny
+<Files "filefuns.php">
+  Allow from all
+</Files>
+
+=== <PRUEFSTAND>/vhosts/kunde-zwei.example/backups/updater-abc123/nextcloud-28.0.1.2-1700000000/.htaccess ===
+Order allow,deny
+<Files "filefuns.php">
+  Allow from all
+</Files>
+
+
+```
+
+  Beleg: belege/04_htaccess_einzelfreigabe_php.txt
 
 ### 7.7 SUID/SGID-Dateien in Webspace und tmp-Verzeichnissen
 
@@ -172,7 +200,11 @@ php_value auto_prepend_file /var/www/vhosts/<anderer Kunde 1>/httpdocs/wp-conten
 
 ```
 
-  Beleg: belege/04_php_in_mediendateien.txt
+  Beleg: belege/05_php_in_mediendateien.txt
+
+### 7.14 Massenhaft gleiche Zeitstempel (Spurenverwischung)
+
+- ✅ Keine auffälligen Zeitstempel-Häufungen
 
 ## 12. JOOMLA-PRÜFUNG
 
@@ -236,7 +268,7 @@ php_value auto_prepend_file /var/www/vhosts/<anderer Kunde 1>/httpdocs/wp-conten
 2:<Files "filefuns.php">
 ```
 
-  Beleg: belege/05_nextcloud_htaccess_kunde-zwei_example_cloud_kunde-zwei_example.txt
+  Beleg: belege/06_nextcloud_htaccess_kunde-zwei_example_cloud_kunde-zwei_example.txt
 - 🔴 **KRITISCH: kunde-zwei.example/cloud.kunde-zwei.example: verschachtelte Verzeichnisse (z. B. config/config) — typisch für diese Kampagne**
 
 ```
@@ -278,8 +310,8 @@ php_value auto_prepend_file /var/www/vhosts/<anderer Kunde 1>/httpdocs/wp-conten
 - 🔴 **KRITISCH: kunde-zwei.example/httpdocs: plugin pruefstand-kev 1.2 ist von einer bekannten Schwachstelle betroffen ((* … 2.0)) CVE-2026-90001 — behoben in 2.0. Diese Lücke wird nachweislich aktiv ausgenutzt — sofort handeln.**
 - ⚠️  **kunde-zwei.example/httpdocs: theme pruefstand-thema 0.9 ist von einer bekannten Schwachstelle betroffen ((* … 1.0)) CVE-2026-90005 — behoben in 1.0.**
 - ⚪ **Nicht messbar: kunde-zwei.example/httpdocs: 2 Bestandteil(e) ohne lesbare Fassung — für sie ist keine Aussage zur Angreifbarkeit möglich**
-  Beleg: belege/06_wp_version_nicht_bewertbar_kunde-zwei_example_httpdocs.txt
-  Beleg: belege/07_wp_schwachstellen_kunde-zwei_example_httpdocs.txt
+  Beleg: belege/07_wp_version_nicht_bewertbar_kunde-zwei_example_httpdocs.txt
+  Beleg: belege/08_wp_schwachstellen_kunde-zwei_example_httpdocs.txt
 - ✅ kunde-zwei.example/httpdocs: keine Doorway-.htaccess-Signatur
 - 🔴 **KRITISCH: kunde-zwei.example/httpdocs: 1 Datei(en) mit @include base64_decode() — getarnte Payload-Nachladung**
 
@@ -287,7 +319,7 @@ php_value auto_prepend_file /var/www/vhosts/<anderer Kunde 1>/httpdocs/wp-conten
 <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/mu-plugins/cache.php
 ```
 
-  Beleg: belege/08_wp_include_injektion_kunde-zwei_example_httpdocs.txt
+  Beleg: belege/09_wp_include_injektion_kunde-zwei_example_httpdocs.txt
 - ⚠️  **kunde-zwei.example/httpdocs: 1 mu-Plugin(s) — laufen ohne Aktivierung und erscheinen in keiner Pluginliste**
 
 ```
@@ -300,16 +332,16 @@ php_value auto_prepend_file /var/www/vhosts/<anderer Kunde 1>/httpdocs/wp-conten
 <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-includes/load.php
 ```
 
-  Beleg: belege/09_wp_core_veraendert_kunde-zwei_example_httpdocs.txt
+  Beleg: belege/10_wp_core_veraendert_kunde-zwei_example_httpdocs.txt
 - ⚠️  **kunde-zwei.example/httpdocs: 1 Core-fremde Datei(en) in wp-admin/wp-includes — prüfen**
-  Beleg: belege/10_wp_core_fremd_kunde-zwei_example_httpdocs.txt
+  Beleg: belege/11_wp_core_fremd_kunde-zwei_example_httpdocs.txt
 - 🔴 **KRITISCH: kunde-zwei.example/httpdocs: 1 veränderte Plugin-Codedatei(en) gegenüber wordpress.org — Plugin neu installieren, Dateien vorher sichern**
 
 ```
 <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/plugins/pruefstand-aktuell/pruefstand-aktuell.php
 ```
 
-  Beleg: belege/11_wp_plugin_veraendert_kunde-zwei_example_httpdocs.txt
+  Beleg: belege/12_wp_plugin_veraendert_kunde-zwei_example_httpdocs.txt
 - ⚪ **Nicht messbar: kunde-zwei.example/httpdocs: 2 Plugin(s) ohne Prüfsummensatz und alle Themes — Unversehrtheit nicht feststellbar (Premium, Fork, Eigenbau; für Themes veröffentlicht wordpress.org keine Prüfsummen)**
 
 ## 13b. .HTACCESS — SICHERUNG UND EINORDNUNG
@@ -330,7 +362,7 @@ Order allow,deny                                      Apache-2.2-Zugriffssyntax 
 <Files filefuns.php> … Allow from all                 Sperre fuer alles, Freigabe fuer genau diese eine PHP-Datei
 ```
 
-  Beleg: belege/12_htaccess_fremd_kunde-zwei_example_backups_updater-abc123_nextcloud-28_0_1_2-1700000000__htaccess.txt
+  Beleg: belege/13_htaccess_fremd_kunde-zwei_example_backups_updater-abc123_nextcloud-28_0_1_2-1700000000__htaccess.txt
 - 🔴 **KRITISCH: kunde-zwei.example/cloud.kunde-zwei.example/.htaccess (nextcloud): 3 Angreifer-Direktive(n) in der .htaccess**
 
 ```
@@ -339,7 +371,7 @@ Order allow,deny                                      Apache-2.2-Zugriffssyntax 
 <Files filefuns.php> … Allow from all                 Sperre fuer alles, Freigabe fuer genau diese eine PHP-Datei
 ```
 
-  Beleg: belege/13_htaccess_fremd_kunde-zwei_example_cloud_kunde-zwei_example__htaccess.txt
+  Beleg: belege/14_htaccess_fremd_kunde-zwei_example_cloud_kunde-zwei_example__htaccess.txt
 - 🔴 **KRITISCH: kunde-zwei.example/httpdocs/.htaccess (wordpress): 2 Angreifer-Direktive(n) in der .htaccess**
 
 ```
@@ -347,15 +379,15 @@ AddType application/x-httpd-php .jpg                  PHP-Ausfuehrung fuer eine 
 php_value auto_prepend_file /var/www/vhosts/<anderer Kunde 2>  auto_prepend_file auf eine Datei im Webspace
 ```
 
-  Beleg: belege/14_htaccess_fremd_kunde-zwei_example_httpdocs__htaccess.txt
+  Beleg: belege/15_htaccess_fremd_kunde-zwei_example_httpdocs__htaccess.txt
 - 🔴 **KRITISCH: kunde-zwei.example/httpdocs/wp-content/uploads/.htaccess (unbekannt): 1 Angreifer-Direktive(n) in der .htaccess**
 
 ```
 <Files bild.php> … Allow from all                     Freigabe fuer eine PHP-Datei in einem Verzeichnis, in das keine gehoert
 ```
 
-  Beleg: belege/15_htaccess_fremd_kunde-zwei_example_httpdocs_wp-content_uploads__htaccess.txt
-  Beleg: belege/16_htaccess_einordnung.txt
+  Beleg: belege/16_htaccess_fremd_kunde-zwei_example_httpdocs_wp-content_uploads__htaccess.txt
+  Beleg: belege/17_htaccess_einordnung.txt
 
 ### 13b.3 Wirksamkeit
 
@@ -368,9 +400,9 @@ php_value auto_prepend_file /var/www/vhosts/<anderer Kunde 2>  auto_prepend_file
 
 | Kategorie | Anzahl |
 |---|---|
-| 🔴 Kritische Befunde | 14 |
+| 🔴 Kritische Befunde | 15 |
 | ⚠️ Warnungen | 9 |
-| ✅ Unauffällige Prüfungen | 20 |
+| ✅ Unauffällige Prüfungen | 22 |
 | ⚪ Nicht messbar | 4 |
 
 > **4 Prüfung(en) haben keine Aussage geliefert.** Ihr Ergebnis ist weder

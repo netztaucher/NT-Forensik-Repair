@@ -39,6 +39,7 @@
 [0;36m▶ 7.3 Webshell-Muster (Inhalt) — zweistufig[0m
   [0;33mScanne auf Webshell-Signaturen (inkl. obfuskierte Cookie-Backdoors)...[0m
   [0;32m✓[0m Keine kleinen Obfuskations-Dropper gefunden
+  [0;32m✓[0m Keine gefährlichen Funktionen in kleinen PHP-Dateien
 
 [0;36m▶ 7.4 Versteckte Dateien und Verzeichnisse im Webspace[0m
   [0;32m✓[0m Keine auffälligen versteckten Dateien
@@ -48,6 +49,7 @@
 
 [0;36m▶ 7.6 .htaccess-Dateien prüfen[0m
   [0;33m⚠[0m  .htaccess mit externen Weiterleitungen gefunden
+  [0;31m✗[0m  [1m.htaccess gibt gezielt einzelne PHP-Datei(en) frei — typisch für abgesicherte Webshells (3)[0m
 
 [0;36m▶ 7.7 SUID/SGID-Dateien in Webspace und tmp-Verzeichnissen[0m
   [0;32m✓[0m Keine SUID/SGID-Dateien in Webspace oder tmp
@@ -68,6 +70,9 @@
 
 [0;36m▶ 7.13 PHP-Code in Medien- und Asset-Dateien[0m
   [0;31m✗[0m  [1mPHP-Code in 2 Mediendatei(en) — in einem echten Bild gehört kein PHP[0m
+
+[0;36m▶ 7.14 Massenhaft gleiche Zeitstempel (Spurenverwischung)[0m
+  [0;32m✓[0m Keine auffälligen Zeitstempel-Häufungen
   [0;36mübersprungen:[0m 8. Netzwerk & Dienste
   [0;36mübersprungen:[0m 9. Sicherheits-Dienste
   [0;36mübersprungen:[0m 10. Andere Domains
@@ -171,7 +176,7 @@
 [1m[0;32m  ANALYSE ABGESCHLOSSEN — Lauf <LAUF-ID>[0m
 [1m[0;32m══════════════════════════════════════════[0m
 
-[1mBefunde:[0m       🔴 14 kritisch, ⚠️ 9 Warnungen, ✅ 21 ok, ⚪ 4 nicht messbar
+[1mBefunde:[0m       🔴 15 kritisch, ⚠️ 9 Warnungen, ✅ 23 ok, ⚪ 4 nicht messbar
 [0;33m               4 Prüfung(en) ohne Ergebnis — das ist keine Entwarnung.[0m
                  kunde-zwei.example/cloud.kunde-zwei.example: Werkzeug antwortet nicht verwertbar — nicht geprüft
                  kunde-drei.example/httpdocs: 1 Plugin(s) ohne Prüfsummensatz und alle Themes — Unversehrtheit nicht feststellbar (Premium, Fork, Eigenbau; für Themes veröffentlicht wordpress.org keine Prüfsummen)

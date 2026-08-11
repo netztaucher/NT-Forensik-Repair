@@ -143,4 +143,12 @@ jobs:
           # Nachweis für 7.13 nicht. Ohne die isolierende Probe muss der
           # Vergleich ausschlagen, sonst ist der Abschnitt blind.
           gegenprobe "7.13 PHP-in-Mediendateien"   NT_PRUEFSTAND_OHNE_MEDIENPROBE=1
+          # Die zweite Musterstufe: gefährliche Funktionen ohne jede
+          # Obfuskation in einer kleinen Datei. Fällt durch PATTERN_REGEX.
+          gegenprobe "7.3 zweite Musterstufe"      NT_PRUEFSTAND_OHNE_FUNKTIONSPROBE=1
+          # .htaccess, die genau eine PHP-Datei freigibt — der Marker, mit dem
+          # ein Angreifer seine Shell erreichbar hält und Mitbewerber aussperrt.
+          gegenprobe "7.6 Einzelfreigabe in .htaccess" NT_PRUEFSTAND_OHNE_HTACCESSPROBE=1
+          # Flächige Zeitstempel-Manipulation.
+          gegenprobe "7.14 Zeitstempel-Häufung"    NT_PRUEFSTAND_OHNE_ZEITCLUSTER=1
           bash werkzeuge/goldmuster.sh vergleichen

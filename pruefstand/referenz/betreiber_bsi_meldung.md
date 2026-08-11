@@ -54,7 +54,7 @@
 
 | Indikator | Wert |
 |---|---|
-| Kritische Befunde | 14 |
+| Kritische Befunde | 15 |
 | Warnungen | 9 |
 | Fehlgeschlagene SSH-Login-Versuche | 0 |
 | Scanner-Aktivität in Web-Logs (Treffer) | 0 |
@@ -65,6 +65,7 @@
 ### Kritische Einzelbefunde
 
 - PHP-Dateien in Upload-Verzeichnissen (nach Guard-Filter, extrem verdächtig)
+- .htaccess gibt gezielt einzelne PHP-Datei(en) frei — typisch für abgesicherte Webshells (3)
 - PHP-Code in 2 Mediendatei(en) — in einem echten Bild gehört kein PHP
 - kunde-zwei.example/cloud.kunde-zwei.example: bekannte Schaddatei der Nextcloud-Kampagne (filefuns.php)
 - kunde-zwei.example/cloud.kunde-zwei.example: Root-.htaccess trägt Angreifer-Merkmale (Freigabeliste mit fremden Dateinamen)

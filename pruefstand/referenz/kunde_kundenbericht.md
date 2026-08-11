@@ -8,7 +8,7 @@
 | **Datum** | <ZEIT> |
 | **Geprüfter Server** | imac |
 | **Prüfungs-ID** | <LAUF-ID> |
-| **Befunde** | 🔴 13 kritisch · ⚠️ 8 auffällig · ⚪ 4 nicht messbar |
+| **Befunde** | 🔴 14 kritisch · ⚠️ 8 auffällig · ⚪ 4 nicht messbar |
 
 ---
 
@@ -39,6 +39,7 @@
 **Kritische Einzelbefunde:**
 
 - PHP-Dateien in Upload-Verzeichnissen (nach Guard-Filter, extrem verdächtig)
+- .htaccess gibt gezielt einzelne PHP-Datei(en) frei — typisch für abgesicherte Webshells (3)
 - kunde-zwei.example/cloud.kunde-zwei.example: bekannte Schaddatei der Nextcloud-Kampagne (filefuns.php)
 - kunde-zwei.example/cloud.kunde-zwei.example: Root-.htaccess trägt Angreifer-Merkmale (Freigabeliste mit fremden Dateinamen)
 - kunde-zwei.example/cloud.kunde-zwei.example: verschachtelte Verzeichnisse (z. B. config/config) — typisch für diese Kampagne

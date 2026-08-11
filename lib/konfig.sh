@@ -444,7 +444,38 @@ PLESK_MYSQL_PW=""
 #  - preg_replace mit /e-Modifier, create_function-Dropper
 # move_uploaded_file($_FILES) bewusst NICHT — matcht legitime Upload-Handler.
 # phpunit/sebastian ausgeschlossen (legitimes eval in Testframeworks).
-PATTERN_REGEX='\$\{\s*\$[a-zA-Z0-9_]+(\s*\.\s*\$[a-zA-Z0-9_]+)+\s*\}|eval\s*\(\s*(base64_decode|gzinflate|gzuncompress|str_rot13)|eval\s*\(\s*\$_(GET|POST|REQUEST|COOKIE|SERVER)|assert\s*\(\s*\$_|create_function\s*\(\s*['"'"'"][^'"'"'"]*['"'"'"]\s*,\s*\$|preg_replace\s*\(\s*['"'"'"].*/e[imsuxADSUXJ]*['"'"'"]|\bFilesMan\b|c99sh|r57shell|b374k'
+#
+# ── Nachtrag August 2026: zwei Shells entkamen diesem Muster ────────────────
+#
+# 1. Adjazenz-Zwang. Der Ausdruck verlangte den Dekodierer DIREKT hinter eval.
+#    Eine Shell nutzte eine Variablenfunktion und entkam:
+#        $decode = 'base64' . '_decode';  eval($decode($payload));
+#    Neu deshalb: eval auf eine Variable schlechthin.
+#
+# 2. Packer. Eine zweite Shell entkam auch dieser Erweiterung, weil nach eval(
+#    ein String-Literal steht und die Variable erst nach der Verkettung folgt:
+#        $F = "\142\141\163\x65…";     // = base64_decode, als Escape-Folge
+#        @eval("?>" . $F("PD9waHAg…"));
+#    "base64_decode" steht im Klartext nirgends, Superglobale fehlen, die
+#    laengste Zeile hat 97 Zeichen. Drei Muster fangen die Klasse: ein eval,
+#    das den PHP-Modus neu oeffnet; acht oder mehr Escapes am Stueck; der
+#    Encoder-Banner.
+#
+# eval("?> …) trifft auch Twig — dessen Template-Uebersetzer arbeitet genau so.
+# Hingenommen: Twigs Environment.php ist gross und landet ueber
+# DROPPER_MAX_BYTES in der Sichtungsstufe, nicht im kritischen Befund.
+PATTERN_REGEX='\$\{\s*\$[a-zA-Z0-9_]+(\s*\.\s*\$[a-zA-Z0-9_]+)+\s*\}|eval\s*\(\s*(base64_decode|gzinflate|gzuncompress|str_rot13)|eval\s*\(\s*\$_(GET|POST|REQUEST|COOKIE|SERVER)|eval\s*\(\s*\$|eval\s*\(\s*['"'"'"]\s*\?>|\$_(GET|POST|REQUEST|COOKIE|SERVER)\s*\[[^]]*\]\s*\(|(\\x[0-9a-fA-F]{2}|\\[0-7]{3}){8,}|PHP[[:space:]]*Encoder|assert\s*\(\s*\$_|create_function\s*\(\s*['"'"'"][^'"'"'"]*['"'"'"]\s*,\s*\$|preg_replace\s*\(\s*['"'"'"].*/e[imsuxADSUXJ]*['"'"'"]|\bFilesMan\b|c99sh|r57shell|b374k|IndoXploit'
+
+# Zweite Stufe: einzeln unauffaellig, in Summe aussagekraeftig. Diese
+# Funktionen kommen in echtem Anwendungscode vor — ein Messlauf ergab 358
+# Treffer auf 25.000 Dateien. Sie taugen deshalb NICHT als kritischer Befund
+# und werden in Abschnitt 7.3 nur auf kleine Dateien angewandt: ein
+# Filemanager-Shell mit unverschleiertem shell_exec ist klein, ein Framework
+# mit denselben Aufrufen ist es nicht.
+#
+# Der Anlass: eine Filemanager-Shell nutzte shell_exec voellig offen. Die
+# exec-Familie fehlte in PATTERN_REGEX vollstaendig, die Shell blieb unsichtbar.
+PATTERN_REGEX_MED='\b(shell_exec|passthru|popen|proc_open|pcntl_exec)\s*\(|\bsystem\s*\(|\bgoto\s+[A-Za-z0-9_]{3,}\s*;|chr\s*\(\s*[0-9]+\s*\)\s*\.\s*chr\s*\(|HTTP_USER_AGENT.*\b(Googlebot|bingbot|crawler|curl)\b|(md5|sha1|password_verify)\s*\(\s*\$_(POST|GET|REQUEST|COOKIE)'
 
 # Schwelle: Dropper sind fast reine Obfuskation → klein. Legitime
 # Framework-Nutzung (phpseclib, eGroupware) steckt in großen Dateien.
