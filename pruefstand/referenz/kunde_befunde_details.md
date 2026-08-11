@@ -1,17 +1,26 @@
 # Fundstellen-Details
 
 > Pfade **relativ zum Kundenverzeichnis** (nicht der absolute Serverpfad).
-> Erzeugt: <ZEIT> · Prüfung `<LAUF-ID>` · 13 Fundstelle(n), 1 zu prüfen.
+> Erzeugt: <ZEIT> · Prüfung `<LAUF-ID>` · 18 Fundstelle(n), 1 zu prüfen.
 
 | Familie | Anzahl | Geschäftsmodell |
 |---|---|---|
+| Verändertes Plugin | 6 | Fremder Code in einem legitimen Plugin — nachträglich eingebaute Hintertür |
 | Manipulierte .htaccess | 4 | Zugriffsregeln zugunsten des Angreifers — hält seine Dateien erreichbar und sperrt Mitbewerber aus |
 | Code-Injection | 2 | Schadcode in legitime Dateien eingeschleust |
 | Getarnte Payload | 2 | Nachladbarer Schadcode in Nicht-PHP-Datei |
 | PHP im Upload-Verzeichnis | 2 | Ausführbarer Code dort, wo nur Dateien liegen sollen — der klassische Weg einer hochgeladenen Shell |
 | Bekannte Schaddatei | 1 | Nach Namensmuster erkanntes Angriffswerkzeug (Dateimanager, Uploader, Shell) |
 | Tarnstruktur | 1 | Angelegte Verzeichnisse, die echte nachahmen — Ablage für Nutzlasten |
-| Verändertes Plugin | 1 | Fremder Code in einem legitimen Plugin — nachträglich eingebaute Hintertür |
+
+## Verändertes Plugin (6) — Fremder Code in einem legitimen Plugin — nachträglich eingebaute Hintertür
+
+- `kunde-zwei.example/httpdocs/wp-content/plugins/pruefstand-aktuell/pruefstand-aktuell.php`
+- `kunde-zwei.example/httpdocs/wp-content/plugins/pruefstand-aktuell/lib/b.php`
+- `kunde-zwei.example/httpdocs/wp-content/plugins/pruefstand-aktuell/lib/c.php`
+- `kunde-zwei.example/httpdocs/wp-content/plugins/pruefstand-aktuell/lib/a.php`
+- `kunde-zwei.example/httpdocs/wp-content/plugins/pruefstand-aktuell/lib/d.php`
+- `kunde-zwei.example/httpdocs/wp-content/plugins/pruefstand-aktuell/lib/e.php`
 
 ## Manipulierte .htaccess (4) — Zugriffsregeln zugunsten des Angreifers — hält seine Dateien erreichbar und sperrt Mitbewerber aus
 
@@ -42,10 +51,6 @@
 ## Tarnstruktur (1) — Angelegte Verzeichnisse, die echte nachahmen — Ablage für Nutzlasten
 
 - `kunde-zwei.example/cloud.kunde-zwei.example/config/config`
-
-## Verändertes Plugin (1) — Fremder Code in einem legitimen Plugin — nachträglich eingebaute Hintertür
-
-- `kunde-zwei.example/httpdocs/wp-content/plugins/pruefstand-aktuell/pruefstand-aktuell.php`
 
 ---
 

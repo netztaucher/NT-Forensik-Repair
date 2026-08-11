@@ -4,6 +4,117 @@ Alle nennenswerten Änderungen an `wp_plesk_forensik.sh`.
 
 ## [unveröffentlicht]
 
+### Neu — Composer-Abhängigkeiten der Plugins gegen GHSA prüfen (#14)
+
+Der Schwachstellenabgleich erfasste Kern, Plugins und Themes — **nicht** die
+Bibliotheken, die ein Plugin in `wp-content/plugins/*/vendor/` mitbringt. Dort
+steckt regelmässig fremder Code mit eigenen Lücken: Guzzle, PHPMailer,
+Monolog.
+
+Für **Packagist** ist die GitHub Advisory Database vollständig und maschinell
+auswertbar — anders als für WordPress-Plugins, wo die Advisories kein
+OSV-Ökosystem tragen und es damit nichts zu vergleichen gibt. Die Lizenzlage
+ist die beste aller geprüften Quellen: CC-BY 4.0, die Attribution erfüllt der
+Verweis je Datensatz.
+
+`lib/wp_schwachstellen.py` liest jetzt **OSV-JSON** direkt, ohne Umweg über
+eine TSV-Zwischenstufe — die wäre eine weitere Stelle, an der sich ein Fehler
+versteckt. `lib/composer_bestand.py` liest die installierten Pakete aus
+`vendor/composer/installed.json` (nicht aus `composer.lock`: die sagt, was
+installiert werden *soll*, nicht was liegt).
+
+Die Intervall-Semantik ist die Stelle, an der ein Fehler am teuersten wäre:
+`introduced` ist **einschliesslich**, `fixed` **ausschliesslich**. Wer das
+verwechselt, meldet die behobene Fassung als verwundbar oder lässt die erste
+betroffene durchgehen — beides sieht im Bericht plausibel aus. Sieben neue
+Selbsttestfälle decken beide Grenzen, den offenen Bereich ohne `fixed` und die
+Abgrenzung gegen fremde Ökosysteme ab.
+
+Entwicklungsstände (`dev-main`) gehen als **UNBEWERTBAR** durch, nicht als
+sauber.
+
+**Ohne Datenbestand wird gar nicht erst erhoben.** Sonst käme jedes Paket als
+⚪ zurück — auf einer echten Installation schnell hundert je Instanz, und der
+vierte Zustand würde zu Rauschen. Der Bestand kommt über
+`wordpress-daten-update.sh --composer <verzeichnis>`; das Vorfiltern des 3,5 GB
+grossen Bulk-Repositorys gehört in die CI, nicht auf eine Entwicklungsmaschine.
+
+### Neu — Wordfence-Bestand der geprüften Installation auslesen (#17)
+
+Läuft auf einer Installation Wordfence, liegt dort ein vollständiger
+Scan-Datenbestand in der Datenbank. NT-Forensik las davon nichts.
+
+Ausgewertet werden `wfissues` und `wfconfig`. Der wertvollste Befund ist
+**nicht** die Schwachstellenmeldung, sondern `skippedPaths`: bei einem Vorfall
+im August 2026 hatte Wordfence 99 Pfade gar nicht gescannt, weil „Dateien
+ausserhalb der WordPress-Installation scannen" standardmässig aus ist — und
+genau dort lagen zwei der Shells. Wer den Wordfence-Bericht des Kunden als
+Entwarnung liest, liest ihn falsch, und das steht im Bestand ausdrücklich
+drin.
+
+`knownfile` wird als **Integritätsabweichung** gemeldet, nicht als
+Signaturtreffer. Die Verwechslung ist bei der Auswertung des echten Bestands
+passiert und hätte beinahe legitimen Plugin-Code als Schadcode in den
+Kundenbericht gebracht.
+
+Das Alter des letzten Scans wird bewertet — ein Bestand von vor drei Wochen
+sagt nichts über heute — und ein freier Schlüssel vermerkt.
+
+**Reichweite, ehrlich:** auf einem Server mit 68 WordPress-Installationen
+hatten 5 Wordfence-Tabellen. Das sind 7 %. Eine Zweitmeinung, wo vorhanden —
+keine Primärquelle.
+
+`apiKey` wird ausdrücklich **nicht** gelesen; die Abfragen nennen ihre Felder
+einzeln statt `SELECT *`. Read-only wie der Rest, kein Installieren, kein
+Wordfence-CLI.
+
+Der Prüfbaum hat keine Datenbank; die Naht `NT_WF_ATTRAPPE` speist einen
+vorgefertigten Bestand ein — mit je einer Zeile pro Befundart, damit die
+Zuordnung nicht verrutscht, und nur für **eine** der drei Installationen,
+damit auch der häufige Fall ohne Wordfence geübt wird.
+
+### Geändert — 7.12 heisst jetzt 13c und filtert gegen lebende Prüfsummen (#18)
+
+Der fremde Regelsatz (php-malware-finder) lieferte im Messlauf über 25.860
+PHP-Dateien **359 Treffer** — und der enthaltene gepackte Webshell stand mit
+drei Regeln auf **Platz 11**. Über ihm der WordPress-Kern, pclzip, UpdraftPlus
+und Wordfence selbst.
+
+Ursache ist die Whitelist des Regelsatzes: SHA1-Hashes konkreter Kerndateien,
+629 Stück für WordPress, auf dem Stand von 2023. Auf einer aktuellen
+Installation passt kein einziger. Das Projekt ruht seit Oktober 2023, das
+Problem wächst mit jedem WordPress-Release.
+
+An ihre Stelle tritt eine **lebende** Whitelist, die bei jedem Lauf neu
+entsteht: `wp core verify-checksums` bestätigt den Kern, die Prüfsummen von
+wordpress.org bestätigen die Plugins. Eine Datei, die Byte für Byte dem
+Original entspricht, kann kein untergeschobener Schadcode sein.
+
+Dafür musste der Abschnitt umziehen: als 7.12 lief er **vor** dem
+WordPress-Rezept und hatte die Bestätigungen noch nicht. Er liegt jetzt als
+`module/13c_signaturhilfe.sh` und läuft nach 12r, aber vor den Berichten.
+
+**Keine stille Filterung.** Die Zahl der unterdrückten Treffer steht im
+Befundtext, und der Beleg führt beide Listen — die verbliebenen und die
+herausgefilterten — namentlich auf. Ein Filter, dessen Wirkung man nicht
+nachrechnen kann, ist in einem Forensikwerkzeug schlimmer als kein Filter.
+
+Ausdrücklich **nicht** freigegeben werden die Dateien aus `CORE_INJECTED` und
+`CORE_SNE`, obwohl sie unter `wp-admin/` und `wp-includes/` liegen. Sie sind
+der Grund, warum dort überhaupt jemand hinsieht.
+
+Nicht abgedeckt und ehrlich zu benennen: kommerzielle Plugins ohne öffentliche
+Prüfsummen (im Messlauf genau die lautesten Fundorte), Themes, und
+Installationen ohne wp-cli.
+
+Nachgewiesen: der Prüfbaum trägt eine vorgefertigte yara-Ausgabe
+(`NT_PMF_ATTRAPPE`) mit neun bestätigt unveränderten Bibliotheks- und
+Kerndateien über dem Schadcode. Eine eigene CI-Stufe prüft das
+Abnahmekriterium aus dem Issue: der Schadcode muss unter den ersten fünf
+stehen (er steht auf **Platz 1**) und der Filter muss etwas — aber nicht
+alles — herausgenommen haben. Dazu die Gegenprobe
+`NT_PRUEFSTAND_OHNE_PMF_WHITELIST=1`.
+
 ### Neu — `werkzeuge/kundenpaket.sh` (#4)
 
 Schnürt aus einem Lauf ein übergabefähiges Paket:

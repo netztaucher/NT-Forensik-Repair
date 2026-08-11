@@ -98,6 +98,31 @@ TSV
 # Pruefstand — frei erfundene Eintraege
 pruefstand-thema	*	0	1.0	0	1.0	CVE-2026-90005	4.3		https://beispiel.invalid/5
 TSV
+  # Composer-Advisories im OSV-Format (#14). Bewusst als JSON und nicht als
+  # TSV: die GitHub Advisory Database liefert genau dieses Format, und der
+  # Vergleicher liest es direkt. Eine Zwischenstufe waere eine weitere Stelle,
+  # an der sich ein Fehler versteckt.
+  # NT_PRUEFSTAND_OHNE_COMPOSER=1 laesst den Composer-Bestand weg. Ohne
+  # Bestand erhebt das Rezept die Abhaengigkeiten gar nicht erst (siehe
+  # _wp_composer_bestand) — der Befund faellt weg, und der Vergleich MUSS das
+  # bemerken.
+  if [[ "${NT_PRUEFSTAND_OHNE_COMPOSER:-0}" != "1" ]]; then
+  mkdir -p "${D}/vuln/composer"
+  cat > "${D}/vuln/composer/GHSA-pruefstand-0001.json" <<'JSON'
+{
+  "id": "GHSA-pruefstand-0001",
+  "aliases": ["CVE-2026-90006"],
+  "severity": [{"type": "CVSS_V3", "score": "8.1"}],
+  "affected": [{
+    "package": {"ecosystem": "Packagist", "name": "pruefstand/bibliothek"},
+    "ranges": [{"type": "ECOSYSTEM", "events": [
+      {"introduced": "1.0.0"},
+      {"fixed": "1.4.0"}
+    ]}]
+  }]
+}
+JSON
+  fi
   printf '%s | Pruefstand-Bestand, bei jedem Bau neu erzeugt\n' "$(date -u +%Y-%m-%d)" \
     > "${D}/VERSION"
 }
@@ -165,6 +190,93 @@ WPCLI
 # Die Pruefsummen, gegen die _wp_plugin_integritaet vergleicht. Erzeugt aus den
 # Dateien im Baum — mit genau einer gewollten Abweichung, damit der
 # Trefferpfad geuebt wird und nicht nur der Gutfall.
+# ── Vorgefertigte yara-Ausgabe fuer Abschnitt 13c ────────────
+# Der Pruefbaum hat weder yara noch den fremden Regelsatz (LGPL, wird nicht
+# mitgeliefert). Ohne diese Naht waere 13c vom Pruefstand ueberhaupt nicht
+# erreichbar — und ein Filter, dessen Wirkung nie gemessen wird, ist eine
+# Behauptung.
+#
+# Die Verteilung bildet den Messlauf aus #18 nach: viel Rauschen auf
+# Bibliotheksdateien bekannter Plugins, der eigentliche Schadcode weiter
+# unten. Nach dem Pruefsummenfilter muss er nach OBEN rutschen.
+#
+# Bewusst mit dabei:
+#   wp-includes/load.php   steht in CORE_INJECTED (die Attrappe meldet es als
+#                          "doesn't verify") und darf deshalb NICHT gefiltert
+#                          werden, obwohl es unter wp-includes/ liegt.
+#   pruefstand-aktuell     traegt eine verfaelschte Pruefsumme und bleibt
+#                          ebenfalls stehen.
+pmf_attrappe_bauen() {   # <zieldatei> <baum>
+  local Z="$1" W="$2"
+  local k2="${W}/kunde-zwei.example/httpdocs"
+  : > "$Z"
+  local datei regel n
+  # Rauschen: bestaetigt unveraenderte Bibliotheksdateien, je 4 Regeln.
+  for datei in "${k2}/wp-content/plugins/pruefstand-alt/lib/"{a,b,c,d,e}.php \
+               "${k2}/wp-content/plugins/pruefstand-kev/lib/"{a,b,c}.php; do
+    [[ -f "$datei" ]] || continue
+    for regel in ObfuscatedPhp DodgyStrings SuspiciousEncoding HexEncoding; do
+      printf '%s %s\n' "$regel" "$datei" >> "$Z"
+    done
+  done
+  # Kern: bestaetigt unveraendert, 4 Regeln.
+  [[ -f "${k2}/wp-includes/version.php" ]] && \
+    for regel in ObfuscatedPhp DodgyStrings SuspiciousEncoding HexEncoding; do
+      printf '%s %s\n' "$regel" "${k2}/wp-includes/version.php" >> "$Z"
+    done
+  # Kern-ABWEICHUNG: muss stehenbleiben.
+  printf 'ObfuscatedPhp %s\nDodgyStrings %s\nHexEncoding %s\n' \
+    "${k2}/wp-includes/load.php" "${k2}/wp-includes/load.php" "${k2}/wp-includes/load.php" >> "$Z"
+  # Veraendertes Plugin: muss stehenbleiben.
+  printf 'ObfuscatedPhp %s\nDodgyStrings %s\n' \
+    "${k2}/wp-content/plugins/pruefstand-aktuell/pruefstand-aktuell.php" \
+    "${k2}/wp-content/plugins/pruefstand-aktuell/pruefstand-aktuell.php" >> "$Z"
+  # Der eigentliche Schadcode. Drei Regeln — im Messlauf reichte das fuer
+  # Platz 11. Nach dem Filter muss er unter den ersten fuenf stehen.
+  for datei in "${k2}/wp-content/uploads/2026/03/bild.php" \
+               "${k2}/wp-content/uploads/2026/03/hilfe.php"; do
+    [[ -f "$datei" ]] || continue
+    for regel in ObfuscatedPhp DodgyStrings SuspiciousEncoding; do
+      printf '%s %s\n' "$regel" "$datei" >> "$Z"
+    done
+  done
+}
+
+# ── Vorgefertigter Wordfence-Bestand fuer #17 ────────────────
+# Der Pruefbaum hat keine Datenbank, und der Wordfence-Zweig liest
+# ausschliesslich aus ihr. Ohne diese Naht waere er von keinem Vergleich
+# gedeckt — und genau bei der Auswertung des ECHTEN Bestands ist eine
+# Verwechslung passiert: ein als "Modified plugin file" gemeldeter Treffer war
+# legitimer Plugin-Code. Je Befundart deshalb mindestens eine Zeile, damit die
+# Zuordnung nicht verrutscht.
+#
+# lastScanCompleted bewusst als fester, alter Zeitstempel: der Befund
+# "Scan ist N Tage alt" soll geuebt werden, und ein relativer Wert waere von
+# Lauf zu Lauf anders. Die Normalisierung faengt die Zahl im Text ab.
+wordfence_attrappe_bauen() {   # <zielverzeichnis>
+  local Z="$1"
+  rm -rf "$Z"; mkdir -p "$Z"
+  # Nur EINE Installation traegt Wordfence. Auf einem echten Server mit 68
+  # Instanzen hatten 5 die Tabellen — 7 %. Ein Pruefbaum, in dem jede
+  # Installation Wordfence hat, wuerde den haeufigsten Fall nie ueben.
+  printf '%s' "kunde-zwei.example/httpdocs" > "${Z}/nur"
+  printf '%s\n' "wp_wfconfig" > "${Z}/tabellen.tsv"
+  {
+    printf 'keyType\tfree\n'
+    printf 'lastScanCompleted\t1700000000\n'
+    printf 'scansEnabled_malware\t1\n'
+  } > "${Z}/konfig.tsv"
+  {
+    printf 'wfPluginVulnerable\tThe Plugin "pruefstand-kev" has a known security vulnerability\n'
+    printf 'wfThemeVulnerable\tThe Theme "pruefstand-thema" has a known security vulnerability\n'
+    # DER Befund: der Kunde hat einen Scanner, aber er sieht diese Pfade nicht an.
+    printf 'skippedPaths\tScan skipped 99 paths outside the WordPress installation\n'
+    # Integritaetsabweichung, KEIN Signaturtreffer.
+    printf 'knownfile\tModified plugin file: wp-content/plugins/pruefstand-aktuell/pruefstand-aktuell.php\n'
+    printf 'wfPluginAbandoned\tThe Plugin "pruefstand-alt" is no longer maintained\n'
+  } > "${Z}/issues.tsv"
+}
+
 pruefsummen_bauen() {   # <zielverzeichnis> <baum>
   local P="$1" W="$2"
   rm -rf "$P"; mkdir -p "$P"
@@ -463,6 +575,17 @@ PHP
       [[ "$3" != "-" ]] && printf 'Version: %s\n' "$3"
       printf '*/\n// Pruefstand, ohne Funktion\n'
     } > "${ziel}/$2.php"
+    # Fuenf Bibliotheksdateien je Plugin. Sie tragen nichts zur Erkennung bei,
+    # sind aber der Gegenstand von #18: der fremde Regelsatz schlaegt auf genau
+    # solchen Dateien an (pclzip, UpdraftPlus, Wordfence im Messlauf), und die
+    # lebende Pruefsummen-Whitelist muss sie herausnehmen. Ohne mehrere davon
+    # laege der eingebaute Schadcode ohnehin weit oben und der Filter waere
+    # nicht messbar.
+    local i
+    mkdir -p "${ziel}/lib"
+    for i in a b c d e; do
+      printf '<?php\n// Bibliothek %s von %s, Pruefstand\n' "$i" "$2" > "${ziel}/lib/${i}.php"
+    done
   }
   wp_theme() {    # wp_theme <installation> <slug> <fassung> <anzeigename>
     local ziel="$1/wp-content/themes/$2"
@@ -484,6 +607,17 @@ PHP
   # auch Kunde 3 — und die Gegenprobe waere keine mehr.
   wp_plugin "$k2" pruefstand-aktuell  4.1   "Pruefstand Aktuell"
   wp_plugin "$k2" pruefstand-kopflos  -     "Pruefstand Kopflos"
+  # Composer-Abhaengigkeit eines Plugins (#14). Kunde 2 traegt die verwundbare
+  # Fassung, Kunde 3 die behobene — derselbe Baum deckt damit Treffer UND
+  # Gegenprobe ab. Die dev-Fassung prueft den dritten Fall: nicht vergleichbar,
+  # also UNBEWERTBAR und ausdruecklich nicht "sauber".
+  wp_composer() {   # wp_composer <installation> <plugin> <fassung>
+    local v="$1/wp-content/plugins/$2/vendor/composer"
+    mkdir -p "$v"
+    printf '{"packages":[{"name":"pruefstand/bibliothek","version":"v%s"},{"name":"pruefstand/entwicklung","version":"dev-main"}]}\n' "$3" \
+      > "${v}/installed.json"
+  }
+  wp_composer "$k2" pruefstand-kev 1.2.0
   wp_theme  "$k2" pruefstand-thema    0.9   "Pruefstand Thema"
 
   # Kunde 3 ist die Gegenprobe: alles aktuell, nichts darf gemeldet werden.
@@ -492,6 +626,7 @@ PHP
   wp_plugin "$k3" pruefstand-alt      3.1 "Pruefstand Alt"
   wp_plugin "$k3" pruefstand-aktuell  4.0 "Pruefstand Aktuell"
   wp_theme  "$k3" pruefstand-thema    1.0 "Pruefstand Thema"
+  wp_composer "$k3" pruefstand-kev 1.4.0
 
   # ── Sicherungskopien: duerfen NICHT als eigene Instanzen zaehlen ──
   # Die Tiefe ist Teil des Pruefgegenstands: Abschnitt 12b sucht mit
@@ -558,6 +693,11 @@ REGELN = [
     # dem naechsten Morgen aus — was dazu verfuehrt, sie einfach neu
     # aufzunehmen, bis niemand mehr hinsieht.
     (r'(Datenbestand \(Stand )\d{4}-\d{2}-\d{2}(\))', r'\1<STAND>\2'),
+    # Das Alter des Wordfence-Scans wird gegen JETZT gerechnet und steigt
+    # taeglich. Der Befund selbst gehoert in die Referenz, seine Zahl nicht —
+    # sonst schlaegt der Vergleich ab dem naechsten Morgen aus.
+    (r'(Wordfence-Scan ist )\d+( Tage alt)',      r'\1<TAGE>\2'),
+    (r'(Wordfence-Scan )\d+( Tage alt)',          r'\1<TAGE>\2'),
     # Die Ausgabe von `date` erscheint an einem halben Dutzend Stellen mit je
     # eigener Beschriftung. Statt jede einzeln zu fassen, wird die Form selbst
     # erkannt: Wochentag, Monat, Tag, Uhrzeit, Zeitzone, Jahr. Eng genug, dass
@@ -635,6 +775,8 @@ lauf_ausfuehren() {
   WP_DATEN_DIR="${WP_DATEN_DIR:-$WPDATEN}" \
   WP_PRUEFSUMMEN_BASIS="${WP_PRUEFSUMMEN_BASIS:-$WPSUMMEN}" \
   NT_WEBSERVER="${NT_WEBSERVER:-nginx}" \
+  NT_PMF_ATTRAPPE="${NT_PMF_ATTRAPPE-$PMFAUS}" \
+  NT_WF_ATTRAPPE="${NT_WF_ATTRAPPE-$WFDATEN}" \
   PATH="${ATTRAPPE}:$PATH" \
   bash "${SELF_DIR}/wp_plesk_forensik.sh" \
        --path "$W" --nur-website --kein-menue >"${ABLAGE}/konsole.txt" 2>&1
@@ -718,6 +860,8 @@ BAUM="${ARBEIT}/vhosts"; ABLAGE="${ARBEIT}/ablage"
 WPDATEN="${ARBEIT}/wpdaten"
 WPSUMMEN="${ARBEIT}/wpsummen"     # lokale Plugin-Pruefsummen statt wordpress.org
 ATTRAPPE="${ARBEIT}/bin"          # wp-cli-Attrappe, kommt vor den echten PATH
+PMFAUS="${ARBEIT}/pmf_attrappe.txt"   # vorgefertigte yara-Ausgabe fuer 13c
+WFDATEN="${ARBEIT}/wf_attrappe"       # vorgefertigter Wordfence-Bestand (#17)
 # Zwingend vor jedem Lauf. Bleibt der Ordner eines fehlgeschlagenen Vergleichs
 # stehen, greift ausgabe_einsammeln per 'head -1' den ALTEN Laufordner und
 # vergleicht ihn gegen die Referenz — der naechste Lauf meldet dann eine
@@ -728,6 +872,8 @@ baum_bauen "$BAUM"
 wp_datenbestand_bauen "$WPDATEN"
 attrappe_bauen "$ATTRAPPE"
 pruefsummen_bauen "$WPSUMMEN" "$BAUM"
+pmf_attrappe_bauen "$PMFAUS" "$BAUM"
+wordfence_attrappe_bauen "$WFDATEN"
 info "Baum gebaut: $(find "$BAUM" -type f | wc -l | tr -d ' ') Dateien in $(find "$BAUM" -maxdepth 1 -type d | tail -n +2 | wc -l | tr -d ' ') vhosts"
 
 case "$AKTION" in

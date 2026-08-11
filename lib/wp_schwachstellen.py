@@ -6,7 +6,7 @@ Liest den Datenbestand unter rezepte/wordpress/daten/ und eine Bestandsliste auf
 Standardeingabe und meldet, welcher Bestandteil in einen bekannten
 Verwundbarkeitsbereich faellt.
 
-    typ<TAB>slug<TAB>version        (Eingabe, typ = core|plugin|theme)
+    typ<TAB>slug<TAB>version        (Eingabe, typ = core|plugin|theme|composer)
     ZUSTAND<TAB>typ<TAB>slug<TAB>version<TAB>bereich<TAB>behoben<TAB>cve<TAB>kev<TAB>quelle
 
 Zustaende: BETROFFEN, SAUBER, UNBEWERTBAR. Der dritte ist kein Nebenschauplatz —
@@ -35,6 +35,7 @@ Gegentest laufen, statt sich auf das eigene Sprachgefuehl zu verlassen.
 """
 
 import argparse
+import json
 import os
 import sys
 
@@ -217,7 +218,119 @@ def bestand_laden(verzeichnis):
                     felder += [""] * (len(SPALTEN) - len(felder))
                 eintrag = dict(zip(SPALTEN, felder))
                 daten[typ].setdefault(eintrag["slug"], []).append(eintrag)
+    daten["composer"] = osv_laden(os.path.join(verzeichnis, "vuln", "composer"))
     return daten
+
+
+# ── OSV/GHSA fuer Composer-Abhaengigkeiten (#14) ───────────────────────
+#
+# Warum ausgerechnet hier eine zweite Einleseform statt einer weiteren TSV:
+# die GitHub Advisory Database liefert OSV-JSON, und fuer Packagist ist sie
+# vollstaendig und maschinell auswertbar — anders als fuer WordPress-Plugins,
+# wo die Advisories kein OSV-Oekosystem tragen und es damit nichts zu
+# vergleichen gibt. Die Lizenzlage ist die beste aller geprueften Quellen:
+# CC-BY 4.0, die Attribution laesst sich durch einen Link erfuellen.
+#
+# Eine Umwandlung nach TSV waere moeglich, wuerde aber eine Zwischenstufe
+# einfuehren, in der sich Fehler verstecken. Der Vergleicher versteht das
+# Quellformat direkt.
+#
+# GEWOLLT KONSERVATIV: ein Bereich ohne `fixed` und ohne `last_affected` gilt
+# bis unendlich. Das ist die Lesart von OSV, und die Gegenrichtung waere
+# gefaehrlicher — eine offene Luecke als behoben auszuweisen.
+def osv_laden(verzeichnis):
+    """OSV-JSON-Advisories des Packagist-Oekosystems einlesen."""
+    bestand = {}
+    if not os.path.isdir(verzeichnis):
+        return bestand
+    for name in sorted(os.listdir(verzeichnis)):
+        if not name.endswith(".json"):
+            continue
+        try:
+            with open(os.path.join(verzeichnis, name),
+                      encoding="utf-8", errors="replace") as fh:
+                roh = json.load(fh)
+        except (OSError, ValueError):
+            # Eine unlesbare Datei still zu ueberspringen waere der Fehler, den
+            # dieses Werkzeug an anderer Stelle bekaempft — aber der Aufrufer
+            # kann hier nichts melden. Deshalb auf stderr, wo es im Lauf-Log
+            # landet.
+            print("wp_schwachstellen: %s nicht lesbar" % name, file=sys.stderr)
+            continue
+        # Eine Datei kann ein einzelnes Advisory oder eine Liste enthalten.
+        for adv in (roh if isinstance(roh, list) else [roh]):
+            for eintrag in _osv_eintraege(adv):
+                bestand.setdefault(eintrag["slug"], []).append(eintrag)
+    return bestand
+
+
+def _osv_eintraege(adv):
+    """Ein OSV-Advisory in die interne Eintragsform uebersetzen."""
+    if not isinstance(adv, dict):
+        return
+    kennung = adv.get("id") or ""
+    aliase = adv.get("aliases") or []
+    cve = next((a for a in aliase if str(a).upper().startswith("CVE-")), kennung)
+    cvss = ""
+    for schwere in adv.get("severity") or []:
+        if isinstance(schwere, dict) and schwere.get("score"):
+            cvss = str(schwere["score"])
+            break
+    quelle = "https://github.com/advisories/%s" % kennung if kennung else ""
+
+    for betroffen in adv.get("affected") or []:
+        paket = (betroffen.get("package") or {})
+        if str(paket.get("ecosystem", "")).lower() != "packagist":
+            continue
+        slug = str(paket.get("name", "")).strip().lower()
+        if not slug:
+            continue
+        for bereich in betroffen.get("ranges") or []:
+            if bereich.get("type") not in ("ECOSYSTEM", "SEMVER"):
+                continue
+            ereignisse = bereich.get("events") or []
+            von = "*"
+            geschlossen = False
+            for ereignis in ereignisse:
+                if "introduced" in ereignis:
+                    wert = str(ereignis["introduced"])
+                    von = "*" if wert in ("0", "") else wert
+                elif "fixed" in ereignis:
+                    yield _osv_eintrag(slug, von, str(ereignis["fixed"]),
+                                       False, str(ereignis["fixed"]),
+                                       cve, cvss, quelle)
+                    von = "*"
+                    geschlossen = True
+                elif "last_affected" in ereignis:
+                    yield _osv_eintrag(slug, von, str(ereignis["last_affected"]),
+                                       True, "", cve, cvss, quelle)
+                    von = "*"
+                    geschlossen = True
+            # Weder `fixed` noch `last_affected`: die Luecke ist offen, der
+            # Bereich reicht bis unendlich. Das ist die Lesart von OSV — und
+            # die Gegenrichtung waere gefaehrlicher, sie wuerde eine offene
+            # Luecke als behoben ausweisen.
+            if not geschlossen:
+                yield _osv_eintrag(slug, von, "*", False, "", cve, cvss, quelle)
+
+
+def _osv_eintrag(slug, von, bis, bis_inkl, behoben, cve, cvss, quelle):
+    # `introduced` ist in OSV EINSCHLIESSLICH, `fixed` AUSSCHLIESSLICH.
+    # Wer das verwechselt, meldet die behobene Fassung als verwundbar oder
+    # laesst die erste betroffene durchgehen — beides sieht im Bericht
+    # plausibel aus.
+    return {
+        "slug": slug,
+        "von": von,
+        "von_inkl": "0" if von == "*" else "1",
+        "bis": bis,
+        "bis_inkl": "1" if bis_inkl else "0",
+        "behoben": behoben,
+        "cve": cve,
+        "cvss": cvss,
+        "kev": "",
+        "quelle": quelle,
+    }
 
 
 def pruefen(daten, typ, slug, version):
@@ -334,7 +447,59 @@ def selbsttest():
                   % (typ, slug, version, ist, erwartet))
             fehler += 1
 
-    gesamt = len(_VERSIONSFAELLE) + len(_INTERVALLFAELLE) + len(faelle)
+    # ── OSV/GHSA (#14) ────────────────────────────────────────────────
+    # Die Umwandlung ist die Stelle, an der sich ein Fehler am teuersten
+    # versteckt: `introduced` ist EINSCHLIESSLICH, `fixed` AUSSCHLIESSLICH.
+    # Wer das verwechselt, meldet die behobene Fassung als verwundbar oder
+    # laesst die erste betroffene durchgehen — beides sieht im Bericht
+    # plausibel aus und faellt im Betrieb nicht auf.
+    osv_adv = {
+        "id": "GHSA-xxxx-yyyy-zzzz",
+        "aliases": ["CVE-2026-11111"],
+        "severity": [{"type": "CVSS_V3", "score": "7.5"}],
+        "affected": [{
+            "package": {"ecosystem": "Packagist", "name": "beispiel/paket"},
+            "ranges": [{"type": "ECOSYSTEM", "events": [
+                {"introduced": "1.0.0"}, {"fixed": "1.2.0"},
+            ]}],
+        }, {
+            # Anderes Oekosystem: muss ignoriert werden, sonst wandern
+            # npm-Advisories in die Composer-Bewertung.
+            "package": {"ecosystem": "npm", "name": "beispiel/paket"},
+            "ranges": [{"type": "SEMVER", "events": [{"introduced": "0"}]}],
+        }, {
+            # Offener Bereich ohne `fixed`: gilt bis unendlich.
+            "package": {"ecosystem": "Packagist", "name": "offen/paket"},
+            "ranges": [{"type": "ECOSYSTEM", "events": [{"introduced": "0"}]}],
+        }],
+    }
+    osv = {}
+    for eintrag in _osv_eintraege(osv_adv):
+        osv.setdefault(eintrag["slug"], []).append(eintrag)
+    osv_daten = {"composer": osv, "plugin": {}, "theme": {}, "core": {}}
+    osv_faelle = (
+        (("composer", "beispiel/paket", "0.9"),   "SAUBER"),       # vor introduced
+        (("composer", "beispiel/paket", "1.0.0"), "BETROFFEN"),    # introduced ist inklusiv
+        (("composer", "beispiel/paket", "1.1.9"), "BETROFFEN"),
+        (("composer", "beispiel/paket", "1.2.0"), "SAUBER"),       # fixed ist exklusiv
+        (("composer", "beispiel/paket", "2.0"),   "SAUBER"),
+        (("composer", "offen/paket", "99.0"),     "BETROFFEN"),    # kein fixed
+        (("composer", "unbekannt/paket", "1.0"),  "SAUBER"),
+    )
+    for (typ, slug, version), erwartet in osv_faelle:
+        ist = pruefen(osv_daten, typ, slug, version)[0][0]
+        if ist != erwartet:
+            print("FEHLER  OSV pruefen(%s, %s, %r) = %s, erwartet %s"
+                  % (typ, slug, version, ist, erwartet))
+            fehler += 1
+    # Das npm-Advisory darf nicht als Composer-Paket gelandet sein.
+    if len(osv.get("beispiel/paket", [])) != 1:
+        print("FEHLER  OSV: fremdes Oekosystem wurde uebernommen (%d Eintraege)"
+              % len(osv.get("beispiel/paket", [])))
+        fehler += 1
+
+    gesamt = (len(_VERSIONSFAELLE) + len(_INTERVALLFAELLE) + len(faelle)
+              + len(osv_faelle) + 1)
     if fehler:
         print("Selbsttest: %d von %d Fällen fehlgeschlagen" % (fehler, gesamt))
         return 1

@@ -74,6 +74,35 @@ _wp_bestand() {
     [[ -f "$d/style.css" ]] && ver=$(_wp_kopf_version "$d/style.css" "Theme Name")
     printf 'theme\t%s\t%s\n' "$(basename "$d")" "${ver:-}"
   done
+
+  # Composer-Abhaengigkeiten der Plugins (#14). Der Abgleich erfasste bis
+  # v3.12 Kern, Plugins und Themes — NICHT die Bibliotheken, die ein Plugin in
+  # seinem vendor/ mitbringt. Dort steckt regelmaessig fremder Code mit eigenen
+  # Luecken: Guzzle, PHPMailer, Monolog und Aehnliches.
+  _wp_composer_bestand
+}
+
+# Installierte Composer-Pakete aus vendor/composer/installed.json.
+#
+# NICHT aus composer.lock: die Lock-Datei sagt, was installiert werden SOLL.
+# installed.json sagt, was tatsaechlich liegt — und genau danach wird gefragt.
+# Beide Formate kommen vor: bis Composer 1 eine blanke Liste, ab Composer 2 ein
+# Objekt mit "packages".
+_wp_composer_bestand() {
+  werkzeug_da python3 || return 0
+  # Ohne Datenbestand gar nicht erst erheben. Sonst kaeme jedes Paket als
+  # UNBEWERTBAR zurueck ("kein Datenbestand fuer diesen Typ") — auf einer
+  # echten Installation sind das schnell hundert ⚪ je Instanz, und der vierte
+  # Zustand wird zu Rauschen, das niemand mehr liest. Genau davor warnt der
+  # Kommentar zum Sammel-⚪ weiter unten.
+  local basis="${WP_DATEN_DIR:-${REZEPT_DIR}/wordpress/daten}"
+  [[ -d "${basis}/vuln/composer" ]] || return 0
+  local d
+  for d in "${REZ_PFAD}"/wp-content/plugins/*/vendor/composer/installed.json \
+           "${REZ_PFAD}"/wp-content/mu-plugins/*/vendor/composer/installed.json; do
+    [[ -f "$d" ]] || continue
+    python3 "${SELF_DIR:-.}/lib/composer_bestand.py" "$d" 2>/dev/null || true
+  done
 }
 
 rezept_version() {
@@ -139,7 +168,11 @@ rezept_version() {
   # eine eigene Handlung: dieses Plugin auf diese Fassung bringen.
   while IFS=$'\t' read -r zustand typ slug version bereich behoben cve kev _quelle; do
     [[ "$zustand" == "BETROFFEN" ]] || continue
-    local satz="${REZ_KURZ}: ${typ} ${slug} ${version} ist von einer bekannten Schwachstelle betroffen (${bereich})"
+    # "composer guzzlehttp/guzzle" liest sich fuer einen Kunden wie ein
+    # Werkzeugname. Gemeint ist eine Programmbibliothek, die ein Plugin
+    # mitbringt — das gehoert so dazustehen.
+    local _art="$typ"; [[ "$typ" == "composer" ]] && _art="Bibliothek (in einem Plugin)"
+    local satz="${REZ_KURZ}: ${_art} ${slug} ${version} ist von einer bekannten Schwachstelle betroffen (${bereich})"
     [[ -n "$cve" ]]     && satz+=" ${cve}"
     [[ -n "$behoben" ]] && satz+=" — behoben in ${behoben}"
     if [[ "$kev" == "ja" ]]; then
@@ -308,6 +341,18 @@ for zeile in open(sys.argv[1], encoding="utf-8", errors="replace").read().splitl
                                hashlib.sha256(roh).hexdigest()):
                 art = "MOD" if os.path.splitext(name)[1].lower() in CODE else "SOFT"
                 print("\t".join([art, slug, ver, rel]))
+            else:
+                # Bestaetigt unveraendert gegenueber wordpress.org. Bisher fiel
+                # dieser Fall stillschweigend durch — gezaehlt wurde nur, was
+                # ABWEICHT. Die Bestaetigung ist aber ihrerseits eine Aussage:
+                # eine Datei, die Byte fuer Byte dem Original entspricht, kann
+                # kein untergeschobener Schadcode sein. Abschnitt 13c filtert
+                # damit das Rauschen des fremden Regelsatzes (#18).
+                # Nur Code-Endungen: Bilder und Uebersetzungen tauchen in
+                # keiner Trefferliste auf, und die Liste bliebe sonst
+                # zehnmal so lang.
+                if os.path.splitext(name)[1].lower() in CODE:
+                    print("\t".join(["UNVERAENDERT", slug, ver, voll]))
 
     for rel in sorted(set(soll_dateien) - gesehen):
         print("\t".join(["FEHLT", slug, ver, rel]))
@@ -316,6 +361,15 @@ for zeile in open(sys.argv[1], encoding="utf-8", errors="replace").read().splitl
 PY
   )
   rm -f "$liste"
+
+  # Die bestätigt unveränderten Dateien in die Whitelist für Abschnitt 13c
+  # (#18). Bewusst in eine DATEI und nicht in eine Variable: auf einem Server
+  # mit 68 Installationen sind das leicht 100.000 Zeilen, und eine
+  # Shell-Variable dieser Größe wird bei jeder Zuweisung kopiert.
+  # Der Ablageort liegt im Laufordner, aber weder in kunde/ noch in betreiber/
+  # — er ist Arbeitsmaterial, kein Beleg, und wandert in kein Archiv.
+  printf '%s\n' "$ergebnis" | awk -F'\t' '$1=="UNVERAENDERT"{print $4}' \
+    >> "${PRUEFSUMMEN_WHITELIST:-${RUN_DIR}/.pruefsummen_bestaetigt.txt}"
 
   n_geprueft=$(printf '%s\n' "$ergebnis" | grep -c '^GEPRUEFT' || true)
   n_mod=$(printf   '%s\n' "$ergebnis" | grep -c '^MOD'   || true)
@@ -374,8 +428,16 @@ PY
 # Die Werkzeug-Probe hat der Rahmen gezogen; eine leere Ausgabe heißt hier
 # wirklich 'keine Abweichung' und nicht 'wp-cli ist gescheitert'.
 rezept_kern() {
-  local CHK cmod csne LISTE
-  CHK=$(_wp core verify-checksums 2>&1 | grep "Warning:" || true)
+  local CHK cmod csne LISTE CHK_ROH CHK_RC
+  # Rückgabewert getrennt festhalten. Bis v3.12 stand hier nur die gefilterte
+  # Ausgabe, und der Status der Pipe war der von `grep` — ein gescheitertes
+  # verify-checksums war damit von einem sauberen Kern nicht zu unterscheiden.
+  # Für den Befund unten machte das keinen Unterschied (beides ergab cmod=0,
+  # was hier bewusst als "keine Abweichung" gilt), für die Whitelist in
+  # Abschnitt 13c aber sehr wohl: sie darf einen Kern nur dann freigeben, wenn
+  # er nachweislich geprüft WURDE.
+  CHK_ROH=$(_wp core verify-checksums 2>&1); CHK_RC=$?
+  CHK=$(printf '%s\n' "$CHK_ROH" | grep "Warning:" || true)
   # KEIN '|| echo 0': grep -c gibt bei null Treffern bereits eine 0 aus UND
   # endet ungleich 0. Der Rueckfall haengte damit eine zweite Null an, cmod
   # wurde "0\n0", und die naechste Zeile brach mit
@@ -401,6 +463,22 @@ rezept_kern() {
     CORE_SNE+="$LISTE"$'\n'
   fi
 
+  # Kern-Whitelist für Abschnitt 13c (#18). Nicht die einzelnen Dateien —
+  # verify-checksums nennt nur die ABWEICHUNGEN, und die Gutfälle einzeln
+  # aufzuzählen hiesse, den Kern selbst zu durchlaufen. Stattdessen der
+  # Verzeichnispräfix: alles unter wp-admin/ und wp-includes/, das NICHT in
+  # CORE_INJECTED oder CORE_SNE steht, ist genau die Menge, die
+  # verify-checksums als unverändert bestätigt hat.
+  #
+  # Bedingung ist der Rückgabewert. Ein Kern, dessen Prüfung gescheitert ist,
+  # darf hier nicht auftauchen — sonst würde ein Werkzeugausfall zur
+  # Freigabe des Verzeichnisses, in dem eine untergeschobene Datei am
+  # wahrscheinlichsten liegt.
+  if [[ "$CHK_RC" -eq 0 || "${cmod:-0}" -gt 0 || "${csne:-0}" -gt 0 ]] \
+     && [[ -n "$CHK_ROH" ]]; then
+    printf '%s\n' "${REZ_PFAD}" \
+      >> "${PRUEFSUMMEN_KERN_WHITELIST:-${RUN_DIR}/.pruefsummen_kern.txt}"
+  fi
 }
 
 # ── Dateibasierte Merkmale ───────────────────────────────────
@@ -489,6 +567,14 @@ rezept_sonder() {
 # in die Abfragen, und wer die Datei schreiben kann, bekam damit beliebiges SQL
 # in ein Werkzeug, das als root läuft.
 rezept_db() {
+  # Prüfstand-Naht (#17). Der Wordfence-Zweig liest ausschliesslich aus der
+  # Datenbank, und der Prüfbaum hat keine — ohne diesen Vorgriff wäre er von
+  # keinem Vergleich gedeckt. Mit gesetzter Attrappe läuft er hier, ohne sie
+  # weiter unten am regulären Platz; das Flag verhindert einen doppelten Lauf
+  # auf einem System, das beides hat.
+  WF_GELAUFEN=0
+  if [[ -n "${NT_WF_ATTRAPPE:-}" ]]; then _wp_wordfence; WF_GELAUFEN=1; fi
+
   if ! werkzeug_da mysql && [[ -z "${REZ_WERKZEUG:-}" ]]; then
     befund_melden wordpress datenbank unklar "${REZ_KURZ}: weder mysql-Client noch wp-cli vorhanden — Datenbank nicht geprüft" "$REZ_PFAD" web
     return 0
@@ -543,6 +629,142 @@ rezept_db() {
             OR option_value LIKE '%auto_prepend_file%'
             OR option_value LIKE '%base64_decode%';")
   [[ -n "$OPT" ]] && { info "${REZ_KURZ}: Optionen (siteurl/home und Auffälligkeiten):"; code "$OPT"; }
+
+  # d) Wordfence-Bestand auslesen, falls vorhanden (#17).
+  [[ "${WF_GELAUFEN:-0}" -eq 1 ]] || _wp_wordfence
+}
+
+# ── Wordfence: die vorhandene Zweitmeinung (#17) ─────────────
+# Läuft auf der geprüften Installation Wordfence, liegt dort ein vollständiger
+# Scan-Datenbestand in der Datenbank — Dateihashes, Signaturstatus,
+# Schwachstellenmeldungen, übersprungene Pfade. NT-Forensik las davon nichts.
+#
+# EHRLICHE EINORDNUNG DER REICHWEITE: auf einem Plesk-Server mit 68
+# WordPress-Installationen haben 5 Wordfence-Tabellen. Das sind 7 %. Diese
+# Schicht ist eine Zweitmeinung, wo vorhanden — keine Primärquelle. Wer auf
+# dieser Grundlage Abdeckung behauptet, täuscht sich. Zum Vergleich aus
+# demselben Lauf: der serverweite Signaturscanner meldete offene Funde auf 18
+# Abos.
+#
+# Der wertvollste Einzelbefund ist NICHT die Schwachstellenmeldung, sondern
+# `skippedPaths`: bei einem Vorfall im August 2026 hatte Wordfence 99 Pfade gar
+# nicht gescannt, weil die Option "Dateien ausserhalb der WordPress-
+# Installation scannen" standardmässig aus ist — und genau dort lagen zwei der
+# Shells. Wer den Wordfence-Bericht des Kunden als Entwarnung liest, liest ihn
+# falsch, und das steht im Datenbestand ausdrücklich drin.
+#
+# NICHT gelesen wird `apiKey` aus wfconfig. Ein fremder Zugangsschlüssel hat
+# weder im Bericht noch in den Belegen etwas verloren; die Abfragen unten
+# nennen die Felder deshalb einzeln statt mit SELECT *.
+#
+# Read-only wie der Rest. Kein Installieren, kein Wordfence-CLI.
+_wf_sql() {   # _wf_sql <kennung> <abfrage>
+  # Prüfstand-Naht: NT_WF_ATTRAPPE nennt ein Verzeichnis mit je einer Datei
+  # <kennung>.tsv. Ohne sie wäre dieser Zweig nicht prüfbar — der Prüfbaum hat
+  # keine Datenbank, und eine Auswertung, die nie gemessen wird, verrutscht
+  # unbemerkt. Genau das ist bei der Auswertung des echten Bestands passiert:
+  # ein als "Modified plugin file" gemeldeter Treffer war legitimer
+  # Plugin-Code, nur nicht deckungsgleich mit der Fassung auf wordpress.org.
+  if [[ -n "${NT_WF_ATTRAPPE:-}" ]]; then
+    # Nur fuer die Instanzen, die in `nur` genannt sind. Sonst traege JEDE
+    # Installation im Pruefbaum Wordfence, und der haeufigste Fall — die 93 %
+    # OHNE — waere nie geuebt.
+    if [[ -r "${NT_WF_ATTRAPPE}/nur" ]] \
+       && ! grep -qF "$(cat "${NT_WF_ATTRAPPE}/nur")" <<<"${REZ_KURZ}"; then
+      return 0
+    fi
+    [[ -r "${NT_WF_ATTRAPPE}/$1.tsv" ]] && cat "${NT_WF_ATTRAPPE}/$1.tsv"
+    return 0
+  fi
+  rezept_sql "$2"
+}
+
+_wp_wordfence() {
+  # ${REZ_PFX:-} und nicht ${REZ_PFX}: mit gesetzter Prüfstand-Attrappe läuft
+  # dieser Zweig VOR rezept_db_zugang, und unter `set -u` bricht der Lauf sonst
+  # mit "REZ_PFX: unbound variable" ab. Im Betrieb ist das Präfix an dieser
+  # Stelle immer gesetzt — die Abfrage geht dort an eine echte Datenbank.
+  local WF_DA
+  WF_DA=$(_wf_sql tabellen "SHOW TABLES LIKE '${REZ_PFX:-}wfconfig';")
+  if [[ -z "$WF_DA" ]]; then
+    info "${REZ_KURZ}: kein Wordfence in dieser Installation — keine Zweitmeinung verfügbar"
+    return 0
+  fi
+
+  # ── Betriebszustand des Scanners ─────────────────────────
+  local WF_CFG WF_KEY WF_LETZTER WF_ALTER
+  WF_CFG=$(_wf_sql konfig "SELECT name, val FROM ${REZ_PFX:-}wfconfig
+             WHERE name IN ('keyType','lastScanCompleted','isPaid','scansEnabled_malware');")
+  WF_KEY=$(printf '%s\n' "$WF_CFG" | awk -F'\t' '$1=="keyType"{print $2}' | head -1)
+  WF_LETZTER=$(printf '%s\n' "$WF_CFG" | awk -F'\t' '$1=="lastScanCompleted"{print $2}' | head -1)
+
+  # Ein Bestand von vor drei Wochen sagt nichts über heute. Das gehört
+  # ausgesprochen, bevor irgendjemand die Befunde darunter als aktuell liest.
+  if [[ "$WF_LETZTER" =~ ^[0-9]+$ ]]; then
+    WF_ALTER=$(( ( $(date +%s) - WF_LETZTER ) / 86400 ))
+    if [[ "$WF_ALTER" -gt 14 ]]; then
+      befund_melden wordpress logs warn \
+        "${REZ_KURZ}: Wordfence-Scan ist ${WF_ALTER} Tage alt — was danach abgelegt wurde, steht in diesem Bestand nicht" "$REZ_PFAD" web
+    else
+      info "${REZ_KURZ}: Wordfence-Scan ${WF_ALTER} Tage alt"
+    fi
+  else
+    befund_melden wordpress logs unklar \
+      "${REZ_KURZ}: Wordfence vorhanden, aber kein abgeschlossener Scan hinterlegt — der Bestand sagt nichts über den Zustand" "$REZ_PFAD" web
+  fi
+  [[ "$WF_KEY" == "free" ]] && \
+    info "${REZ_KURZ}: Wordfence mit freiem Schlüssel — der Signaturbestand ist kleiner und läuft dem kostenpflichtigen um 30 Tage hinterher"
+
+  # ── Die Befunde ──────────────────────────────────────────
+  local WF_ISS
+  WF_ISS=$(_wf_sql issues "SELECT type, shortMsg FROM ${REZ_PFX:-}wfissues
+             WHERE status IN ('new','active');")
+  [[ -n "$WF_ISS" ]] || { info "${REZ_KURZ}: Wordfence meldet keine offenen Befunde"; return 0; }
+
+  _wf_typ() { printf '%s\n' "$WF_ISS" | awk -F'\t' -v t="$1" '$1==t' ; }
+  local _n
+
+  # Schwachstellen: eine gepflegte Aussage, die wir sonst selbst herleiten
+  # müssten. Sie ergänzt den eigenen Abgleich, ersetzt ihn nicht.
+  _n=$(_wf_typ wfPluginVulnerable | grep -c . || true)
+  if [[ "${_n:-0}" -gt 0 ]]; then
+    befund_melden wordpress version warn \
+      "${REZ_KURZ}: Wordfence führt ${_n} Plugin(s) als verwundbar" "$REZ_PFAD" web
+    code "$(_wf_typ wfPluginVulnerable | cut -f2)"
+  fi
+  _n=$(_wf_typ wfThemeVulnerable | grep -c . || true)
+  if [[ "${_n:-0}" -gt 0 ]]; then
+    befund_melden wordpress version warn \
+      "${REZ_KURZ}: Wordfence führt ${_n} Theme(s) als verwundbar" "$REZ_PFAD" web
+    code "$(_wf_typ wfThemeVulnerable | cut -f2)"
+  fi
+
+  # DER Befund dieses Abschnitts. Kategorie `logs`, nicht `schadcode`: es ist
+  # keine Aussage über Schadcode, sondern über die Reichweite einer Prüfung.
+  _n=$(_wf_typ skippedPaths | grep -c . || true)
+  if [[ "${_n:-0}" -gt 0 ]]; then
+    befund_melden wordpress logs warn \
+      "${REZ_KURZ}: Wordfence hat Pfade vom Scan ausgenommen — ein unauffälliger Wordfence-Bericht ist für diese Bereiche KEINE Entwarnung" "$REZ_PFAD" web
+    code "$(_wf_typ skippedPaths | cut -f2)"
+    evidence "wordfence_uebersprungen_$(echo "$REZ_KURZ" | tr '/.' '__')" \
+             "$(_wf_typ skippedPaths | cut -f2)"
+  fi
+
+  # knownfile ist eine INTEGRITÄTSABWEICHUNG, kein Signaturtreffer. Die
+  # Verwechslung ist bei der Auswertung des echten Bestands passiert und hätte
+  # beinahe legitimen Plugin-Code als Schadcode in den Kundenbericht gebracht.
+  _n=$(_wf_typ knownfile | grep -c . || true)
+  if [[ "${_n:-0}" -gt 0 ]]; then
+    befund_melden wordpress kern warn \
+      "${REZ_KURZ}: Wordfence meldet ${_n} Datei(en) als verändert gegenüber dem Original — Integritätsabweichung, kein Signaturtreffer" "$REZ_PFAD" web
+    code "$(_wf_typ knownfile | cut -f2)"
+  fi
+
+  _n=$(_wf_typ wfPluginAbandoned | grep -c . || true)
+  [[ "${_n:-0}" -gt 0 ]] && \
+    info "${REZ_KURZ}: Wordfence führt ${_n} Plugin(s) als aufgegeben (kein Hersteller-Support mehr)"
+
+  unset -f _wf_typ
 }
 
 # ── Verdikt ──────────────────────────────────────────────────

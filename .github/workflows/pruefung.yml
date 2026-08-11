@@ -234,7 +234,59 @@ jobs:
           # Der umgekehrte Fehler ist gemessen: ein Lauf über 68
           # Installationen meldete 274 leere index.php als "extrem verdächtig".
           gegenprobe "7.2 Wächter-Filter"          NT_PRUEFSTAND_OHNE_WAECHTER=1
+          # Die lebende Prüfsummen-Whitelist in 13c. Ohne sie stehen die
+          # bestätigt unveränderten Bibliotheks- und Kerndateien wieder in der
+          # Trefferliste — der Vergleich MUSS das bemerken.
+          gegenprobe "13c Prüfsummen-Whitelist"    NT_PRUEFSTAND_OHNE_PMF_WHITELIST=1
+          # Die Wordfence-Auswertung (#17). Ohne den vorgefertigten Bestand
+          # fallen sechs Befunde weg — darunter `skippedPaths`, der genau die
+          # falsche Entwarnung verhindert, um die es in dem Issue geht.
+          gegenprobe "#17 Wordfence-Auswertung"    NT_WF_ATTRAPPE=
+          # Der Composer-Abgleich (#14). Ohne Bestand erhebt das Rezept die
+          # Abhängigkeiten gar nicht — der Befund fällt weg.
+          gegenprobe "#14 Composer-Abgleich"       NT_PRUEFSTAND_OHNE_COMPOSER=1
           bash werkzeuge/goldmuster.sh vergleichen
+
+      - name: Abnahmekriterium #18 — Schadcode unter den ersten fünf
+        run: |
+          # Das Kriterium steht wörtlich in Issue #18: "der gepackte Webshell
+          # muss unter den ersten fünf stehen. Steht er weiter auf Platz 11,
+          # hat die Änderung ihr Ziel verfehlt."
+          #
+          # Der Referenzvergleich allein prüft das NICHT: er meldet nur, ob
+          # sich etwas geändert hat. Eine Referenz, die den Schadcode auf
+          # Platz 11 festhält, gilt ihm als "unverändert" — sie hielte das
+          # Scheitern fest statt es zu melden.
+          rm -rf /tmp/nt-18 /tmp/nt-18-ref
+          NT_GOLDMUSTER_DIR=/tmp/nt-18 NT_GOLDMUSTER_REF=/tmp/nt-18-ref \
+            bash werkzeuge/goldmuster.sh aufnehmen >/dev/null
+          RANG=/tmp/rang.txt
+          # Ab der 13c-Ueberschrift bis zum Ende des Abschnitts. Ein sed-Bereich
+          # auf die Code-Zaeune hin endet am OEFFNENDEN ``` und liefert nichts.
+          awk '/^## 13c\./{s=1} /^## 14\./{s=0} s && /Regel\(n\):/' \
+            /tmp/nt-18-ref/betreiber_technik_bericht.md > "$RANG" || true
+          if [[ ! -s "$RANG" ]]; then
+            echo "::error::13c hat keine Rangliste erzeugt — die Prüfstand-Attrappe greift nicht."
+            exit 1
+          fi
+          PLATZ=$(grep -n 'uploads/2026/03/bild.php' "$RANG" | head -1 | cut -d: -f1)
+          if [[ -z "$PLATZ" ]]; then
+            echo "::error::Der eingebaute Schadcode steht gar nicht mehr in der Liste — der Filter nimmt zuviel weg."
+            sed 's/^/    /' "$RANG"; exit 1
+          fi
+          if [[ "$PLATZ" -gt 5 ]]; then
+            echo "::error::Schadcode auf Platz ${PLATZ} statt unter den ersten fünf (#18)."
+            sed 's/^/    /' "$RANG"; exit 1
+          fi
+          # Ein Filter, der 359 Treffer auf 0 senkt, ist kaputt, nicht gut.
+          # Beide Richtungen gehören geprüft.
+          WEG=$(grep -oE '\(([0-9]+) als unverändert' /tmp/nt-18-ref/betreiber_technik_bericht.md \
+                | head -1 | grep -oE '[0-9]+' || echo 0)
+          if [[ "${WEG:-0}" -lt 1 ]]; then
+            echo "::error::Der Filter hat nichts herausgenommen — die Whitelist erreicht 13c nicht."
+            exit 1
+          fi
+          echo "  ok — Schadcode auf Platz ${PLATZ}, ${WEG} bestätigte Datei(en) herausgefiltert"
 
       - name: Was das Kundenpaket zurückhält (#4)
         # Eigener Prüfstand, weil goldmuster.sh den LAUF vergleicht und das

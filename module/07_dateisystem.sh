@@ -458,74 +458,11 @@ else
     info "Keine Regeldatei unter $YARA_RULES_FILE — Signaturscan übersprungen"
 fi
 
-h2 "7.12 Fremder YARA-Regelsatz (php-malware-finder, optional)"
-# Bewusst ein EIGENER yara-Aufruf, nicht per include in alle.yar:
-#
-#   1. php.yar bringt `import "hash"` mit. Fehlt das Modul im yara-Build,
-#      scheitert die Übersetzung — und mit ihr die gesamte Sammlung. Genau
-#      davor warnt der Kopf von signaturen/alle.yar. Ein eigener Aufruf darf
-#      folgenlos fehlschlagen.
-#   2. Der Regelsatz steht unter LGPL-3.0, dieses Repository unter MIT. Er wird
-#      deshalb nicht mitgeliefert, sondern vor Ort geholt
-#      (werkzeuge/signaturen-fremd-holen.sh) und liegt in einem Verzeichnis,
-#      das nicht im Repository steht.
-#
-# Anders als 7.11 läuft dieser Scan gebündelt statt Datei für Datei. Bei
-# 25.000 PHP-Dateien spart das einen Prozessstart je Datei.
-#
-# Der Weg dahin führt über --scan-list, NICHT über mehrere Dateiargumente:
-# yara nimmt genau ein Ziel entgegen und deutet ein zweites Argument als
-# Regeldatei. Ein Bündelaufruf per xargs meldete deshalb im Test 25.860
-# Dateien in einer Sekunde ohne einen einzigen Treffer — er hatte gar nicht
-# gescannt, sondern nur Übersetzungsfehler erzeugt, die in /dev/null liefen.
-FREMD_YAR="${BASE_DIR}/signaturen/fremd/php.yar"
-if [[ "$WANT_YARA" != "1" ]]; then
-    : # 7.11 hat den Hinweis bereits ausgegeben
-elif ! command -v yara &>/dev/null; then
-    : # dito
-elif [[ ! -f "$FREMD_YAR" ]]; then
-    info "php-malware-finder nicht vorhanden — mit werkzeuge/signaturen-fremd-holen.sh holen"
-else
-    PMF_ALTER=$(( ( $(date +%s) - $(stat -c %Y "$FREMD_YAR" 2>/dev/null || echo 0) ) / 86400 ))
-    # Dateiliste bewusst NICHT nach /tmp: Abschnitt 7.8 prüft dort auf
-    # ausführbare Dateien, und ein Werkzeug soll den eigenen Prüfgegenstand
-    # nicht verändern.
-    PMF_LISTE="${BELEGE_DIR}/.pmf_dateiliste"
-    find "${SCAN_PATHS[@]}" -type f -size -3M \
-        \( -name "*.php" -o -name "*.phtml" -o -name "*.inc" \) 2>/dev/null \
-      | nf_strip_self > "$PMF_LISTE"
-    PMF_OUT=$(yara -w -p 4 --scan-list "$FREMD_YAR" "$PMF_LISTE" 2>/dev/null || true)
-    rm -f "$PMF_LISTE"
-    if [[ -n "$PMF_OUT" ]]; then
-        PMF_ANZ=$(echo "$PMF_OUT" | awk '{print $2}' | sort -u | wc -l)
-        # Nach Anzahl ausgelöster Regeln absteigend — als schwache Hilfe, nicht
-        # als Trennschärfe. Messlauf über 25.860 PHP-Dateien: 359 betroffene
-        # Dateien, und der enthaltene gepackte Webshell landete mit drei Regeln
-        # auf Platz 11. Über ihm standen WordPress-Kern, pclzip, UpdraftPlus und
-        # Wordfence selbst, alle mit drei bis vier Regeln.
-        #
-        # Ursache ist die Whitelist des Regelsatzes: sie arbeitet mit SHA1-Hashes
-        # konkreter Kerndateien (629 Stück für WordPress) aus dem Stand von 2023.
-        # Auf einer aktuellen Installation passt kein einziger davon, also greift
-        # sie nicht, und der Kern selbst schlägt an.
-        #
-        # Konsequenz: dieser Abschnitt ist ein Suchhilfsmittel für den Prüfer,
-        # kein Detektor. Er gehört gelesen, nicht geglaubt.
-        PMF_RANG=$(echo "$PMF_OUT" | awk '{r=$1; $1=""; sub(/^ /,""); regeln[$0]=regeln[$0]" "r; n[$0]++}
-                     END {for (f in n) printf "%d\t%s\t%s\n", n[f], f, regeln[f]}' \
-                   | sort -rn | awk -F'\t' '{printf "%d Regel(n): %s —%s\n", $1, $2, $3}')
-        # Absichtlich warn, nicht crit: die Regeln zielen auf Obfuskierungs- und
-        # Funktionsmuster, nicht auf konkrete Schädlinge. Sie treffen deshalb
-        # auch legitimen Verschleierungs- und Bibliothekscode. Jeder Treffer
-        # gehört gesichtet, keiner ist für sich ein Befund.
-        warn "php-malware-finder: $PMF_ANZ Datei(en) mit Treffern — nach Regelanzahl sortiert, jeder Treffer gehört gesichtet" web
-        code "$(echo "$PMF_RANG" | head -40)"
-        evidence "php_malware_finder_treffer" "$PMF_RANG" kunde
-    else
-        ok "php-malware-finder: keine Treffer"
-    fi
-    info "Regelstand: $PMF_ALTER Tage alt — der Regelsatz wird vom Projekt kaum noch gepflegt"
-fi
+# Der fremde Regelsatz (php-malware-finder) stand bis v3.12 hier als 7.12.
+# Er liegt jetzt als eigener Abschnitt 13c und laeuft NACH den
+# Plugin-Pruefsummen des WordPress-Rezepts — er filtert seine Trefferliste
+# gegen die dort bestaetigt unveraenderten Dateien (#18). Vorher stand er
+# davor und konnte das nicht.
 
 h2 "7.13 PHP-Code in Medien- und Asset-Dateien"
 # Der Gegenpol zu 7.10: dort ein Binary, das sich als Schlüsseldatei ausgibt,
