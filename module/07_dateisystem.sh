@@ -333,6 +333,12 @@ h2 "7.12 Fremder YARA-Regelsatz (php-malware-finder, optional)"
 #
 # Anders als 7.11 läuft dieser Scan gebündelt statt Datei für Datei. Bei
 # 25.000 PHP-Dateien spart das einen Prozessstart je Datei.
+#
+# Der Weg dahin führt über --scan-list, NICHT über mehrere Dateiargumente:
+# yara nimmt genau ein Ziel entgegen und deutet ein zweites Argument als
+# Regeldatei. Ein Bündelaufruf per xargs meldete deshalb im Test 25.860
+# Dateien in einer Sekunde ohne einen einzigen Treffer — er hatte gar nicht
+# gescannt, sondern nur Übersetzungsfehler erzeugt, die in /dev/null liefen.
 FREMD_YAR="${BASE_DIR}/signaturen/fremd/php.yar"
 if [[ "$WANT_YARA" != "1" ]]; then
     : # 7.11 hat den Hinweis bereits ausgegeben
@@ -342,20 +348,40 @@ elif [[ ! -f "$FREMD_YAR" ]]; then
     info "php-malware-finder nicht vorhanden — mit werkzeuge/signaturen-fremd-holen.sh holen"
 else
     PMF_ALTER=$(( ( $(date +%s) - $(stat -c %Y "$FREMD_YAR" 2>/dev/null || echo 0) ) / 86400 ))
-    PMF_OUT=$(find "${SCAN_PATHS[@]}" -type f -size -3M \
-                \( -name "*.php" -o -name "*.phtml" -o -name "*.inc" \) 2>/dev/null \
-              | nf_strip_self \
-              | tr '\n' '\0' \
-              | xargs -0 -r -P4 -n200 yara -w "$FREMD_YAR" 2>/dev/null || true)
+    # Dateiliste bewusst NICHT nach /tmp: Abschnitt 7.8 prüft dort auf
+    # ausführbare Dateien, und ein Werkzeug soll den eigenen Prüfgegenstand
+    # nicht verändern.
+    PMF_LISTE="${BELEGE_DIR}/.pmf_dateiliste"
+    find "${SCAN_PATHS[@]}" -type f -size -3M \
+        \( -name "*.php" -o -name "*.phtml" -o -name "*.inc" \) 2>/dev/null \
+      | nf_strip_self > "$PMF_LISTE"
+    PMF_OUT=$(yara -w -p 4 --scan-list "$FREMD_YAR" "$PMF_LISTE" 2>/dev/null || true)
+    rm -f "$PMF_LISTE"
     if [[ -n "$PMF_OUT" ]]; then
         PMF_ANZ=$(echo "$PMF_OUT" | awk '{print $2}' | sort -u | wc -l)
+        # Nach Anzahl ausgelöster Regeln absteigend — als schwache Hilfe, nicht
+        # als Trennschärfe. Messlauf über 25.860 PHP-Dateien: 359 betroffene
+        # Dateien, und der enthaltene gepackte Webshell landete mit drei Regeln
+        # auf Platz 11. Über ihm standen WordPress-Kern, pclzip, UpdraftPlus und
+        # Wordfence selbst, alle mit drei bis vier Regeln.
+        #
+        # Ursache ist die Whitelist des Regelsatzes: sie arbeitet mit SHA1-Hashes
+        # konkreter Kerndateien (629 Stück für WordPress) aus dem Stand von 2023.
+        # Auf einer aktuellen Installation passt kein einziger davon, also greift
+        # sie nicht, und der Kern selbst schlägt an.
+        #
+        # Konsequenz: dieser Abschnitt ist ein Suchhilfsmittel für den Prüfer,
+        # kein Detektor. Er gehört gelesen, nicht geglaubt.
+        PMF_RANG=$(echo "$PMF_OUT" | awk '{r=$1; $1=""; sub(/^ /,""); regeln[$0]=regeln[$0]" "r; n[$0]++}
+                     END {for (f in n) printf "%d\t%s\t%s\n", n[f], f, regeln[f]}' \
+                   | sort -rn | awk -F'\t' '{printf "%d Regel(n): %s —%s\n", $1, $2, $3}')
         # Absichtlich warn, nicht crit: die Regeln zielen auf Obfuskierungs- und
         # Funktionsmuster, nicht auf konkrete Schädlinge. Sie treffen deshalb
         # auch legitimen Verschleierungs- und Bibliothekscode. Jeder Treffer
         # gehört gesichtet, keiner ist für sich ein Befund.
-        warn "php-malware-finder: $PMF_ANZ Datei(en) mit Treffern — jeder Treffer gehört gesichtet"
-        code "$(echo "$PMF_OUT" | awk '{r=$1; $1=""; sub(/^ /,""); print $0" — Regel: "r}' | sort -u | head -40)"
-        evidence "php_malware_finder_treffer" "$PMF_OUT"
+        warn "php-malware-finder: $PMF_ANZ Datei(en) mit Treffern — nach Regelanzahl sortiert, jeder Treffer gehört gesichtet"
+        code "$(echo "$PMF_RANG" | head -40)"
+        evidence "php_malware_finder_treffer" "$PMF_RANG"
     else
         ok "php-malware-finder: keine Treffer"
     fi
