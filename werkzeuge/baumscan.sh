@@ -31,6 +31,7 @@
 
 set -uo pipefail
 
+if [ "${1:-}" = "--online" ]; then BAUMSCAN_ONLINE=1; shift; fi
 SCOPE="${1:?Scope-Pfad nötig (z. B. /var/www/vhosts/beispiel.de)}"
 PREV="${2:-}"
 
@@ -192,6 +193,40 @@ tr '\n' '\0' < "$RUN/01d_php_kandidaten.txt" \
 while read -r f; do
   [ -n "$f" ] && fund "HEURISTIK_HIGH" 40 "$f"
 done < "$RUN/03_heuristik_high.txt"
+
+# Packer getrennt erfassen — nicht wegen der Punkte, sondern wegen des Urteils.
+# HEURISTIK_HIGH allein ist NICHT beweiskräftig: eval("?> …) trifft auch Twig,
+# create_function() steht in phpseclib und in altem Theme-Code. Diese Treffer
+# gehören gesichtet.
+# Ausschliesslich der Banner eines Obfuskators. Nichts sonst.
+#
+# Der erste Entwurf nahm auch lange Escape-Folgen auf ("acht oder mehr \xNN am
+# Stück, das schreibt niemand freiwillig"). Der Lauf gegen einen bereinigten
+# Baum widerlegte das sofort: 12 Dateien wurden BEFALLEN gemeldet, darunter
+# phpseclib RSA.php und Blowfish.php sowie HTMLPurifier. Krypto-Bibliotheken
+# bestehen aus genau solchen Folgen — S-Boxen, OID-Bytes, Testvektoren:
+#     \x2a\x86\x48\x86\xf7\x0d\x01\x05\x03
+# 59 dieser Dateien trugen zugleich eine gültige amtliche Prüfsumme. Der
+# Widerspruchszähler hat die Regel überführt, bevor sie in einen Kundenbericht
+# geraten konnte. Die Escape-Folge steht deshalb weiter in PR_HIGH und führt
+# zu TREFFER — dort gehört sie hin.
+#
+# Der Banner dagegen trennt scharf: serverweit über 74 Installationen tragen
+# Nur SELBSTBESCHREIBUNGEN einer kodierten Datei, keine blossen Nennungen.
+#
+# Der bare Produktname taugt nicht: "ionCube" steht in Composers
+# DiagnoseCommand, weil der den Loader prüft, und in easy-wp-smtp. "obfuscated
+# by" steht in siebzehn Kopien von broken-link-checker. Beides sind Erwähnungen,
+# keine kodierten Dateien. Gesucht ist die Zeile, mit der ein Obfuskator seine
+# eigene Ausgabe stempelt.
+PR_PACKER='miladworkshop|PHP Encoding by|PHP Encoder Version|Encoded by (ionCube|Zend Guard|SourceGuardian)'
+tr '\n' '\0' < "$RUN/01d_php_kandidaten.txt" \
+  | $NICE xargs -0 -r -P4 -n200 grep -lPi "$PR_PACKER" 2>/dev/null \
+  > "$RUN/03d_packer.txt"
+
+while read -r f; do
+  [ -n "$f" ] && fund "PACKER_SIGNATUR" 60 "$f"
+done < "$RUN/03d_packer.txt"
 
 # MED: einzeln unauffällig, in Summe aussagekräftig. Eine reale Filemanager-Shell nutzte
 # shell_exec ohne jede Verschleierung — das fehlte im Muster komplett.
@@ -432,6 +467,149 @@ stufe() {
   else                       echo "HINWEIS"; fi
 }
 
+# -----------------------------------------------------------------------------
+# 7b  Urteil je Datei — für JEDE Datei im Baum                          [NEU]
+# -----------------------------------------------------------------------------
+# Bisher bekamen nur Dateien MIT Fund eine Aussage. Bei einem realen Lauf waren
+# das 870 von 101.735 — für 100.865 Dateien stand nichts da, und im Bericht
+# las sich das wie Entwarnung. Das ist die gefährlichste Sorte Bericht.
+#
+# Vier Urteile, und nur eines davon ist eine Unbedenklichkeitsaussage:
+#
+#   SAUBER    Amtliche Prüfsumme stimmt. Das ist die EINZIGE Quelle für dieses
+#             Urteil. Keine Heuristik, keine Verbreitung, kein Bauchgefühl.
+#   KEIN      Nichts angeschlagen — und keine Referenz vorhanden, um es zu
+#             bestätigen. Der ehrliche Normalfall für Uploads, eigene Themes,
+#             Konfigurationen, kommerzielle Erweiterungen.
+#   TREFFER   Etwas hat angeschlagen, mit Auslegungsspielraum. Gehört gesichtet.
+#   BEFALLEN  Beweis, der nicht vernünftig bestreitbar ist.
+#
+# Rangfolge: BEFALLEN > SAUBER > TREFFER > KEIN. Ein Widerspruch (amtliche
+# Prüfsumme stimmt UND Signaturtreffer) wird gesondert ausgewiesen statt
+# stillschweigend aufgelöst — er bedeutet entweder Fehlalarm des Scanners oder
+# einen Angriff auf die Lieferkette. Beides gehört vor Augen.
+log "Urteile je Datei..."
+
+URTEILE="$RUN/urteile.tsv"
+: > "$URTEILE"
+: > "$RUN/.sauber_pfade"
+: > "$RUN/09_pruefsummen_quellen.txt"
+
+# ── Amtliche Prüfsummen ────────────────────────────────────────────────────
+# Ohne Netz gibt es kein SAUBER. Das ist kein Mangel des Werkzeugs, sondern die
+# Wahrheit: ohne Referenz lässt sich Unbedenklichkeit nicht behaupten.
+if [ "${BAUMSCAN_ONLINE:-0}" = "1" ] && command -v curl >/dev/null 2>&1 && command -v python3 >/dev/null 2>&1; then
+  # WordPress-Kern
+  while read -r vfile; do
+    [ -n "$vfile" ] || continue
+    wproot=$(dirname "$(dirname "$vfile")")
+    wpver=$(sed -n "s/^\$wp_version = '\([^']*\)'.*/\1/p" "$vfile" 2>/dev/null | head -1)
+    [ -n "$wpver" ] || continue
+    kern_json="$RUN/.kern_${wpver}.json"
+    if [ ! -s "$kern_json" ]; then
+      curl -fsSL --max-time 30 \
+        "https://api.wordpress.org/core/checksums/1.0/?version=${wpver}&locale=en_US" \
+        -o "$kern_json" 2>/dev/null || true
+    fi
+    [ -s "$kern_json" ] || continue
+    echo "WP-Kern $wpver -> $wproot" >> "$RUN/09_pruefsummen_quellen.txt"
+    python3 - "$kern_json" "$wproot" <<'PY' >> "$RUN/.sauber_pfade" 2>/dev/null
+import hashlib, json, os, sys
+try:
+    daten = json.load(open(sys.argv[1]))
+except Exception:
+    sys.exit(0)
+wurzel = sys.argv[2]
+for rel, md5 in (daten.get("checksums") or {}).items():
+    pfad = os.path.join(wurzel, rel)
+    try:
+        with open(pfad, "rb") as fh:
+            if hashlib.md5(fh.read()).hexdigest() == md5:
+                print(pfad)
+    except OSError:
+        pass
+PY
+  done < <(find "$SCOPE" -path "$EXCL" -prune -o -type f -name version.php -path "*/wp-includes/*" -print 2>/dev/null)
+
+  # Plugins aus dem wordpress.org-Verzeichnis
+  while read -r pdir; do
+    [ -d "$pdir" ] || continue
+    slug=$(basename "$pdir")
+    pver=$(grep -rhiE "^[[:space:]]*\*?[[:space:]]*Version:[[:space:]]*[0-9]" "$pdir" --include="*.php" 2>/dev/null \
+           | head -1 | sed 's/.*[Vv]ersion:[[:space:]]*//' | tr -d '\r' | awk '{print $1}')
+    [ -n "$pver" ] || continue
+    pj="$RUN/.plugin_${slug}_${pver}.json"
+    if [ ! -s "$pj" ]; then
+      curl -fsSL --max-time 20 \
+        "https://downloads.wordpress.org/plugin-checksums/${slug}/${pver}.json" \
+        -o "$pj" 2>/dev/null || true
+    fi
+    [ -s "$pj" ] || continue
+    echo "Plugin $slug $pver" >> "$RUN/09_pruefsummen_quellen.txt"
+    python3 - "$pj" "$pdir" <<'PY' >> "$RUN/.sauber_pfade" 2>/dev/null
+import hashlib, json, os, sys
+try:
+    daten = json.load(open(sys.argv[1]))
+except Exception:
+    sys.exit(0)
+wurzel = sys.argv[2]
+for rel, eintrag in (daten.get("files") or {}).items():
+    erwartet = eintrag.get("md5")
+    if isinstance(erwartet, list):
+        erwartet = erwartet[0] if erwartet else None
+    if not erwartet:
+        continue
+    pfad = os.path.join(wurzel, rel)
+    try:
+        with open(pfad, "rb") as fh:
+            if hashlib.md5(fh.read()).hexdigest() == erwartet:
+                print(pfad)
+    except OSError:
+        pass
+PY
+  done < <(find "$SCOPE" -path "$EXCL" -prune -o -type d -path "*/wp-content/plugins/*" -maxdepth 6 -print 2>/dev/null \
+           | awk -F'/wp-content/plugins/' 'NF>1 {split($2,t,"/"); print $1"/wp-content/plugins/"t[1]}' | sort -u)
+  sort -u "$RUN/.sauber_pfade" -o "$RUN/.sauber_pfade"
+  log "  amtlich bestätigt: $(wc -l < "$RUN/.sauber_pfade") Dateien aus $(wc -l < "$RUN/09_pruefsummen_quellen.txt") Quelle(n)"
+else
+  log "  ohne Netz oder ohne python3/curl — kein SAUBER möglich, alles unbestätigt"
+fi
+
+# ── Kategorien den Urteilen zuordnen ───────────────────────────────────────
+# BEFALLEN nur für Belege ohne vernünftigen Auslegungsspielraum.
+BEFALLEN_KAT='IMUNIFY_SIGNATUR|PHP_IN_MEDIENDATEI|MAGIC_PHP_ALS_BILD|HTACCESS_SHELL_FREIGABE|HTACCESS_PHP_IN_UPLOADS|PACKER_SIGNATUR'
+
+awk -F'\t' -v befmuster="$BEFALLEN_KAT" '
+  # 1. Durchgang: amtlich bestätigte Pfade
+  FILENAME ~ /\.sauber_pfade$/ { sauber[$0] = 1; next }
+  # 2. Durchgang: bewertete Funde (score, kategorien, pfad)
+  FILENAME ~ /findings\.tsv$/  { kat[$3] = $2; next }
+  # 3. Durchgang: die Inventur — sie bestimmt, WELCHE Dateien beurteilt werden
+  {
+    pfad = $6
+    k = (pfad in kat) ? kat[pfad] : ""
+    istbef = (k != "" && k ~ befmuster)
+    istsauber = (pfad in sauber)
+    if (istbef && istsauber) {
+      printf "WIDERSPRUCH\tamtliche Prüfsumme stimmt UND %s\t%s\n", k, pfad
+    } else if (istbef) {
+      printf "BEFALLEN\t%s\t%s\n", k, pfad
+    } else if (istsauber) {
+      printf "SAUBER\tamtliche Prüfsumme stimmt\t%s\n", pfad
+    } else if (k != "") {
+      printf "TREFFER\t%s\t%s\n", k, pfad
+    } else {
+      printf "KEIN\tkeine Referenz vorhanden, nichts angeschlagen\t%s\n", pfad
+    }
+  }
+' "$RUN/.sauber_pfade" "$RUN/findings.tsv" "$INV" > "$URTEILE"
+
+U_BEFALLEN=$(grep -c '^BEFALLEN' "$URTEILE" 2>/dev/null || echo 0)
+U_TREFFER=$(grep -c '^TREFFER'  "$URTEILE" 2>/dev/null || echo 0)
+U_SAUBER=$(grep -c '^SAUBER'    "$URTEILE" 2>/dev/null || echo 0)
+U_KEIN=$(grep -c '^KEIN'        "$URTEILE" 2>/dev/null || echo 0)
+U_WIDER=$(grep -c '^WIDERSPRUCH' "$URTEILE" 2>/dev/null || echo 0)
+
 CRIT="$RUN/BEFUND.txt"
 {
   echo "==============================================================="
@@ -439,6 +617,23 @@ CRIT="$RUN/BEFUND.txt"
   echo " Scope: $SCOPE"
   echo " Lauf:  $(date -Is)"
   echo "==============================================================="
+  echo
+  echo "---------------------------------------------------------------"
+  echo " URTEIL JE DATEI — jede Datei im Baum, nicht nur die Treffer"
+  echo "---------------------------------------------------------------"
+  printf "  %-10s %8d   %s\n" "BEFALLEN" "$U_BEFALLEN" "Beweis, nicht vernünftig bestreitbar"
+  printf "  %-10s %8d   %s\n" "TREFFER"  "$U_TREFFER"  "angeschlagen, gehört gesichtet"
+  printf "  %-10s %8d   %s\n" "SAUBER"   "$U_SAUBER"   "amtliche Prüfsumme stimmt"
+  printf "  %-10s %8d   %s\n" "KEIN"     "$U_KEIN"     "nichts gefunden — und nicht bestätigbar"
+  [ "$U_WIDER" -gt 0 ] && printf "  %-10s %8d   %s\n" "WIDERSPRUCH" "$U_WIDER" "Prüfsumme stimmt UND Signaturtreffer — klären"
+  echo
+  echo "  KEIN ist keine Entwarnung. Es heisst: nichts angeschlagen, und es gibt"
+  echo "  keine Referenz, an der sich Unbedenklichkeit belegen liesse."
+  if [ "$U_SAUBER" -eq 0 ]; then
+    echo "  SAUBER ist 0 — ohne --online gibt es keine amtlichen Prüfsummen."
+  fi
+  echo
+  echo "Vollständige Liste: urteile.tsv (ein Urteil je Datei)"
   echo
   echo "Dateien gesamt:        $(wc -l < "$INV")"
   echo "PHP-Kandidaten:        $(wc -l < "$RUN/01d_php_kandidaten.txt")"
