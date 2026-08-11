@@ -480,3 +480,22 @@ PATTERN_REGEX_MED='\b(shell_exec|passthru|popen|proc_open|pcntl_exec)\s*\(|\bsys
 # Schwelle: Dropper sind fast reine Obfuskation → klein. Legitime
 # Framework-Nutzung (phpseclib, eGroupware) steckt in großen Dateien.
 DROPPER_MAX_BYTES=3000
+
+# ── Zeitstempel-Abstand: zwei Schwellen, absichtlich verschieden ─────────────
+# Beide messen dasselbe — wie weit die mtime hinter der ctime zurückliegt —,
+# aber sie tragen unterschiedlich viel Last, und deshalb dürfen sie nicht
+# denselben Wert haben.
+#
+# ZUSATZ (30 Tage, Abschnitt 7.3 und datei_steckbrief): steht immer an einer
+# Datei, die bereits aus anderem Grund auffällt. Er muss nichts allein
+# beweisen, nur einen vorhandenen Verdacht schärfen — also darf er
+# empfindlich sein.
+#
+# ALLEIN (90 Tage, Abschnitt 8.7): erhebt einen eigenen kritischen Befund über
+# Systemverzeichnisse. Was hier ausschlägt, steht ohne Stütze im Bericht. Ein
+# Messlauf mit der 30-Tage-Schwelle als alleinigem Befund lieferte 62.373
+# Dateien — jedes rekursive chown und jede Rücksicherung löst ihn baumweit
+# aus. Abschnitt 8.7 nimmt zusätzlich paketverwaltete Dateien aus, bei denen
+# der Abstand normales dpkg-Verhalten ist.
+ZEITSTEMPEL_ZUSATZ_SEK=2592000     # 30 Tage
+ZEITSTEMPEL_ALLEIN_SEK=7776000     # 90 Tage

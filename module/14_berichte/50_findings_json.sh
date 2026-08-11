@@ -201,6 +201,7 @@ print(json.dumps(raus, ensure_ascii=False))' 2>/dev/null || echo '{}')
   "metrics": {
     "webshell_count": ${WEBSHELL_COUNT:-0},
     "webshell_review": ${WEBSHELL_REVIEW:-0},
+    "uploads_guards_gefiltert": ${GUARD_COUNT:-0},
     "injected_core_files": ${n_corei:-0},
     "doorway_dirs": ${n_doorw:-0},
     "core_include_injections": ${n_coreinj:-0},

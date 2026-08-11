@@ -66,6 +66,15 @@ jobs:
           sudo apt-get update -qq && sudo apt-get install -y -qq php-cli
           bash werkzeuge/version_compare_gegentest.sh 30000
 
+      - name: Zeitstempel in Belegen (lib/kern.sh)
+        # Eigener Prüfstand, weil die Referenz unter pruefstand/referenz/ von
+        # den Belegen nur die DATEINAMEN festhält, nicht deren Inhalt. Der
+        # Inhalt eines Belegs ist aber genau das, was am Ende getragen werden
+        # soll — und war bis hierher von keinem Vergleich gedeckt.
+        # Die Gegenproben stecken im Prüfstand selbst: zu jedem "wird
+        # gemeldet" gehört dort ein Fall, der NICHT gemeldet werden darf.
+        run: bash werkzeuge/kern-pruefstand.sh
+
       - name: Urteile von baumscan.sh
         # Eigener Prüfstand, weil goldmuster.sh wp_plesk_forensik.sh prüft und
         # die Urteile in baumscan.sh leben. Und mit Soll-Werten statt
@@ -172,4 +181,11 @@ jobs:
           gegenprobe "7.6 Einzelfreigabe in .htaccess" NT_PRUEFSTAND_OHNE_HTACCESSPROBE=1
           # Flächige Zeitstempel-Manipulation.
           gegenprobe "7.14 Zeitstempel-Häufung"    NT_PRUEFSTAND_OHNE_ZEITCLUSTER=1
+          # Der Wächter-Filter in 7.2. Ohne diese Probe stehen an den drei
+          # Stellen echte PHP-Dateien statt leerer Wächter — sie MÜSSEN dann
+          # als Fund erscheinen. Schlägt der Vergleich nicht aus, filtert der
+          # Wächter-Zweig nicht mehr nur Wächter, sondern deckt Funde zu.
+          # Der umgekehrte Fehler ist gemessen: ein Lauf über 68
+          # Installationen meldete 274 leere index.php als "extrem verdächtig".
+          gegenprobe "7.2 Wächter-Filter"          NT_PRUEFSTAND_OHNE_WAECHTER=1
           bash werkzeuge/goldmuster.sh vergleichen

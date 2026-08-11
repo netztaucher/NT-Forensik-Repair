@@ -427,8 +427,9 @@ while IFS= read -r f; do
     # 8.6 (dpkg -V/debsums). Nur NICHT-paketierte Dateien sind hier belastbar.
     if [[ "$_have_dpkg" == 1 ]] && dpkg -S "$f" &>/dev/null; then continue; fi
     line="$(stat -c 'ctime %z | mtime %y | %n' "$f" 2>/dev/null)"
-    if (( ct - mt > 7776000 )); then
+    if (( ct - mt > ${ZEITSTEMPEL_ALLEIN_SEK:-7776000} )); then
         # Inode kürzlich geändert, mtime aber künstlich >90 Tage davor: Timestomping.
+        # Höhere Schwelle als der Zusatz in 7.3 — Begründung in lib/konfig.sh.
         TIMESTOMP+="$line"$'\n'
     else
         RECENT_SYS+="$line"$'\n'

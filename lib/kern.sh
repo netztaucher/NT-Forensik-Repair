@@ -220,17 +220,31 @@ verdikt_melden() {   # verdikt_melden <app> <flags> <text>
 # standen mtime, ctime, Eigentuemer und Rechte im ersten Entwurf von
 # Abschnitt 16 leer im Beleg, ohne dass es auffiel.
 #
-#   datei_meta <datei> mtime|ctime|eigner|rechte|groesse
+#   datei_meta <datei> mtime|ctime|crtime|eigner|rechte|groesse
 #
 # Warum ctime getrennt von mtime: wer eine Datei zurueckdatiert, faelscht die
 # mtime. Die ctime laesst sich ohne Schreibrechte am Datentraeger nicht
 # faelschen und verraet den Eingriff.
+#
+# Warum crtime zusaetzlich zu beiden: die ctime verraet zwar den Eingriff, aber
+# nicht, wann die Datei entstand — und sie wandert bei jedem chown und jeder
+# Ruecksicherung mit. Die Anlegezeit tut das nicht. Im Anlassfall setzte der
+# Angreifer die mtime von 59.472 Dateien auf einen einzigen gefaelschten Wert;
+# die Chronologie liess sich danach ausschliesslich ueber die crtime
+# rekonstruieren. Sie ist nicht ueberall zu haben: ext4 fuehrt sie, meldet sie
+# aber nur bei ausreichend grossem Inode, und `stat -c %w` gibt dann "-" aus.
 datei_meta() {
-  local f="$1" was="$2"
+  local f="$1" was="$2" w
   if stat -c %y "$f" >/dev/null 2>&1; then      # GNU
     case "$was" in
       mtime)   stat -c %y "$f" | cut -d. -f1 ;;
       ctime)   stat -c %z "$f" | cut -d. -f1 ;;
+      crtime)  w=$(stat -c %w "$f" 2>/dev/null || true)
+               if [[ -z "$w" || "$w" == "-" ]]; then
+                 echo "nicht verfügbar"
+               else
+                 echo "${w%%.*}"
+               fi ;;
       eigner)  stat -c '%U:%G' "$f" ;;
       rechte)  stat -c %a "$f" ;;
       groesse) stat -c %s "$f" ;;
@@ -239,6 +253,7 @@ datei_meta() {
     case "$was" in
       mtime)   stat -f '%Sm' -t '%Y-%m-%d %H:%M:%S' "$f" ;;
       ctime)   stat -f '%Sc' -t '%Y-%m-%d %H:%M:%S' "$f" ;;
+      crtime)  stat -f '%SB' -t '%Y-%m-%d %H:%M:%S' "$f" 2>/dev/null || echo "nicht verfügbar" ;;
       eigner)  stat -f '%Su:%Sg' "$f" ;;
       rechte)  stat -f '%OLp' "$f" ;;
       groesse) stat -f '%z' "$f" ;;
@@ -246,6 +261,17 @@ datei_meta() {
   else
     echo "?"
   fi
+}
+
+# Rohe Sekundenwerte fuer Rechnungen. Getrennt von datei_meta, weil dort
+# formatierte Zeichenketten herauskommen — mit denen laesst sich nicht rechnen.
+#   datei_epoche <datei> mtime|ctime   → Sekunden seit 1970, oder 0
+datei_epoche() {
+  local f="$1" was="$2"
+  case "$was" in
+    mtime) stat -c %Y "$f" 2>/dev/null || stat -f %m "$f" 2>/dev/null || echo 0 ;;
+    ctime) stat -c %Z "$f" 2>/dev/null || stat -f %c "$f" 2>/dev/null || echo 0 ;;
+  esac
 }
 
 # ── Maskierung für Kundenberichte (v3.5) ─────────────────────
@@ -267,13 +293,61 @@ mask_email(){ sed -E 's/([A-Za-z0-9])[A-Za-z0-9._%+-]*(@[A-Za-z0-9.-]+\.[A-Za-z]
 # Bibliothek eines echten Plugins, und niemand konnte das am Beleg erkennen;
 # die Bewertung blieb offen, bis jemand die Dateien selbst aufmachte. Genau
 # diese Arbeit soll der Beleg abnehmen.
+#
+# Warum drei Zeitstempel statt einer: die mtime allein sagt nur, was der
+# letzte Schreiber hinterlassen wollte. `touch -r nachbar.php shell.php` setzt
+# sie auf einen unauffaelligen Wert, und der Beleg behauptet danach ein
+# Alter, das die Datei nie hatte. ctime und crtime widersprechen dem — die
+# eine, weil sie sich ohne Schreibrechte am Datentraeger nicht faelschen
+# laesst, die andere, weil `touch` sie gar nicht erst anfasst.
 datei_steckbrief() {   # datei_steckbrief <kriterium> <regex> <datei>
-  local krit="$1" re="$2" f="$3" mtime=""
+  local krit="$1" re="$2" f="$3" mtime="" ctime="" crtime=""
   mtime=$(stat -c '%y' "$f" 2>/dev/null || stat -f '%Sm' "$f" 2>/dev/null || echo "unbekannt")
+  ctime=$(datei_meta "$f" ctime 2>/dev/null || echo "unbekannt")
+  crtime=$(datei_meta "$f" crtime 2>/dev/null || echo "unbekannt")
   printf '── %s\n' "$f"
   printf '   Kriterium : %s\n' "$krit"
   printf '   Groesse   : %s Bytes\n' "$(wc -c < "$f" 2>/dev/null | tr -d ' ')"
-  printf '   Geaendert : %s\n' "${mtime%%.*}"
+  printf '   Geaendert : %s   (mtime)\n' "${mtime%%.*}"
+  printf '   Metadaten : %s   (ctime)\n' "${ctime:-unbekannt}"
+  printf '   Angelegt  : %s   (crtime)\n' "${crtime:-nicht verfügbar}"
+
+  # Rueckdatierung: mtime deutlich aelter als die letzte Metadatenaenderung.
+  local _mt _ct
+  _mt=$(datei_epoche "$f" mtime); _ct=$(datei_epoche "$f" ctime)
+  if [[ "${_ct:-0}" -gt 0 && "${_mt:-0}" -gt 0 ]] \
+     && (( _ct - _mt > ${ZEITSTEMPEL_ZUSATZ_SEK:-2592000} )); then
+    printf '   ! Rueckdatierung: mtime liegt %s Tage vor der letzten Metadatenaenderung\n' \
+      "$(( (_ct - _mt) / 86400 ))"
+  fi
+
+  # Nachbarvergleich: `touch -r` uebernimmt die mtime einer anderen Datei
+  # sekundengenau. Zwei Dateien im selben Verzeichnis, die auf dieselbe
+  # Sekunde geschrieben wurden, entstehen bei normaler Arbeit praktisch nicht
+  # — bei einer Auslieferung entstehen sie in derselben Sekunde ALLE, nicht
+  # genau zu zweit. Gemeldet wird deshalb nur der enge Fall: hoechstens fuenf
+  # Partner. Darueber ist es eine Entpackung und kein Hinweis.
+  #
+  # Verglichen wird ueber stat, nicht ueber `find -newermt`: dessen
+  # @Sekunden-Form ist GNU-eigen und scheitert auf BSD stumm — die Pruefung
+  # haette auf dem Entwicklungsrechner nie etwas gemeldet, ohne das zu sagen.
+  local _dir _partner="" _anz=0 _n _nm
+  _dir=$(dirname "$f")
+  if [[ "${_mt:-0}" -gt 0 ]]; then
+    while IFS= read -r _n; do
+      [[ "$_n" == "$f" ]] && continue
+      _nm=$(datei_epoche "$_n" mtime)
+      [[ "${_nm:-0}" == "${_mt}" ]] || continue
+      _partner+="$_n"$'\n'
+      _anz=$((_anz+1))
+      [[ "$_anz" -gt 5 ]] && break
+    done < <(find "$_dir" -maxdepth 1 -type f 2>/dev/null | head -500)
+  fi
+  if [[ "$_anz" -ge 1 && "$_anz" -le 5 ]]; then
+    printf '   ! Gleiche mtime wie %s Datei(en) im selben Verzeichnis — moeglich per touch -r uebernommen:\n' "$_anz"
+    printf '%s' "$_partner" | sed 's/^/       /'
+  fi
+
   printf '   SHA256    : %s\n' "$(sha256sum "$f" 2>/dev/null | awk '{print $1}')"
   printf '   Fundstelle (Zeile: Treffer im Kontext):\n'
   local treffer

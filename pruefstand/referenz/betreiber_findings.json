@@ -31,6 +31,7 @@
   "metrics": {
     "webshell_count": 0,
     "webshell_review": 0,
+    "uploads_guards_gefiltert": 3,
     "injected_core_files": 0,
     "doorway_dirs": 0,
     "core_include_injections": 0,

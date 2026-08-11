@@ -36,11 +36,13 @@
   Kürzlich veränderte .php-Dateien:
 
 ```
+<INODE> -rw-r--r-- <EIGNER> 0 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/uploads/index.php
+<INODE> -rw-r--r-- <EIGNER> 12 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/uploads/cache/index.php
+<INODE> -rw-r--r-- <EIGNER> 12 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/uploads/forminator/index.php
 <INODE> -rw-r--r-- <EIGNER> 131 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/backups/updater-abc123/nextcloud-28.0.1.2-1700000000/config/config.php
 <INODE> -rw-r--r-- <EIGNER> 131 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/cloud.kunde-zwei.example/config/config.php
 <INODE> -rw-r--r-- <EIGNER> 16 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/backups/updater-abc123/nextcloud-28.0.1.2-1700000000/config/config/index.php
 <INODE> -rw-r--r-- <EIGNER> 16 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/cloud.kunde-zwei.example/config/config/index.php
-<INODE> -rw-r--r-- <EIGNER> 169 <MTIME> <PRUEFSTAND>/vhosts/kunde-drei.example/httpdocs/wp-config.php
 <INODE> -rw-r--r-- <EIGNER> 169 <MTIME> <PRUEFSTAND>/vhosts/kunde-eins.example/backup/httpdocs/wp-config.php
 <INODE> -rw-r--r-- <EIGNER> 169 <MTIME> <PRUEFSTAND>/vhosts/kunde-eins.example/httpdocs/wp-config.php
 <INODE> -rw-r--r-- <EIGNER> 169 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-config.php
@@ -60,11 +62,9 @@
 <INODE> -rw-r--r-- <EIGNER> 42 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/mu-plugins/cache.php
 <INODE> -rw-r--r-- <EIGNER> 43 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/uploads/2026/03/bild.php
 <INODE> -rw-r--r-- <EIGNER> 73 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/plugins/pruefstand-kopflos/pruefstand-kopflos.php
-<INODE> -rw-r--r-- <EIGNER> 82 <MTIME> <PRUEFSTAND>/vhosts/kunde-drei.example/httpdocs/wp-content/plugins/pruefstand-alt/pruefstand-alt.php
 <INODE> -rw-r--r-- <EIGNER> 82 <MTIME> <PRUEFSTAND>/vhosts/kunde-drei.example/httpdocs/wp-content/plugins/pruefstand-kev/pruefstand-kev.php
 <INODE> -rw-r--r-- <EIGNER> 82 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/plugins/pruefstand-kev/pruefstand-kev.php
 <INODE> -rw-r--r-- <EIGNER> 84 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/plugins/pruefstand-alt/pruefstand-alt.php
-<INODE> -rw-r--r-- <EIGNER> 86 <MTIME> <PRUEFSTAND>/vhosts/kunde-drei.example/httpdocs/wp-content/plugins/pruefstand-aktuell/pruefstand-aktuell.php
 <INODE> -rw-r--r-- <EIGNER> 86 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/plugins/pruefstand-aktuell/pruefstand-aktuell.php
 ```
 
@@ -72,7 +72,7 @@
 
 ### 7.2 PHP-Dateien in Upload-Verzeichnissen
 
-- 🔴 **KRITISCH: PHP-Dateien in Upload-Verzeichnissen (nach Guard-Filter, extrem verdächtig)**
+- 🔴 **KRITISCH: PHP-Dateien in Upload-Verzeichnissen (nach Guard-Filter, extrem verdächtig; 3 Guard-/Plugin-Dateien gefiltert)**
 
 ```
 <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/uploads/2026/03/bild.php
