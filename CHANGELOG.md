@@ -4,6 +4,20 @@ Alle nennenswerten Änderungen an `wp_plesk_forensik.sh`.
 
 ## [unveröffentlicht]
 
+### Behoben — `sort: write failed: Broken pipe` mitten im Bericht
+
+`… | sort | head -5` schliesst die Pipe, sobald `head` genug hat; `sort`
+bekommt EPIPE und schreibt eine Fehlermeldung nach stderr — **nicht immer,
+sondern je nachdem, ob die Ausgabe noch in den Pipe-Puffer passt**. In der CI
+trug die aufgenommene Referenz die Zeile, der Vergleichslauf desselben Standes
+nicht. Ein Prüfstand, der bei gleichem Programmstand mal so und mal so
+ausschlägt, taugt nichts; und in einem forensischen Beleg hat eine
+Interpreter-Meldung ohnehin nichts verloren.
+
+Betroffen waren sechs Stellen (7.14, 3.x, 4.x, `baumscan.sh`). `awk` begrenzt
+jetzt selbst und liest die Eingabe zu Ende. Bei der Gelegenheit `LC_ALL=C` vor
+jedes beteiligte `sort` — dieselbe Falle wie in 7.1.
+
 ### Behoben — die Befund-Einordnung lief bei `--nur-website` überhaupt nicht (#3)
 
 Der Block, der jedem Fund eine Familie und ein Geschäftsmodell zuordnet und

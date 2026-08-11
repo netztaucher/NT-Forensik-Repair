@@ -582,9 +582,17 @@ h2 "7.14 Massenhaft gleiche Zeitstempel (Spurenverwischung)"
 # einer Rücksicherung, einer Migration oder einem Auspacken mit erhaltenen
 # Zeitstempeln. Was der Prüfer daraus macht, hängt davon ab, ob für den
 # Zeitpunkt eine Erklärung existiert. Die Frage zu stellen ist der Wert.
+# Kein `| head` am Ende der Kette. `head` schliesst die Pipe, sobald es genug
+# hat; das vorgelagerte `sort` bekommt EPIPE und schreibt
+#   sort: write failed: 'standard output': Broken pipe
+# nach stderr. Ob es dazu kommt, haengt davon ab, ob die Ausgabe noch in den
+# Pipe-Puffer passt — also vom Zufall. Genau so ist die Zeile in der CI
+# aufgetaucht: die aufgenommene Referenz trug sie, der Vergleichslauf nicht.
+# Ein Pruefstand, der bei gleichem Programmstand mal so und mal so ausschlaegt,
+# ist keiner. awk begrenzt deshalb selbst und liest die Eingabe bis zum Ende.
 ZEIT_CLUSTER=$(find "${SCAN_PATHS[@]}" -type f -printf '%T@\n' 2>/dev/null \
-  | cut -d. -f1 | sort | uniq -c | sort -rn \
-  | awk -v min="${ZEITCLUSTER_MIN:-500}" '$1>=min {print $1"\t"$2}' | head -5)
+  | cut -d. -f1 | LC_ALL=C sort | uniq -c | LC_ALL=C sort -rn \
+  | awk -v min="${ZEITCLUSTER_MIN:-500}" '$1>=min && ++n<=5 {print $1"\t"$2}')
 
 if [[ -n "$ZEIT_CLUSTER" ]]; then
   ZC_DETAIL=""
@@ -595,7 +603,12 @@ if [[ -n "$ZEIT_CLUSTER" ]]; then
     # ein echter Massenvorgang (Auspacken, Kopie). Weicht sie ab, wurde die
     # mtime nachträglich gesetzt — das ist der Unterschied zwischen Migration
     # und Verschleierung.
-    beispiel=$(find "${SCAN_PATHS[@]}" -type f -newermt "@$((epoche-1))" ! -newermt "@$((epoche+1))" 2>/dev/null | sort | head -1)
+    # Dieselbe Sache: `sort | head -1` bricht sort mitten im Schreiben ab.
+    # Hier wird die ganze Liste geholt und die erste Zeile in der Shell
+    # abgeschnitten. LC_ALL=C, damit die Stichprobe nicht davon abhaengt,
+    # welche Sprachumgebung gerade gesetzt ist — sie steht im Beleg.
+    beispiel=$(find "${SCAN_PATHS[@]}" -type f -newermt "@$((epoche-1))" ! -newermt "@$((epoche+1))" 2>/dev/null | LC_ALL=C sort)
+    beispiel="${beispiel%%$'\n'*}"
     if [[ -n "$beispiel" ]]; then
       bcr=$(stat -c %w "$beispiel" 2>/dev/null || true)
       ZC_DETAIL+="    Stichprobe: $beispiel"$'\n'"    angelegt:   ${bcr:-nicht verfügbar}"$'\n'

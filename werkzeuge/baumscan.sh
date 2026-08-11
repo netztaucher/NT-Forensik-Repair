@@ -167,7 +167,7 @@ PY
     crt=$(stat -c %w "$f" 2>/dev/null); [ -z "$crt" ] || [ "$crt" = "-" ] && crt="nicht verfügbar"
     nachbarn_crt=$(find "$(dirname "$f")" -maxdepth 1 -type f -printf '%p\n' 2>/dev/null \
       | head -40 | while read -r n; do stat -c %w "$n" 2>/dev/null | cut -c1-10; done \
-      | sort | uniq -c | sort -rn | head -1)
+      | LC_ALL=C sort | uniq -c | LC_ALL=C sort -rn | awk 'NR<=1')
 
     # 4. Nachbarschaft — wie stehen die Geschwister da?
     dir=$(dirname "$f")
