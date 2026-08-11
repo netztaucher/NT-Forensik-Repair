@@ -39,30 +39,30 @@
 <INODE> -rw-r--r-- <EIGNER> 0 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/uploads/index.php
 <INODE> -rw-r--r-- <EIGNER> 12 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/uploads/cache/index.php
 <INODE> -rw-r--r-- <EIGNER> 12 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/uploads/forminator/index.php
-<INODE> -rw-r--r-- <EIGNER> 131 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/backups/updater-abc123/nextcloud-28.0.1.2-1700000000/config/config.php
-<INODE> -rw-r--r-- <EIGNER> 131 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/cloud.kunde-zwei.example/config/config.php
-<INODE> -rw-r--r-- <EIGNER> 16 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/backups/updater-abc123/nextcloud-28.0.1.2-1700000000/config/config/index.php
-<INODE> -rw-r--r-- <EIGNER> 16 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/cloud.kunde-zwei.example/config/config/index.php
-<INODE> -rw-r--r-- <EIGNER> 169 <MTIME> <PRUEFSTAND>/vhosts/kunde-eins.example/backup/httpdocs/wp-config.php
-<INODE> -rw-r--r-- <EIGNER> 169 <MTIME> <PRUEFSTAND>/vhosts/kunde-eins.example/httpdocs/wp-config.php
-<INODE> -rw-r--r-- <EIGNER> 169 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-config.php
-<INODE> -rw-r--r-- <EIGNER> 17 <MTIME> <PRUEFSTAND>/vhosts/kunde-drei.example/httpdocs/wp-load.php
-<INODE> -rw-r--r-- <EIGNER> 17 <MTIME> <PRUEFSTAND>/vhosts/kunde-eins.example/httpdocs/index.php
-<INODE> -rw-r--r-- <EIGNER> 17 <MTIME> <PRUEFSTAND>/vhosts/kunde-eins.example/httpdocs/wp-load.php
-<INODE> -rw-r--r-- <EIGNER> 17 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/backups/updater-abc123/nextcloud-28.0.1.2-1700000000/filefuns.php
-<INODE> -rw-r--r-- <EIGNER> 17 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/cloud.kunde-zwei.example/filefuns.php
 <INODE> -rw-r--r-- <EIGNER> 17 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-load.php
 <INODE> -rw-r--r-- <EIGNER> 202 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/uploads/2026/03/hilfe.php
 <INODE> -rw-r--r-- <EIGNER> 230 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/joomla.kunde-zwei.example/configuration.php
-<INODE> -rw-r--r-- <EIGNER> 29 <MTIME> <PRUEFSTAND>/vhosts/kunde-drei.example/httpdocs/wp-includes/version.php
 <INODE> -rw-r--r-- <EIGNER> 29 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-includes/version.php
 <INODE> -rw-r--r-- <EIGNER> 34 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/joomla.kunde-zwei.example/libraries/src/Version.php
-<INODE> -rw-r--r-- <EIGNER> 37 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/backups/updater-abc123/nextcloud-28.0.1.2-1700000000/version.php
-<INODE> -rw-r--r-- <EIGNER> 37 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/cloud.kunde-zwei.example/version.php
-<INODE> -rw-r--r-- <EIGNER> 42 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/mu-plugins/cache.php
 <INODE> -rw-r--r-- <EIGNER> 43 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/uploads/2026/03/bild.php
+<INODE> -rw-r--r-- <EIGNER> 53 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/plugins/pruefstand-alt/lib/a.php
+<INODE> -rw-r--r-- <EIGNER> 53 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/plugins/pruefstand-alt/lib/b.php
+<INODE> -rw-r--r-- <EIGNER> 53 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/plugins/pruefstand-alt/lib/c.php
+<INODE> -rw-r--r-- <EIGNER> 53 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/plugins/pruefstand-alt/lib/d.php
+<INODE> -rw-r--r-- <EIGNER> 53 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/plugins/pruefstand-alt/lib/e.php
+<INODE> -rw-r--r-- <EIGNER> 53 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/plugins/pruefstand-kev/lib/a.php
+<INODE> -rw-r--r-- <EIGNER> 53 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/plugins/pruefstand-kev/lib/b.php
+<INODE> -rw-r--r-- <EIGNER> 53 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/plugins/pruefstand-kev/lib/c.php
+<INODE> -rw-r--r-- <EIGNER> 53 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/plugins/pruefstand-kev/lib/d.php
+<INODE> -rw-r--r-- <EIGNER> 53 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/plugins/pruefstand-kev/lib/e.php
+<INODE> -rw-r--r-- <EIGNER> 57 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/plugins/pruefstand-aktuell/lib/d.php
+<INODE> -rw-r--r-- <EIGNER> 57 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/plugins/pruefstand-aktuell/lib/e.php
+<INODE> -rw-r--r-- <EIGNER> 57 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/plugins/pruefstand-kopflos/lib/a.php
+<INODE> -rw-r--r-- <EIGNER> 57 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/plugins/pruefstand-kopflos/lib/b.php
+<INODE> -rw-r--r-- <EIGNER> 57 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/plugins/pruefstand-kopflos/lib/c.php
+<INODE> -rw-r--r-- <EIGNER> 57 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/plugins/pruefstand-kopflos/lib/d.php
+<INODE> -rw-r--r-- <EIGNER> 57 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/plugins/pruefstand-kopflos/lib/e.php
 <INODE> -rw-r--r-- <EIGNER> 73 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/plugins/pruefstand-kopflos/pruefstand-kopflos.php
-<INODE> -rw-r--r-- <EIGNER> 82 <MTIME> <PRUEFSTAND>/vhosts/kunde-drei.example/httpdocs/wp-content/plugins/pruefstand-kev/pruefstand-kev.php
 <INODE> -rw-r--r-- <EIGNER> 82 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/plugins/pruefstand-kev/pruefstand-kev.php
 <INODE> -rw-r--r-- <EIGNER> 84 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/plugins/pruefstand-alt/pruefstand-alt.php
 <INODE> -rw-r--r-- <EIGNER> 86 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/plugins/pruefstand-aktuell/pruefstand-aktuell.php
@@ -176,9 +176,6 @@ Order allow,deny
 ### 7.11 YARA-Signaturscan (optional)
 
   YARA-Scan nicht aktiviert — mit --yara einschalten (auf großen Webspaces langsam)
-
-### 7.12 Fremder YARA-Regelsatz (php-malware-finder, optional)
-
 
 ### 7.13 PHP-Code in Medien- und Asset-Dateien
 
@@ -326,10 +323,15 @@ Order allow,deny
 <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/mu-plugins/cache.php
 ```
 
-- 🔴 **KRITISCH: kunde-zwei.example/httpdocs: 1 veränderte Plugin-Codedatei(en) gegenüber wordpress.org — Plugin neu installieren, Dateien vorher sichern**
+- 🔴 **KRITISCH: kunde-zwei.example/httpdocs: 6 veränderte Plugin-Codedatei(en) gegenüber wordpress.org — Plugin neu installieren, Dateien vorher sichern**
 
 ```
 <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/plugins/pruefstand-aktuell/pruefstand-aktuell.php
+<PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/plugins/pruefstand-aktuell/lib/b.php
+<PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/plugins/pruefstand-aktuell/lib/c.php
+<PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/plugins/pruefstand-aktuell/lib/a.php
+<PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/plugins/pruefstand-aktuell/lib/d.php
+<PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/plugins/pruefstand-aktuell/lib/e.php
 ```
 
   Beleg: belege/010_wp_plugin_veraendert_kunde-zwei_example_httpdocs.txt
@@ -393,16 +395,30 @@ php_value auto_prepend_file /var/www/vhosts/<anderer Kunde 2>  auto_prepend_file
 
 - 🔴 **KRITISCH: Kein Apache-Prozess, aber nginx läuft — .htaccess-Dateien werden NICHT ausgewertet und schützen nichts**
 
+## 13c. FREMDER YARA-REGELSATZ (SUCHHILFSMITTEL)
+
+- ⚠️  **php-malware-finder: 4 Datei(en) mit Treffern — nach Regelanzahl sortiert, jeder Treffer gehört gesichtet (9 als unverändert bestätigte Datei(en) herausgefiltert)**
+
+```
+3 Regel(n): <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/uploads/2026/03/bild.php — ObfuscatedPhp DodgyStrings SuspiciousEncoding
+3 Regel(n): <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/uploads/2026/03/hilfe.php — ObfuscatedPhp DodgyStrings SuspiciousEncoding
+3 Regel(n): <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-includes/load.php — ObfuscatedPhp DodgyStrings HexEncoding
+2 Regel(n): <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/plugins/pruefstand-aktuell/pruefstand-aktuell.php — ObfuscatedPhp DodgyStrings
+```
+
+  Beleg: belege/018_php_malware_finder_treffer.txt
+  Quelle: Prüfstand-Attrappe, Regelstand 0 Tage alt — der Regelsatz wird vom Projekt kaum noch gepflegt
+
 ## 14. ZUSAMMENFASSUNG
 
-  Fundstellen-Details: <PRUEFSTAND>/ablage/forensik/<LAUF-ID>/kunde/befunde_details.md (13 Fund(e), 7 Familien, 1 zu prüfen)
+  Fundstellen-Details: <PRUEFSTAND>/ablage/forensik/<LAUF-ID>/kunde/befunde_details.md (18 Fund(e), 7 Familien, 1 zu prüfen)
 
 ### 14.1 Befund-Statistik
 
 | Kategorie | Anzahl |
 |---|---|
 | 🔴 Kritische Befunde | 15 |
-| ⚠️ Warnungen | 9 |
+| ⚠️ Warnungen | 10 |
 | ✅ Unauffällige Prüfungen | 22 |
 | ⚪ Nicht messbar | 4 |
 

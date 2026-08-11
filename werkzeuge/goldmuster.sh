@@ -165,6 +165,58 @@ WPCLI
 # Die Pruefsummen, gegen die _wp_plugin_integritaet vergleicht. Erzeugt aus den
 # Dateien im Baum — mit genau einer gewollten Abweichung, damit der
 # Trefferpfad geuebt wird und nicht nur der Gutfall.
+# ── Vorgefertigte yara-Ausgabe fuer Abschnitt 13c ────────────
+# Der Pruefbaum hat weder yara noch den fremden Regelsatz (LGPL, wird nicht
+# mitgeliefert). Ohne diese Naht waere 13c vom Pruefstand ueberhaupt nicht
+# erreichbar — und ein Filter, dessen Wirkung nie gemessen wird, ist eine
+# Behauptung.
+#
+# Die Verteilung bildet den Messlauf aus #18 nach: viel Rauschen auf
+# Bibliotheksdateien bekannter Plugins, der eigentliche Schadcode weiter
+# unten. Nach dem Pruefsummenfilter muss er nach OBEN rutschen.
+#
+# Bewusst mit dabei:
+#   wp-includes/load.php   steht in CORE_INJECTED (die Attrappe meldet es als
+#                          "doesn't verify") und darf deshalb NICHT gefiltert
+#                          werden, obwohl es unter wp-includes/ liegt.
+#   pruefstand-aktuell     traegt eine verfaelschte Pruefsumme und bleibt
+#                          ebenfalls stehen.
+pmf_attrappe_bauen() {   # <zieldatei> <baum>
+  local Z="$1" W="$2"
+  local k2="${W}/kunde-zwei.example/httpdocs"
+  : > "$Z"
+  local datei regel n
+  # Rauschen: bestaetigt unveraenderte Bibliotheksdateien, je 4 Regeln.
+  for datei in "${k2}/wp-content/plugins/pruefstand-alt/lib/"{a,b,c,d,e}.php \
+               "${k2}/wp-content/plugins/pruefstand-kev/lib/"{a,b,c}.php; do
+    [[ -f "$datei" ]] || continue
+    for regel in ObfuscatedPhp DodgyStrings SuspiciousEncoding HexEncoding; do
+      printf '%s %s\n' "$regel" "$datei" >> "$Z"
+    done
+  done
+  # Kern: bestaetigt unveraendert, 4 Regeln.
+  [[ -f "${k2}/wp-includes/version.php" ]] && \
+    for regel in ObfuscatedPhp DodgyStrings SuspiciousEncoding HexEncoding; do
+      printf '%s %s\n' "$regel" "${k2}/wp-includes/version.php" >> "$Z"
+    done
+  # Kern-ABWEICHUNG: muss stehenbleiben.
+  printf 'ObfuscatedPhp %s\nDodgyStrings %s\nHexEncoding %s\n' \
+    "${k2}/wp-includes/load.php" "${k2}/wp-includes/load.php" "${k2}/wp-includes/load.php" >> "$Z"
+  # Veraendertes Plugin: muss stehenbleiben.
+  printf 'ObfuscatedPhp %s\nDodgyStrings %s\n' \
+    "${k2}/wp-content/plugins/pruefstand-aktuell/pruefstand-aktuell.php" \
+    "${k2}/wp-content/plugins/pruefstand-aktuell/pruefstand-aktuell.php" >> "$Z"
+  # Der eigentliche Schadcode. Drei Regeln — im Messlauf reichte das fuer
+  # Platz 11. Nach dem Filter muss er unter den ersten fuenf stehen.
+  for datei in "${k2}/wp-content/uploads/2026/03/bild.php" \
+               "${k2}/wp-content/uploads/2026/03/hilfe.php"; do
+    [[ -f "$datei" ]] || continue
+    for regel in ObfuscatedPhp DodgyStrings SuspiciousEncoding; do
+      printf '%s %s\n' "$regel" "$datei" >> "$Z"
+    done
+  done
+}
+
 pruefsummen_bauen() {   # <zielverzeichnis> <baum>
   local P="$1" W="$2"
   rm -rf "$P"; mkdir -p "$P"
@@ -463,6 +515,17 @@ PHP
       [[ "$3" != "-" ]] && printf 'Version: %s\n' "$3"
       printf '*/\n// Pruefstand, ohne Funktion\n'
     } > "${ziel}/$2.php"
+    # Fuenf Bibliotheksdateien je Plugin. Sie tragen nichts zur Erkennung bei,
+    # sind aber der Gegenstand von #18: der fremde Regelsatz schlaegt auf genau
+    # solchen Dateien an (pclzip, UpdraftPlus, Wordfence im Messlauf), und die
+    # lebende Pruefsummen-Whitelist muss sie herausnehmen. Ohne mehrere davon
+    # laege der eingebaute Schadcode ohnehin weit oben und der Filter waere
+    # nicht messbar.
+    local i
+    mkdir -p "${ziel}/lib"
+    for i in a b c d e; do
+      printf '<?php\n// Bibliothek %s von %s, Pruefstand\n' "$i" "$2" > "${ziel}/lib/${i}.php"
+    done
   }
   wp_theme() {    # wp_theme <installation> <slug> <fassung> <anzeigename>
     local ziel="$1/wp-content/themes/$2"
@@ -635,6 +698,7 @@ lauf_ausfuehren() {
   WP_DATEN_DIR="${WP_DATEN_DIR:-$WPDATEN}" \
   WP_PRUEFSUMMEN_BASIS="${WP_PRUEFSUMMEN_BASIS:-$WPSUMMEN}" \
   NT_WEBSERVER="${NT_WEBSERVER:-nginx}" \
+  NT_PMF_ATTRAPPE="${NT_PMF_ATTRAPPE-$PMFAUS}" \
   PATH="${ATTRAPPE}:$PATH" \
   bash "${SELF_DIR}/wp_plesk_forensik.sh" \
        --path "$W" --nur-website --kein-menue >"${ABLAGE}/konsole.txt" 2>&1
@@ -718,6 +782,7 @@ BAUM="${ARBEIT}/vhosts"; ABLAGE="${ARBEIT}/ablage"
 WPDATEN="${ARBEIT}/wpdaten"
 WPSUMMEN="${ARBEIT}/wpsummen"     # lokale Plugin-Pruefsummen statt wordpress.org
 ATTRAPPE="${ARBEIT}/bin"          # wp-cli-Attrappe, kommt vor den echten PATH
+PMFAUS="${ARBEIT}/pmf_attrappe.txt"   # vorgefertigte yara-Ausgabe fuer 13c
 # Zwingend vor jedem Lauf. Bleibt der Ordner eines fehlgeschlagenen Vergleichs
 # stehen, greift ausgabe_einsammeln per 'head -1' den ALTEN Laufordner und
 # vergleicht ihn gegen die Referenz — der naechste Lauf meldet dann eine
@@ -728,6 +793,7 @@ baum_bauen "$BAUM"
 wp_datenbestand_bauen "$WPDATEN"
 attrappe_bauen "$ATTRAPPE"
 pruefsummen_bauen "$WPSUMMEN" "$BAUM"
+pmf_attrappe_bauen "$PMFAUS" "$BAUM"
 info "Baum gebaut: $(find "$BAUM" -type f | wc -l | tr -d ' ') Dateien in $(find "$BAUM" -maxdepth 1 -type d | tail -n +2 | wc -l | tr -d ' ') vhosts"
 
 case "$AKTION" in

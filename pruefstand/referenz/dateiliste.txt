@@ -3,6 +3,8 @@
 ./.online/plugin-checksums/pruefstand-alt-2.0.3.json
 ./.online/plugin-checksums/pruefstand-kev-1.2.json
 ./.online/plugin-checksums/pruefstand-kev-3.0.json
+./.pruefsummen_bestaetigt.txt
+./.pruefsummen_kern.txt
 ./betreiber/00_LIESMICH.txt
 ./betreiber/belege/001_veraenderte_php_dateien.txt
 ./betreiber/belege/002_php_in_uploads_mit_hashes.txt
@@ -23,6 +25,7 @@
 ./betreiber/belege/015_htaccess_fremd_kunde-zwei_example_httpdocs__htaccess.txt
 ./betreiber/belege/016_htaccess_fremd_kunde-zwei_example_httpdocs_wp-content_uploads__htaccess.txt
 ./betreiber/belege/017_htaccess_einordnung.txt
+./betreiber/belege/018_php_malware_finder_treffer.txt
 ./betreiber/belege/SHA256SUMS
 ./betreiber/belege/htaccess/00_index.txt
 ./betreiber/belege/htaccess/kunde-eins.example_httpdocs_.htaccess

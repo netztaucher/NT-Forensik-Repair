@@ -4,6 +4,48 @@ Alle nennenswerten Änderungen an `wp_plesk_forensik.sh`.
 
 ## [unveröffentlicht]
 
+### Geändert — 7.12 heisst jetzt 13c und filtert gegen lebende Prüfsummen (#18)
+
+Der fremde Regelsatz (php-malware-finder) lieferte im Messlauf über 25.860
+PHP-Dateien **359 Treffer** — und der enthaltene gepackte Webshell stand mit
+drei Regeln auf **Platz 11**. Über ihm der WordPress-Kern, pclzip, UpdraftPlus
+und Wordfence selbst.
+
+Ursache ist die Whitelist des Regelsatzes: SHA1-Hashes konkreter Kerndateien,
+629 Stück für WordPress, auf dem Stand von 2023. Auf einer aktuellen
+Installation passt kein einziger. Das Projekt ruht seit Oktober 2023, das
+Problem wächst mit jedem WordPress-Release.
+
+An ihre Stelle tritt eine **lebende** Whitelist, die bei jedem Lauf neu
+entsteht: `wp core verify-checksums` bestätigt den Kern, die Prüfsummen von
+wordpress.org bestätigen die Plugins. Eine Datei, die Byte für Byte dem
+Original entspricht, kann kein untergeschobener Schadcode sein.
+
+Dafür musste der Abschnitt umziehen: als 7.12 lief er **vor** dem
+WordPress-Rezept und hatte die Bestätigungen noch nicht. Er liegt jetzt als
+`module/13c_signaturhilfe.sh` und läuft nach 12r, aber vor den Berichten.
+
+**Keine stille Filterung.** Die Zahl der unterdrückten Treffer steht im
+Befundtext, und der Beleg führt beide Listen — die verbliebenen und die
+herausgefilterten — namentlich auf. Ein Filter, dessen Wirkung man nicht
+nachrechnen kann, ist in einem Forensikwerkzeug schlimmer als kein Filter.
+
+Ausdrücklich **nicht** freigegeben werden die Dateien aus `CORE_INJECTED` und
+`CORE_SNE`, obwohl sie unter `wp-admin/` und `wp-includes/` liegen. Sie sind
+der Grund, warum dort überhaupt jemand hinsieht.
+
+Nicht abgedeckt und ehrlich zu benennen: kommerzielle Plugins ohne öffentliche
+Prüfsummen (im Messlauf genau die lautesten Fundorte), Themes, und
+Installationen ohne wp-cli.
+
+Nachgewiesen: der Prüfbaum trägt eine vorgefertigte yara-Ausgabe
+(`NT_PMF_ATTRAPPE`) mit neun bestätigt unveränderten Bibliotheks- und
+Kerndateien über dem Schadcode. Eine eigene CI-Stufe prüft das
+Abnahmekriterium aus dem Issue: der Schadcode muss unter den ersten fünf
+stehen (er steht auf **Platz 1**) und der Filter muss etwas — aber nicht
+alles — herausgenommen haben. Dazu die Gegenprobe
+`NT_PRUEFSTAND_OHNE_PMF_WHITELIST=1`.
+
 ### Neu — `werkzeuge/kundenpaket.sh` (#4)
 
 Schnürt aus einem Lauf ein übergabefähiges Paket:

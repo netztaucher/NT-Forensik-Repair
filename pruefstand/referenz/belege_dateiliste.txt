@@ -17,5 +17,6 @@
 015_htaccess_fremd_kunde-zwei_example_httpdocs__htaccess.txt
 016_htaccess_fremd_kunde-zwei_example_httpdocs_wp-content_uploads__htaccess.txt
 017_htaccess_einordnung.txt
+018_php_malware_finder_treffer.txt
 SHA256SUMS
 htaccess

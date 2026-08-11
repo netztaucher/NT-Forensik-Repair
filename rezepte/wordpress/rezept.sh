@@ -308,6 +308,18 @@ for zeile in open(sys.argv[1], encoding="utf-8", errors="replace").read().splitl
                                hashlib.sha256(roh).hexdigest()):
                 art = "MOD" if os.path.splitext(name)[1].lower() in CODE else "SOFT"
                 print("\t".join([art, slug, ver, rel]))
+            else:
+                # Bestaetigt unveraendert gegenueber wordpress.org. Bisher fiel
+                # dieser Fall stillschweigend durch — gezaehlt wurde nur, was
+                # ABWEICHT. Die Bestaetigung ist aber ihrerseits eine Aussage:
+                # eine Datei, die Byte fuer Byte dem Original entspricht, kann
+                # kein untergeschobener Schadcode sein. Abschnitt 13c filtert
+                # damit das Rauschen des fremden Regelsatzes (#18).
+                # Nur Code-Endungen: Bilder und Uebersetzungen tauchen in
+                # keiner Trefferliste auf, und die Liste bliebe sonst
+                # zehnmal so lang.
+                if os.path.splitext(name)[1].lower() in CODE:
+                    print("\t".join(["UNVERAENDERT", slug, ver, voll]))
 
     for rel in sorted(set(soll_dateien) - gesehen):
         print("\t".join(["FEHLT", slug, ver, rel]))
@@ -316,6 +328,15 @@ for zeile in open(sys.argv[1], encoding="utf-8", errors="replace").read().splitl
 PY
   )
   rm -f "$liste"
+
+  # Die bestätigt unveränderten Dateien in die Whitelist für Abschnitt 13c
+  # (#18). Bewusst in eine DATEI und nicht in eine Variable: auf einem Server
+  # mit 68 Installationen sind das leicht 100.000 Zeilen, und eine
+  # Shell-Variable dieser Größe wird bei jeder Zuweisung kopiert.
+  # Der Ablageort liegt im Laufordner, aber weder in kunde/ noch in betreiber/
+  # — er ist Arbeitsmaterial, kein Beleg, und wandert in kein Archiv.
+  printf '%s\n' "$ergebnis" | awk -F'\t' '$1=="UNVERAENDERT"{print $4}' \
+    >> "${PRUEFSUMMEN_WHITELIST:-${RUN_DIR}/.pruefsummen_bestaetigt.txt}"
 
   n_geprueft=$(printf '%s\n' "$ergebnis" | grep -c '^GEPRUEFT' || true)
   n_mod=$(printf   '%s\n' "$ergebnis" | grep -c '^MOD'   || true)
@@ -374,8 +395,16 @@ PY
 # Die Werkzeug-Probe hat der Rahmen gezogen; eine leere Ausgabe heißt hier
 # wirklich 'keine Abweichung' und nicht 'wp-cli ist gescheitert'.
 rezept_kern() {
-  local CHK cmod csne LISTE
-  CHK=$(_wp core verify-checksums 2>&1 | grep "Warning:" || true)
+  local CHK cmod csne LISTE CHK_ROH CHK_RC
+  # Rückgabewert getrennt festhalten. Bis v3.12 stand hier nur die gefilterte
+  # Ausgabe, und der Status der Pipe war der von `grep` — ein gescheitertes
+  # verify-checksums war damit von einem sauberen Kern nicht zu unterscheiden.
+  # Für den Befund unten machte das keinen Unterschied (beides ergab cmod=0,
+  # was hier bewusst als "keine Abweichung" gilt), für die Whitelist in
+  # Abschnitt 13c aber sehr wohl: sie darf einen Kern nur dann freigeben, wenn
+  # er nachweislich geprüft WURDE.
+  CHK_ROH=$(_wp core verify-checksums 2>&1); CHK_RC=$?
+  CHK=$(printf '%s\n' "$CHK_ROH" | grep "Warning:" || true)
   # KEIN '|| echo 0': grep -c gibt bei null Treffern bereits eine 0 aus UND
   # endet ungleich 0. Der Rueckfall haengte damit eine zweite Null an, cmod
   # wurde "0\n0", und die naechste Zeile brach mit
@@ -401,6 +430,22 @@ rezept_kern() {
     CORE_SNE+="$LISTE"$'\n'
   fi
 
+  # Kern-Whitelist für Abschnitt 13c (#18). Nicht die einzelnen Dateien —
+  # verify-checksums nennt nur die ABWEICHUNGEN, und die Gutfälle einzeln
+  # aufzuzählen hiesse, den Kern selbst zu durchlaufen. Stattdessen der
+  # Verzeichnispräfix: alles unter wp-admin/ und wp-includes/, das NICHT in
+  # CORE_INJECTED oder CORE_SNE steht, ist genau die Menge, die
+  # verify-checksums als unverändert bestätigt hat.
+  #
+  # Bedingung ist der Rückgabewert. Ein Kern, dessen Prüfung gescheitert ist,
+  # darf hier nicht auftauchen — sonst würde ein Werkzeugausfall zur
+  # Freigabe des Verzeichnisses, in dem eine untergeschobene Datei am
+  # wahrscheinlichsten liegt.
+  if [[ "$CHK_RC" -eq 0 || "${cmod:-0}" -gt 0 || "${csne:-0}" -gt 0 ]] \
+     && [[ -n "$CHK_ROH" ]]; then
+    printf '%s\n' "${REZ_PFAD}" \
+      >> "${PRUEFSUMMEN_KERN_WHITELIST:-${RUN_DIR}/.pruefsummen_kern.txt}"
+  fi
 }
 
 # ── Dateibasierte Merkmale ───────────────────────────────────

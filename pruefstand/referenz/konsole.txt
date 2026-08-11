@@ -66,8 +66,6 @@
 [0;36m▶ 7.11 YARA-Signaturscan (optional)[0m
   [0m·  YARA-Scan nicht aktiviert — mit --yara einschalten (auf großen Webspaces langsam)
 
-[0;36m▶ 7.12 Fremder YARA-Regelsatz (php-malware-finder, optional)[0m
-
 [0;36m▶ 7.13 PHP-Code in Medien- und Asset-Dateien[0m
   [0;31m✗[0m  [1mPHP-Code in 2 Mediendatei(en) — in einem echten Bild gehört kein PHP[0m
 
@@ -137,7 +135,7 @@
   [0;32m✓[0m kunde-zwei.example/httpdocs: keine Doorway-.htaccess-Signatur
   [0;31m✗[0m  [1mkunde-zwei.example/httpdocs: 1 Datei(en) mit @include base64_decode() — getarnte Payload-Nachladung[0m
   [0;33m⚠[0m  kunde-zwei.example/httpdocs: 1 mu-Plugin(s) — laufen ohne Aktivierung und erscheinen in keiner Pluginliste
-  [0;31m✗[0m  [1mkunde-zwei.example/httpdocs: 1 veränderte Plugin-Codedatei(en) gegenüber wordpress.org — Plugin neu installieren, Dateien vorher sichern[0m
+  [0;31m✗[0m  [1mkunde-zwei.example/httpdocs: 6 veränderte Plugin-Codedatei(en) gegenüber wordpress.org — Plugin neu installieren, Dateien vorher sichern[0m
   [0;36m⚪[0m kunde-zwei.example/httpdocs: 2 Plugin(s) ohne Prüfsummensatz und alle Themes — Unversehrtheit nicht feststellbar (Premium, Fork, Eigenbau; für Themes veröffentlicht wordpress.org keine Prüfsummen)
   [0;31m✗[0m  [1mkunde-zwei.example/httpdocs: 1 veränderte Core-Datei(en) — Injektion oder Manipulation[0m
   [0;33m⚠[0m  kunde-zwei.example/httpdocs: 1 Core-fremde Datei(en) in wp-admin/wp-includes — prüfen
@@ -161,6 +159,12 @@
   [0;31m✗[0m  [1mKein Apache-Prozess, aber nginx läuft — .htaccess-Dateien werden NICHT ausgewertet und schützen nichts[0m
 
 [1m[0;34m══════════════════════════════════════════[0m
+[1m[0;34m  13c. FREMDER YARA-REGELSATZ (SUCHHILFSMITTEL)[0m
+[1m[0;34m══════════════════════════════════════════[0m
+  [0;33m⚠[0m  php-malware-finder: 4 Datei(en) mit Treffern — nach Regelanzahl sortiert, jeder Treffer gehört gesichtet (9 als unverändert bestätigte Datei(en) herausgefiltert)
+  [0m·  Quelle: Prüfstand-Attrappe, Regelstand 0 Tage alt — der Regelsatz wird vom Projekt kaum noch gepflegt
+
+[1m[0;34m══════════════════════════════════════════[0m
 [1m[0;34m  14. ZUSAMMENFASSUNG[0m
 [1m[0;34m══════════════════════════════════════════[0m
 
@@ -177,7 +181,7 @@
 [1m[0;32m  ANALYSE ABGESCHLOSSEN — Lauf <LAUF-ID>[0m
 [1m[0;32m══════════════════════════════════════════[0m
 
-[1mBefunde:[0m       🔴 15 kritisch, ⚠️ 9 Warnungen, ✅ 23 ok, ⚪ 4 nicht messbar
+[1mBefunde:[0m       🔴 15 kritisch, ⚠️ 10 Warnungen, ✅ 23 ok, ⚪ 4 nicht messbar
 [0;33m               4 Prüfung(en) ohne Ergebnis — das ist keine Entwarnung.[0m
                  kunde-zwei.example/cloud.kunde-zwei.example: Werkzeug antwortet nicht verwertbar — nicht geprüft
                  kunde-drei.example/httpdocs: 1 Plugin(s) ohne Prüfsummensatz und alle Themes — Unversehrtheit nicht feststellbar (Premium, Fork, Eigenbau; für Themes veröffentlicht wordpress.org keine Prüfsummen)
