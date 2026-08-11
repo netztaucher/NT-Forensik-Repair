@@ -31,6 +31,209 @@
 
 set -uo pipefail
 
+# =============================================================================
+# Betriebsart "qualifizieren" — Treffer auflösen
+# =============================================================================
+# Ein TREFFER ist kein Urteil, sondern eine offene Frage. Diese Betriebsart
+# sammelt die Fakten, mit denen sie sich beantworten lässt.
+#
+#   baumscan.sh qualifizieren <lauf-verzeichnis> [--online]
+#
+# Nach SAUBER führt weiterhin genau ein Weg: eine amtliche Prüfsumme. Alles
+# andere kann einen Treffer nur ERKLÄREN. Ein erklärter, aber unbeweisbarer
+# Treffer wird KEIN mit protokolliertem Grund — nicht SAUBER.
+if [ "${1:-}" = "qualifizieren" ]; then
+  shift
+  QRUN="${1:?Lauf-Verzeichnis nötig}"; shift || true
+  [ "${1:-}" = "--online" ] && BAUMSCAN_ONLINE=1
+  [ -s "$QRUN/urteile.tsv" ] || { echo "Keine urteile.tsv in $QRUN"; exit 2; }
+
+  # Diese Betriebsart läuft VOR dem Konfigurationsteil und muss ihre Werkzeuge
+  # selbst setzen. Ohne das war $NICE hier unbelegt; mit `set -u` brach die
+  # Pipeline still ab, der Hash-Index entstand nie, und alle 607 Treffer
+  # blieben "offen" — ein Fehlschlag, der wie ein Ergebnis aussah.
+  NICE="ionice -c3 nice -n19"
+  command -v ionice >/dev/null 2>&1 || NICE="nice -n19"
+
+  KORPUS="${BAUMSCAN_KORPUS:-/var/www/vhosts}"
+  QOUT="$QRUN/QUALIFIZIERUNG.txt"
+  QTSV="$QRUN/qualifizierung.tsv"
+  ENTSCHEID="$QRUN/entscheidungen.tsv"
+  [ -f "$ENTSCHEID" ] || printf '# Pfad\tUrteil\tKennung\tDatum\tBegründung\n' > "$ENTSCHEID"
+
+  awk -F'\t' '$1=="TREFFER" {print $3}' "$QRUN/urteile.tsv" > "$QRUN/.treffer_pfade"
+  ANZ=$(wc -l < "$QRUN/.treffer_pfade")
+  echo "[$(date +%H:%M:%S)] $ANZ Treffer zu qualifizieren"
+
+  # ── Verbreitungsindex: EIN Durchlauf über den Korpus ─────────────────────
+  # 607 Treffer einzeln serverweit zu suchen hiesse 607 Durchläufe. Statt
+  # dessen einmal alle Dateinamen der Treffer einsammeln und den Korpus ein
+  # einziges Mal durchgehen.
+  echo "[$(date +%H:%M:%S)] Verbreitungsindex über $KORPUS..."
+  awk -F/ '{print $NF}' "$QRUN/.treffer_pfade" | sort -u > "$QRUN/.treffer_namen"
+  find "$KORPUS" -type f -size -3M -printf '%f\t%s\t%p\n' 2>/dev/null \
+    | awk -F'\t' 'NR==FNR {gesucht[$0]=1; next} ($1 in gesucht)' \
+        "$QRUN/.treffer_namen" - > "$QRUN/.korpus_index" 2>/dev/null
+  echo "[$(date +%H:%M:%S)]   $(wc -l < "$QRUN/.korpus_index") Kandidaten im Korpus"
+
+  # Den Korpus EINMAL hashen, nicht je Treffer. Der erste Entwurf hashte bis zu
+  # 80 Kandidaten pro Treffer — bei 607 Treffern waren das zehntausende
+  # Aufrufe, und der Lauf war nach zehn Minuten nicht durch.
+  echo "[$(date +%H:%M:%S)] Korpus hashen..."
+  cut -f3 "$QRUN/.korpus_index" | tr '\n' '\0' \
+    | $NICE xargs -0 -r -P4 -n100 sha256sum 2>/dev/null > "$QRUN/.korpus_hashes"
+  echo "[$(date +%H:%M:%S)]   $(wc -l < "$QRUN/.korpus_hashes") Hashes"
+
+  # Zugriffslogs EINMAL auspacken. Je Treffer zu zgreppen hiesse, dieselben
+  # komprimierten Logs hundertfach zu entpacken.
+  echo "[$(date +%H:%M:%S)] Zugriffslogs sammeln..."
+  : > "$QRUN/.logs_text"
+  cut -f3 "$QRUN/.treffer_pfade" 2>/dev/null >/dev/null
+  sed 's|\(/var/www/vhosts/[^/]*\).*|\1|' "$QRUN/.treffer_pfade" | sort -u | while read -r vr; do
+    [ -d "$vr/logs" ] || continue
+    zcat -f "$vr"/logs/*access* 2>/dev/null >> "$QRUN/.logs_text"
+  done
+  echo "[$(date +%H:%M:%S)]   $(wc -l < "$QRUN/.logs_text") Logzeilen"
+
+  : > "$QTSV"
+  {
+    echo "==============================================================="
+    echo " Qualifizierung der Treffer — Entscheidungsvorlage"
+    echo " Lauf:   $QRUN"
+    echo " Datum:  $(date -Is)"
+    echo "==============================================================="
+    echo
+    echo "Jeder Block ist eine offene Frage, kein Urteil. Nach SAUBER führt"
+    echo "nur die amtliche Prüfsumme. Entscheidungen gehören nach"
+    echo "entscheidungen.tsv — mit Kennung und Begründung."
+    echo
+  } > "$QOUT"
+
+  while IFS= read -r f; do
+    [ -f "$f" ] || continue
+    name=$(basename "$f")
+    groesse=$(stat -c%s "$f" 2>/dev/null || echo 0)
+    hash=$(sha256sum "$f" 2>/dev/null | cut -d' ' -f1)
+    grund=$(awk -F'\t' -v p="$f" '$3==p {print $2}' "$QRUN/urteile.tsv" | head -1)
+
+    # 1. Verbreitung — gleicher Inhalt auf wie vielen Installationen?
+    # Nachschlagen im vorbereiteten Hash-Index, nicht neu hashen.
+    installationen=$(awk -v h="$hash" -v selbst="$f" -v k="$KORPUS" '
+        $1==h && $2!=selbst {
+          pfad = $2
+          sub("^" k "/", "", pfad)
+          sub("/.*", "", pfad)
+          gesehen[pfad] = 1
+        }
+        END { n=0; for (i in gesehen) n++; print n }
+      ' "$QRUN/.korpus_hashes")
+
+    # 2. Amtliche Prüfsumme — gehört die Datei überhaupt zum Lieferumfang?
+    pruefsumme="keine Referenz"
+    case "$f" in
+      */wp-content/plugins/*)
+        pslug=$(echo "$f" | sed 's|.*/wp-content/plugins/\([^/]*\)/.*|\1|')
+        pj=$(ls "$QRUN"/.plugin_"${pslug}"_*.json 2>/dev/null | head -1)
+        if [ -n "$pj" ] && [ -s "$pj" ] && command -v python3 >/dev/null 2>&1; then
+          prel=$(echo "$f" | sed "s|.*/wp-content/plugins/${pslug}/||")
+          pruefsumme=$(python3 - "$pj" "$prel" "$f" <<'PY' 2>/dev/null
+import hashlib, json, sys
+try:
+    daten = json.load(open(sys.argv[1]))
+except Exception:
+    print("Satz unlesbar"); raise SystemExit
+dateien = daten.get("files") or {}
+rel = sys.argv[2]
+if rel not in dateien:
+    print("NICHT IM LIEFERUMFANG — Datei wurde hinzugefügt")
+    raise SystemExit
+erwartet = dateien[rel].get("md5")
+if isinstance(erwartet, list):
+    erwartet = erwartet[0] if erwartet else None
+try:
+    ist = hashlib.md5(open(sys.argv[3], "rb").read()).hexdigest()
+except OSError:
+    print("nicht lesbar"); raise SystemExit
+print("stimmt" if ist == erwartet else "WEICHT AB — Datei wurde verändert")
+PY
+)
+        else
+          pruefsumme="kein Satz verfügbar (kommerziell, Eigenbau oder Version unbekannt)"
+        fi
+        ;;
+    esac
+
+    # 3. Zeitliche Einordnung — mit dem Bestand entstanden oder einzeln?
+    crt=$(stat -c %w "$f" 2>/dev/null); [ -z "$crt" ] || [ "$crt" = "-" ] && crt="nicht verfügbar"
+    nachbarn_crt=$(find "$(dirname "$f")" -maxdepth 1 -type f -printf '%p\n' 2>/dev/null \
+      | head -40 | while read -r n; do stat -c %w "$n" 2>/dev/null | cut -c1-10; done \
+      | sort | uniq -c | sort -rn | head -1)
+
+    # 4. Nachbarschaft — wie stehen die Geschwister da?
+    dir=$(dirname "$f")
+    n_sauber=$(awk -F'\t' -v d="$dir/" '$1=="SAUBER" && index($3,d)==1 {n++} END{print n+0}' "$QRUN/urteile.tsv")
+    n_gesamt=$(awk -F'\t' -v d="$dir/" 'index($3,d)==1 {n++} END{print n+0}' "$QRUN/urteile.tsv")
+
+    # 5. Zugriffsspur — wurde die Datei je angefordert?
+    if [ -s "$QRUN/.logs_text" ]; then
+      treffer_log=$(grep -acF -- "$name" "$QRUN/.logs_text" 2>/dev/null || true)
+      treffer_log=${treffer_log:-0}
+      if [ "$treffer_log" -gt 0 ]; then
+        logspur="$treffer_log Zugriff(e) in den vorhandenen Logs — ANSEHEN"
+      else
+        logspur="kein Zugriff in den vorhandenen Logs (Aufbewahrung beachten)"
+      fi
+    else
+      logspur="keine Logs vorhanden"
+    fi
+
+    # 6. Vorschlag — ausdrücklich nur ein Vorschlag
+    if echo "$pruefsumme" | grep -q "^stimmt"; then
+      vorschlag="SAUBER (amtliche Prüfsumme)"
+    elif echo "$pruefsumme" | grep -qE "NICHT IM LIEFERUMFANG|WEICHT AB"; then
+      vorschlag="BEFALLEN prüfen — Datei passt nicht zum Lieferumfang"
+    elif [ "$installationen" -ge 5 ]; then
+      vorschlag="KEIN mit Grund: Fremdcode, auf $installationen Installationen identisch"
+    else
+      vorschlag="offen — bleibt TREFFER"
+    fi
+
+    printf '%s\t%s\t%s\t%s\t%s\n' "$f" "$grund" "$pruefsumme" "$installationen" "$vorschlag" >> "$QTSV"
+    {
+      echo "---------------------------------------------------------------"
+      echo "$f"
+      echo "  angeschlagen:  $grund"
+      echo "  Prüfsumme:     $pruefsumme"
+      echo "  Verbreitung:   identischer Inhalt auf $installationen weiteren Installation(en)"
+      echo "  angelegt:      $crt"
+      echo "  Nachbarschaft: $n_sauber von $n_gesamt Dateien im Verzeichnis amtlich bestätigt"
+      echo "  Zugriffsspur:  $logspur"
+      echo "  VORSCHLAG:     $vorschlag"
+    } >> "$QOUT"
+  done < "$QRUN/.treffer_pfade"
+
+  rm -f "$QRUN/.verbreitung_tmp"
+  {
+    echo
+    echo "==============================================================="
+    echo " Zusammenfassung der Vorschläge"
+    echo "==============================================================="
+    cut -f5 "$QTSV" | sed 's/ —.*//; s/ (.*//' | sort | uniq -c | sort -rn
+    echo
+    echo "Kein Vorschlag ändert von sich aus ein Urteil. Wer entscheidet,"
+    echo "trägt es in entscheidungen.tsv ein:"
+    echo "  <Pfad>  <Urteil>  <Kennung>  <Datum>  <Begründung>"
+  } >> "$QOUT"
+
+  echo "[$(date +%H:%M:%S)] FERTIG."
+  sed -n '1,12p' "$QOUT"
+  echo "..."
+  tail -12 "$QOUT"
+  echo
+  echo "Entscheidungsvorlage: $QOUT"
+  exit 0
+fi
+
 if [ "${1:-}" = "--online" ]; then BAUMSCAN_ONLINE=1; shift; fi
 SCOPE="${1:?Scope-Pfad nötig (z. B. /var/www/vhosts/beispiel.de)}"
 PREV="${2:-}"
@@ -535,8 +738,18 @@ PY
   while read -r pdir; do
     [ -d "$pdir" ] || continue
     slug=$(basename "$pdir")
-    pver=$(grep -rhiE "^[[:space:]]*\*?[[:space:]]*Version:[[:space:]]*[0-9]" "$pdir" --include="*.php" 2>/dev/null \
-           | head -1 | sed 's/.*[Vv]ersion:[[:space:]]*//' | tr -d '\r' | awk '{print $1}')
+    # Version NUR aus der Hauptdatei des Plugins lesen — der einzigen mit
+    # "Plugin Name:" im Kopf. Der erste Entwurf nahm die erste "Version:"-Zeile
+    # aus IRGENDEINER php-Datei des Verzeichnisses und erwischte damit die
+    # Kopfzeile einer mitgelieferten Bibliothek. Folge: falsche Version,
+    # Prüfsummensatz nicht gefunden, 80 Treffer in einem Plugin, das sehr wohl
+    # einen Satz hat.
+    phaupt=$(grep -rlE "^[[:space:]]*\*?[[:space:]]*Plugin Name:" "$pdir" --include="*.php" \
+             --exclude-dir=vendor --exclude-dir=lib --exclude-dir=libraries 2>/dev/null \
+             | awk '{print length"\t"$0}' | sort -n | head -1 | cut -f2)
+    [ -n "$phaupt" ] || phaupt="$pdir/$slug.php"
+    pver=$(grep -m1 -iE "^[[:space:]]*\*?[[:space:]]*Version:[[:space:]]*[0-9]" "$phaupt" 2>/dev/null \
+           | sed 's/.*[Vv]ersion:[[:space:]]*//' | tr -d '\r' | awk '{print $1}')
     [ -n "$pver" ] || continue
     pj="$RUN/.plugin_${slug}_${pver}.json"
     if [ ! -s "$pj" ]; then
@@ -604,11 +817,11 @@ awk -F'\t' -v befmuster="$BEFALLEN_KAT" '
   }
 ' "$RUN/.sauber_pfade" "$RUN/findings.tsv" "$INV" > "$URTEILE"
 
-U_BEFALLEN=$(grep -c '^BEFALLEN' "$URTEILE" 2>/dev/null || echo 0)
+U_BEFALLEN=$(grep -c "^BEFALLEN" "$URTEILE" 2>/dev/null || true); U_BEFALLEN=${U_BEFALLEN:-0}
 U_TREFFER=$(grep -c '^TREFFER'  "$URTEILE" 2>/dev/null || echo 0)
 U_SAUBER=$(grep -c '^SAUBER'    "$URTEILE" 2>/dev/null || echo 0)
 U_KEIN=$(grep -c '^KEIN'        "$URTEILE" 2>/dev/null || echo 0)
-U_WIDER=$(grep -c '^WIDERSPRUCH' "$URTEILE" 2>/dev/null || echo 0)
+U_WIDER=$(grep -c "^WIDERSPRUCH" "$URTEILE" 2>/dev/null || true); U_WIDER=${U_WIDER:-0}
 
 CRIT="$RUN/BEFUND.txt"
 {
