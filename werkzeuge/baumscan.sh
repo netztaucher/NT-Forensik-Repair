@@ -121,7 +121,10 @@ done < "$RUN/02_magic_php_als_bild.txt"
 # Genau so kam ein realer Dropper herein: gültiges PNG, PHP im tEXt-Chunk. Jeder Betrachter
 # zeigt das Bild, jeder Endungs-Filter winkt es durch.
 log "PHP-Marker in Medien-/Asset-Dateien..."
-PHP_MARK='<\?php[\s(]|<\?=|<\?\s'
+# Nur der vollständige Öffner <?php. Kurzformen wie <?= sind zwei bis drei
+# Bytes und treten in JPEG-/PNG-Binärdaten rein zufällig auf — ein Lauf mit
+# ihnen erzeugte 5.323 Fehlalarme auf einem einzigen Webspace.
+PHP_MARK='<\?php'
 
 awk -F'\t' -v max="$MAX_MEDIA_SIZE" \
   '$1+0<max && tolower($6) ~ /\.(png|jpe?g|gif|webp|bmp|ico|svg|tiff?|woff2?|ttf|otf|eot|mp[34]|wav|avi|mov|pdf|dat|bin)$/ {print $6}' \
@@ -215,16 +218,20 @@ done < "$RUN/03b_lange_zeilen.txt"
 # -----------------------------------------------------------------------------
 # Angreifer datieren mtime zurück, damit neue Dateien alt aussehen. Die ctime
 # lässt sich per touch nicht setzen — die Lücke zwischen beiden verrät es.
+#
+# ACHTUNG, hart erkauft: mtime ≪ ctime ist als EIGENSTÄNDIGER Fund wertlos.
+# Jedes rekursive chown, jede Rücksicherung und jede Rechtekorrektur setzt die
+# ctime des gesamten Baums neu, während die mtime alt bleibt. Ein Testlauf
+# meldete so 62.373 Dateien. Der Wert entsteht erst als MODIFIKATOR: er hebt
+# eine Datei, die aus anderem Grund auffällt. Deshalb wird hier nur die Liste
+# erzeugt; die Punktevergabe erfolgt in Schicht 7 gegen die Primärfunde.
 log "Timestomping..."
 awk -F'\t' -v gap="$TIMESTOMP_GAP" '
   $3+0 - $2+0 > gap && tolower($6) ~ /\.(php|php[0-9]|phtml|inc|png|jpe?g|gif|ico|svg)$/ {
     printf "%s\t%s\t%s\t%s\n", strftime("%Y-%m-%d %H:%M:%S",$2), strftime("%Y-%m-%d %H:%M:%S",$3),
            int(($3-$2)/86400), $6
   }' "$INV" | sort -k4 > "$RUN/04_timestomping.txt"
-
-awk -F'\t' '{print $4}' "$RUN/04_timestomping.txt" | while read -r f; do
-  [ -n "$f" ] && fund "TIMESTOMP_VERDACHT" 25 "$f"
-done
+awk -F'\t' '{print $4}' "$RUN/04_timestomping.txt" | sort -u > "$RUN/.timestomp_pfade"
 
 # Massen-touch: viele Dateien mit exakt identischer mtime über mehrere
 # Verzeichnisse. In einem realen Fall waren es 59.472 Dateien in einer einzigen Sekunde.
@@ -259,12 +266,24 @@ if command -v imunify-antivirus >/dev/null 2>&1; then
   log "ImunifyAV-Scan starten..."
   imunify-antivirus malware on-demand start --path "$SCOPE" \
     --ignore-mask "$EXCL/*" --intensity low --json > "$RUN/06_scan_start.json" 2>&1
+  # Die Fundliste ist eine HISTORIE. Bereits entfernte Dateien stehen weiter
+  # darin. Ohne Existenzprüfung führt ein sauberer Webspace die Rangliste mit
+  # Geistern an — im Test standen vier längst quarantänisierte Dateien auf den
+  # Plätzen 1 bis 4.
   imunify-antivirus malware malicious list --limit 500 --json 2>/dev/null \
     | grep -oE '"file": "[^"]+"' | sed 's/"file": "//;s/"$//' \
-    | grep -F "$SCOPE" > "$RUN/06_imunify_bestand.txt" 2>/dev/null
+    | grep -F "$SCOPE" | sort -u > "$RUN/06_imunify_historie.txt" 2>/dev/null
+  : > "$RUN/06_imunify_bestand.txt"
+  : > "$RUN/06_imunify_bereits_entfernt.txt"
   while read -r f; do
-    [ -n "$f" ] && fund "IMUNIFY_SIGNATUR" 70 "$f"
-  done < "$RUN/06_imunify_bestand.txt"
+    [ -n "$f" ] || continue
+    if [ -e "$f" ]; then
+      echo "$f" >> "$RUN/06_imunify_bestand.txt"
+      fund "IMUNIFY_SIGNATUR" 70 "$f"
+    else
+      echo "$f" >> "$RUN/06_imunify_bereits_entfernt.txt"
+    fi
+  done < "$RUN/06_imunify_historie.txt"
 else
   log "ImunifyAV nicht vorhanden — Schicht übersprungen"
   : > "$RUN/06_imunify_bestand.txt"
@@ -292,6 +311,25 @@ else
   : > "$RUN/07_fehlalarme_gefiltert.txt"
 fi
 
+# Doppelte Meldungen derselben Kategorie für dieselbe Datei zählen einmal.
+sort -u "$RAW" -o "$RAW"
+
+# Timestomping als Modifikator: +25 nur für Dateien, die ohnehin auffallen.
+if [ -s "$RUN/.timestomp_pfade" ]; then
+  awk -F'\t' 'NR==FNR {prim[$3]=1; next} ($0 in prim) {print "TIMESTOMP_VERDACHT\t25\t"$0}' \
+    "$RAW" "$RUN/.timestomp_pfade" >> "$RAW"
+fi
+
+# Mitglied eines Massen-touch-Clusters: +10, ebenfalls nur als Modifikator.
+if [ -s "$RUN/04b_mtime_cluster.txt" ]; then
+  cut -f3 "$RUN/04b_mtime_cluster.txt" | sort -u > "$RUN/.cluster_zeiten"
+  awk -F'\t' 'NR==FNR {z[$1]=1; next} (int($2) in z) {print $6}' \
+    "$RUN/.cluster_zeiten" "$INV" | sort -u > "$RUN/.cluster_pfade"
+  awk -F'\t' 'NR==FNR {prim[$3]=1; next} ($0 in prim) {print "MTIME_CLUSTER\t10\t"$0}' \
+    "$RAW" "$RUN/.cluster_pfade" >> "$RAW"
+fi
+
+sort -u "$RAW" -o "$RAW"
 sort -t"$(printf '\t')" -k3,3 "$RAW" | awk -F'\t' '
   { score[$3]+=$2; cats[$3] = ($3 in cats ? cats[$3]"," $1 : $1) }
   END { for (p in score) printf "%d\t%s\t%s\n", score[p], cats[p], p }
