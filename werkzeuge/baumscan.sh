@@ -711,7 +711,7 @@ if [ "${BAUMSCAN_ONLINE:-0}" = "1" ] && command -v curl >/dev/null 2>&1 && comma
     kern_json="$RUN/.kern_${wpver}.json"
     if [ ! -s "$kern_json" ]; then
       curl -fsSL --max-time 30 \
-        "https://api.wordpress.org/core/checksums/1.0/?version=${wpver}&locale=en_US" \
+        "${BAUMSCAN_KERN_BASIS:-https://api.wordpress.org/core/checksums/1.0/}?version=${wpver}&locale=en_US" \
         -o "$kern_json" 2>/dev/null || true
     fi
     [ -s "$kern_json" ] || continue
@@ -753,8 +753,11 @@ PY
     [ -n "$pver" ] || continue
     pj="$RUN/.plugin_${slug}_${pver}.json"
     if [ ! -s "$pj" ]; then
+      # Quelle umlenkbar — der Pruefstand zeigt sie auf eine lokale Datei
+      # (curl kann file://). Ohne das haenge jeder Test am Netz und an der
+      # Frage, ob wordpress.org gerade eine bestimmte Fassung noch fuehrt.
       curl -fsSL --max-time 20 \
-        "https://downloads.wordpress.org/plugin-checksums/${slug}/${pver}.json" \
+        "${BAUMSCAN_PRUEFSUMMEN_BASIS:-https://downloads.wordpress.org/plugin-checksums}/${slug}/${pver}.json" \
         -o "$pj" 2>/dev/null || true
     fi
     [ -s "$pj" ] || continue
