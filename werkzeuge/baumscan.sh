@@ -14,7 +14,7 @@
 #   3  Heuristik          gestaffelte Muster HIGH/MED, Shell-Namen      [NEU]
 #   4  Timestomping       mtime ≪ ctime + Massen-touch-Cluster          [NEU]
 #   5  .htaccess          Angreifer-Whitelists, PHP-Freigabe in uploads [NEU]
-#   6  ImunifyAV          Signaturscan (asynchron, falls vorhanden)
+#   6  ImunifyAV          eigener Signaturlauf, auf Ergebnis gewartet   [NEU]
 #   7  Bewertung          Score je Datei, BEFUND nach Verdacht sortiert [NEU]
 #   8  Diff               neue Funde gegenüber einem Vorlauf
 #
@@ -49,6 +49,7 @@ MAX_PHP_SIZE=3145728      # 3 MB — größere PHP-Dateien sind praktisch nie Sh
 MAX_MEDIA_SIZE=20971520   # 20 MB — Obergrenze für den Inhaltsscan von Medien
 CLUSTER_MIN=500           # ab so vielen Dateien mit identischer mtime: Verdacht
 TIMESTOMP_GAP=2592000     # 30 Tage: mtime so viel älter als ctime = verdächtig
+IMUNIFY_TIMEOUT=${BAUMSCAN_IMUNIFY_TIMEOUT:-900}  # Wartezeit auf den eigenen Signaturlauf
 NICE="ionice -c3 nice -n19"
 command -v ionice >/dev/null 2>&1 || NICE="nice -n19"
 
@@ -294,37 +295,88 @@ awk -F'\t' '$6 ~ /\/\.htaccess$/ {print $6}' "$INV" | while read -r h; do
 done
 
 # -----------------------------------------------------------------------------
-# 6  ImunifyAV — Signaturscan asynchron anstossen
+# 6  ImunifyAV — eigenen Lauf einreihen und dessen Ergebnis abholen
 # -----------------------------------------------------------------------------
-if command -v imunify-antivirus >/dev/null 2>&1; then
-  log "ImunifyAV-Scan starten..."
-  imunify-antivirus malware on-demand start --path "$SCOPE" \
-    --ignore-mask "$EXCL/*" --intensity low --json > "$RUN/06_scan_start.json" 2>&1
-  # Die Fundliste ist eine HISTORIE. Bereits entfernte Dateien stehen weiter
-  # darin. Ohne Existenzprüfung führt ein sauberer Webspace die Rangliste mit
-  # Geistern an — im Test standen vier längst quarantänisierte Dateien auf den
-  # Plätzen 1 bis 4.
-  # Der Pfadfilter muss VERANKERT sein. Unverankert trifft er auch Kopien,
-  # die den Scope-Pfad nur als Teilzeichenkette enthalten — etwa eine
-  # Quarantäne unter /root/…/files/var/www/vhosts/<scope>/. Ein bereinigter
-  # Webspace sah dadurch im Kontrolllauf infiziert aus.
-  imunify-antivirus malware malicious list --limit 500 --json 2>/dev/null \
-    | grep -oE '"file": "[^"]+"' | sed 's/"file": "//;s/"$//' \
-    | awk -v s="$SCOPE/" 'index($0, s)==1' | sort -u > "$RUN/06_imunify_historie.txt" 2>/dev/null
-  : > "$RUN/06_imunify_bestand.txt"
-  : > "$RUN/06_imunify_bereits_entfernt.txt"
-  while read -r f; do
-    [ -n "$f" ] || continue
-    if [ -e "$f" ]; then
-      echo "$f" >> "$RUN/06_imunify_bestand.txt"
-      fund "IMUNIFY_SIGNATUR" 70 "$f"
-    else
-      echo "$f" >> "$RUN/06_imunify_bereits_entfernt.txt"
-    fi
-  done < "$RUN/06_imunify_historie.txt"
-else
+# Frühere Fassung stiess den Scan an und las danach `malware malicious list` —
+# also die HISTORIE aller je gefundenen Dateien, nicht das Ergebnis des eigenen
+# Laufs. Zwei Fehler in einem: das Ergebnis kam zu früh (der Scan lief noch),
+# und es enthielt längst entfernte Dateien. Auf einem bereinigten Webspace
+# standen dadurch vier Geisterdateien auf den Plätzen 1 bis 4 der Rangliste.
+#
+# Richtig ist: Lauf einreihen, auf seinen Abschluss warten, Funde über
+# --by-scan-id abholen. Nur diese Funde stammen aus diesem Scan.
+: > "$RUN/06_imunify_bestand.txt"
+: > "$RUN/06_imunify_bereits_entfernt.txt"
+
+if ! command -v imunify-antivirus >/dev/null 2>&1; then
   log "ImunifyAV nicht vorhanden — Schicht übersprungen"
-  : > "$RUN/06_imunify_bestand.txt"
+elif ! command -v python3 >/dev/null 2>&1; then
+  log "python3 fehlt — ImunifyAV-Schicht übersprungen (JSON nicht auswertbar)"
+else
+  START_TS=$(date +%s)
+  log "ImunifyAV: Lauf einreihen..."
+  imunify-antivirus malware on-demand queue put "$SCOPE" \
+    --ignore-mask "$EXCL/*" --intensity low --json > "$RUN/06_scan_start.json" 2>&1
+
+  # Auf den eigenen Lauf warten. Erkennungsmerkmal: gleicher Pfad, nicht vor
+  # dem eigenen Startzeitpunkt begonnen, abgeschlossen.
+  SCANID=""
+  WARTE=0
+  while [ "$WARTE" -lt "$IMUNIFY_TIMEOUT" ]; do
+    SCANID=$(imunify-antivirus malware on-demand list --json 2>/dev/null | python3 -c '
+import json, sys
+try:
+    d = json.load(sys.stdin)
+except Exception:
+    sys.exit(0)
+pfad, ab = sys.argv[1], int(sys.argv[2])
+treffer = [
+    i for i in d.get("items", [])
+    if i.get("path") == pfad
+    and (i.get("created") or 0) >= ab - 5
+    and i.get("completed")
+]
+if treffer:
+    print(sorted(treffer, key=lambda i: i["created"])[-1]["scanid"])
+' "$SCOPE" "$START_TS" 2>/dev/null)
+    [ -n "$SCANID" ] && break
+    sleep 10
+    WARTE=$((WARTE + 10))
+  done
+
+  if [ -z "$SCANID" ]; then
+    log "  ImunifyAV: kein Ergebnis binnen ${IMUNIFY_TIMEOUT}s — Schicht unvollständig"
+    echo "ZEITUEBERSCHREITUNG nach ${IMUNIFY_TIMEOUT}s" > "$RUN/06_imunify_status.txt"
+  else
+    log "  ImunifyAV: Lauf $SCANID nach ${WARTE}s abgeschlossen"
+    echo "scanid=$SCANID dauer=${WARTE}s" > "$RUN/06_imunify_status.txt"
+    imunify-antivirus malware malicious list --by-scan-id "$SCANID" \
+      --by-status found --limit 1000 --json 2>/dev/null \
+      | python3 -c '
+import json, sys
+try:
+    d = json.load(sys.stdin)
+except Exception:
+    sys.exit(0)
+for i in d.get("items", []):
+    f = i.get("file") or i.get("path")
+    if f:
+        print(f)
+' 2>/dev/null | sort -u > "$RUN/06_imunify_funde.txt"
+
+    while read -r f; do
+      [ -n "$f" ] || continue
+      # Existenzprüfung bleibt: zwischen Scan und Auswertung kann bereinigt
+      # worden sein, und ImunifyAV meldet auch Pfade in Quarantäne.
+      if [ -e "$f" ]; then
+        echo "$f" >> "$RUN/06_imunify_bestand.txt"
+        fund "IMUNIFY_SIGNATUR" 70 "$f"
+      else
+        echo "$f" >> "$RUN/06_imunify_bereits_entfernt.txt"
+      fi
+    done < "$RUN/06_imunify_funde.txt"
+    log "  ImunifyAV: $(wc -l < "$RUN/06_imunify_bestand.txt") aktive Funde"
+  fi
 fi
 
 # -----------------------------------------------------------------------------
