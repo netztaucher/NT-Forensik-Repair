@@ -236,6 +236,16 @@ jobs:
           gegenprobe "7.2 Wächter-Filter"          NT_PRUEFSTAND_OHNE_WAECHTER=1
           bash werkzeuge/goldmuster.sh vergleichen
 
+      - name: Was das Kundenpaket zurückhält (#4)
+        # Eigener Prüfstand, weil goldmuster.sh den LAUF vergleicht und das
+        # Paket danach aus einem anderen Werkzeug entsteht. Und weil der
+        # Prüfbaum mit --nur-website läuft: er erzeugt ausschliesslich Belege
+        # der Stufe `kunde`, ein Fehler in der Aussortierung von `server` und
+        # `betreiber` wäre also unsichtbar — in der Richtung, die weh tut.
+        # Der Prüfstand ergänzt den echten Lauf deshalb um je einen künstlichen
+        # Beleg beider Stufen und prüft, dass sie draussen bleiben.
+        run: bash werkzeuge/kundenpaket-pruefstand.sh
+
       - name: Nachweis — Plugin-Prüfsummen laufen ohne wp-cli (#10)
         run: |
           # Keine Gegenprobe, sondern eine Behauptung über ANWESENHEIT. Der

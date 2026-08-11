@@ -4,6 +4,41 @@ Alle nennenswerten Änderungen an `wp_plesk_forensik.sh`.
 
 ## [unveröffentlicht]
 
+### Neu — `werkzeuge/kundenpaket.sh` (#4)
+
+Schnürt aus einem Lauf ein übergabefähiges Paket:
+`01_Kundenunterlagen` · `02_Meldungen` · `03_Technik` · `04_Belege` ·
+`05_Bereinigung`. Belege der Stufe `kunde` gehen maskiert mit und werden
+lückenlos neu nummeriert; `server` nur mit `--mit-server`, `betreiber` nie.
+
+Immer draussen, ohne Schalter: `findings.json` (Maschinendatei),
+das Log-Archiv (im Anlassfall 527 MB Zugriffe aller Domains des Servers) und
+die BSI-Meldung (Meldeweg des Betreibers). Die DSGVO-Meldung geht mit — sie
+ist die Pflicht des Kunden als Verantwortlichem, nicht die des Betreibers.
+
+Weil die Belege maskiert und neu nummeriert werden, stimmen die Prüfsummen des
+Laufs nicht mehr. Das Paket bekommt deshalb ein **eigenes** SHA256SUMS und ein
+LIESMICH, das den Unterschied benennt und auf das Originalsiegel beim
+Betreiber verweist — sonst sieht eine gewollte Änderung wie ein gebrochenes
+Siegel aus. `04_Belege/00_verzeichnis.tsv` nennt zu jedem Beleg seine
+ursprüngliche Nummer.
+
+Ein Betreiberlauf (`scope_mode=global`) wird abgelehnt: es gäbe niemanden,
+gegen den maskiert werden könnte. Dafür trägt `findings.json` ab v3.12 den
+Prüfumfang (`run.scope_mode`, `run.abo_user`, `run.scan_paths`).
+
+`werkzeuge/kundenpaket-pruefstand.sh` prüft elf Soll-Werte, darunter die
+Gegenprobe zu `--mit-server`: ein Werkzeug, das grundsätzlich nichts
+übernimmt, würde die Sperren sonst genauso „bestehen".
+
+### Behoben — der Kundenbericht nannte Betreiber-Dokumente „Ihre Unterlagen"
+
+Abschnitt 8 führte `technik_bericht.md`, `bsi_meldung.md`, `dsgvo_meldung.md`
+und `belege/` auf. Alle vier liegen in `betreiber/` und sind laut
+`lib/konfig.sh` ausdrücklich **nicht** zur Weitergabe bestimmt. Der Bericht
+nennt jetzt, was tatsächlich im Paket liegt — und sagt, was nicht darin ist
+und warum.
+
 ### Neu — Belege tragen eine Einstufung (#1)
 
 `evidence` nimmt einen dritten Parameter: `kunde`, `server` oder `betreiber`.

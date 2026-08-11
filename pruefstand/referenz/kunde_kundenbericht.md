@@ -149,10 +149,16 @@ Wir unterstützen Sie bei allen Meldungen — sprechen Sie uns umgehend an.
 |---|---|
 | `kundenbericht.md` | Dieses Dokument |
 | `befunde_details.md` | Vollständige Fundstellen-Liste (Pfade relativ zu Ihrem Verzeichnis, Familie, Signatur) |
-| `technik_bericht.md` | Vollständiger technischer Bericht (alle Prüfpunkte, inkl. Root-Prüfung §13) |
-| `bsi_meldung.md` | Vorbereitete BSI-Meldung (BSIG/NIS2) |
-| `dsgvo_meldung.md` | Vorbereitete DSGVO-Meldung (Art. 33, eigener Meldeweg an die Datenschutzbehörde) |
-| `belege/` | Alle Rohdaten & Beweismittel, mit SHA256-Prüfsummen versiegelt |
+| `root_aussage.md` | Aussage dazu, ob der Vorfall über Ihren Webauftritt hinausreicht |
+| `02_Meldungen/` | Entwurf Ihrer DSGVO-Meldung (Art. 33) — von Ihnen zu prüfen und abzusenden |
+| `04_Belege/` | Die Rohbelege zu den Befunden, maskiert und mit eigenen SHA256-Prüfsummen |
+
+> **Was Sie hier NICHT finden — und warum.** Der vollständige Technik-Bericht,
+> die BSI-Meldung und die unmaskierten Rohbelege liegen beim Betreiber Ihres
+> Servers. Sie enthalten serverweite Angaben und, auf einem Server mit mehreren
+> Kunden, Pfade und Kennungen anderer Kunden. Was davon Sie betrifft, steht
+> vollständig in diesem Bericht. Den Technik-Bericht können Sie bei Bedarf
+> anfordern; er wird dann maskiert beigelegt.
 
 
 

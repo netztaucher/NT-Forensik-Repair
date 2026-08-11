@@ -46,6 +46,13 @@ emit_findings_json() {
   # Signaturtreffer standen bis hierher ausschliesslich im Menschentext, und
   # zwar nur der erste je Muster — der Reparaturteil bekam sie nie zu sehen,
   # obwohl genau sie im Vorfall in der Quarantaenetabelle landeten.
+  # Der Pruefumfang, maschinenlesbar. werkzeuge/kundenpaket.sh braucht ihn, um
+  # dieselbe Maskierung anzuwenden wie der Lauf — ohne SCOPE_MODE, ABO_USER und
+  # SCAN_PATHS kann nf_fremdkunden_maskieren nicht entscheiden, was "eigen" ist,
+  # und maskiert dann lieber gar nicht. Ein Paketwerkzeug, das diese Angabe
+  # raten muesste, wuerde entweder den eigenen Kunden unkenntlich machen oder
+  # fremde stehen lassen.
+  local scanp; scanp=$(printf '%s\n' "${SCAN_PATHS[@]:-}" | json_arr)
   local sigtr plugmod
   sigtr=$(printf '%s\n'   "${SIGNATUR_TREFFER:-}"  | json_arr)
   plugmod=$(printf '%s\n' "${PLUGIN_VERAENDERT:-}" | json_arr)
@@ -187,7 +194,10 @@ print(json.dumps(raus, ensure_ascii=False))' 2>/dev/null || echo '{}')
     "vollstaendig": $(if [[ -z "${MODULE_UEBERSPRUNGEN:-}" ]]; then echo true; else echo false; fi),
     "module_gelaufen": ${modgel:-[]},
     "module_uebersprungen": ${moduebr:-[]},
-    "nicht_messbar": ${unmess:-[]}
+    "nicht_messbar": ${unmess:-[]},
+    "scope_mode": "$(json_str "${SCOPE_MODE:-}")",
+    "abo_user": "$(json_str "${ABO_USER:-}")",
+    "scan_paths": ${scanp:-[]}
   },
   "htaccess_unwirksam": "${htaunw}",
   "befunde": ${befgen:-{\}},

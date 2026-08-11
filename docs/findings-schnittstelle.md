@@ -133,6 +133,7 @@ stillschweigend wie ein vollständiger Freispruch — der Fehlerfall, der zählt
 | `metrics.zu_pruefen_gesamt` | Fundstellen des zweiten Rangs: kernfremde Dateien, mu-Plugins, Ausführbares in `/tmp`. Kein belegter Schadcode, deshalb **nicht** in `schadcode_gesamt` enthalten. |
 | `actionable.signatur_treffer` | Treffer aus `rezepte/*/signaturen.tsv`, alle Anwendungen. Bis v3.11 standen diese Dateien ausschliesslich im Menschentext, und dort nur die erste je Muster — Quarantäne-Kandidaten erster Ordnung, die NT-Repair nie zu sehen bekam. |
 | `actionable.plugin_veraendert` | Plugin-Codedateien, die von den Prüfsummen bei wordpress.org abweichen. |
+| `run.scope_mode` / `run.abo_user` / `run.scan_paths` | Der Prüfumfang, maschinenlesbar. `werkzeuge/kundenpaket.sh` braucht ihn, um dieselbe Maskierung anzuwenden wie der Lauf: ohne ihn kann `nf_fremdkunden_maskieren` nicht entscheiden, was „eigen" ist, und maskiert dann lieber gar nicht. Ein Lauf ohne diese Felder bekommt kein automatisches Kundenpaket. |
 
 ## ⚠️ Zähler, die nur einen Teil der Wahrheit zeigen
 
