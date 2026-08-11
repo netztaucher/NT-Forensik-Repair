@@ -149,6 +149,31 @@ php_value auto_prepend_file /var/www/vhosts/<anderer Kunde 1>/httpdocs/wp-conten
 
   YARA-Scan nicht aktiviert — mit --yara einschalten (auf großen Webspaces langsam)
 
+### 7.12 Fremder YARA-Regelsatz (php-malware-finder, optional)
+
+
+### 7.13 PHP-Code in Medien- und Asset-Dateien
+
+- 🔴 **KRITISCH: PHP-Code in 2 Mediendatei(en) — in einem echten Bild gehört kein PHP**
+
+```
+<PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/plugins/beispiel-plugin/assets/banner.png
+    Typ:      data
+    Angelegt: ?
+    SHA256:   <SHA256>
+    Nutzlast: 
+
+<PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/uploads/2026/03/logo.png
+    Typ:      data
+    Angelegt: ?
+    SHA256:   <SHA256>
+    Nutzlast: 
+
+
+```
+
+  Beleg: belege/04_php_in_mediendateien.txt
+
 ## 12. JOOMLA-PRÜFUNG
 
 
@@ -211,7 +236,7 @@ php_value auto_prepend_file /var/www/vhosts/<anderer Kunde 1>/httpdocs/wp-conten
 2:<Files "filefuns.php">
 ```
 
-  Beleg: belege/04_nextcloud_htaccess_kunde-zwei_example_cloud_kunde-zwei_example.txt
+  Beleg: belege/05_nextcloud_htaccess_kunde-zwei_example_cloud_kunde-zwei_example.txt
 - 🔴 **KRITISCH: kunde-zwei.example/cloud.kunde-zwei.example: verschachtelte Verzeichnisse (z. B. config/config) — typisch für diese Kampagne**
 
 ```
@@ -252,9 +277,9 @@ php_value auto_prepend_file /var/www/vhosts/<anderer Kunde 1>/httpdocs/wp-conten
 - ⚠️  **kunde-zwei.example/httpdocs: plugin pruefstand-alt 2.0.3 ist von einer bekannten Schwachstelle betroffen ([2.0 … 2.4.1]) CVE-2026-90002 — behoben in 2.5.**
 - 🔴 **KRITISCH: kunde-zwei.example/httpdocs: plugin pruefstand-kev 1.2 ist von einer bekannten Schwachstelle betroffen ((* … 2.0)) CVE-2026-90001 — behoben in 2.0. Diese Lücke wird nachweislich aktiv ausgenutzt — sofort handeln.**
 - ⚠️  **kunde-zwei.example/httpdocs: theme pruefstand-thema 0.9 ist von einer bekannten Schwachstelle betroffen ((* … 1.0)) CVE-2026-90005 — behoben in 1.0.**
-- ⚪ **Nicht messbar: kunde-zwei.example/httpdocs: 1 Bestandteil(e) ohne lesbare Fassung — für sie ist keine Aussage zur Angreifbarkeit möglich**
-  Beleg: belege/05_wp_version_nicht_bewertbar_kunde-zwei_example_httpdocs.txt
-  Beleg: belege/06_wp_schwachstellen_kunde-zwei_example_httpdocs.txt
+- ⚪ **Nicht messbar: kunde-zwei.example/httpdocs: 2 Bestandteil(e) ohne lesbare Fassung — für sie ist keine Aussage zur Angreifbarkeit möglich**
+  Beleg: belege/06_wp_version_nicht_bewertbar_kunde-zwei_example_httpdocs.txt
+  Beleg: belege/07_wp_schwachstellen_kunde-zwei_example_httpdocs.txt
 - ✅ kunde-zwei.example/httpdocs: keine Doorway-.htaccess-Signatur
 - 🔴 **KRITISCH: kunde-zwei.example/httpdocs: 1 Datei(en) mit @include base64_decode() — getarnte Payload-Nachladung**
 
@@ -262,7 +287,7 @@ php_value auto_prepend_file /var/www/vhosts/<anderer Kunde 1>/httpdocs/wp-conten
 <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/mu-plugins/cache.php
 ```
 
-  Beleg: belege/07_wp_include_injektion_kunde-zwei_example_httpdocs.txt
+  Beleg: belege/08_wp_include_injektion_kunde-zwei_example_httpdocs.txt
 - ⚠️  **kunde-zwei.example/httpdocs: 1 mu-Plugin(s) — laufen ohne Aktivierung und erscheinen in keiner Pluginliste**
 
 ```
@@ -275,17 +300,17 @@ php_value auto_prepend_file /var/www/vhosts/<anderer Kunde 1>/httpdocs/wp-conten
 <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-includes/load.php
 ```
 
-  Beleg: belege/08_wp_core_veraendert_kunde-zwei_example_httpdocs.txt
+  Beleg: belege/09_wp_core_veraendert_kunde-zwei_example_httpdocs.txt
 - ⚠️  **kunde-zwei.example/httpdocs: 1 Core-fremde Datei(en) in wp-admin/wp-includes — prüfen**
-  Beleg: belege/09_wp_core_fremd_kunde-zwei_example_httpdocs.txt
+  Beleg: belege/10_wp_core_fremd_kunde-zwei_example_httpdocs.txt
 - 🔴 **KRITISCH: kunde-zwei.example/httpdocs: 1 veränderte Plugin-Codedatei(en) gegenüber wordpress.org — Plugin neu installieren, Dateien vorher sichern**
 
 ```
 <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/plugins/pruefstand-aktuell/pruefstand-aktuell.php
 ```
 
-  Beleg: belege/10_wp_plugin_veraendert_kunde-zwei_example_httpdocs.txt
-- ⚪ **Nicht messbar: kunde-zwei.example/httpdocs: 1 Plugin(s) ohne Prüfsummensatz und alle Themes — Unversehrtheit nicht feststellbar (Premium, Fork, Eigenbau; für Themes veröffentlicht wordpress.org keine Prüfsummen)**
+  Beleg: belege/11_wp_plugin_veraendert_kunde-zwei_example_httpdocs.txt
+- ⚪ **Nicht messbar: kunde-zwei.example/httpdocs: 2 Plugin(s) ohne Prüfsummensatz und alle Themes — Unversehrtheit nicht feststellbar (Premium, Fork, Eigenbau; für Themes veröffentlicht wordpress.org keine Prüfsummen)**
 
 ## 13b. .HTACCESS — SICHERUNG UND EINORDNUNG
 
@@ -305,7 +330,7 @@ Order allow,deny                                      Apache-2.2-Zugriffssyntax 
 <Files filefuns.php> … Allow from all                 Sperre fuer alles, Freigabe fuer genau diese eine PHP-Datei
 ```
 
-  Beleg: belege/11_htaccess_fremd_kunde-zwei_example_backups_updater-abc123_nextcloud-28_0_1_2-1700000000__htaccess.txt
+  Beleg: belege/12_htaccess_fremd_kunde-zwei_example_backups_updater-abc123_nextcloud-28_0_1_2-1700000000__htaccess.txt
 - 🔴 **KRITISCH: kunde-zwei.example/cloud.kunde-zwei.example/.htaccess (nextcloud): 3 Angreifer-Direktive(n) in der .htaccess**
 
 ```
@@ -314,7 +339,7 @@ Order allow,deny                                      Apache-2.2-Zugriffssyntax 
 <Files filefuns.php> … Allow from all                 Sperre fuer alles, Freigabe fuer genau diese eine PHP-Datei
 ```
 
-  Beleg: belege/12_htaccess_fremd_kunde-zwei_example_cloud_kunde-zwei_example__htaccess.txt
+  Beleg: belege/13_htaccess_fremd_kunde-zwei_example_cloud_kunde-zwei_example__htaccess.txt
 - 🔴 **KRITISCH: kunde-zwei.example/httpdocs/.htaccess (wordpress): 2 Angreifer-Direktive(n) in der .htaccess**
 
 ```
@@ -322,15 +347,15 @@ AddType application/x-httpd-php .jpg                  PHP-Ausfuehrung fuer eine 
 php_value auto_prepend_file /var/www/vhosts/<anderer Kunde 2>  auto_prepend_file auf eine Datei im Webspace
 ```
 
-  Beleg: belege/13_htaccess_fremd_kunde-zwei_example_httpdocs__htaccess.txt
+  Beleg: belege/14_htaccess_fremd_kunde-zwei_example_httpdocs__htaccess.txt
 - 🔴 **KRITISCH: kunde-zwei.example/httpdocs/wp-content/uploads/.htaccess (unbekannt): 1 Angreifer-Direktive(n) in der .htaccess**
 
 ```
 <Files bild.php> … Allow from all                     Freigabe fuer eine PHP-Datei in einem Verzeichnis, in das keine gehoert
 ```
 
-  Beleg: belege/14_htaccess_fremd_kunde-zwei_example_httpdocs_wp-content_uploads__htaccess.txt
-  Beleg: belege/15_htaccess_einordnung.txt
+  Beleg: belege/15_htaccess_fremd_kunde-zwei_example_httpdocs_wp-content_uploads__htaccess.txt
+  Beleg: belege/16_htaccess_einordnung.txt
 
 ### 13b.3 Wirksamkeit
 
@@ -343,7 +368,7 @@ php_value auto_prepend_file /var/www/vhosts/<anderer Kunde 2>  auto_prepend_file
 
 | Kategorie | Anzahl |
 |---|---|
-| 🔴 Kritische Befunde | 13 |
+| 🔴 Kritische Befunde | 14 |
 | ⚠️ Warnungen | 9 |
 | ✅ Unauffällige Prüfungen | 20 |
 | ⚪ Nicht messbar | 4 |
@@ -353,8 +378,8 @@ php_value auto_prepend_file /var/www/vhosts/<anderer Kunde 2>  auto_prepend_file
 >
 > - kunde-zwei.example/cloud.kunde-zwei.example: Werkzeug antwortet nicht verwertbar — nicht geprüft
 > - kunde-drei.example/httpdocs: 1 Plugin(s) ohne Prüfsummensatz und alle Themes — Unversehrtheit nicht feststellbar (Premium, Fork, Eigenbau; für Themes veröffentlicht wordpress.org keine Prüfsummen)
-> - kunde-zwei.example/httpdocs: 1 Bestandteil(e) ohne lesbare Fassung — für sie ist keine Aussage zur Angreifbarkeit möglich
-> - kunde-zwei.example/httpdocs: 1 Plugin(s) ohne Prüfsummensatz und alle Themes — Unversehrtheit nicht feststellbar (Premium, Fork, Eigenbau; für Themes veröffentlicht wordpress.org keine Prüfsummen)
+> - kunde-zwei.example/httpdocs: 2 Bestandteil(e) ohne lesbare Fassung — für sie ist keine Aussage zur Angreifbarkeit möglich
+> - kunde-zwei.example/httpdocs: 2 Plugin(s) ohne Prüfsummensatz und alle Themes — Unversehrtheit nicht feststellbar (Premium, Fork, Eigenbau; für Themes veröffentlicht wordpress.org keine Prüfsummen)
 
 ### 14.2 Empfohlene Sofortmaßnahmen
 

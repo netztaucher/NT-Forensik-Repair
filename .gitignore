@@ -32,3 +32,6 @@ logs/
 # Python-Zwischenstände (py_compile in der CI, Selbsttest lokal)
 __pycache__/
 *.pyc
+
+# Fremde Regelsaetze (LGPL) — vor Ort geholt, nicht mitgeliefert
+signaturen/fremd/

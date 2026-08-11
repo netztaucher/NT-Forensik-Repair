@@ -135,4 +135,12 @@ jobs:
           gegenprobe "den Schwachstellenabgleich"  WP_DATEN_MAX_TAGE=-1
           gegenprobe "den Datenbestand"            WP_DATEN_DIR=/nicht/vorhanden
           gegenprobe "die Plugin-Prüfsummen"       WP_PRUEFSUMMEN_BASIS=/nicht/vorhanden
+          # 7.13 trägt einen Befund, den KEINE andere Prüfung erhebt: ein
+          # gültiges PNG mit völlig unverschleiertem PHP darin — kein eval,
+          # kein base64, keine Superglobale. Der Prüfbaum enthält zwar eine
+          # zweite getarnte Nutzlast, die aber system($_GET[…]) nutzt und
+          # deshalb auch bei den Musterprüfungen anschlägt; sie taugt als
+          # Nachweis für 7.13 nicht. Ohne die isolierende Probe muss der
+          # Vergleich ausschlagen, sonst ist der Abschnitt blind.
+          gegenprobe "7.13 PHP-in-Mediendateien"   NT_PRUEFSTAND_OHNE_MEDIENPROBE=1
           bash werkzeuge/goldmuster.sh vergleichen
