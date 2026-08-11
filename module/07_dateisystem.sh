@@ -388,4 +388,52 @@ else
     info "Regelstand: $PMF_ALTER Tage alt — der Regelsatz wird vom Projekt kaum noch gepflegt"
 fi
 
+h2 "7.13 PHP-Code in Medien- und Asset-Dateien"
+# Der Gegenpol zu 7.10: dort ein Binary, das sich als Schlüsseldatei ausgibt,
+# hier PHP-Code, der in einer echten Mediendatei sitzt.
+#
+# Anlassfall: ein gültiges PNG, 512×512, das sich in jedem Bildbetrachter
+# normal öffnet — mit PHP im tEXt-Chunk, das Schadcode von aussen nachlud. Es
+# lag neun Tage unentdeckt. Weder der Signaturscanner noch die Heuristik noch
+# ein fremder YARA-Regelsatz meldeten es, und zwar aus demselben Grund: die
+# Nutzlast war völlig unverschleiert.
+#
+#   <?php $u = "https://…/de.php"; $c = curl_init(); …
+#
+# Kein eval, kein Base64, keine Superglobals. Auf Token-Ebene harmloser Code.
+# Bösartig ist nicht der Code, sondern der Behälter. Deshalb prüft dieser
+# Abschnitt nicht, WAS das PHP tut, sondern nur, DASS es dort steht.
+#
+# Gesucht wird ausschliesslich der vollständige Öffner "<?php". Die Kurzformen
+# "<?=" und "<?" sind zwei bis drei Bytes und treten in Binärdaten zufällig
+# auf — ein Versuch damit erzeugte 5.323 Fehlalarme auf einem einzigen Webspace.
+MEDIA_HITS=$(find "${SCAN_PATHS[@]}" -type f -size -20M \
+    \( -iname "*.png" -o -iname "*.jpg" -o -iname "*.jpeg" -o -iname "*.gif" \
+       -o -iname "*.webp" -o -iname "*.bmp" -o -iname "*.ico" -o -iname "*.svg" \
+       -o -iname "*.tif" -o -iname "*.tiff" -o -iname "*.woff" -o -iname "*.woff2" \
+       -o -iname "*.ttf" -o -iname "*.otf" -o -iname "*.eot" -o -iname "*.pdf" \
+       -o -iname "*.mp3" -o -iname "*.mp4" -o -iname "*.wav" \) 2>/dev/null \
+  | nf_strip_self \
+  | tr '\n' '\0' \
+  | xargs -0 -r -P4 -n200 grep -laF '<?php' 2>/dev/null | sort -u || true)
+
+if [[ -n "$MEDIA_HITS" ]]; then
+    MEDIA_ANZ=$(echo "$MEDIA_HITS" | grep -c . || echo 0)
+    crit "PHP-Code in $MEDIA_ANZ Mediendatei(en) — in einem echten Bild gehört kein PHP"
+    MEDIA_DETAIL=""
+    while IFS= read -r mf; do
+        [[ -f "$mf" ]] || continue
+        MEDIA_DETAIL+="$mf"$'\n'
+        MEDIA_DETAIL+="    Typ:      $(file -b "$mf" 2>/dev/null | cut -c1-70)"$'\n'
+        MEDIA_DETAIL+="    Angelegt: $(stat -c %w "$mf" 2>/dev/null || echo '?')"$'\n'
+        MEDIA_DETAIL+="    SHA256:   $(sha256sum "$mf" 2>/dev/null | cut -d' ' -f1)"$'\n'
+        MEDIA_DETAIL+="    Nutzlast: $(grep -aoP '<\?php.{0,120}' "$mf" 2>/dev/null | head -1 | tr -d '\000')"$'\n\n'
+        DISGUISED_PAYLOADS+="$mf"$'\n'
+    done <<< "$MEDIA_HITS"
+    code "$MEDIA_DETAIL"
+    evidence "php_in_mediendateien" "$MEDIA_DETAIL"
+else
+    ok "Kein PHP-Code in Medien- oder Asset-Dateien"
+fi
+
 # ============================================================
