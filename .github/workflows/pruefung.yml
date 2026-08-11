@@ -66,6 +66,27 @@ jobs:
           sudo apt-get update -qq && sudo apt-get install -y -qq php-cli
           bash werkzeuge/version_compare_gegentest.sh 30000
 
+      - name: Urteile von baumscan.sh
+        # Eigener Prüfstand, weil goldmuster.sh wp_plesk_forensik.sh prüft und
+        # die Urteile in baumscan.sh leben. Und mit Soll-Werten statt
+        # Referenzvergleich: bei einem Urteil ist die richtige Antwort vorher
+        # bekannt — der Test soll melden, dass etwas FALSCH ist, nicht nur,
+        # dass sich etwas geändert hat.
+        run: bash werkzeuge/baumscan-pruefstand.sh
+
+      - name: Gegenproben — merkt der Urteils-Prüfstand eine Verschlechterung?
+        run: |
+          gegenprobe() {   # <name> <variable>
+            if env "$2=1" bash werkzeuge/baumscan-pruefstand.sh >/dev/null 2>&1; then
+              echo "::error::Der Urteils-Prüfstand ist blind für: $1"
+              exit 1
+            fi
+            echo "  ok — $1 wird bemerkt"
+          }
+          gegenprobe "fehlender Encoder-Banner"      NT_BAUMSCAN_OHNE_PACKER
+          gegenprobe "PHP aus der Mediendatei raus"  NT_BAUMSCAN_OHNE_MEDIENPHP
+          gegenprobe "verfälschte Prüfsumme"         NT_BAUMSCAN_OHNE_PRUEFSUMME
+
       - name: shellcheck
         run: |
           sudo apt-get update -qq && sudo apt-get install -y -qq shellcheck
@@ -143,4 +164,12 @@ jobs:
           # Nachweis für 7.13 nicht. Ohne die isolierende Probe muss der
           # Vergleich ausschlagen, sonst ist der Abschnitt blind.
           gegenprobe "7.13 PHP-in-Mediendateien"   NT_PRUEFSTAND_OHNE_MEDIENPROBE=1
+          # Die zweite Musterstufe: gefährliche Funktionen ohne jede
+          # Obfuskation in einer kleinen Datei. Fällt durch PATTERN_REGEX.
+          gegenprobe "7.3 zweite Musterstufe"      NT_PRUEFSTAND_OHNE_FUNKTIONSPROBE=1
+          # .htaccess, die genau eine PHP-Datei freigibt — der Marker, mit dem
+          # ein Angreifer seine Shell erreichbar hält und Mitbewerber aussperrt.
+          gegenprobe "7.6 Einzelfreigabe in .htaccess" NT_PRUEFSTAND_OHNE_HTACCESSPROBE=1
+          # Flächige Zeitstempel-Manipulation.
+          gegenprobe "7.14 Zeitstempel-Häufung"    NT_PRUEFSTAND_OHNE_ZEITCLUSTER=1
           bash werkzeuge/goldmuster.sh vergleichen

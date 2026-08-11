@@ -98,10 +98,27 @@ if [[ -n "$WEBSHELL_HITS" ]]; then
     fsize=$(stat -c%s "$f" 2>/dev/null || echo 0)
     fhash=$(sha256sum "$f" 2>/dev/null | awk '{print $1}' || true)
     fmtime=$(stat -c %y "$f" 2>/dev/null || true)
+    # Anlegezeit (crtime) mitführen. Sie übersteht `touch`, mtime und ctime
+    # nicht. Im Anlassfall setzte der Angreifer die mtime von 59.472 Dateien
+    # auf einen einzigen gefälschten Wert; die Chronologie liess sich danach
+    # ausschliesslich über die crtime rekonstruieren.
+    fcrtime=$(stat -c %w "$f" 2>/dev/null || true)
+    [[ -z "$fcrtime" || "$fcrtime" == "-" ]] && fcrtime="nicht verfügbar"
+    # Zeitstempel-Manipulation: mtime deutlich älter als ctime. Als alleiniger
+    # Befund wertlos — jedes rekursive chown und jede Rücksicherung löst es
+    # baumweit aus (Messlauf: 62.373 Dateien). Hier steht es als ZUSATZ an
+    # einer Datei, die bereits aus anderem Grund auffällt. Nur so trägt es.
+    fzeit=""
+    _mt=$(stat -c %Y "$f" 2>/dev/null || echo 0)
+    _ct=$(stat -c %Z "$f" 2>/dev/null || echo 0)
+    if [[ "$_ct" -gt 0 && $(( _ct - _mt )) -gt 2592000 ]]; then
+      fzeit="ZEITSTEMPEL: mtime ist $(( (_ct - _mt) / 86400 )) Tage älter als die letzte Metadatenänderung — Rückdatierung möglich"$'\n'
+    fi
     preview=$(grep -noPi "$PATTERN_REGEX" "$f" 2>/dev/null | head -2 | cut -c1-160 || true)
     entry="=== $f ===
 Größe: ${fsize} B | mtime: ${fmtime} | SHA256: ${fhash}
-Treffer: ${preview}
+Angelegt (crtime): ${fcrtime}
+${fzeit}Treffer: ${preview}
 "
     if [[ "$fsize" -lt "$DROPPER_MAX_BYTES" ]]; then
       WEBSHELL_COUNT=$((WEBSHELL_COUNT+1))
@@ -127,6 +144,37 @@ fi
 if [[ "$WEBSHELL_REVIEW" -gt 0 ]]; then
   warn "Obfuskations-Muster in ${WEBSHELL_REVIEW} größeren Datei(en) — manuell prüfen (oft legitime Frameworks)" web
   evidence "webshell_review_gross" "$REVIEW_DETAIL"
+fi
+
+# ── Zweite Stufe: gefährliche Funktionen in kleinen Dateien ─────────────────
+# PATTERN_REGEX_MED trifft Funktionen, die auch legitim vorkommen — ein
+# Messlauf ergab 358 Treffer auf 25.000 Dateien. Als kritischer Befund taugt
+# das nicht. Die Grössenschwelle macht es brauchbar: eine Filemanager-Shell
+# mit unverschleiertem shell_exec ist klein, ein Framework mit denselben
+# Aufrufen ist es nicht. Dateien, die bereits Stufe 1 ausgelöst haben, bleiben
+# hier aussen vor — sie sind gemeldet.
+MED_DETAIL=""
+MED_COUNT=0
+while IFS= read -r f; do
+  [[ -f "$f" ]] || continue
+  [[ -n "$WEBSHELL_HITS" ]] && grep -qxF "$f" <<< "$WEBSHELL_HITS" && continue
+  fsize=$(stat -c%s "$f" 2>/dev/null || echo 0)
+  [[ "$fsize" -lt "$DROPPER_MAX_BYTES" ]] || continue
+  MED_COUNT=$((MED_COUNT+1))
+  MED_DETAIL+="=== $f ===
+Größe: ${fsize} B | mtime: $(stat -c %y "$f" 2>/dev/null) | SHA256: $(sha256sum "$f" 2>/dev/null | awk '{print $1}')
+Angelegt (crtime): $(stat -c %w "$f" 2>/dev/null)
+Treffer: $(grep -noPi "$PATTERN_REGEX_MED" "$f" 2>/dev/null | head -2 | cut -c1-160)
+"$'\n'
+done < <(grep -rlPi "$PATTERN_REGEX_MED" "${SCAN_PATHS[@]}" --include="*.php" \
+           --exclude-dir=phpunit --exclude-dir=sebastian --exclude-dir=mockery 2>/dev/null | sort || true)
+
+if [[ "$MED_COUNT" -gt 0 ]]; then
+  warn "Gefährliche Funktionen (exec-Familie, Bot-Ausblendung, Login-Gate) in ${MED_COUNT} kleinen Datei(en) — sichten" web
+  code "$(echo "$MED_DETAIL" | grep '^=== ' | sed 's|=== ||;s| ===||' | head -20)"
+  evidence "gefaehrliche_funktionen_klein" "$MED_DETAIL"
+else
+  ok "Keine gefährlichen Funktionen in kleinen PHP-Dateien"
 fi
 
 h2 "7.4 Versteckte Dateien und Verzeichnisse im Webspace"
@@ -178,6 +226,48 @@ if [[ -n "$HTACCESS_REDIRECTS" ]]; then
   evidence "htaccess_weiterleitungen" "$HT_CONTENT"
 else
   ok "Keine externen Weiterleitungen in .htaccess gefunden"
+fi
+
+# ── Freigabe genau einer PHP-Datei ──────────────────────────────────────────
+# Ein sehr verlässlicher Marker. Im Anlassfall lag neben jeder Shell eine
+# .htaccess, die PHP im Verzeichnis sperrte und genau die eigene Datei wieder
+# freigab — der Angreifer sperrte damit Mitbewerber aus:
+#
+#     <FilesMatch "^(newpath.php|extra-buttons.php|index.php)$">
+#         Order allow,deny
+#         Allow from all
+#     </FilesMatch>
+#
+# Legitime Software tut das praktisch nie: sie sperrt Verzeichnisse pauschal
+# oder gibt sie pauschal frei, nicht einzelne PHP-Dateien namentlich.
+#
+# Bewusst mit awk statt `grep -Pz`: die Suche über Zeilengrenzen braucht dort
+# PCRE und die Null-Trennung. Auf dem Entwicklungsrechner lief ein grep ohne
+# PCRE-Unterstützung und wies -P schlicht zurück — die Prüfung blieb stumm und
+# meldete "keine Freigabe gefunden", obwohl eine danebenlag. Ein Werkzeug, das
+# auf fremden Servern mit unbekannten Werkzeugständen läuft, darf sich darauf
+# nicht verlassen. awk gibt es überall und kann Zustand über Zeilen halten.
+HT_WHITELIST=""
+while IFS= read -r h; do
+  [[ -f "$h" ]] || continue
+  if awk '
+      { z = tolower($0) }
+      z ~ /<files(match)?[^>]*\.php[^>]*>/ { drin = 1; next }
+      z ~ /<\/files(match)?>/              { drin = 0; next }
+      drin && z ~ /allow[ \t]+from[ \t]+all/ { gefunden = 1 }
+      END { exit(gefunden ? 0 : 1) }
+    ' "$h" 2>/dev/null; then
+    HT_WHITELIST+="=== $h ==="$'\n'"$(cat "$h" 2>/dev/null)"$'\n\n'
+  fi
+done < <(find "${SCAN_PATHS[@]}" -name ".htaccess" 2>/dev/null | nf_strip_self)
+
+if [[ -n "$HT_WHITELIST" ]]; then
+  HT_WL_ANZ=$(grep -c '^=== ' <<< "$HT_WHITELIST" || echo 0)
+  crit ".htaccess gibt gezielt einzelne PHP-Datei(en) frei — typisch für abgesicherte Webshells (${HT_WL_ANZ})" web
+  code "$HT_WHITELIST"
+  evidence "htaccess_einzelfreigabe_php" "$HT_WHITELIST"
+else
+  ok "Keine .htaccess mit gezielter Freigabe einzelner PHP-Dateien"
 fi
 
 h2 "7.7 SUID/SGID-Dateien in Webspace und tmp-Verzeichnissen"
@@ -434,6 +524,44 @@ if [[ -n "$MEDIA_HITS" ]]; then
     evidence "php_in_mediendateien" "$MEDIA_DETAIL"
 else
     ok "Kein PHP-Code in Medien- oder Asset-Dateien"
+fi
+
+h2 "7.14 Massenhaft gleiche Zeitstempel (Spurenverwischung)"
+# Der Gegenpol zur Einzelbetrachtung in 7.3: dort die Rückdatierung EINER
+# auffälligen Datei, hier die flächige Manipulation.
+#
+# Im Anlassfall setzte der Angreifer die mtime von 59.472 Dateien in einer
+# einzigen Sekunde auf denselben gefälschten Wert. Danach war jede Aussage der
+# Form "diese Datei ist neu" wertlos — und genau das war der Zweck.
+#
+# Bewusst als Hinweis, nicht als Befund: dieselbe Signatur entsteht auch bei
+# einer Rücksicherung, einer Migration oder einem Auspacken mit erhaltenen
+# Zeitstempeln. Was der Prüfer daraus macht, hängt davon ab, ob für den
+# Zeitpunkt eine Erklärung existiert. Die Frage zu stellen ist der Wert.
+ZEIT_CLUSTER=$(find "${SCAN_PATHS[@]}" -type f -printf '%T@\n' 2>/dev/null \
+  | cut -d. -f1 | sort | uniq -c | sort -rn \
+  | awk -v min="${ZEITCLUSTER_MIN:-500}" '$1>=min {print $1"\t"$2}' | head -5)
+
+if [[ -n "$ZEIT_CLUSTER" ]]; then
+  ZC_DETAIL=""
+  while IFS=$'\t' read -r anzahl epoche; do
+    [[ -n "$epoche" ]] || continue
+    ZC_DETAIL+="$anzahl Dateien tragen exakt $(date -d "@$epoche" '+%Y-%m-%d %H:%M:%S' 2>/dev/null || echo "$epoche")"$'\n'
+    # Gegenprobe über die Anlegezeit: stimmt sie mit der mtime überein, ist es
+    # ein echter Massenvorgang (Auspacken, Kopie). Weicht sie ab, wurde die
+    # mtime nachträglich gesetzt — das ist der Unterschied zwischen Migration
+    # und Verschleierung.
+    beispiel=$(find "${SCAN_PATHS[@]}" -type f -newermt "@$((epoche-1))" ! -newermt "@$((epoche+1))" 2>/dev/null | sort | head -1)
+    if [[ -n "$beispiel" ]]; then
+      bcr=$(stat -c %w "$beispiel" 2>/dev/null || true)
+      ZC_DETAIL+="    Stichprobe: $beispiel"$'\n'"    angelegt:   ${bcr:-nicht verfügbar}"$'\n'
+    fi
+  done <<< "$ZEIT_CLUSTER"
+  info "Auffällig viele Dateien mit identischem Zeitstempel — Ursache klären"
+  code "$ZC_DETAIL"
+  evidence "zeitstempel_cluster" "$ZC_DETAIL"
+else
+  ok "Keine auffälligen Zeitstempel-Häufungen"
 fi
 
 # ============================================================
