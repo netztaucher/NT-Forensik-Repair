@@ -4,6 +4,41 @@ Alle nennenswerten Änderungen an `wp_plesk_forensik.sh`.
 
 ## [unveröffentlicht]
 
+### Neu — Composer-Abhängigkeiten der Plugins gegen GHSA prüfen (#14)
+
+Der Schwachstellenabgleich erfasste Kern, Plugins und Themes — **nicht** die
+Bibliotheken, die ein Plugin in `wp-content/plugins/*/vendor/` mitbringt. Dort
+steckt regelmässig fremder Code mit eigenen Lücken: Guzzle, PHPMailer,
+Monolog.
+
+Für **Packagist** ist die GitHub Advisory Database vollständig und maschinell
+auswertbar — anders als für WordPress-Plugins, wo die Advisories kein
+OSV-Ökosystem tragen und es damit nichts zu vergleichen gibt. Die Lizenzlage
+ist die beste aller geprüften Quellen: CC-BY 4.0, die Attribution erfüllt der
+Verweis je Datensatz.
+
+`lib/wp_schwachstellen.py` liest jetzt **OSV-JSON** direkt, ohne Umweg über
+eine TSV-Zwischenstufe — die wäre eine weitere Stelle, an der sich ein Fehler
+versteckt. `lib/composer_bestand.py` liest die installierten Pakete aus
+`vendor/composer/installed.json` (nicht aus `composer.lock`: die sagt, was
+installiert werden *soll*, nicht was liegt).
+
+Die Intervall-Semantik ist die Stelle, an der ein Fehler am teuersten wäre:
+`introduced` ist **einschliesslich**, `fixed` **ausschliesslich**. Wer das
+verwechselt, meldet die behobene Fassung als verwundbar oder lässt die erste
+betroffene durchgehen — beides sieht im Bericht plausibel aus. Sieben neue
+Selbsttestfälle decken beide Grenzen, den offenen Bereich ohne `fixed` und die
+Abgrenzung gegen fremde Ökosysteme ab.
+
+Entwicklungsstände (`dev-main`) gehen als **UNBEWERTBAR** durch, nicht als
+sauber.
+
+**Ohne Datenbestand wird gar nicht erst erhoben.** Sonst käme jedes Paket als
+⚪ zurück — auf einer echten Installation schnell hundert je Instanz, und der
+vierte Zustand würde zu Rauschen. Der Bestand kommt über
+`wordpress-daten-update.sh --composer <verzeichnis>`; das Vorfiltern des 3,5 GB
+grossen Bulk-Repositorys gehört in die CI, nicht auf eine Entwicklungsmaschine.
+
 ### Neu — Wordfence-Bestand der geprüften Installation auslesen (#17)
 
 Läuft auf einer Installation Wordfence, liegt dort ein vollständiger

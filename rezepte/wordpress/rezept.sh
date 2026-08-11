@@ -74,6 +74,35 @@ _wp_bestand() {
     [[ -f "$d/style.css" ]] && ver=$(_wp_kopf_version "$d/style.css" "Theme Name")
     printf 'theme\t%s\t%s\n' "$(basename "$d")" "${ver:-}"
   done
+
+  # Composer-Abhaengigkeiten der Plugins (#14). Der Abgleich erfasste bis
+  # v3.12 Kern, Plugins und Themes — NICHT die Bibliotheken, die ein Plugin in
+  # seinem vendor/ mitbringt. Dort steckt regelmaessig fremder Code mit eigenen
+  # Luecken: Guzzle, PHPMailer, Monolog und Aehnliches.
+  _wp_composer_bestand
+}
+
+# Installierte Composer-Pakete aus vendor/composer/installed.json.
+#
+# NICHT aus composer.lock: die Lock-Datei sagt, was installiert werden SOLL.
+# installed.json sagt, was tatsaechlich liegt — und genau danach wird gefragt.
+# Beide Formate kommen vor: bis Composer 1 eine blanke Liste, ab Composer 2 ein
+# Objekt mit "packages".
+_wp_composer_bestand() {
+  werkzeug_da python3 || return 0
+  # Ohne Datenbestand gar nicht erst erheben. Sonst kaeme jedes Paket als
+  # UNBEWERTBAR zurueck ("kein Datenbestand fuer diesen Typ") — auf einer
+  # echten Installation sind das schnell hundert ⚪ je Instanz, und der vierte
+  # Zustand wird zu Rauschen, das niemand mehr liest. Genau davor warnt der
+  # Kommentar zum Sammel-⚪ weiter unten.
+  local basis="${WP_DATEN_DIR:-${REZEPT_DIR}/wordpress/daten}"
+  [[ -d "${basis}/vuln/composer" ]] || return 0
+  local d
+  for d in "${REZ_PFAD}"/wp-content/plugins/*/vendor/composer/installed.json \
+           "${REZ_PFAD}"/wp-content/mu-plugins/*/vendor/composer/installed.json; do
+    [[ -f "$d" ]] || continue
+    python3 "${SELF_DIR:-.}/lib/composer_bestand.py" "$d" 2>/dev/null || true
+  done
 }
 
 rezept_version() {
@@ -139,7 +168,11 @@ rezept_version() {
   # eine eigene Handlung: dieses Plugin auf diese Fassung bringen.
   while IFS=$'\t' read -r zustand typ slug version bereich behoben cve kev _quelle; do
     [[ "$zustand" == "BETROFFEN" ]] || continue
-    local satz="${REZ_KURZ}: ${typ} ${slug} ${version} ist von einer bekannten Schwachstelle betroffen (${bereich})"
+    # "composer guzzlehttp/guzzle" liest sich fuer einen Kunden wie ein
+    # Werkzeugname. Gemeint ist eine Programmbibliothek, die ein Plugin
+    # mitbringt — das gehoert so dazustehen.
+    local _art="$typ"; [[ "$typ" == "composer" ]] && _art="Bibliothek (in einem Plugin)"
+    local satz="${REZ_KURZ}: ${_art} ${slug} ${version} ist von einer bekannten Schwachstelle betroffen (${bereich})"
     [[ -n "$cve" ]]     && satz+=" ${cve}"
     [[ -n "$behoben" ]] && satz+=" — behoben in ${behoben}"
     if [[ "$kev" == "ja" ]]; then

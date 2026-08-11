@@ -242,6 +242,9 @@ jobs:
           # fallen sechs Befunde weg — darunter `skippedPaths`, der genau die
           # falsche Entwarnung verhindert, um die es in dem Issue geht.
           gegenprobe "#17 Wordfence-Auswertung"    NT_WF_ATTRAPPE=
+          # Der Composer-Abgleich (#14). Ohne Bestand erhebt das Rezept die
+          # Abhängigkeiten gar nicht — der Befund fällt weg.
+          gegenprobe "#14 Composer-Abgleich"       NT_PRUEFSTAND_OHNE_COMPOSER=1
           bash werkzeuge/goldmuster.sh vergleichen
 
       - name: Abnahmekriterium #18 — Schadcode unter den ersten fünf

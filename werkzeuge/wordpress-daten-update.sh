@@ -11,6 +11,7 @@
 #
 #   wordpress-daten-update.sh --wordfence    Schwachstellen (BRAUCHT SCHLUESSEL)
 #   wordpress-daten-update.sh --kev          aktiv ausgenutzte Luecken (CISA)
+#   wordpress-daten-update.sh --composer <verzeichnis>  GHSA/OSV fuer Packagist
 #   wordpress-daten-update.sh --alles
 #   wordpress-daten-update.sh --aus-datei <feed.json>   gespeicherten Feed einlesen
 #
@@ -304,6 +305,47 @@ case "$AKTION" in
         ;;
     --kev)
         kev_aktualisieren && kev_verknuepfen
+        stand_schreiben
+        ;;
+    --composer)
+        # GHSA/OSV fuer Composer-Abhaengigkeiten (#14).
+        #
+        # WARUM HIER NICHT SELBST GEHOLT WIRD: das Bulk-Repository der GitHub
+        # Advisory Database ist rund 3,5 GB und enthaelt jedes Oekosystem. Es
+        # auf einer Entwicklungsmaschine zu spiegeln waere Verschwendung, und
+        # es je Lauf zu klonen erst recht. Das Vorfiltern gehoert in die CI:
+        # ein flacher Klon, die Packagist-Advisories heraus, den Rest weg.
+        #
+        # Diese Stufe uebernimmt deshalb einen bereits vorgefilterten Bestand
+        # aus einem Verzeichnis. Das ist ehrlicher als ein Abruf, der auf jeder
+        # Maschine anders lange dauert und gelegentlich scheitert.
+        #
+        # LIZENZ: CC-BY 4.0 — die beste Lage aller geprueften Quellen. Kein
+        # Schluessel, keine Auflagen je Kopie, kein widerrufbares Bezugsrecht.
+        # Die Attribution wird durch den Verweis je Datensatz erfuellt; der
+        # Vergleicher traegt ihn aus dem Feld `id` in die Spalte `quelle`.
+        QUELLE="${2:-}"
+        [[ -n "$QUELLE" && -d "$QUELLE" ]] || {
+            fehler "Verzeichnis mit vorgefilterten OSV-Advisories angeben"
+            echo "  Vorfiltern (in der CI, nicht hier):" >&2
+            echo "    git clone --depth 1 https://github.com/github/advisory-database" >&2
+            echo "    find advisory-database/advisories/github-reviewed -name '*.json' \\" >&2
+            echo "      | xargs grep -l '"ecosystem": *"Packagist"' > packagist.liste" >&2
+            exit 2
+        }
+        echo "== GHSA/OSV (Packagist) aus ${QUELLE} =="
+        ZIEL_C="${DATEN}/vuln/composer"
+        mkdir -p "$ZIEL_C"
+        # Nur Advisories mit Packagist-Bezug. Der Vergleicher wuerde fremde
+        # Oekosysteme zwar ignorieren, aber ein Bestand, der zu 95 % aus
+        # Unbenutzbarem besteht, kostet bei jedem Lauf Lesezeit.
+        _n=0
+        while IFS= read -r _f; do
+            grep -q '"ecosystem": *"Packagist"' "$_f" 2>/dev/null || continue
+            cp "$_f" "${ZIEL_C}/$(basename "$_f")" && _n=$((_n+1))
+        done < <(find "$QUELLE" -name '*.json' -type f 2>/dev/null)
+        meldung "${_n} Packagist-Advisory(s) uebernommen"
+        [[ "$_n" -eq 0 ]] && fehler "Kein einziges — zeigt das Verzeichnis wirklich auf die Advisories?"
         stand_schreiben
         ;;
     --alles)

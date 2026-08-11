@@ -98,6 +98,31 @@ TSV
 # Pruefstand — frei erfundene Eintraege
 pruefstand-thema	*	0	1.0	0	1.0	CVE-2026-90005	4.3		https://beispiel.invalid/5
 TSV
+  # Composer-Advisories im OSV-Format (#14). Bewusst als JSON und nicht als
+  # TSV: die GitHub Advisory Database liefert genau dieses Format, und der
+  # Vergleicher liest es direkt. Eine Zwischenstufe waere eine weitere Stelle,
+  # an der sich ein Fehler versteckt.
+  # NT_PRUEFSTAND_OHNE_COMPOSER=1 laesst den Composer-Bestand weg. Ohne
+  # Bestand erhebt das Rezept die Abhaengigkeiten gar nicht erst (siehe
+  # _wp_composer_bestand) — der Befund faellt weg, und der Vergleich MUSS das
+  # bemerken.
+  if [[ "${NT_PRUEFSTAND_OHNE_COMPOSER:-0}" != "1" ]]; then
+  mkdir -p "${D}/vuln/composer"
+  cat > "${D}/vuln/composer/GHSA-pruefstand-0001.json" <<'JSON'
+{
+  "id": "GHSA-pruefstand-0001",
+  "aliases": ["CVE-2026-90006"],
+  "severity": [{"type": "CVSS_V3", "score": "8.1"}],
+  "affected": [{
+    "package": {"ecosystem": "Packagist", "name": "pruefstand/bibliothek"},
+    "ranges": [{"type": "ECOSYSTEM", "events": [
+      {"introduced": "1.0.0"},
+      {"fixed": "1.4.0"}
+    ]}]
+  }]
+}
+JSON
+  fi
   printf '%s | Pruefstand-Bestand, bei jedem Bau neu erzeugt\n' "$(date -u +%Y-%m-%d)" \
     > "${D}/VERSION"
 }
@@ -582,6 +607,17 @@ PHP
   # auch Kunde 3 — und die Gegenprobe waere keine mehr.
   wp_plugin "$k2" pruefstand-aktuell  4.1   "Pruefstand Aktuell"
   wp_plugin "$k2" pruefstand-kopflos  -     "Pruefstand Kopflos"
+  # Composer-Abhaengigkeit eines Plugins (#14). Kunde 2 traegt die verwundbare
+  # Fassung, Kunde 3 die behobene — derselbe Baum deckt damit Treffer UND
+  # Gegenprobe ab. Die dev-Fassung prueft den dritten Fall: nicht vergleichbar,
+  # also UNBEWERTBAR und ausdruecklich nicht "sauber".
+  wp_composer() {   # wp_composer <installation> <plugin> <fassung>
+    local v="$1/wp-content/plugins/$2/vendor/composer"
+    mkdir -p "$v"
+    printf '{"packages":[{"name":"pruefstand/bibliothek","version":"v%s"},{"name":"pruefstand/entwicklung","version":"dev-main"}]}\n' "$3" \
+      > "${v}/installed.json"
+  }
+  wp_composer "$k2" pruefstand-kev 1.2.0
   wp_theme  "$k2" pruefstand-thema    0.9   "Pruefstand Thema"
 
   # Kunde 3 ist die Gegenprobe: alles aktuell, nichts darf gemeldet werden.
@@ -590,6 +626,7 @@ PHP
   wp_plugin "$k3" pruefstand-alt      3.1 "Pruefstand Alt"
   wp_plugin "$k3" pruefstand-aktuell  4.0 "Pruefstand Aktuell"
   wp_theme  "$k3" pruefstand-thema    1.0 "Pruefstand Thema"
+  wp_composer "$k3" pruefstand-kev 1.4.0
 
   # ── Sicherungskopien: duerfen NICHT als eigene Instanzen zaehlen ──
   # Die Tiefe ist Teil des Pruefgegenstands: Abschnitt 12b sucht mit
