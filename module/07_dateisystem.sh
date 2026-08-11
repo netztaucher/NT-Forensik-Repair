@@ -319,4 +319,47 @@ else
     info "Keine Regeldatei unter $YARA_RULES_FILE — Signaturscan übersprungen"
 fi
 
+h2 "7.12 Fremder YARA-Regelsatz (php-malware-finder, optional)"
+# Bewusst ein EIGENER yara-Aufruf, nicht per include in alle.yar:
+#
+#   1. php.yar bringt `import "hash"` mit. Fehlt das Modul im yara-Build,
+#      scheitert die Übersetzung — und mit ihr die gesamte Sammlung. Genau
+#      davor warnt der Kopf von signaturen/alle.yar. Ein eigener Aufruf darf
+#      folgenlos fehlschlagen.
+#   2. Der Regelsatz steht unter LGPL-3.0, dieses Repository unter MIT. Er wird
+#      deshalb nicht mitgeliefert, sondern vor Ort geholt
+#      (werkzeuge/signaturen-fremd-holen.sh) und liegt in einem Verzeichnis,
+#      das nicht im Repository steht.
+#
+# Anders als 7.11 läuft dieser Scan gebündelt statt Datei für Datei. Bei
+# 25.000 PHP-Dateien spart das einen Prozessstart je Datei.
+FREMD_YAR="${BASE_DIR}/signaturen/fremd/php.yar"
+if [[ "$WANT_YARA" != "1" ]]; then
+    : # 7.11 hat den Hinweis bereits ausgegeben
+elif ! command -v yara &>/dev/null; then
+    : # dito
+elif [[ ! -f "$FREMD_YAR" ]]; then
+    info "php-malware-finder nicht vorhanden — mit werkzeuge/signaturen-fremd-holen.sh holen"
+else
+    PMF_ALTER=$(( ( $(date +%s) - $(stat -c %Y "$FREMD_YAR" 2>/dev/null || echo 0) ) / 86400 ))
+    PMF_OUT=$(find "${SCAN_PATHS[@]}" -type f -size -3M \
+                \( -name "*.php" -o -name "*.phtml" -o -name "*.inc" \) 2>/dev/null \
+              | nf_strip_self \
+              | tr '\n' '\0' \
+              | xargs -0 -r -P4 -n200 yara -w "$FREMD_YAR" 2>/dev/null || true)
+    if [[ -n "$PMF_OUT" ]]; then
+        PMF_ANZ=$(echo "$PMF_OUT" | awk '{print $2}' | sort -u | wc -l)
+        # Absichtlich warn, nicht crit: die Regeln zielen auf Obfuskierungs- und
+        # Funktionsmuster, nicht auf konkrete Schädlinge. Sie treffen deshalb
+        # auch legitimen Verschleierungs- und Bibliothekscode. Jeder Treffer
+        # gehört gesichtet, keiner ist für sich ein Befund.
+        warn "php-malware-finder: $PMF_ANZ Datei(en) mit Treffern — jeder Treffer gehört gesichtet"
+        code "$(echo "$PMF_OUT" | awk '{r=$1; $1=""; sub(/^ /,""); print $0" — Regel: "r}' | sort -u | head -40)"
+        evidence "php_malware_finder_treffer" "$PMF_OUT"
+    else
+        ok "php-malware-finder: keine Treffer"
+    fi
+    info "Regelstand: $PMF_ALTER Tage alt — der Regelsatz wird vom Projekt kaum noch gepflegt"
+fi
+
 # ============================================================
