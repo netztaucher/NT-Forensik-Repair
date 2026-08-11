@@ -2,7 +2,195 @@
 
 Alle nennenswerten Änderungen an `wp_plesk_forensik.sh`.
 
-## [unveröffentlicht]
+## [3.11.0] — 2026-08-11
+
+Anlass war ein realer Vorfall: fünf Schadobjekte in einem Webspace, von denen
+der Signaturscanner vier fand und die eigene Heuristik eines. Das Nachspiel hat
+mehr über das Werkzeug verraten als über den Angreifer.
+
+Für v3.10.0 gibt es keinen eigenen Abschnitt — die Fassung wurde ohne einen
+getaggt. Ihre Änderungen stehen weiter unten, ab „Rezept-Schnittstelle".
+
+### Neu — Urteil je Datei statt Fundliste
+
+Bisher bekamen nur Dateien **mit** Fund eine Aussage. Bei einem Lauf über einen
+echten Webspace waren das 870 von 101.735. Für 100.865 Dateien stand nichts da,
+und im Bericht las sich das wie Entwarnung. Dazu die Verwechslung im Wort:
+`ok()` bedeutet „diese Prüfung hat nichts gefunden", nicht „diese Datei ist
+sauber" — der Bericht schrieb trotzdem ✅.
+
+`werkzeuge/baumscan.sh` fällt jetzt für **jede** Datei der Inventur ein Urteil:
+
+| Urteil | Bedeutung | Quelle |
+|---|---|---|
+| `SAUBER` | positiv bestätigt | amtliche Prüfsumme — die einzige Quelle |
+| `KEIN` | nichts angeschlagen, **nicht bestätigbar** | der ehrliche Normalfall |
+| `TREFFER` | angeschlagen, Auslegung nötig | Heuristik mit Spielraum |
+| `BEFALLEN` | Beweis, nicht vernünftig bestreitbar | Signatur, PHP im Bild, Packer-Banner, `.htaccess`-Einzelfreigabe |
+
+Rangfolge `BEFALLEN` > `SAUBER` > `TREFFER` > `KEIN`. Trifft beides zugleich zu,
+wird das als `WIDERSPRUCH` ausgewiesen statt stillschweigend aufgelöst: es
+bedeutet Fehlalarm oder einen Angriff auf die Lieferkette.
+
+Gemessen an 101.737 Dateien: 80.770 `KEIN`, 20.360 `SAUBER`, 606 `TREFFER`.
+20.360 Dateien sind damit positiv bestätigt — vorher gab es diese Aussage für
+keine einzige.
+
+**Der Widerspruchszähler hat sich sofort bewährt.** Ein erster Entwurf wertete
+lange Escape-Folgen als Packer-Beweis. Der Lauf gegen einen **bereinigten** Baum
+meldete daraufhin zwölf `BEFALLEN` — phpseclib `RSA.php`, `Blowfish.php`,
+HTMLPurifier. Krypto-Bibliotheken bestehen aus solchen Folgen: S-Boxen,
+OID-Bytes, Testvektoren. 59 dieser Dateien trugen zugleich eine gültige amtliche
+Prüfsumme. Die Regel war widerlegt, bevor sie in einen Kundenbericht geraten
+konnte.
+
+### Neu — Betriebsart `qualifizieren`
+
+```
+baumscan.sh qualifizieren <lauf-verzeichnis> [--online]
+```
+
+Ein `TREFFER` ist kein Urteil, sondern eine offene Frage. Die Betriebsart
+sammelt je Treffer Verbreitung im Korpus, amtliche Prüfsumme, Anlegezeit,
+Nachbarschaft und Zugriffsspur — und **ändert von sich aus kein Urteil**.
+Entscheidungen gehören nach `entscheidungen.tsv`, mit Kennung, Datum und
+Begründung. Eine blosse Hash-Allowlist ist nach einem halben Jahr eine Liste
+unbegründeter Ausnahmen.
+
+Der Verbreitungsabgleich trägt: dieselbe Bibliotheksdatei liegt auf bis zu 26
+unabhängigen Installationen identisch vor, der echte Schadcode auf keiner.
+
+An 606 Treffern liessen sich 19 über die Verbreitung auflösen, 3 lagen
+überhaupt in einem Plugin mit amtlichem Satz. Das ist keine Schwäche des
+Verfahrens, sondern ein Befund: die Treffer konzentrieren sich fast vollständig
+in kommerziellen Erweiterungen, für die es keine öffentliche Referenz gibt.
+
+### Neu — Abschnitt 7.13: PHP-Code in Medien- und Asset-Dateien
+
+Der Gegenpol zu 7.10. Dort ein Binary, das sich als Schlüsseldatei ausgibt, hier
+PHP in einer echten Mediendatei.
+
+Der Anlassfall war ein gültiges PNG, 512×512, das sich in jedem Bildbetrachter
+normal öffnet — mit PHP im tEXt-Chunk, das Schadcode nachlud. Es lag neun Tage
+unentdeckt. Gemeldet hat es niemand: der Signaturscanner nicht, die Heuristik
+nicht, und auch kein fremder YARA-Regelsatz, obwohl einer davon eine Regel genau
+dafür mitbringt. Der Grund ist bei allen derselbe — die Nutzlast war völlig
+unverschleiert. Kein `eval`, kein Base64, keine Superglobale. Auf Token-Ebene
+harmloser Code.
+
+Bösartig ist nicht der Code, sondern der Behälter. Der Abschnitt prüft deshalb
+nicht, **was** das PHP tut, sondern nur, **dass** es dort steht.
+
+Dabei fiel auf: `DISGUISED_PAYLOADS` war in `lib/befunde.sh` deklariert, wurde
+von `module/13_root.sh` und `50_findings_json.sh` ausgewertet — und von keinem
+Abschnitt befüllt. Die Kategorie „Getarnte Payload" stand im Bericht und konnte
+strukturell nie etwas melden.
+
+### Neu — Abschnitt 7.14: massenhaft gleiche Zeitstempel
+
+Im Anlassfall trugen 59.472 Dateien dieselbe gefälschte `mtime`. Danach war jede
+Aussage der Form „diese Datei ist neu" wertlos — genau das war der Zweck.
+
+Bewusst als Hinweis, nicht als Befund: dieselbe Signatur entsteht auch bei einer
+Rücksicherung oder Migration. Mit Gegenprobe über die Anlegezeit einer
+Stichprobe — sie unterscheidet Migration von Verschleierung.
+
+### Neu — Abschnitt 7.12: fremder YARA-Regelsatz (optional)
+
+Bindet php-malware-finder als **Suchhilfsmittel** ein, nicht als Detektor. Der
+Regelsatz wird nicht mitgeliefert, sondern mit
+`werkzeuge/signaturen-fremd-holen.sh` vor Ort geholt: er steht unter LGPL-3.0,
+dieses Repository unter MIT.
+
+Ehrliche Einordnung, gemessen: 359 betroffene Dateien bei 25.860 PHP-Dateien,
+und der enthaltene gepackte Webshell landete auf Platz 11. Über ihm standen
+WordPress-Kern, `pclzip`, UpdraftPlus und Wordfence. Ursache sind die
+mitgelieferten Whitelists — sie arbeiten mit SHA1-Hashes konkreter Dateien,
+allein 629 für WordPress, auf dem Stand von 2023. Auf einer aktuellen
+Installation passt kein einziger davon.
+
+### Neu — Musterstufen erweitert
+
+`PATTERN_REGEX` verlangte den Dekodierer **direkt** hinter `eval`. Zwei reale
+Shells entkamen: eine über eine Variablenfunktion, eine über einen PHP-Encoder,
+der den Funktionsnamen als Escape-Folge schreibt und `eval("?>" . $F(…))`
+aufruft. Neu erfasst werden `eval` auf eine Variable, `eval` das den PHP-Modus
+neu öffnet, Escape-Folgen, Encoder-Banner und der Aufruf direkt aus einer
+Superglobalen.
+
+Dazu `PATTERN_REGEX_MED` als zweite, schwächer gewichtete Stufe: exec-Familie,
+`goto`-Obfuskierung, `chr`-Ketten, Bot-Ausblendung nach User-Agent. Diese
+Funktionen kommen legitim vor — ein Messlauf ergab 358 Treffer auf 25.000
+Dateien. Abschnitt 7.3 wendet sie deshalb nur auf Dateien unter
+`DROPPER_MAX_BYTES` an. Anlass war eine Filemanager-Shell mit unverschleiertem
+`shell_exec`, die vollständig unsichtbar blieb.
+
+### Neu — Abschnitt 7.6 erkennt Freigaben einzelner PHP-Dateien
+
+Im Anlassfall lag neben jeder Shell eine `.htaccess`, die PHP im Verzeichnis
+sperrte und genau die eigene Datei freigab — der Angreifer sperrte damit
+Mitbewerber aus. Legitime Software tut das praktisch nie.
+
+Umgesetzt mit `awk` statt `grep -Pz`: auf dem Entwicklungsrechner läuft ein
+`grep` ohne PCRE, das `-P` schlicht zurückweist. Die Prüfung blieb stumm und
+meldete „keine Freigabe gefunden", obwohl eine danebenlag. Ein Werkzeug, das auf
+fremden Servern mit unbekannten Werkzeugständen läuft, darf sich darauf nicht
+verlassen.
+
+### Neu — Anlegezeit (crtime) in den Befunden
+
+`touch` kann `mtime` und `atime` setzen, die Anlegezeit nicht. Im Anlassfall war
+sie das einzige Mittel, die Chronologie zu rekonstruieren; `mtime` und `ctime`
+waren beide unbrauchbar. Abschnitt 7.3 führt sie jetzt je Fund mit.
+
+Die Rückdatierung selbst steht als **Zusatz** an einer ohnehin auffälligen
+Datei. Als eigener Befund wäre sie wertlos: jedes rekursive `chown` und jede
+Rücksicherung löst sie baumweit aus, ein Messlauf meldete damit 62.373 Dateien.
+
+### Neu — `werkzeuge/baumscan.sh`
+
+Eigenständiges Schnellwerkzeug für die erste Sichtung eines Verzeichnisbaums.
+Read-only, Laufzeit Sekunden statt Minuten, weil eine einzige Inventur als TSV
+alle weiteren Schichten speist. Acht Schichten, eigene Bewertung, Diff gegen
+einen Vorlauf.
+
+Die ImunifyAV-Schicht reiht einen **eigenen** Lauf ein und holt dessen Ergebnis
+über `--by-scan-id`. Die frühere Fassung las stattdessen `malware malicious
+list` — die Historie aller je gefundenen Dateien, und das auch noch, während der
+Scan noch lief. Auf einem bereinigten Webspace standen dadurch vier
+Geisterdateien auf den Plätzen 1 bis 4.
+
+### Neu — `werkzeuge/baumscan-pruefstand.sh`
+
+Prüft die Urteile gegen **Soll-Werte** statt gegen einen Referenzlauf. Bei einem
+Urteil ist die richtige Antwort vorher bekannt; ein Referenzvergleich meldet nur,
+dass sich etwas geändert hat, hier soll er melden, dass etwas falsch ist.
+
+Neun Dateien mit vorab feststehendem Urteil, dazu zwei Zusicherungen: jede Datei
+bekommt ein Urteil, und `SAUBER` stammt ausschliesslich aus amtlichen
+Prüfsummen. Drei Gegenproben in der CI, alle schlagen an.
+
+Der Prüfbaum von `goldmuster.sh` trägt drei neue, **isolierende** Proben. Die
+vorhandene PNG-Probe taugte als Nachweis nicht: sie nutzt `system($_GET[…])` und
+schlägt auch bei den Musterprüfungen an — man hätte 7.13 entfernen können, ohne
+dass der Prüfstand es merkt.
+
+### Behoben — der yara-Aufruf scannte nie
+
+`yara` nimmt genau **ein** Ziel entgegen und deutet ein zweites Argument als
+Regeldatei. Ein Bündelaufruf per `xargs` meldete 25.860 Dateien in einer Sekunde
+ohne einen Treffer — er hatte nicht gescannt, sondern Übersetzungsfehler
+erzeugt, die in `/dev/null` liefen. Ein stiller Totalausfall, der wie ein
+sauberer Befund aussieht. Richtig ist `--scan-list`: 25.860 Dateien in 8
+Sekunden.
+
+Im selben Zug fiel auf, dass `werkzeuge/signaturen-fremd-holen.sh` den Regelsatz
+unvollständig holte. `whitelist.yar` bindet acht weitere Dateien ein; fehlt eine,
+verweigert yara die Übersetzung des **gesamten** Satzes — und ein nicht
+übersetzter Regelsatz meldet nichts, auch bei echtem Schadcode nicht. Die
+Übersetzungsprüfung gibt jetzt einen Fehlercode zurück, statt es nur anzuzeigen.
+
+## [3.10.0 und früher — Rezept-Schnittstelle, WordPress-Rezept, Prüfstand]
 
 ### Behoben — Abschnitt 13b machte die Prüfstand-Referenz maschinenabhängig
 13b.3 entscheidet über `pgrep`, ob Apache oder nginx läuft. Der Befund „Kein

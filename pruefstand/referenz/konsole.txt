@@ -6,7 +6,7 @@
 █████   ██    ██ ██████  █████   ██ ██  ██ ███████ ██ █████
 ██      ██    ██ ██   ██ ██      ██  ██ ██      ██ ██ ██  ██
 ██       ██████  ██   ██ ███████ ██   ████ ███████ ██ ██   ██
-  WP-PLESK-FORENSIK v3.10.0 — netztaucher | digital
+  WP-PLESK-FORENSIK v3.11.0 — netztaucher | digital
 [0m
 [1mAnalysiert:[0m  alle Domains
 [1mLauf:[0m        <LAUF-ID>
