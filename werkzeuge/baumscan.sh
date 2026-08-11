@@ -175,6 +175,14 @@ PR_HIGH+='|\$\{\s*\$[a-zA-Z0-9_]+(\s*\.\s*\$[a-zA-Z0-9_]+)+\s*\}'    # Variablen
 PR_HIGH+='|\$_(GET|POST|REQUEST|COOKIE|SERVER)\s*\[[^]]*\]\s*\('     # Aufruf direkt aus Superglobal
 PR_HIGH+='|(system|passthru|shell_exec|popen|proc_open|pcntl_exec)\s*\(\s*\$_(GET|POST|REQUEST|COOKIE)'
 PR_HIGH+='|\bFilesMan\b|c99sh|r57shell|b374k|IndoXploit|WSO\s*[0-9]|AlfaTeam|priv8|N4ST4R|Cyber\s*Sec'
+# Gepackte Shells (Encoder-Bauart). Ein Prüfsatzlauf zeigte, dass ein 45-KB-
+# Webshell durch alle bisherigen Muster fiel: er ruft eval nicht auf einer
+# Variablen auf, sondern auf einer Verkettung — eval("?>".$fn(...)) — und
+# schreibt den Funktionsnamen als Escape-Folge, sodass "base64_decode" nirgends
+# im Klartext steht. Superglobals fehlen, die längste Zeile hat 97 Zeichen.
+PR_HIGH+='|eval\s*\(\s*["\x27]\s*\?>'                                # eval, das PHP-Modus neu öffnet
+PR_HIGH+='|(\\\\x[0-9a-fA-F]{2}|\\\\[0-7]{3}){8,}'                   # als Escape-Folge getarnter Bezeichner
+PR_HIGH+='|PHP[[:space:]]*Encoder|miladworkshop|Encoding[[:space:]]+by'
 
 tr '\n' '\0' < "$RUN/01d_php_kandidaten.txt" \
   | $NICE xargs -0 -r -P4 -n200 grep -lPi "$PR_HIGH" 2>/dev/null \
@@ -212,6 +220,32 @@ tr '\n' '\0' < "$RUN/01d_php_kandidaten.txt" \
 while read -r f; do
   [ -n "$f" ] && fund "SEHR_LANGE_ZEILE" 10 "$f"
 done < "$RUN/03b_lange_zeilen.txt"
+
+# Base64-Blöcke über mehrere Zeilen. Packer brechen ihre Nutzlast um, damit
+# keine einzelne Zeile auffällt — die Zeilenlängenprüfung läuft dann ins Leere.
+# Fünf aufeinanderfolgende Zeilen aus reinem Base64-Alphabet sind in
+# Anwendungscode praktisch ausgeschlossen.
+log "Base64-Blöcke..."
+tr '\n' '\0' < "$RUN/01d_php_kandidaten.txt" \
+  | $NICE xargs -0 -r -P4 -n100 awk '
+      FNR==1 { lauf=0; zert=0 }
+      # Zertifikate und Schluessel sind ebenfalls lange Base64-Bloecke. Ihre
+      # DER-Kodierung beginnt mit MII — Wordfence etwa legt seine
+      # Root-Zertifikate so ab. Ab dieser Kopfzeile wird der GESAMTE folgende
+      # Block uebersprungen; nur die Kopfzeile auszunehmen genuegt nicht, weil
+      # die Folgezeilen beliebiges Base64 sind und weiter ausloesen wuerden.
+      /^MI[A-Za-z0-9+\/=]{58,}$/ { zert=1; lauf=0; next }
+      /^[A-Za-z0-9+\/=]{60,}$/ {
+        if (zert) next
+        lauf++; if (lauf>=5) { print FILENAME; lauf=-9999; nextfile }
+        next
+      }
+      { lauf=0; zert=0 }' 2>/dev/null \
+  | sort -u > "$RUN/03c_base64_bloecke.txt"
+
+while read -r f; do
+  [ -n "$f" ] && fund "BASE64_BLOCK" 35 "$f"
+done < "$RUN/03c_base64_bloecke.txt"
 
 # -----------------------------------------------------------------------------
 # 4  Timestomping                                                      [NEU]
@@ -270,9 +304,13 @@ if command -v imunify-antivirus >/dev/null 2>&1; then
   # darin. Ohne Existenzprüfung führt ein sauberer Webspace die Rangliste mit
   # Geistern an — im Test standen vier längst quarantänisierte Dateien auf den
   # Plätzen 1 bis 4.
+  # Der Pfadfilter muss VERANKERT sein. Unverankert trifft er auch Kopien,
+  # die den Scope-Pfad nur als Teilzeichenkette enthalten — etwa eine
+  # Quarantäne unter /root/…/files/var/www/vhosts/<scope>/. Ein bereinigter
+  # Webspace sah dadurch im Kontrolllauf infiziert aus.
   imunify-antivirus malware malicious list --limit 500 --json 2>/dev/null \
     | grep -oE '"file": "[^"]+"' | sed 's/"file": "//;s/"$//' \
-    | grep -F "$SCOPE" | sort -u > "$RUN/06_imunify_historie.txt" 2>/dev/null
+    | awk -v s="$SCOPE/" 'index($0, s)==1' | sort -u > "$RUN/06_imunify_historie.txt" 2>/dev/null
   : > "$RUN/06_imunify_bestand.txt"
   : > "$RUN/06_imunify_bereits_entfernt.txt"
   while read -r f; do
