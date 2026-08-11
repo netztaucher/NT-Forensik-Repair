@@ -217,6 +217,41 @@ pmf_attrappe_bauen() {   # <zieldatei> <baum>
   done
 }
 
+# ── Vorgefertigter Wordfence-Bestand fuer #17 ────────────────
+# Der Pruefbaum hat keine Datenbank, und der Wordfence-Zweig liest
+# ausschliesslich aus ihr. Ohne diese Naht waere er von keinem Vergleich
+# gedeckt — und genau bei der Auswertung des ECHTEN Bestands ist eine
+# Verwechslung passiert: ein als "Modified plugin file" gemeldeter Treffer war
+# legitimer Plugin-Code. Je Befundart deshalb mindestens eine Zeile, damit die
+# Zuordnung nicht verrutscht.
+#
+# lastScanCompleted bewusst als fester, alter Zeitstempel: der Befund
+# "Scan ist N Tage alt" soll geuebt werden, und ein relativer Wert waere von
+# Lauf zu Lauf anders. Die Normalisierung faengt die Zahl im Text ab.
+wordfence_attrappe_bauen() {   # <zielverzeichnis>
+  local Z="$1"
+  rm -rf "$Z"; mkdir -p "$Z"
+  # Nur EINE Installation traegt Wordfence. Auf einem echten Server mit 68
+  # Instanzen hatten 5 die Tabellen — 7 %. Ein Pruefbaum, in dem jede
+  # Installation Wordfence hat, wuerde den haeufigsten Fall nie ueben.
+  printf '%s' "kunde-zwei.example/httpdocs" > "${Z}/nur"
+  printf '%s\n' "wp_wfconfig" > "${Z}/tabellen.tsv"
+  {
+    printf 'keyType\tfree\n'
+    printf 'lastScanCompleted\t1700000000\n'
+    printf 'scansEnabled_malware\t1\n'
+  } > "${Z}/konfig.tsv"
+  {
+    printf 'wfPluginVulnerable\tThe Plugin "pruefstand-kev" has a known security vulnerability\n'
+    printf 'wfThemeVulnerable\tThe Theme "pruefstand-thema" has a known security vulnerability\n'
+    # DER Befund: der Kunde hat einen Scanner, aber er sieht diese Pfade nicht an.
+    printf 'skippedPaths\tScan skipped 99 paths outside the WordPress installation\n'
+    # Integritaetsabweichung, KEIN Signaturtreffer.
+    printf 'knownfile\tModified plugin file: wp-content/plugins/pruefstand-aktuell/pruefstand-aktuell.php\n'
+    printf 'wfPluginAbandoned\tThe Plugin "pruefstand-alt" is no longer maintained\n'
+  } > "${Z}/issues.tsv"
+}
+
 pruefsummen_bauen() {   # <zielverzeichnis> <baum>
   local P="$1" W="$2"
   rm -rf "$P"; mkdir -p "$P"
@@ -621,6 +656,11 @@ REGELN = [
     # dem naechsten Morgen aus — was dazu verfuehrt, sie einfach neu
     # aufzunehmen, bis niemand mehr hinsieht.
     (r'(Datenbestand \(Stand )\d{4}-\d{2}-\d{2}(\))', r'\1<STAND>\2'),
+    # Das Alter des Wordfence-Scans wird gegen JETZT gerechnet und steigt
+    # taeglich. Der Befund selbst gehoert in die Referenz, seine Zahl nicht —
+    # sonst schlaegt der Vergleich ab dem naechsten Morgen aus.
+    (r'(Wordfence-Scan ist )\d+( Tage alt)',      r'\1<TAGE>\2'),
+    (r'(Wordfence-Scan )\d+( Tage alt)',          r'\1<TAGE>\2'),
     # Die Ausgabe von `date` erscheint an einem halben Dutzend Stellen mit je
     # eigener Beschriftung. Statt jede einzeln zu fassen, wird die Form selbst
     # erkannt: Wochentag, Monat, Tag, Uhrzeit, Zeitzone, Jahr. Eng genug, dass
@@ -699,6 +739,7 @@ lauf_ausfuehren() {
   WP_PRUEFSUMMEN_BASIS="${WP_PRUEFSUMMEN_BASIS:-$WPSUMMEN}" \
   NT_WEBSERVER="${NT_WEBSERVER:-nginx}" \
   NT_PMF_ATTRAPPE="${NT_PMF_ATTRAPPE-$PMFAUS}" \
+  NT_WF_ATTRAPPE="${NT_WF_ATTRAPPE-$WFDATEN}" \
   PATH="${ATTRAPPE}:$PATH" \
   bash "${SELF_DIR}/wp_plesk_forensik.sh" \
        --path "$W" --nur-website --kein-menue >"${ABLAGE}/konsole.txt" 2>&1
@@ -783,6 +824,7 @@ WPDATEN="${ARBEIT}/wpdaten"
 WPSUMMEN="${ARBEIT}/wpsummen"     # lokale Plugin-Pruefsummen statt wordpress.org
 ATTRAPPE="${ARBEIT}/bin"          # wp-cli-Attrappe, kommt vor den echten PATH
 PMFAUS="${ARBEIT}/pmf_attrappe.txt"   # vorgefertigte yara-Ausgabe fuer 13c
+WFDATEN="${ARBEIT}/wf_attrappe"       # vorgefertigter Wordfence-Bestand (#17)
 # Zwingend vor jedem Lauf. Bleibt der Ordner eines fehlgeschlagenen Vergleichs
 # stehen, greift ausgabe_einsammeln per 'head -1' den ALTEN Laufordner und
 # vergleicht ihn gegen die Referenz — der naechste Lauf meldet dann eine
@@ -794,6 +836,7 @@ wp_datenbestand_bauen "$WPDATEN"
 attrappe_bauen "$ATTRAPPE"
 pruefsummen_bauen "$WPSUMMEN" "$BAUM"
 pmf_attrappe_bauen "$PMFAUS" "$BAUM"
+wordfence_attrappe_bauen "$WFDATEN"
 info "Baum gebaut: $(find "$BAUM" -type f | wc -l | tr -d ' ') Dateien in $(find "$BAUM" -maxdepth 1 -type d | tail -n +2 | wc -l | tr -d ' ') vhosts"
 
 case "$AKTION" in

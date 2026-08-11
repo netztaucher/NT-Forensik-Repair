@@ -534,6 +534,14 @@ rezept_sonder() {
 # in die Abfragen, und wer die Datei schreiben kann, bekam damit beliebiges SQL
 # in ein Werkzeug, das als root läuft.
 rezept_db() {
+  # Prüfstand-Naht (#17). Der Wordfence-Zweig liest ausschliesslich aus der
+  # Datenbank, und der Prüfbaum hat keine — ohne diesen Vorgriff wäre er von
+  # keinem Vergleich gedeckt. Mit gesetzter Attrappe läuft er hier, ohne sie
+  # weiter unten am regulären Platz; das Flag verhindert einen doppelten Lauf
+  # auf einem System, das beides hat.
+  WF_GELAUFEN=0
+  if [[ -n "${NT_WF_ATTRAPPE:-}" ]]; then _wp_wordfence; WF_GELAUFEN=1; fi
+
   if ! werkzeug_da mysql && [[ -z "${REZ_WERKZEUG:-}" ]]; then
     befund_melden wordpress datenbank unklar "${REZ_KURZ}: weder mysql-Client noch wp-cli vorhanden — Datenbank nicht geprüft" "$REZ_PFAD" web
     return 0
@@ -588,6 +596,142 @@ rezept_db() {
             OR option_value LIKE '%auto_prepend_file%'
             OR option_value LIKE '%base64_decode%';")
   [[ -n "$OPT" ]] && { info "${REZ_KURZ}: Optionen (siteurl/home und Auffälligkeiten):"; code "$OPT"; }
+
+  # d) Wordfence-Bestand auslesen, falls vorhanden (#17).
+  [[ "${WF_GELAUFEN:-0}" -eq 1 ]] || _wp_wordfence
+}
+
+# ── Wordfence: die vorhandene Zweitmeinung (#17) ─────────────
+# Läuft auf der geprüften Installation Wordfence, liegt dort ein vollständiger
+# Scan-Datenbestand in der Datenbank — Dateihashes, Signaturstatus,
+# Schwachstellenmeldungen, übersprungene Pfade. NT-Forensik las davon nichts.
+#
+# EHRLICHE EINORDNUNG DER REICHWEITE: auf einem Plesk-Server mit 68
+# WordPress-Installationen haben 5 Wordfence-Tabellen. Das sind 7 %. Diese
+# Schicht ist eine Zweitmeinung, wo vorhanden — keine Primärquelle. Wer auf
+# dieser Grundlage Abdeckung behauptet, täuscht sich. Zum Vergleich aus
+# demselben Lauf: der serverweite Signaturscanner meldete offene Funde auf 18
+# Abos.
+#
+# Der wertvollste Einzelbefund ist NICHT die Schwachstellenmeldung, sondern
+# `skippedPaths`: bei einem Vorfall im August 2026 hatte Wordfence 99 Pfade gar
+# nicht gescannt, weil die Option "Dateien ausserhalb der WordPress-
+# Installation scannen" standardmässig aus ist — und genau dort lagen zwei der
+# Shells. Wer den Wordfence-Bericht des Kunden als Entwarnung liest, liest ihn
+# falsch, und das steht im Datenbestand ausdrücklich drin.
+#
+# NICHT gelesen wird `apiKey` aus wfconfig. Ein fremder Zugangsschlüssel hat
+# weder im Bericht noch in den Belegen etwas verloren; die Abfragen unten
+# nennen die Felder deshalb einzeln statt mit SELECT *.
+#
+# Read-only wie der Rest. Kein Installieren, kein Wordfence-CLI.
+_wf_sql() {   # _wf_sql <kennung> <abfrage>
+  # Prüfstand-Naht: NT_WF_ATTRAPPE nennt ein Verzeichnis mit je einer Datei
+  # <kennung>.tsv. Ohne sie wäre dieser Zweig nicht prüfbar — der Prüfbaum hat
+  # keine Datenbank, und eine Auswertung, die nie gemessen wird, verrutscht
+  # unbemerkt. Genau das ist bei der Auswertung des echten Bestands passiert:
+  # ein als "Modified plugin file" gemeldeter Treffer war legitimer
+  # Plugin-Code, nur nicht deckungsgleich mit der Fassung auf wordpress.org.
+  if [[ -n "${NT_WF_ATTRAPPE:-}" ]]; then
+    # Nur fuer die Instanzen, die in `nur` genannt sind. Sonst traege JEDE
+    # Installation im Pruefbaum Wordfence, und der haeufigste Fall — die 93 %
+    # OHNE — waere nie geuebt.
+    if [[ -r "${NT_WF_ATTRAPPE}/nur" ]] \
+       && ! grep -qF "$(cat "${NT_WF_ATTRAPPE}/nur")" <<<"${REZ_KURZ}"; then
+      return 0
+    fi
+    [[ -r "${NT_WF_ATTRAPPE}/$1.tsv" ]] && cat "${NT_WF_ATTRAPPE}/$1.tsv"
+    return 0
+  fi
+  rezept_sql "$2"
+}
+
+_wp_wordfence() {
+  # ${REZ_PFX:-} und nicht ${REZ_PFX}: mit gesetzter Prüfstand-Attrappe läuft
+  # dieser Zweig VOR rezept_db_zugang, und unter `set -u` bricht der Lauf sonst
+  # mit "REZ_PFX: unbound variable" ab. Im Betrieb ist das Präfix an dieser
+  # Stelle immer gesetzt — die Abfrage geht dort an eine echte Datenbank.
+  local WF_DA
+  WF_DA=$(_wf_sql tabellen "SHOW TABLES LIKE '${REZ_PFX:-}wfconfig';")
+  if [[ -z "$WF_DA" ]]; then
+    info "${REZ_KURZ}: kein Wordfence in dieser Installation — keine Zweitmeinung verfügbar"
+    return 0
+  fi
+
+  # ── Betriebszustand des Scanners ─────────────────────────
+  local WF_CFG WF_KEY WF_LETZTER WF_ALTER
+  WF_CFG=$(_wf_sql konfig "SELECT name, val FROM ${REZ_PFX:-}wfconfig
+             WHERE name IN ('keyType','lastScanCompleted','isPaid','scansEnabled_malware');")
+  WF_KEY=$(printf '%s\n' "$WF_CFG" | awk -F'\t' '$1=="keyType"{print $2}' | head -1)
+  WF_LETZTER=$(printf '%s\n' "$WF_CFG" | awk -F'\t' '$1=="lastScanCompleted"{print $2}' | head -1)
+
+  # Ein Bestand von vor drei Wochen sagt nichts über heute. Das gehört
+  # ausgesprochen, bevor irgendjemand die Befunde darunter als aktuell liest.
+  if [[ "$WF_LETZTER" =~ ^[0-9]+$ ]]; then
+    WF_ALTER=$(( ( $(date +%s) - WF_LETZTER ) / 86400 ))
+    if [[ "$WF_ALTER" -gt 14 ]]; then
+      befund_melden wordpress logs warn \
+        "${REZ_KURZ}: Wordfence-Scan ist ${WF_ALTER} Tage alt — was danach abgelegt wurde, steht in diesem Bestand nicht" "$REZ_PFAD" web
+    else
+      info "${REZ_KURZ}: Wordfence-Scan ${WF_ALTER} Tage alt"
+    fi
+  else
+    befund_melden wordpress logs unklar \
+      "${REZ_KURZ}: Wordfence vorhanden, aber kein abgeschlossener Scan hinterlegt — der Bestand sagt nichts über den Zustand" "$REZ_PFAD" web
+  fi
+  [[ "$WF_KEY" == "free" ]] && \
+    info "${REZ_KURZ}: Wordfence mit freiem Schlüssel — der Signaturbestand ist kleiner und läuft dem kostenpflichtigen um 30 Tage hinterher"
+
+  # ── Die Befunde ──────────────────────────────────────────
+  local WF_ISS
+  WF_ISS=$(_wf_sql issues "SELECT type, shortMsg FROM ${REZ_PFX:-}wfissues
+             WHERE status IN ('new','active');")
+  [[ -n "$WF_ISS" ]] || { info "${REZ_KURZ}: Wordfence meldet keine offenen Befunde"; return 0; }
+
+  _wf_typ() { printf '%s\n' "$WF_ISS" | awk -F'\t' -v t="$1" '$1==t' ; }
+  local _n
+
+  # Schwachstellen: eine gepflegte Aussage, die wir sonst selbst herleiten
+  # müssten. Sie ergänzt den eigenen Abgleich, ersetzt ihn nicht.
+  _n=$(_wf_typ wfPluginVulnerable | grep -c . || true)
+  if [[ "${_n:-0}" -gt 0 ]]; then
+    befund_melden wordpress version warn \
+      "${REZ_KURZ}: Wordfence führt ${_n} Plugin(s) als verwundbar" "$REZ_PFAD" web
+    code "$(_wf_typ wfPluginVulnerable | cut -f2)"
+  fi
+  _n=$(_wf_typ wfThemeVulnerable | grep -c . || true)
+  if [[ "${_n:-0}" -gt 0 ]]; then
+    befund_melden wordpress version warn \
+      "${REZ_KURZ}: Wordfence führt ${_n} Theme(s) als verwundbar" "$REZ_PFAD" web
+    code "$(_wf_typ wfThemeVulnerable | cut -f2)"
+  fi
+
+  # DER Befund dieses Abschnitts. Kategorie `logs`, nicht `schadcode`: es ist
+  # keine Aussage über Schadcode, sondern über die Reichweite einer Prüfung.
+  _n=$(_wf_typ skippedPaths | grep -c . || true)
+  if [[ "${_n:-0}" -gt 0 ]]; then
+    befund_melden wordpress logs warn \
+      "${REZ_KURZ}: Wordfence hat Pfade vom Scan ausgenommen — ein unauffälliger Wordfence-Bericht ist für diese Bereiche KEINE Entwarnung" "$REZ_PFAD" web
+    code "$(_wf_typ skippedPaths | cut -f2)"
+    evidence "wordfence_uebersprungen_$(echo "$REZ_KURZ" | tr '/.' '__')" \
+             "$(_wf_typ skippedPaths | cut -f2)"
+  fi
+
+  # knownfile ist eine INTEGRITÄTSABWEICHUNG, kein Signaturtreffer. Die
+  # Verwechslung ist bei der Auswertung des echten Bestands passiert und hätte
+  # beinahe legitimen Plugin-Code als Schadcode in den Kundenbericht gebracht.
+  _n=$(_wf_typ knownfile | grep -c . || true)
+  if [[ "${_n:-0}" -gt 0 ]]; then
+    befund_melden wordpress kern warn \
+      "${REZ_KURZ}: Wordfence meldet ${_n} Datei(en) als verändert gegenüber dem Original — Integritätsabweichung, kein Signaturtreffer" "$REZ_PFAD" web
+    code "$(_wf_typ knownfile | cut -f2)"
+  fi
+
+  _n=$(_wf_typ wfPluginAbandoned | grep -c . || true)
+  [[ "${_n:-0}" -gt 0 ]] && \
+    info "${REZ_KURZ}: Wordfence führt ${_n} Plugin(s) als aufgegeben (kein Hersteller-Support mehr)"
+
+  unset -f _wf_typ
 }
 
 # ── Verdikt ──────────────────────────────────────────────────

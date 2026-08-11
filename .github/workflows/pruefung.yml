@@ -238,6 +238,10 @@ jobs:
           # bestätigt unveränderten Bibliotheks- und Kerndateien wieder in der
           # Trefferliste — der Vergleich MUSS das bemerken.
           gegenprobe "13c Prüfsummen-Whitelist"    NT_PRUEFSTAND_OHNE_PMF_WHITELIST=1
+          # Die Wordfence-Auswertung (#17). Ohne den vorgefertigten Bestand
+          # fallen sechs Befunde weg — darunter `skippedPaths`, der genau die
+          # falsche Entwarnung verhindert, um die es in dem Issue geht.
+          gegenprobe "#17 Wordfence-Auswertung"    NT_WF_ATTRAPPE=
           bash werkzeuge/goldmuster.sh vergleichen
 
       - name: Abnahmekriterium #18 — Schadcode unter den ersten fünf

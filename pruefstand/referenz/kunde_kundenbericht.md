@@ -8,7 +8,7 @@
 | **Datum** | <ZEIT> |
 | **Geprüfter Server** | imac |
 | **Prüfungs-ID** | <LAUF-ID> |
-| **Befunde** | 🔴 15 kritisch · ⚠️ 9 auffällig · ⚪ 4 nicht messbar |
+| **Befunde** | 🔴 15 kritisch · ⚠️ 14 auffällig · ⚪ 4 nicht messbar |
 
 ---
 
@@ -77,6 +77,11 @@
 - kunde-zwei.example/httpdocs: theme pruefstand-thema 0.9 ist von einer bekannten Schwachstelle betroffen ((* … 1.0)) CVE-2026-90005 — behoben in 1.0.
 - kunde-zwei.example/httpdocs: 1 mu-Plugin(s) — laufen ohne Aktivierung und erscheinen in keiner Pluginliste
 - kunde-zwei.example/httpdocs: 1 Core-fremde Datei(en) in wp-admin/wp-includes — prüfen
+- kunde-zwei.example/httpdocs: Wordfence-Scan ist <TAGE> Tage alt — was danach abgelegt wurde, steht in diesem Bestand nicht
+- kunde-zwei.example/httpdocs: Wordfence führt 1 Plugin(s) als verwundbar
+- kunde-zwei.example/httpdocs: Wordfence führt 1 Theme(s) als verwundbar
+- kunde-zwei.example/httpdocs: Wordfence hat Pfade vom Scan ausgenommen — ein unauffälliger Wordfence-Bericht ist für diese Bereiche KEINE Entwarnung
+- kunde-zwei.example/httpdocs: Wordfence meldet 1 Datei(en) als verändert gegenüber dem Original — Integritätsabweichung, kein Signaturtreffer
 - php-malware-finder: 4 Datei(en) mit Treffern — nach Regelanzahl sortiert, jeder Treffer gehört gesichtet (9 als unverändert bestätigte Datei(en) herausgefiltert)
 
 ## 4. Reichweite des Angriffs — war nur Ihre Website oder der ganze Server betroffen?

@@ -4,6 +4,40 @@ Alle nennenswerten Änderungen an `wp_plesk_forensik.sh`.
 
 ## [unveröffentlicht]
 
+### Neu — Wordfence-Bestand der geprüften Installation auslesen (#17)
+
+Läuft auf einer Installation Wordfence, liegt dort ein vollständiger
+Scan-Datenbestand in der Datenbank. NT-Forensik las davon nichts.
+
+Ausgewertet werden `wfissues` und `wfconfig`. Der wertvollste Befund ist
+**nicht** die Schwachstellenmeldung, sondern `skippedPaths`: bei einem Vorfall
+im August 2026 hatte Wordfence 99 Pfade gar nicht gescannt, weil „Dateien
+ausserhalb der WordPress-Installation scannen" standardmässig aus ist — und
+genau dort lagen zwei der Shells. Wer den Wordfence-Bericht des Kunden als
+Entwarnung liest, liest ihn falsch, und das steht im Bestand ausdrücklich
+drin.
+
+`knownfile` wird als **Integritätsabweichung** gemeldet, nicht als
+Signaturtreffer. Die Verwechslung ist bei der Auswertung des echten Bestands
+passiert und hätte beinahe legitimen Plugin-Code als Schadcode in den
+Kundenbericht gebracht.
+
+Das Alter des letzten Scans wird bewertet — ein Bestand von vor drei Wochen
+sagt nichts über heute — und ein freier Schlüssel vermerkt.
+
+**Reichweite, ehrlich:** auf einem Server mit 68 WordPress-Installationen
+hatten 5 Wordfence-Tabellen. Das sind 7 %. Eine Zweitmeinung, wo vorhanden —
+keine Primärquelle.
+
+`apiKey` wird ausdrücklich **nicht** gelesen; die Abfragen nennen ihre Felder
+einzeln statt `SELECT *`. Read-only wie der Rest, kein Installieren, kein
+Wordfence-CLI.
+
+Der Prüfbaum hat keine Datenbank; die Naht `NT_WF_ATTRAPPE` speist einen
+vorgefertigten Bestand ein — mit je einer Zeile pro Befundart, damit die
+Zuordnung nicht verrutscht, und nur für **eine** der drei Installationen,
+damit auch der häufige Fall ohne Wordfence geübt wird.
+
 ### Geändert — 7.12 heisst jetzt 13c und filtert gegen lebende Prüfsummen (#18)
 
 Der fremde Regelsatz (php-malware-finder) lieferte im Messlauf über 25.860

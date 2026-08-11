@@ -293,12 +293,14 @@ Order allow,deny
 - ✅ kunde-drei.example/httpdocs: 2 Plugin(s) gegen wordpress.org geprüft — keine veränderte Codedatei
 - ⚪ **Nicht messbar: kunde-drei.example/httpdocs: 1 Plugin(s) ohne Prüfsummensatz und alle Themes — Unversehrtheit nicht feststellbar (Premium, Fork, Eigenbau; für Themes veröffentlicht wordpress.org keine Prüfsummen)**
 - ✅ kunde-drei.example/httpdocs: WordPress-Core unverändert (verify-checksums)
+  kunde-drei.example/httpdocs: kein Wordfence in dieser Installation — keine Zweitmeinung verfügbar
 
 ### 12r.2.x kunde-eins.example/httpdocs
 
 - ✅ kunde-eins.example/httpdocs: keine Doorway-.htaccess-Signatur
 - ✅ kunde-eins.example/httpdocs: keine @include base64_decode()-Injektion
 - ✅ kunde-eins.example/httpdocs: WordPress-Core unverändert (verify-checksums)
+  kunde-eins.example/httpdocs: kein Wordfence in dieser Installation — keine Zweitmeinung verfügbar
 
 ### 12r.2.x kunde-zwei.example/httpdocs
 
@@ -345,6 +347,34 @@ Order allow,deny
   Beleg: belege/011_wp_core_veraendert_kunde-zwei_example_httpdocs.txt
 - ⚠️  **kunde-zwei.example/httpdocs: 1 Core-fremde Datei(en) in wp-admin/wp-includes — prüfen**
   Beleg: belege/012_wp_core_fremd_kunde-zwei_example_httpdocs.txt
+- ⚠️  **kunde-zwei.example/httpdocs: Wordfence-Scan ist <TAGE> Tage alt — was danach abgelegt wurde, steht in diesem Bestand nicht**
+  kunde-zwei.example/httpdocs: Wordfence mit freiem Schlüssel — der Signaturbestand ist kleiner und läuft dem kostenpflichtigen um 30 Tage hinterher
+- ⚠️  **kunde-zwei.example/httpdocs: Wordfence führt 1 Plugin(s) als verwundbar**
+
+```
+The Plugin "pruefstand-kev" has a known security vulnerability
+```
+
+- ⚠️  **kunde-zwei.example/httpdocs: Wordfence führt 1 Theme(s) als verwundbar**
+
+```
+The Theme "pruefstand-thema" has a known security vulnerability
+```
+
+- ⚠️  **kunde-zwei.example/httpdocs: Wordfence hat Pfade vom Scan ausgenommen — ein unauffälliger Wordfence-Bericht ist für diese Bereiche KEINE Entwarnung**
+
+```
+Scan skipped 99 paths outside the WordPress installation
+```
+
+  Beleg: belege/013_wordfence_uebersprungen_kunde-zwei_example_httpdocs.txt
+- ⚠️  **kunde-zwei.example/httpdocs: Wordfence meldet 1 Datei(en) als verändert gegenüber dem Original — Integritätsabweichung, kein Signaturtreffer**
+
+```
+Modified plugin file: wp-content/plugins/pruefstand-aktuell/pruefstand-aktuell.php
+```
+
+  kunde-zwei.example/httpdocs: Wordfence führt 1 Plugin(s) als aufgegeben (kein Hersteller-Support mehr)
 
 ## 13b. .HTACCESS — SICHERUNG UND EINORDNUNG
 
@@ -364,7 +394,7 @@ Order allow,deny                                      Apache-2.2-Zugriffssyntax 
 <Files filefuns.php> … Allow from all                 Sperre fuer alles, Freigabe fuer genau diese eine PHP-Datei
 ```
 
-  Beleg: belege/013_htaccess_fremd_kunde-zwei_example_backups_updater-abc123_nextcloud-28_0_1_2-1700000000__htaccess.txt
+  Beleg: belege/014_htaccess_fremd_kunde-zwei_example_backups_updater-abc123_nextcloud-28_0_1_2-1700000000__htaccess.txt
 - 🔴 **KRITISCH: kunde-zwei.example/cloud.kunde-zwei.example/.htaccess (nextcloud): 3 Angreifer-Direktive(n) in der .htaccess**
 
 ```
@@ -373,7 +403,7 @@ Order allow,deny                                      Apache-2.2-Zugriffssyntax 
 <Files filefuns.php> … Allow from all                 Sperre fuer alles, Freigabe fuer genau diese eine PHP-Datei
 ```
 
-  Beleg: belege/014_htaccess_fremd_kunde-zwei_example_cloud_kunde-zwei_example__htaccess.txt
+  Beleg: belege/015_htaccess_fremd_kunde-zwei_example_cloud_kunde-zwei_example__htaccess.txt
 - 🔴 **KRITISCH: kunde-zwei.example/httpdocs/.htaccess (wordpress): 2 Angreifer-Direktive(n) in der .htaccess**
 
 ```
@@ -381,15 +411,15 @@ AddType application/x-httpd-php .jpg                  PHP-Ausfuehrung fuer eine 
 php_value auto_prepend_file /var/www/vhosts/<anderer Kunde 2>  auto_prepend_file auf eine Datei im Webspace
 ```
 
-  Beleg: belege/015_htaccess_fremd_kunde-zwei_example_httpdocs__htaccess.txt
+  Beleg: belege/016_htaccess_fremd_kunde-zwei_example_httpdocs__htaccess.txt
 - 🔴 **KRITISCH: kunde-zwei.example/httpdocs/wp-content/uploads/.htaccess (unbekannt): 1 Angreifer-Direktive(n) in der .htaccess**
 
 ```
 <Files bild.php> … Allow from all                     Freigabe fuer eine PHP-Datei in einem Verzeichnis, in das keine gehoert
 ```
 
-  Beleg: belege/016_htaccess_fremd_kunde-zwei_example_httpdocs_wp-content_uploads__htaccess.txt
-  Beleg: belege/017_htaccess_einordnung.txt
+  Beleg: belege/017_htaccess_fremd_kunde-zwei_example_httpdocs_wp-content_uploads__htaccess.txt
+  Beleg: belege/018_htaccess_einordnung.txt
 
 ### 13b.3 Wirksamkeit
 
@@ -406,7 +436,7 @@ php_value auto_prepend_file /var/www/vhosts/<anderer Kunde 2>  auto_prepend_file
 2 Regel(n): <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/plugins/pruefstand-aktuell/pruefstand-aktuell.php — ObfuscatedPhp DodgyStrings
 ```
 
-  Beleg: belege/018_php_malware_finder_treffer.txt
+  Beleg: belege/019_php_malware_finder_treffer.txt
   Quelle: Prüfstand-Attrappe, Regelstand 0 Tage alt — der Regelsatz wird vom Projekt kaum noch gepflegt
 
 ## 14. ZUSAMMENFASSUNG
@@ -418,7 +448,7 @@ php_value auto_prepend_file /var/www/vhosts/<anderer Kunde 2>  auto_prepend_file
 | Kategorie | Anzahl |
 |---|---|
 | 🔴 Kritische Befunde | 15 |
-| ⚠️ Warnungen | 10 |
+| ⚠️ Warnungen | 15 |
 | ✅ Unauffällige Prüfungen | 22 |
 | ⚪ Nicht messbar | 4 |
 
