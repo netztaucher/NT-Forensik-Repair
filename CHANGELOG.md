@@ -2,6 +2,95 @@
 
 Alle nennenswerten Änderungen an `wp_plesk_forensik.sh`.
 
+## [unveröffentlicht]
+
+### Behoben — der Wächter-Filter in 7.2 war auf BSD vollständig wirkungslos
+
+Die Dateigrösse wurde mit `stat -c%s` gelesen, und `stat -c` ist GNU. Auf BSD
+schlug der Aufruf fehl, der Rückfallwert `999999` griff, und damit galt **jede**
+Datei als zu gross: die 200-Byte-Regel, die 2000-Byte-ABSPATH-Regel und die
+neue Prüfung auf die leere Datei liefen alle ins Leere. Auf dem Zielsystem
+(Linux) hat der Filter gearbeitet — auf dem Entwicklungsrechner nie, und
+niemand konnte das sehen, weil ein wirkungsloser Filter einfach mehr Funde
+meldet und nicht etwa einen Fehler. Jetzt über `datei_meta`, das beide
+`stat`-Familien kennt.
+
+### Behoben — 274 leere `index.php` als „extrem verdächtig" (#6)
+
+Der Wächter-Test verlangte eine kleine Datei **und** einen Inhaltstreffer. Eine
+leere Datei liefert keinen Treffer und rutschte durch. Über 68 Installationen
+gemessen waren das 274 Fehlalarme. Leere Dateien scheiden jetzt vor der
+Inhaltsprüfung aus; dazu Pfadmuster für Forminator, WPForms, UpdraftPlus,
+WooCommerce und `uploads/cache`.
+
+Bewusst **nur** deren `index.php`, nicht der ganze Teilbaum: das sind
+beschreibbare Ablagen und damit genau die Orte, an denen eine Shell landet. Ein
+Muster `*/uploads/cache/*` hätte den Fehlalarm beseitigt und zugleich eine
+blinde Stelle geschaffen.
+
+Die Zahl der gefilterten Wächter steht jetzt auch im **Trefferzweig** — bisher
+erschien sie nur in der Entwarnungszeile, also genau dann nicht, wenn es etwas
+zu bewerten gab. Neu in `findings.json`:
+`metrics.uploads_guards_gefiltert` (additiv, kein Schema-Bump).
+
+### Behoben — 7.1 lieferte bei zwei Läufen verschiedene Listen
+
+`sort -k8 -r` sortiert nach dem Monatsnamen aus `find -ls`. Dateien desselben
+Monats sind damit gleichrangig, und welche von ihnen die Abschneidung bei 50
+überlebt, entschied der Zufall. Ein Beleg, der sich zwischen zwei Läufen ohne
+Anlass ändert, ist als Beweismittel wertlos. Der Pfad ist jetzt zweiter
+Schlüssel, `LC_ALL=C` hält die Ordnung über Sprachräume hinweg gleich.
+
+### Neu — ctime und crtime in den Belegen (#5)
+
+`datei_steckbrief()` führte nur die mtime. Die sagt aber nur, was der letzte
+Schreiber hinterlassen wollte: `touch -r nachbar.php shell.php` setzt sie auf
+einen unauffälligen Wert, und der Beleg behauptet danach ein Alter, das die
+Datei nie hatte. Jetzt stehen alle drei Zeitstempel darin, dazu zwei Hinweise:
+
+- **Rückdatierung** — mtime liegt mehr als 30 Tage vor der letzten
+  Metadatenänderung.
+- **Übernommene mtime** — sekundengleich mit höchstens fünf Nachbardateien.
+  Die obere Schranke ist tragend: eine Entpackung schreibt viele Dateien in
+  dieselbe Sekunde, das ist normal und darf nicht gemeldet werden.
+
+`datei_meta()` kennt jetzt `crtime`; neu ist `datei_epoche()` für Rechnungen.
+Die beiden Zeitstempel-Schwellen heissen jetzt `ZEITSTEMPEL_ZUSATZ_SEK` (30
+Tage) und `ZEITSTEMPEL_ALLEIN_SEK` (90 Tage) und stehen mit Begründung in
+`lib/konfig.sh`. Sie sind absichtlich verschieden: der Zusatz stützt einen
+vorhandenen Verdacht und darf empfindlich sein, der alleinstehende Befund in
+8.7 trägt sich selbst.
+
+**Nicht enthalten**: die Quarantäne-Protokollierung aus #5. Sie liegt in
+NT-Repair.
+
+### Behoben — zwei kritische Website-Befunde erreichten den Kunden nie
+
+7.12 (php-malware-finder) und 7.13 (PHP in Mediendateien) meldeten ohne das
+`web`-Flag. Beide bewerten die Website-Ebene, einer davon kritisch — und beide
+blieben damit im Betreiberbericht stehen. 7.10, 7.11 und der YARA-Treffer
+behalten bewusst kein `web`: sie scannen serverweit.
+
+### Neu — `werkzeuge/kern-pruefstand.sh`
+
+Die Referenz unter `pruefstand/referenz/` hält von den Belegen nur die
+**Dateinamen** fest, nicht deren Inhalt. Der Inhalt eines Belegs ist aber das,
+was am Ende getragen werden soll, und war von keinem Vergleich gedeckt: man
+konnte jede Zeile darin ändern, ohne dass ein Prüfstand ausschlug. Der neue
+Prüfstand prüft die Zeitstempel-Auswertung gegen Soll-Werte, jeweils mit
+Gegenprobe — zu jedem „wird gemeldet" gehört ein Fall, der nicht gemeldet
+werden darf.
+
+### Behoben — zwei Punkte am Goldmuster
+
+- Die Banner-Kopfzeile `WP-PLESK-FORENSIK v…` fehlte in der
+  Normalisierungsliste. Folge: nach jedem Versionssprung schlug der Vergleich
+  aus, wurde die Referenz neu aufgenommen — und die Neuaufnahme übernahm
+  stillschweigend jede echte Abweichung mit, die im selben Sprung entstand.
+- Der Lauf setzt jetzt `LC_ALL=C`. Die Zeitstempel-Regel erkennt die englische
+  Form von `date`; auf einem deutsch eingestellten Rechner schlug der Vergleich
+  sonst bei jedem Lauf aus und war damit wertlos.
+
 ## [3.11.0] — 2026-08-11
 
 Anlass war ein realer Vorfall: fünf Schadobjekte in einem Webspace, von denen

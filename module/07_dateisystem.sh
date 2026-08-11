@@ -17,8 +17,16 @@ h1 "7. DATEISYSTEM-SCAN"
 h2 "7.1 Kürzlich veränderte PHP-Dateien (letzte ${DAYS_BACK} Tage)"
 echo -e "  ${YLW}Durchsuche Webspace (kann dauern...)${NC}"
 
+# Die Sortierung braucht einen zweiten Schluessel. Feld 8 aus `find -ls` ist
+# der Monat, und Dateien desselben Monats sind damit gleichrangig — welche
+# von ihnen die Abschneidung bei 50 ueberlebt, entschied bis hierher der
+# Zufall. Zwei Laeufe ueber denselben unveraenderten Baum lieferten
+# verschiedene Listen. Ein Beleg, der sich zwischen zwei Laeufen ohne Anlass
+# aendert, ist als Beweismittel wertlos. Der Pfad in Feld 11 ist eindeutig
+# und macht die Ordnung vollstaendig; LC_ALL=C haelt sie ueber Sprachraeume
+# hinweg gleich.
 RECENT_PHP=$(find "${SCAN_PATHS[@]}" -name "*.php" -mtime -"$DAYS_BACK" -ls 2>/dev/null \
-  | sort -k8 -r | head -50 || true)
+  | LC_ALL=C sort -k8 -r -k11 | head -50 || true)
 if [[ -n "$RECENT_PHP" ]]; then
   info "Kürzlich veränderte .php-Dateien:"
   code "$(echo "$RECENT_PHP" | head -30)"
@@ -39,7 +47,24 @@ GUARD_COUNT=0
 if [[ -n "$PHP_IN_UPLOADS_RAW" ]]; then
   while IFS= read -r f; do
     [[ -f "$f" ]] || continue
-    fsize=$(stat -c%s "$f" 2>/dev/null || echo 999999)
+    # Groesse portabel ueber datei_meta. Vorher stand hier `stat -c%s` mit dem
+    # Rueckfallwert 999999 — und `stat -c` ist GNU. Auf BSD schlug der Aufruf
+    # fehl, jede Datei galt als 999999 Bytes gross, und damit war JEDE
+    # groessenabhaengige Waechterregel dieses Filters wirkungslos: die
+    # 200-Byte-Regel, die 2000-Byte-ABSPATH-Regel und die neue Pruefung auf
+    # die leere Datei. Aufgefallen ist es erst, als der Pruefstand eine leere
+    # index.php als "extrem verdaechtig" meldete.
+    fsize=$(datei_meta "$f" groesse 2>/dev/null || echo 999999)
+    [[ "$fsize" =~ ^[0-9]+$ ]] || fsize=999999
+    # Leere Datei. Der haeufigste Waechter ueberhaupt und der teuerste blinde
+    # Fleck: die Inhaltspruefung darunter verlangt einen Treffer, und eine
+    # leere Datei liefert keinen. Ein Messlauf ueber 68 Installationen meldete
+    # so 274 leere index.php als "extrem verdaechtig". Eine Datei ohne ein
+    # einziges Byte kann nichts ausfuehren — sie muss vor der Inhaltspruefung
+    # ausscheiden, nicht in ihr.
+    if [[ "$fsize" -eq 0 ]]; then
+      GUARD_COUNT=$((GUARD_COUNT+1)); continue
+    fi
     # Guard-Files: winzig + typischer Inhalt
     if [[ "$fsize" -lt 200 ]] && head -c 200 "$f" 2>/dev/null \
        | grep -qiE "silence is golden|browsing the directory is not allowed|^<\?php[[:space:]]*$"; then
@@ -54,6 +79,21 @@ if [[ -n "$PHP_IN_UPLOADS_RAW" ]]; then
         GUARD_COUNT=$((GUARD_COUNT+1)); continue ;;
       */uploads/wph/environment.php)   # WP Hide plugin config, ABSPATH-guarded
         GUARD_COUNT=$((GUARD_COUNT+1)); continue ;;
+      # Weitere Plugins, die eigene Ablagen unter uploads/ anlegen und darin
+      # Waechter setzen. Aus demselben Messlauf wie die leeren Dateien oben.
+      #
+      # Bewusst nur index.php, nicht der ganze Teilbaum: forminator/, cache/
+      # und wc-logs/ sind beschreibbare Ablagen und damit genau die Orte, an
+      # denen eine Shell abgelegt wird. Ein Muster */uploads/cache/* haette
+      # den Fehlalarm beseitigt und zugleich eine blinde Stelle geschaffen.
+      */uploads/forminator/*/index.php|*/uploads/forminator/index.php)
+        GUARD_COUNT=$((GUARD_COUNT+1)); continue ;;
+      */uploads/wpforms/*/index.php|*/uploads/wpforms/index.php)
+        GUARD_COUNT=$((GUARD_COUNT+1)); continue ;;
+      */uploads/updraft/*/index.php|*/uploads/updraft/index.php)
+        GUARD_COUNT=$((GUARD_COUNT+1)); continue ;;
+      */uploads/wc-*/index.php|*/uploads/cache/index.php)
+        GUARD_COUNT=$((GUARD_COUNT+1)); continue ;;
     esac
     # Generischer ABSPATH-Guard (WP-Plugin-Konvention: exit wenn direkt aufgerufen)
     if [[ "$fsize" -lt 2000 ]] && head -c 120 "$f" 2>/dev/null | grep -q "ABSPATH"; then
@@ -64,7 +104,11 @@ if [[ -n "$PHP_IN_UPLOADS_RAW" ]]; then
 fi
 
 if [[ -n "$PHP_IN_UPLOADS" ]]; then
-  crit "PHP-Dateien in Upload-Verzeichnissen (nach Guard-Filter, extrem verdächtig)" web
+  # Die Zahl der gefilterten Waechter gehoert AUCH hierher. Sie stand bisher
+  # nur in der Entwarnungszeile — also genau dann nicht im Bericht, wenn es
+  # etwas zu bewerten gab. Wer zwoelf Funde liest, muss erkennen koennen, dass
+  # daneben 274 Dateien als unbedenklich ausgeschieden wurden.
+  crit "PHP-Dateien in Upload-Verzeichnissen (nach Guard-Filter, extrem verdächtig; ${GUARD_COUNT} Guard-/Plugin-Dateien gefiltert)" web
   code "$PHP_IN_UPLOADS"
   UPLOAD_HASHES=$(echo "$PHP_IN_UPLOADS" | xargs -r sha256sum 2>/dev/null || true)
   evidence "php_in_uploads_mit_hashes" "GEFILTERT (verdächtig):
@@ -111,7 +155,7 @@ if [[ -n "$WEBSHELL_HITS" ]]; then
     fzeit=""
     _mt=$(stat -c %Y "$f" 2>/dev/null || echo 0)
     _ct=$(stat -c %Z "$f" 2>/dev/null || echo 0)
-    if [[ "$_ct" -gt 0 && $(( _ct - _mt )) -gt 2592000 ]]; then
+    if [[ "$_ct" -gt 0 && $(( _ct - _mt )) -gt "${ZEITSTEMPEL_ZUSATZ_SEK:-2592000}" ]]; then
       fzeit="ZEITSTEMPEL: mtime ist $(( (_ct - _mt) / 86400 )) Tage älter als die letzte Metadatenänderung — Rückdatierung möglich"$'\n'
     fi
     preview=$(grep -noPi "$PATTERN_REGEX" "$f" 2>/dev/null | head -2 | cut -c1-160 || true)
@@ -469,7 +513,7 @@ else
         # Funktionsmuster, nicht auf konkrete Schädlinge. Sie treffen deshalb
         # auch legitimen Verschleierungs- und Bibliothekscode. Jeder Treffer
         # gehört gesichtet, keiner ist für sich ein Befund.
-        warn "php-malware-finder: $PMF_ANZ Datei(en) mit Treffern — nach Regelanzahl sortiert, jeder Treffer gehört gesichtet"
+        warn "php-malware-finder: $PMF_ANZ Datei(en) mit Treffern — nach Regelanzahl sortiert, jeder Treffer gehört gesichtet" web
         code "$(echo "$PMF_RANG" | head -40)"
         evidence "php_malware_finder_treffer" "$PMF_RANG"
     else
@@ -509,7 +553,7 @@ MEDIA_HITS=$(find "${SCAN_PATHS[@]}" -type f -size -20M \
 
 if [[ -n "$MEDIA_HITS" ]]; then
     MEDIA_ANZ=$(echo "$MEDIA_HITS" | grep -c . || echo 0)
-    crit "PHP-Code in $MEDIA_ANZ Mediendatei(en) — in einem echten Bild gehört kein PHP"
+    crit "PHP-Code in $MEDIA_ANZ Mediendatei(en) — in einem echten Bild gehört kein PHP" web
     MEDIA_DETAIL=""
     while IFS= read -r mf; do
         [[ -f "$mf" ]] || continue

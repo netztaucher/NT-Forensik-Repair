@@ -124,6 +124,12 @@ Die letzten beiden entscheiden, ob die Mail Entwarnung geben darf. Ein Teillauf
 Mail sagt das dann ausdrücklich. Fällt das Feld weg, liest sich ein Teillauf
 stillschweigend wie ein vollständiger Freispruch — der Fehlerfall, der zählt.
 
+### Geliefert, von NT-Repair (noch) nicht gelesen
+
+| Feld | Bedeutung |
+|---|---|
+| `metrics.uploads_guards_gefiltert` | Wieviele PHP-Dateien in `uploads/` der Wächter-Filter in Abschnitt 7.2 als legitim ausgeschieden hat. Ohne diese Zahl lässt sich `actionable.php_in_uploads` nicht einordnen: zwölf Funde neben 274 gefilterten Wächtern sind etwas anderes als zwölf neben null. Rein additiv, kein Schema-Bump. |
+
 ## Regeln für Änderungen
 
 - **Feld hinzufügen** — unkritisch, kein Schema-Bump nötig. Beide Seiten lesen
