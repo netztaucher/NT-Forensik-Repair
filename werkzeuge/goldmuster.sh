@@ -44,7 +44,12 @@ fail() { echo -e "  ${RED}❌${NC} $1"; exit 1; }
 info() { echo -e "  ${CYN}·${NC}  $1"; }
 
 SELF_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")/.." && pwd)"
-REF_DIR="${SELF_DIR}/pruefstand/referenz"
+# Ueberschreibbar, damit eine Sonderprobe ihre Ausgabe woanders ablegen kann,
+# ohne die eingecheckte Referenz zu ueberschreiben. Ohne diesen Hebel muesste
+# jede Probe, die den Baum absichtlich veraendert, entweder als LETZTER Schritt
+# eines Laufs stehen (und braeche still, sobald jemand einen Schritt anhaengt)
+# oder die Referenz im Arbeitsbaum zerstoeren.
+REF_DIR="${NT_GOLDMUSTER_REF:-${SELF_DIR}/pruefstand/referenz}"
 # Bewusst NICHT unter /tmp: Abschnitt 7 sucht dort nach ausfuehrbaren Dateien
 # und meldete den Pruefbaum selbst als Befund. Unter macOS faellt das nicht auf,
 # weil TMPDIR dort auf /var/folders zeigt — die CI hat es gezeigt. Ein
@@ -110,6 +115,20 @@ TSV
 attrappe_bauen() {
   local B="$1"
   rm -rf "$B"; mkdir -p "$B"
+  # NT_PRUEFSTAND_OHNE_WPCLI=1 laesst die Attrappe weg. Der Rahmen findet dann
+  # kein 'wp', meldet die Instanz als "nur dateibasiert geprueft" und
+  # ueberspringt rezept_kern.
+  #
+  # Das ist der Nachweis fuer #10: die Plugin-Pruefsummen brauchen wp-cli
+  # nicht (sie lesen Dateien und vergleichen mit python3), lagen bis v3.11
+  # aber in rezept_kern und fielen deshalb mit weg. Der zugehoerige
+  # CI-Schritt prueft, dass die Pruefsummen-Aussage in diesem Lauf TROTZDEM
+  # in der Konsole steht — eine Behauptung ueber Anwesenheit, nicht ueber
+  # Gleichheit, weil ein Referenzvergleich hier nur zeigen wuerde, dass sich
+  # ueberhaupt etwas geaendert hat.
+  if [[ "${NT_PRUEFSTAND_OHNE_WPCLI:-0}" == "1" ]]; then
+    return 0
+  fi
   # PHP, nicht bash: der Rahmen ruft das Werkzeug als `php <datei> …` auf, weil
   # echtes wp-cli ein PHP-Programm ist. Eine Bash-Attrappe wuerde von PHP
   # gelesen und ihr eigener Quelltext landete als Antwort im Bericht — genau so

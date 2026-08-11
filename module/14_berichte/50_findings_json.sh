@@ -42,6 +42,13 @@ emit_findings_json() {
   disg=$(printf '%s\n' "${DISGUISED_PAYLOADS:-}"  | json_arr)
   rogue=$(printf '%s\n' "${ROGUE_ADMINS:-}"       | grep -vE '^=== |^$' | json_arr)
   suspadm=$(printf '%s\n' "${SUSPECT_ADMINS:-}"   | grep -vE '^=== |^$' | json_arr)
+  # v3.12 (#3): zwei Quellen, die es vorher gar nicht als Liste gab. Die
+  # Signaturtreffer standen bis hierher ausschliesslich im Menschentext, und
+  # zwar nur der erste je Muster — der Reparaturteil bekam sie nie zu sehen,
+  # obwohl genau sie im Vorfall in der Quarantaenetabelle landeten.
+  local sigtr plugmod
+  sigtr=$(printf '%s\n'   "${SIGNATUR_TREFFER:-}"  | json_arr)
+  plugmod=$(printf '%s\n' "${PLUGIN_VERAENDERT:-}" | json_arr)
   local suspp muplug tamphta
   suspp=$(printf '%s\n' "${SUSP_PLUGINS:-}"       | json_arr)
   muplug=$(printf '%s\n' "${MU_PLUGINS:-}"        | json_arr)
@@ -207,6 +214,8 @@ print(json.dumps(raus, ensure_ascii=False))' 2>/dev/null || echo '{}')
     "core_include_injections": ${n_coreinj:-0},
     "rogue_wp_admins": ${n_rogue:-0},
     "suspicious_plugins": ${n_suspp:-0},
+    "schadcode_gesamt": ${MALWARE_TOTAL:-0},
+    "zu_pruefen_gesamt": ${PRUEF_TOTAL:-0},
     "ssh_failed": ${SSH_FAILED_COUNT:-0},
     "wp_installs": ${WP_COUNT:-0},
     "joomla_installs": ${JOOMLA_COUNT:-0},
@@ -230,6 +239,8 @@ print(json.dumps(raus, ensure_ascii=False))' 2>/dev/null || echo '{}')
     "nextcloud_core_modified": ${ncint:-[]},
     "nextcloud_hardening": ${nchard:-[]},
     "htaccess_fremd": ${htafremd:-[]},
+    "signatur_treffer": ${sigtr:-[]},
+    "plugin_veraendert": ${plugmod:-[]},
     "suspicious_plugins": ${suspp:-[]},
     "mu_plugins": ${muplug:-[]},
     "tampered_htaccess": ${tamphta:-[]},

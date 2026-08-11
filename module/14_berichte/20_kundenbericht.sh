@@ -64,7 +64,22 @@ fi
 
 # SSH-Brute-Force ist ein SERVER-Befund (Betreiber-Ebene) und gehört nicht in
 # den Kundenbericht — bleibt im Technik-/BSI-Bericht. (v3.8 Scope-Trennung)
-[[ -z "$TECH_SUMMARY" ]] && TECH_SUMMARY="- Keine akuten technischen Kompromittierungs-Indikatoren an Ihrer Website in diesem Lauf."
+# Die Kurzfassung kennt nur eine Handvoll Quellen (Webshell-Zähler, Joomla,
+# SSH). Bleibt sie leer, stand hier bisher ausnahmslos die Entwarnung — auch
+# dann, wenn die Einordnung darunter dreizehn Fundstellen auflistete. Genau der
+# Widerspruch aus #2, nur eine Ebene höher: eine Entwarnung, die eine Zeile
+# später widerlegt wird, beschädigt jede andere Aussage im Dokument.
+if [[ -z "$TECH_SUMMARY" ]]; then
+  if [[ "${MALWARE_TOTAL:-0}" -gt 0 ]]; then
+    TECH_SUMMARY="- **${MALWARE_TOTAL} Schadcode-Fundstelle(n)** in Ihrem Webauftritt. Was jede einzelne ist und wozu sie dient, steht in der Einordnung unten und vollständig in \`befunde_details.md\`."
+  else
+    TECH_SUMMARY="- Keine akuten technischen Kompromittierungs-Indikatoren an Ihrer Website in diesem Lauf."
+  fi
+fi
+# Der zweite Rang gehört ebenfalls genannt — sonst liest sich ein Lauf, der
+# ausschliesslich Prüfenswertes fand, wie ein glatter Freispruch.
+[[ "${PRUEF_TOTAL:-0}" -gt 0 ]] && \
+  TECH_SUMMARY+=$'\n'"- ${PRUEF_TOTAL} weitere Fundstelle(n) sind noch einzuordnen — sie sind kein belegter Schadcode, aber auch nicht abgehakt. Liste in \`befunde_details.md\`."
 
 # Angriffshergang aus Lauf-Daten maschinell vorbefüllen (keine nackten Platzhalter).
 # Was der Lauf NICHT automatisch weiß (konkreter Angreifer-Login, Einfallstor),
@@ -254,7 +269,7 @@ Wir unterstützen Sie bei allen Meldungen — sprechen Sie uns umgehend an.
 
 | Dokument | Zweck |
 |---|---|
-| \`kundenbericht.md\` | Dieses Dokument |$(if [[ "${MALWARE_TOTAL:-0}" -gt 0 ]]; then printf '\n| `befunde_details.md` | Vollständige Fundstellen-Liste (Pfade relativ zu Ihrem Verzeichnis, Familie, Signatur) |'; fi)
+| \`kundenbericht.md\` | Dieses Dokument |$(if [[ "${MALWARE_TOTAL:-0}" -gt 0 || "${PRUEF_TOTAL:-0}" -gt 0 ]]; then printf '\n| `befunde_details.md` | Vollständige Fundstellen-Liste (Pfade relativ zu Ihrem Verzeichnis, Familie, Signatur) |'; fi)
 | \`technik_bericht.md\` | Vollständiger technischer Bericht (alle Prüfpunkte, inkl. Root-Prüfung §13) |
 | \`bsi_meldung.md\` | Vorbereitete BSI-Meldung (BSIG/NIS2) |
 | \`dsgvo_meldung.md\` | Vorbereitete DSGVO-Meldung (Art. 33, eigener Meldeweg an die Datenschutzbehörde) |

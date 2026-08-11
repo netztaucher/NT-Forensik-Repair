@@ -4,6 +4,91 @@ Alle nennenswerten Änderungen an `wp_plesk_forensik.sh`.
 
 ## [unveröffentlicht]
 
+### Behoben — die Befund-Einordnung lief bei `--nur-website` überhaupt nicht (#3)
+
+Der Block, der jedem Fund eine Familie und ein Geschäftsmodell zuordnet und
+`befunde_details.md` schreibt, stand am Ende von Abschnitt 13. Abschnitt 13
+trägt die Ebene `system` und läuft bei `--nur-website` nicht — also entstand
+ausgerechnet im häufigsten Fall, der Prüfung eines einzelnen Kundenauftritts,
+gar keine Detaildatei. Der Kundenbericht verwies trotzdem darauf.
+
+Der Block liegt jetzt als `module/14_berichte/05_einordnung.sh` bei den
+Berichten. Er liest nur Befundvariablen und schreibt nur Berichtstext; dort
+gehört er hin.
+
+### Behoben — der einzige bash-4-Code im Werkzeug
+
+Dieselbe Einordnung benutzte vier assoziative Arrays (`declare -A`, ab bash 4).
+Aufgefallen ist das nie, weil der Block auf dem Entwicklungsrechner (macOS,
+bash 3.2) nie lief — siehe oben. Beim Verschieben brach der erste Lauf sofort
+mit `declare: -A: invalid option` ab; auf einem Zielsystem mit bash 3.2 hätte
+derselbe Fehler mitten im Bericht gestanden. Ersetzt durch tabgetrennte Listen
+und `awk`. Eine CI-Stufe hält die Sprachgrenze offen.
+
+### Behoben — Fundlisten, die seit dem Rezept-Umzug leer blieben (#3, #2)
+
+Beim Umzug der WordPress- und Nextcloud-Prüfungen von `module/11_wordpress.sh`
+und `module/12b_nextcloud.sh` nach `rezepte/` blieben zwölf Befundvariablen
+stehen, wurden aber von niemandem mehr gefüllt: `CORE_INJECTED`, `CORE_SNE`,
+`DOORWAY_DIRS`, `CORE_INJECT_HITS`, `MU_PLUGINS`, `TAMPERED_HTACCESS`,
+`ROGUE_ADMINS`, `SUSPECT_ADMINS`, `NC_MALWARE`, `NC_HTACCESS_MAL`,
+`NC_NESTED`, `NC_INTEGRITY`.
+
+Sichtbar wurde das nirgends. `findings.json` gab die Schlüssel weiter aus, nur
+eben als leere Listen — und eine leere Liste liest sich wie „nichts gefunden".
+Der Reparaturteil bekam keine Quarantäne-Kandidaten mehr, und
+`metrics.rogue_wp_admins` stand dauerhaft auf 0, auch wenn derselbe Bericht die
+Angreifer-Konten namentlich auflistete. Die Rezepte füllen sie wieder.
+
+Zwei Listen kamen neu hinzu, weil es ihre Quelle vorher gar nicht gab:
+`SIGNATUR_TREFFER` (Treffer aus `signaturen.tsv` — bis hierher stand nur der
+**erste** je Muster irgendwo maschinenlesbar) und `PLUGIN_VERAENDERT`. Beide
+auch in `findings.json` unter `actionable`.
+
+### Behoben — `metrics.wp_installs` war immer 0
+
+`WP_COUNT` wurde nirgends mehr zugewiesen. `module/14_berichte/40_dsgvo.sh`
+entscheidet anhand desselben Werts, ob ein WordPress-Absatz in die Meldung
+gehört — die Bedingung war damit dauerhaft falsch. Der Rezept-Rahmen zählt
+jetzt wieder.
+
+### Neu — `metrics.schadcode_gesamt` und ein zweiter Rang (#2)
+
+`metrics.webshell_count` erfasst nur klassische Dropper-Signaturen aus
+Abschnitt 7. Ein Bericht, der daraus „0 Schadcode-Dateien" ableitet, während
+zehn Dateien in Quarantäne liegen, beschädigt jede andere Zahl darin.
+`schadcode_gesamt` zählt alle dateibasierten Fundstellen, quellenübergreifend
+und **ohne Doppelzählung** — dieselbe Datei steht regelmässig in mehreren
+Listen. `webshell_count` bleibt unverändert bestehen.
+
+Getrennt davon `zu_pruefen_gesamt`: kernfremde Dateien, mu-Plugins,
+Ausführbares in `/tmp`. Deren Quelle meldet selbst nur `warn`. Sie stehen mit
+eigener Überschrift in `befunde_details.md`, zählen aber nicht als Schadcode —
+wer sie mitzählt, baut die Übertreibung ein, die #2 in der Gegenrichtung
+beklagt.
+
+Die BSI-Meldung führt beide Zahlen. Der Kundenbericht sagt „**N**
+Schadcode-Fundstelle(n)", wo bisher die Entwarnung „Keine akuten technischen
+Kompromittierungs-Indikatoren" stand — die erschien nämlich immer, sobald die
+technische Kurzfassung leer blieb, auch eine Zeile über einer Tabelle mit
+dreizehn Fundstellen.
+
+### Geändert — Plugin-Prüfsummen hängen nicht mehr an wp-cli (#10)
+
+`_wp_plugin_integritaet` wurde aus `rezept_kern` nach `rezept_sonder`
+verschoben. `rezept_kern` läuft erst nach der Werkzeug-Probe des Rahmens, also
+nur mit lauffähigem wp-cli — gebraucht wird wp-cli hier aber nirgends: die
+Bestandsliste kommt aus `version.php` und den Plugin-Kopfzeilen, verglichen
+wird mit `python3`. Eine Instanz ohne wp-cli verlor damit ausgerechnet die
+Prüfung, die den Plugin-Ordner abdeckt.
+
+Preis: die Befunde stehen im Bericht nicht mehr neben der Kern-Integrität. Die
+Kategorie in `befund_melden` bleibt `kern`, nur die Reihenfolge ändert sich.
+
+Nachgewiesen in der CI: ein Lauf mit `NT_PRUEFSTAND_OHNE_WPCLI=1` muss die
+Prüfsummen-Aussage trotzdem in der Konsole zeigen. Gegen den alten Stand
+gemessen — dort erscheint sie nicht.
+
 ### Behoben — der Wächter-Filter in 7.2 war auf BSD vollständig wirkungslos
 
 Die Dateigrösse wurde mit `stat -c%s` gelesen, und `stat -c` ist GNU. Auf BSD

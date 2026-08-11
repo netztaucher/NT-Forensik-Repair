@@ -129,6 +129,32 @@ stillschweigend wie ein vollständiger Freispruch — der Fehlerfall, der zählt
 | Feld | Bedeutung |
 |---|---|
 | `metrics.uploads_guards_gefiltert` | Wieviele PHP-Dateien in `uploads/` der Wächter-Filter in Abschnitt 7.2 als legitim ausgeschieden hat. Ohne diese Zahl lässt sich `actionable.php_in_uploads` nicht einordnen: zwölf Funde neben 274 gefilterten Wächtern sind etwas anderes als zwölf neben null. Rein additiv, kein Schema-Bump. |
+| `metrics.schadcode_gesamt` | Alle dateibasierten Fundstellen, über **alle** Quellen und ohne Doppelzählung. Die Zahl, die `lib/gen_report.sh` statt `metrics.webshell_count` lesen sollte — siehe unten. |
+| `metrics.zu_pruefen_gesamt` | Fundstellen des zweiten Rangs: kernfremde Dateien, mu-Plugins, Ausführbares in `/tmp`. Kein belegter Schadcode, deshalb **nicht** in `schadcode_gesamt` enthalten. |
+| `actionable.signatur_treffer` | Treffer aus `rezepte/*/signaturen.tsv`, alle Anwendungen. Bis v3.11 standen diese Dateien ausschliesslich im Menschentext, und dort nur die erste je Muster — Quarantäne-Kandidaten erster Ordnung, die NT-Repair nie zu sehen bekam. |
+| `actionable.plugin_veraendert` | Plugin-Codedateien, die von den Prüfsummen bei wordpress.org abweichen. |
+
+## ⚠️ Zähler, die nur einen Teil der Wahrheit zeigen
+
+`metrics.webshell_count` erfasst **nur** klassische Dropper-Signaturen aus
+Abschnitt 7 — nicht Imunify-Treffer, nicht Signaturtreffer der Rezepte, nicht
+veränderte Kern- oder Plugin-Dateien. Ein Bericht, der daraus „0 Schadcode-Dateien"
+ableitet, während zehn Dateien in Quarantäne liegen, ist genau der Fehler aus
+Issue #2. **`metrics.schadcode_gesamt` ist der Zähler, der die ganze Menge
+meint.** `webshell_count` bleibt unverändert bestehen, damit bestehende Leser
+nicht brechen.
+
+Zwei weitere Zähler waren seit dem Umzug der WordPress-Prüfung nach `rezepte/`
+dauerhaft 0, weil `WP_COUNT` und `ROGUE_ADMINS` von niemandem mehr gefüllt
+wurden: `metrics.wp_installs` und `metrics.rogue_wp_admins`. Sie tragen ab
+v3.12 wieder echte Werte. Wer sich an die Nullen gewöhnt hat, bekommt jetzt
+Zahlen — das ist die Absicht.
+
+Dasselbe galt für einen Teil der `actionable`-Listen (`injected_core`,
+`core_should_not_exist`, `doorway_dirs`, `core_include_injection`,
+`mu_plugins`, `tampered_htaccess`, `nextcloud_*`): die Schlüssel standen in
+der Datei, die Werte waren leer, und eine leere Liste liest sich wie „nichts
+gefunden". Sie werden ab v3.12 wieder befüllt.
 
 ## Regeln für Änderungen
 

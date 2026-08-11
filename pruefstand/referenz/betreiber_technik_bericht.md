@@ -293,9 +293,9 @@ Order allow,deny
 - ✅ kunde-drei.example/httpdocs: keine bekannte Schwachstelle im vorliegenden Datenbestand (Stand <STAND>)
 - ✅ kunde-drei.example/httpdocs: keine Doorway-.htaccess-Signatur
 - ✅ kunde-drei.example/httpdocs: keine @include base64_decode()-Injektion
-- ✅ kunde-drei.example/httpdocs: WordPress-Core unverändert (verify-checksums)
 - ✅ kunde-drei.example/httpdocs: 2 Plugin(s) gegen wordpress.org geprüft — keine veränderte Codedatei
 - ⚪ **Nicht messbar: kunde-drei.example/httpdocs: 1 Plugin(s) ohne Prüfsummensatz und alle Themes — Unversehrtheit nicht feststellbar (Premium, Fork, Eigenbau; für Themes veröffentlicht wordpress.org keine Prüfsummen)**
+- ✅ kunde-drei.example/httpdocs: WordPress-Core unverändert (verify-checksums)
 
 ### 12r.2.x kunde-eins.example/httpdocs
 
@@ -326,23 +326,23 @@ Order allow,deny
 <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/mu-plugins/cache.php
 ```
 
-- 🔴 **KRITISCH: kunde-zwei.example/httpdocs: 1 veränderte Core-Datei(en) — Injektion oder Manipulation**
-
-```
-<PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-includes/load.php
-```
-
-  Beleg: belege/10_wp_core_veraendert_kunde-zwei_example_httpdocs.txt
-- ⚠️  **kunde-zwei.example/httpdocs: 1 Core-fremde Datei(en) in wp-admin/wp-includes — prüfen**
-  Beleg: belege/11_wp_core_fremd_kunde-zwei_example_httpdocs.txt
 - 🔴 **KRITISCH: kunde-zwei.example/httpdocs: 1 veränderte Plugin-Codedatei(en) gegenüber wordpress.org — Plugin neu installieren, Dateien vorher sichern**
 
 ```
 <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/plugins/pruefstand-aktuell/pruefstand-aktuell.php
 ```
 
-  Beleg: belege/12_wp_plugin_veraendert_kunde-zwei_example_httpdocs.txt
+  Beleg: belege/10_wp_plugin_veraendert_kunde-zwei_example_httpdocs.txt
 - ⚪ **Nicht messbar: kunde-zwei.example/httpdocs: 2 Plugin(s) ohne Prüfsummensatz und alle Themes — Unversehrtheit nicht feststellbar (Premium, Fork, Eigenbau; für Themes veröffentlicht wordpress.org keine Prüfsummen)**
+- 🔴 **KRITISCH: kunde-zwei.example/httpdocs: 1 veränderte Core-Datei(en) — Injektion oder Manipulation**
+
+```
+<PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-includes/load.php
+```
+
+  Beleg: belege/11_wp_core_veraendert_kunde-zwei_example_httpdocs.txt
+- ⚠️  **kunde-zwei.example/httpdocs: 1 Core-fremde Datei(en) in wp-admin/wp-includes — prüfen**
+  Beleg: belege/12_wp_core_fremd_kunde-zwei_example_httpdocs.txt
 
 ## 13b. .HTACCESS — SICHERUNG UND EINORDNUNG
 
@@ -395,6 +395,7 @@ php_value auto_prepend_file /var/www/vhosts/<anderer Kunde 2>  auto_prepend_file
 
 ## 14. ZUSAMMENFASSUNG
 
+  Fundstellen-Details: <PRUEFSTAND>/ablage/forensik/<LAUF-ID>/kunde/befunde_details.md (13 Fund(e), 7 Familien, 1 zu prüfen)
 
 ### 14.1 Befund-Statistik
 

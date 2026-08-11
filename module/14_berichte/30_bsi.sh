@@ -74,6 +74,8 @@ cat > "$BSI_FILE" <<BSI
 | Scanner-Aktivität in Web-Logs (Treffer) | ${TOTAL_SCANNER_HITS:-0} |
 | Verdächtige POST-Requests (Webshell-Muster) | ${TOTAL_SHELL_POSTS:-0} |
 | Webshell-Verdachtsdateien im Dateisystem | ${WEBSHELL_COUNT:-0} |
+| Schadcode-Fundstellen gesamt (alle Quellen) | ${MALWARE_TOTAL:-0} |
+| Davon noch einzuordnen | ${PRUEF_TOTAL:-0} |
 | Domains auf dem Server (Mitbetroffenheit möglich) | ${DOMAIN_COUNT:-0} |
 
 $(if [[ -n "$CRIT_LIST" ]]; then

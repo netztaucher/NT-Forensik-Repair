@@ -154,6 +154,13 @@ rezept_signaturen() {   # rezept_signaturen <app> <rezeptverzeichnis> <installat
     befund_melden "$app" schadcode "${schwere:-warn}" \
       "${kurz}: ${was:-bekannte Schaddatei} (${muster})" "$(printf '%s' "$treffer" | head -1)" web
     code "$treffer"
+    # Nur der ERSTE Treffer steht im Befund, der Rest bisher ausschliesslich im
+    # code-Block des Menschentextes. Damit war ein Signaturtreffer maschinell
+    # nicht auswertbar: weder konnte befunde_details.md erklaeren, was die
+    # Datei ist, noch bekam der Reparaturteil sie als Quarantaene-Kandidaten.
+    # Genau der Fall aus #3 — drei wp-file-manager-Dateien standen in der
+    # Quarantaenetabelle, ohne dass irgendwo stand, wozu sie dienen.
+    SIGNATUR_TREFFER+="${treffer}"$'\n'
   done < "$tsv"
 }
 

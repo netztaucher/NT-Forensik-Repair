@@ -50,6 +50,22 @@ jobs:
           done < <(git ls-files '*.py')
           exit $fehler
 
+      - name: Keine bash-4-Sprachmittel
+        # `declare -A` (assoziative Arrays) gibt es erst ab bash 4. macOS
+        # liefert bis heute 3.2 aus. Bis v3.11 steckten vier davon in der
+        # Befund-Klassifikation — unbemerkt, weil dieser Block an Abschnitt 13
+        # hing und der bei --nur-website gar nicht läuft. Beim Verschieben in
+        # Abschnitt 14 brach der erste Lauf sofort ab.
+        #
+        # Der Prüfstand auf dem Entwicklungsrechner ist nur so viel wert, wie er
+        # vom Werkzeug erreicht. Diese Stufe hält den Weg dorthin offen.
+        run: |
+          if git grep -nE '^\s*(local\s+)?declare\s+-A|^\s*typeset\s+-A' -- '*.sh'; then
+            echo "::error::bash-4-Sprachmittel gefunden. Auf bash 3.2 (macOS) bricht der Lauf damit ab — und der Prüfstand erreicht die Stelle dort nie."
+            exit 1
+          fi
+          echo "  ok — keine assoziativen Arrays"
+
       - name: Selbsttest des Versionsvergleichs
         # Der Abgleich installierter Fassungen gegen Verwundbarkeitsbereiche
         # steht und fällt mit der Ordnung der Versionen. Ist sie an einer
@@ -189,3 +205,31 @@ jobs:
           # Installationen meldete 274 leere index.php als "extrem verdächtig".
           gegenprobe "7.2 Wächter-Filter"          NT_PRUEFSTAND_OHNE_WAECHTER=1
           bash werkzeuge/goldmuster.sh vergleichen
+
+      - name: Nachweis — Plugin-Prüfsummen laufen ohne wp-cli (#10)
+        run: |
+          # Keine Gegenprobe, sondern eine Behauptung über ANWESENHEIT. Der
+          # Referenzvergleich taugt hier nicht: ein Lauf ohne wp-cli weicht
+          # ohnehin an hundert Stellen ab, und "es hat sich etwas geändert"
+          # beantwortet die Frage nicht, ob die Prüfsummen noch laufen.
+          #
+          # Eigene Referenzablage über NT_GOLDMUSTER_REF, damit dieser Lauf die
+          # eingecheckte Referenz nicht überschreibt und der Schritt nicht
+          # davon abhängt, der letzte im Auftrag zu sein.
+          rm -rf /tmp/nt-owc /tmp/nt-owc-ref
+          NT_GOLDMUSTER_DIR=/tmp/nt-owc \
+          NT_GOLDMUSTER_REF=/tmp/nt-owc-ref \
+          NT_PRUEFSTAND_OHNE_WPCLI=1 \
+            bash werkzeuge/goldmuster.sh aufnehmen
+          K=/tmp/nt-owc-ref/konsole.txt
+          # Erst nachweisen, dass wp-cli wirklich fehlt — sonst bestünde der
+          # Test auch dann, wenn die Attrappe stillschweigend doch gebaut wird.
+          if ! grep -q "nicht ausführbar" "$K"; then
+            echo "::error::Der Lauf hatte wp-cli offenbar doch — die Probe misst nichts."
+            exit 1
+          fi
+          if ! grep -q "wordpress.org" "$K"; then
+            echo "::error::Ohne wp-cli fallen die Plugin-Prüfsummen weg. Der Aufruf gehört in rezept_sonder, nicht in rezept_kern (#10)."
+            exit 1
+          fi
+          echo "  ok — Plugin-Prüfsummen erscheinen auch ohne wp-cli"

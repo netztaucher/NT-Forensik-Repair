@@ -332,6 +332,7 @@ PY
       "$(printf '%s\n' "$mods" | head -1)" web
     code "$(printf '%s\n' "$mods" | head -30)"
     evidence "wp_plugin_veraendert_$(echo "$REZ_KURZ" | tr '/.' '__')" "$mods"
+    PLUGIN_VERAENDERT+="$mods"$'\n'
   elif [[ "${n_geprueft:-0}" -gt 0 ]]; then
     befund_melden wordpress kern ok \
       "${REZ_KURZ}: ${n_geprueft} Plugin(s) gegen wordpress.org geprüft — keine veränderte Codedatei" "$REZ_PFAD"
@@ -388,6 +389,7 @@ rezept_kern() {
     befund_melden wordpress kern crit "${REZ_KURZ}: ${cmod} veränderte Core-Datei(en) — Injektion oder Manipulation" "$REZ_PFAD" web
     code "$(echo "$LISTE" | head -30)"
     evidence "wp_core_veraendert_$(echo "$REZ_KURZ" | tr '/.' '__')" "$LISTE"
+    CORE_INJECTED+="$LISTE"$'\n'
   else
     befund_melden wordpress kern ok "${REZ_KURZ}: WordPress-Core unverändert (verify-checksums)" "$REZ_PFAD"
   fi
@@ -396,28 +398,9 @@ rezept_kern() {
     LISTE=$(echo "$CHK" | grep "should not exist" | sed "s|.*exist: |${REZ_PFAD}/|")
     befund_melden wordpress kern warn "${REZ_KURZ}: ${csne} Core-fremde Datei(en) in wp-admin/wp-includes — prüfen" "$REZ_PFAD" web
     evidence "wp_core_fremd_$(echo "$REZ_KURZ" | tr '/.' '__')" "$LISTE"
+    CORE_SNE+="$LISTE"$'\n'
   fi
 
-  # Dasselbe für die Plugins. verify-checksums deckt nur den Kern ab, und der
-  # ist selten das Einfallstor — die Nutzlast liegt fast immer im Plugin-Ordner.
-  #
-  # ACHTUNG bei der Platzierung: rezept_kern läuft erst NACH der Werkzeug-Probe
-  # des Rahmens, also nur mit lauffähigem wp-cli. Die Prüfsummen brauchen
-  # wp-cli nicht — sie lesen Dateien und rufen wordpress.org ab. Eine Instanz
-  # ohne wp-cli verliert damit eine Prüfung, die dort möglich wäre. Bewusst
-  # trotzdem hier, weil der Befund inhaltlich zur Kern-Integrität gehört;
-  # ungebunden wird er durch Verschieben des folgenden Aufrufs nach
-  # rezept_sonder, ohne weitere Änderung.
-  # Das --online-Tor besteht wegen des Netzzugriffs. Zeigt WP_PRUEFSUMMEN_BASIS
-  # auf ein Verzeichnis, wird nichts abgerufen — dann wäre das Tor eine Hürde
-  # ohne Grund.
-  if _wp_pruefsummen_aus_netz && [[ "${WANT_ONLINE:-0}" != "1" ]]; then
-    info "${REZ_KURZ}: Plugin-Integrität nicht geprüft — die Prüfsummen von wordpress.org brauchen --online"
-  elif ! werkzeug_da python3; then
-    befund_melden wordpress kern unklar "${REZ_KURZ}: python3 fehlt — Plugin-Integrität nicht prüfbar" "$REZ_PFAD" web
-  else
-    _wp_plugin_integritaet
-  fi
 }
 
 # ── Dateibasierte Merkmale ───────────────────────────────────
@@ -430,6 +413,7 @@ rezept_sonder() {
   if [[ -n "$DW" ]]; then
     befund_melden wordpress schadcode crit "${REZ_KURZ}: $(echo "$DW" | grep -c .) Doorway-Verzeichnis(se) (cache.php/index.php-Signatur)" "$(echo "$DW" | head -1)" web
     code "$(echo "$DW" | head -30)"
+    DOORWAY_DIRS+="$DW"$'\n'
   else
     befund_melden wordpress schadcode ok "${REZ_KURZ}: keine Doorway-.htaccess-Signatur" "$REZ_PFAD"
   fi
@@ -442,6 +426,7 @@ rezept_sonder() {
     befund_melden wordpress schadcode crit "${REZ_KURZ}: $(echo "$CI" | grep -c .) Datei(en) mit @include base64_decode() — getarnte Payload-Nachladung" "$(echo "$CI" | head -1)" web
     code "$(echo "$CI" | head -20)"
     evidence "wp_include_injektion_$(echo "$REZ_KURZ" | tr '/.' '__')" "$CI"
+    CORE_INJECT_HITS+="$CI"$'\n'
   else
     befund_melden wordpress schadcode ok "${REZ_KURZ}: keine @include base64_decode()-Injektion" "$REZ_PFAD"
   fi
@@ -454,6 +439,7 @@ rezept_sonder() {
   if [[ -n "$MU" ]]; then
     befund_melden wordpress schadcode warn "${REZ_KURZ}: $(echo "$MU" | grep -c .) mu-Plugin(s) — laufen ohne Aktivierung und erscheinen in keiner Pluginliste" "$(echo "$MU" | head -1)" web
     code "$MU"
+    MU_PLUGINS+="$MU"$'\n'
   fi
 
   # Manipulierte .htaccess mit Freigabeliste. Abschnitt 13b prüft das
@@ -465,6 +451,35 @@ rezept_sonder() {
   if [[ -n "$BAD" ]]; then
     befund_melden wordpress schadcode crit "${REZ_KURZ}: manipulierte .htaccess (Freigabeliste mit Webshell-Namen)" "$(echo "$BAD" | head -1)" web
     code "$(echo "$BAD" | sed "s|${REZ_PFAD}/||")"
+    TAMPERED_HTACCESS+="$BAD"$'\n'
+  fi
+
+  # Plugin-Prüfsummen gegen wordpress.org. verify-checksums deckt nur den Kern
+  # ab, und der ist selten das Einfallstor — die Nutzlast liegt fast immer im
+  # Plugin-Ordner.
+  #
+  # Der Aufruf stand bis v3.11 in rezept_kern, und rezept_kern läuft erst NACH
+  # der Werkzeug-Probe des Rahmens (module/12r_rezepte.sh:104-125), also nur
+  # mit lauffähigem wp-cli. Gebraucht wird wp-cli hier nirgends: die
+  # Bestandsliste kommt aus _wp_bestand (liest version.php und die
+  # Plugin-Kopfzeilen), verglichen wird mit python3 gegen abgerufene
+  # JSON-Sätze. Eine Instanz ohne wp-cli verlor damit eine Prüfung, die dort
+  # möglich gewesen wäre — und zwar ausgerechnet die, die den Plugin-Ordner
+  # abdeckt.
+  #
+  # Preis der Verschiebung: die Befunde stehen im Bericht nicht mehr neben der
+  # Kern-Integrität. Die Kategorie in befund_melden bleibt bewusst `kern`,
+  # damit die Einordnung erhalten bleibt; nur die Reihenfolge ändert sich.
+  #
+  # Das --online-Tor besteht wegen des Netzzugriffs. Zeigt WP_PRUEFSUMMEN_BASIS
+  # auf ein Verzeichnis, wird nichts abgerufen — dann wäre das Tor eine Hürde
+  # ohne Grund.
+  if _wp_pruefsummen_aus_netz && [[ "${WANT_ONLINE:-0}" != "1" ]]; then
+    info "${REZ_KURZ}: Plugin-Integrität nicht geprüft — die Prüfsummen von wordpress.org brauchen --online"
+  elif ! werkzeug_da python3; then
+    befund_melden wordpress kern unklar "${REZ_KURZ}: python3 fehlt — Plugin-Integrität nicht prüfbar" "$REZ_PFAD" web
+  else
+    _wp_plugin_integritaet
   fi
 }
 
@@ -495,6 +510,12 @@ rezept_db() {
     befund_melden wordpress datenbank crit "${REZ_KURZ}: kürzlich angelegte(s) Administrator-Konto(en) — Angreifer-Verdacht" "$REZ_PFAD" web
     code "$NEU"
     evidence "wp_neue_admins_$(echo "$REZ_KURZ" | tr '/.' '__')" "$NEU"
+    # Mit Kopfzeile je Instanz — findings.json filtert sie beim Zaehlen wieder
+    # heraus (`grep -vE '^=== |^$'`), braucht sie aber, um die Konten der
+    # richtigen Installation zuzuordnen. Ohne diese Zuweisung stand
+    # metrics.rogue_wp_admins dauerhaft auf 0, waehrend derselbe Bericht die
+    # Konten namentlich auffuehrte (#2).
+    ROGUE_ADMINS+="=== ${REZ_KURZ} ==="$'\n'"$NEU"$'\n'
   else
     befund_melden wordpress datenbank ok "${REZ_KURZ}: keine kürzlich angelegten Administratoren" "$REZ_PFAD"
   fi
@@ -511,6 +532,7 @@ rezept_db() {
   if [[ -n "$VERDACHT" ]]; then
     befund_melden wordpress datenbank warn "${REZ_KURZ}: Administrator mit angreifertypischem Namen oder Adresse — Verdacht, kein Beleg" "$REZ_PFAD" web
     code "$VERDACHT"
+    SUSPECT_ADMINS+="=== ${REZ_KURZ} ==="$'\n'"$VERDACHT"$'\n'
   fi
 
   # c) Manipulierte Optionen. siteurl/home weisen auf einen Redirect-Hijack,
