@@ -360,18 +360,53 @@ datei_steckbrief() {   # datei_steckbrief <kriterium> <regex> <datei>
   printf '\n'
 }
 
+# ── Belege (v3.12 mit Einstufung) ────────────────────────────
+#
+#   evidence <bezeichner> <inhalt> [stufe]
+#
+# `stufe` entscheidet, ob ein Beleg in eine Kundenuebergabe darf:
+#
+#   kunde      betrifft den geprueften Webauftritt — darf uebergeben werden
+#   server     serverweit — nur maskiert und nur, wenn der Befund es braucht
+#   betreiber  rein intern — geht nie mit
+#
+# Warum das noetig wurde: beim Zusammenstellen eines Kundenpakets ging
+# `03_admin_changelog.txt` mit, der Betreiber-Changelog. Darin stehen
+# SSL-Arbeiten am Server-Host und interne Betriebsnotizen; mit dem geprueften
+# Kunden hat die Datei nichts zu tun. Von 45 Belegen nannten 26 den geprueften
+# Kunden ueberhaupt nicht (#1).
+#
+# Ohne dritten Parameter gilt ${BELEG_STUFE}, das der Runner VOR JEDEM MODUL
+# auf `betreiber` zuruecksetzt. Das ist die sichere Richtung: ein Beleg, der
+# faelschlich beim Betreiber bleibt, ist aergerlich; ein Beleg, der
+# faelschlich mitgeht, ist ein Datenschutzverstoss. Ein Modul, das seine
+# Belege einstufen will, setzt BELEG_STUFE einmal am Kopf; einzelne Aufrufe
+# ueberschreiben das mit dem dritten Parameter.
 evidence() {
   EVIDENCE_IDX=$((EVIDENCE_IDX+1))
-  local num; num=$(printf "%02d" "$EVIDENCE_IDX")
+  # %03d, nicht %02d: bei 103 Aufrufstellen sortiert `10_` vor `9_`, und die
+  # Reihenfolge im Ordner haette der Reihenfolge im Bericht widersprochen.
+  local num; num=$(printf "%03d" "$EVIDENCE_IDX")
+  local stufe="${3:-${BELEG_STUFE:-betreiber}}"
+  case "$stufe" in
+    kunde|server|betreiber) : ;;
+    *) warn "Programmfehler: unbekannte Belegstufe '${stufe}' bei '$1' — als betreiber behandelt"
+       stufe="betreiber" ;;
+  esac
   local file="${BELEGE_DIR}/${num}_$1.txt"
   {
     echo "# Beleg ${num} — $1"
+    echo "# Stufe: ${stufe}"
     echo "# Erhoben: $(date -u +"%Y-%m-%dT%H:%M:%SZ") (UTC) / $(date)"
     echo "# Host: $(hostname -f 2>/dev/null || hostname)"
     echo "# Tool: wp_plesk_forensik.sh v${TOOL_VERSION}"
     echo "# ------------------------------------------------------------"
     echo "$2"
   } > "$file"
+  # Maschinenlesbares Verzeichnis. Die Kopfzeile im Beleg ist fuer Menschen;
+  # wer ein Paket schnuert, soll nicht 113 Dateien aufmachen muessen.
+  printf '%s\t%s\t%s\t%s\n' "$num" "$stufe" "$1" "${num}_$1.txt" \
+    >> "${BELEGE_DIR}/00_verzeichnis.tsv"
   echo "  Beleg: belege/${num}_$1.txt" >> "$REPORT_FILE"
 }
 

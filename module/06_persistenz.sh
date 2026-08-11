@@ -10,6 +10,9 @@
 # Wird vom Runner eingebunden, nicht einzeln ausgefuehrt.
 # Vorgabewerte der hier gefuellten Variablen: lib/befunde.sh
 
+# Belegstufe dieses Abschnitts (#1). Cron, systemd, Kernelmodule — alles serverweit.
+BELEG_STUFE=server
+
 h1 "6. CRONJOBS & PERSISTENZ"
 # ============================================================
 

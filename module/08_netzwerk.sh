@@ -10,6 +10,9 @@
 # Wird vom Runner eingebunden, nicht einzeln ausgefuehrt.
 # Vorgabewerte der hier gefuellten Variablen: lib/befunde.sh
 
+# Belegstufe dieses Abschnitts (#1). Prozesse, Verbindungen, Paketintegritaet — serverweit.
+BELEG_STUFE=server
+
 h1 "8. NETZWERK & DIENSTE"
 # ============================================================
 

@@ -4,6 +4,38 @@ Alle nennenswerten Änderungen an `wp_plesk_forensik.sh`.
 
 ## [unveröffentlicht]
 
+### Neu — Belege tragen eine Einstufung (#1)
+
+`evidence` nimmt einen dritten Parameter: `kunde`, `server` oder `betreiber`.
+
+| Stufe | Bedeutung |
+|---|---|
+| `kunde` | betrifft den geprüften Webauftritt — darf übergeben werden |
+| `server` | serverweit — nur maskiert und nur, wenn der Befund es braucht |
+| `betreiber` | rein intern — geht nie mit |
+
+Anlass: beim Zusammenstellen eines Kundenpakets ging `03_admin_changelog.txt`
+mit — der Betreiber-Changelog mit SSL-Arbeiten am Server-Host und internen
+Betriebsnotizen. Von 45 Belegen nannten 26 den geprüften Kunden überhaupt
+nicht.
+
+Statt 113 Aufrufe einzeln zu ändern, setzt jeder Abschnitt seine Stufe einmal
+am Kopf; einzelne Aufrufe überschreiben sie. Der Runner setzt `BELEG_STUFE`
+**vor jedem Modul** auf `betreiber` zurück — ohne das erbte ein Abschnitt ohne
+eigene Angabe die Einstufung des vorherigen, und zwar unsichtbar.
+
+Zwei CI-Stufen halten das offen: jedes Modul, das Belege erhebt, muss seine
+Stufe benennen, und ein Abschnitt der Ebene `system` darf nichts als `kunde`
+einstufen. Der Prüfstand läuft mit `--nur-website` und erreicht diese
+Abschnitte nicht — die Einstufung wäre sonst von keinem Vergleich gedeckt.
+
+Dazu `belege/00_verzeichnis.tsv` (Nummer, Stufe, Bezeichner, Datei) und eine
+Zusammenfassung im Manifest. Die Nummerierung ist auf `%03d` umgestellt: bei
+über hundert Belegen sortierte `10_` vor `9_`.
+
+Die Belege im Laufordner bleiben **unmaskiert** — sie sind Beweismittel des
+Betreibers. Maskiert wird beim Schnüren des Kundenpakets (#4).
+
 ### Behoben — `sort: write failed: Broken pipe` mitten im Bericht
 
 `… | sort | head -5` schliesst die Pipe, sobald `head` genug hat; `sort`

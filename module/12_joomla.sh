@@ -10,6 +10,9 @@
 # Wird vom Runner eingebunden, nicht einzeln ausgefuehrt.
 # Vorgabewerte der hier gefuellten Variablen: lib/befunde.sh
 
+# Belegstufe dieses Abschnitts (#1). Alles hier stammt aus der geprueften Joomla-Installation.
+BELEG_STUFE=kunde
+
 h1 "12. JOOMLA-PRÜFUNG"
 # ============================================================
 # Joomla-Pendant zu Abschnitt 11. Findet Joomla-Installationen, bestimmt die
@@ -1078,7 +1081,8 @@ if [[ -n "$ONLINE_FETCHES" ]]; then
   h2 "12.11 Netzabrufe dieses Laufs (--online)"
   info "Dieser Lauf hat $(printf '%s\n' "$ONLINE_FETCHES" | grep -c . || true) Abruf(e) aus dem Netz durchgeführt."
   code "$ONLINE_FETCHES"
-  evidence "online_abrufe" "$ONLINE_FETCHES"
+  # Protokoll der Netzabrufe des Werkzeugs — Betriebsdatum, kein Kundenbefund.
+  evidence "online_abrufe" "$ONLINE_FETCHES" server
 fi
 
 # ============================================================

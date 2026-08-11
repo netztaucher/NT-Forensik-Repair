@@ -10,6 +10,12 @@
 # Wird vom Runner eingebunden, nicht einzeln ausgefuehrt.
 # Vorgabewerte der hier gefuellten Variablen: lib/befunde.sh
 
+# Belegstufe dieses Abschnitts (#1): der Vorgabewert `betreiber`, ausdruecklich.
+# Das Log-Archiv enthaelt die Zugriffe ALLER Domains des Servers — im
+# Anlassfall 527 MB fremder Zugriffe. Es geht nie mit, auch nicht maskiert:
+# eine Maskierung von Logzeilen ist nicht zuverlaessig zu leisten.
+BELEG_STUFE=betreiber
+
 h1 "2. LOGS SICHERN"
 # ============================================================
 

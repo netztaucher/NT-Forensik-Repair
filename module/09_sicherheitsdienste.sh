@@ -10,6 +10,10 @@
 # Wird vom Runner eingebunden, nicht einzeln ausgefuehrt.
 # Vorgabewerte der hier gefuellten Variablen: lib/befunde.sh
 
+# Belegstufe dieses Abschnitts (#1). Firewall und fail2ban gehoeren dem Betreiber, betreffen aber den Schutz
+# des Kunden und duerfen deshalb maskiert mitgehen.
+BELEG_STUFE=server
+
 h1 "9. SICHERHEITS-DIENSTE"
 # ============================================================
 

@@ -68,7 +68,7 @@
 <INODE> -rw-r--r-- <EIGNER> 86 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/plugins/pruefstand-aktuell/pruefstand-aktuell.php
 ```
 
-  Beleg: belege/01_veraenderte_php_dateien.txt
+  Beleg: belege/001_veraenderte_php_dateien.txt
 
 ### 7.2 PHP-Dateien in Upload-Verzeichnissen
 
@@ -80,7 +80,7 @@
 
 ```
 
-  Beleg: belege/02_php_in_uploads_mit_hashes.txt
+  Beleg: belege/002_php_in_uploads_mit_hashes.txt
 
 ### 7.3 Webshell-Muster (Inhalt) — zweistufig
 
@@ -130,7 +130,7 @@ AddType application/x-httpd-php .jpg
 php_value auto_prepend_file /var/www/vhosts/<anderer Kunde 1>/httpdocs/wp-content/uploads/2026/03/bild.php
 ```
 
-  Beleg: belege/03_htaccess_weiterleitungen.txt
+  Beleg: belege/003_htaccess_weiterleitungen.txt
 - 🔴 **KRITISCH: .htaccess gibt gezielt einzelne PHP-Datei(en) frei — typisch für abgesicherte Webshells (3)**
 
 ```
@@ -155,7 +155,7 @@ Order allow,deny
 
 ```
 
-  Beleg: belege/04_htaccess_einzelfreigabe_php.txt
+  Beleg: belege/004_htaccess_einzelfreigabe_php.txt
 
 ### 7.7 SUID/SGID-Dateien in Webspace und tmp-Verzeichnissen
 
@@ -200,7 +200,7 @@ Order allow,deny
 
 ```
 
-  Beleg: belege/05_php_in_mediendateien.txt
+  Beleg: belege/005_php_in_mediendateien.txt
 
 ### 7.14 Massenhaft gleiche Zeitstempel (Spurenverwischung)
 
@@ -268,7 +268,7 @@ Order allow,deny
 2:<Files "filefuns.php">
 ```
 
-  Beleg: belege/06_nextcloud_htaccess_kunde-zwei_example_cloud_kunde-zwei_example.txt
+  Beleg: belege/006_nextcloud_htaccess_kunde-zwei_example_cloud_kunde-zwei_example.txt
 - 🔴 **KRITISCH: kunde-zwei.example/cloud.kunde-zwei.example: verschachtelte Verzeichnisse (z. B. config/config) — typisch für diese Kampagne**
 
 ```
@@ -310,8 +310,8 @@ Order allow,deny
 - 🔴 **KRITISCH: kunde-zwei.example/httpdocs: plugin pruefstand-kev 1.2 ist von einer bekannten Schwachstelle betroffen ((* … 2.0)) CVE-2026-90001 — behoben in 2.0. Diese Lücke wird nachweislich aktiv ausgenutzt — sofort handeln.**
 - ⚠️  **kunde-zwei.example/httpdocs: theme pruefstand-thema 0.9 ist von einer bekannten Schwachstelle betroffen ((* … 1.0)) CVE-2026-90005 — behoben in 1.0.**
 - ⚪ **Nicht messbar: kunde-zwei.example/httpdocs: 2 Bestandteil(e) ohne lesbare Fassung — für sie ist keine Aussage zur Angreifbarkeit möglich**
-  Beleg: belege/07_wp_version_nicht_bewertbar_kunde-zwei_example_httpdocs.txt
-  Beleg: belege/08_wp_schwachstellen_kunde-zwei_example_httpdocs.txt
+  Beleg: belege/007_wp_version_nicht_bewertbar_kunde-zwei_example_httpdocs.txt
+  Beleg: belege/008_wp_schwachstellen_kunde-zwei_example_httpdocs.txt
 - ✅ kunde-zwei.example/httpdocs: keine Doorway-.htaccess-Signatur
 - 🔴 **KRITISCH: kunde-zwei.example/httpdocs: 1 Datei(en) mit @include base64_decode() — getarnte Payload-Nachladung**
 
@@ -319,7 +319,7 @@ Order allow,deny
 <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/mu-plugins/cache.php
 ```
 
-  Beleg: belege/09_wp_include_injektion_kunde-zwei_example_httpdocs.txt
+  Beleg: belege/009_wp_include_injektion_kunde-zwei_example_httpdocs.txt
 - ⚠️  **kunde-zwei.example/httpdocs: 1 mu-Plugin(s) — laufen ohne Aktivierung und erscheinen in keiner Pluginliste**
 
 ```
@@ -332,7 +332,7 @@ Order allow,deny
 <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/plugins/pruefstand-aktuell/pruefstand-aktuell.php
 ```
 
-  Beleg: belege/10_wp_plugin_veraendert_kunde-zwei_example_httpdocs.txt
+  Beleg: belege/010_wp_plugin_veraendert_kunde-zwei_example_httpdocs.txt
 - ⚪ **Nicht messbar: kunde-zwei.example/httpdocs: 2 Plugin(s) ohne Prüfsummensatz und alle Themes — Unversehrtheit nicht feststellbar (Premium, Fork, Eigenbau; für Themes veröffentlicht wordpress.org keine Prüfsummen)**
 - 🔴 **KRITISCH: kunde-zwei.example/httpdocs: 1 veränderte Core-Datei(en) — Injektion oder Manipulation**
 
@@ -340,9 +340,9 @@ Order allow,deny
 <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-includes/load.php
 ```
 
-  Beleg: belege/11_wp_core_veraendert_kunde-zwei_example_httpdocs.txt
+  Beleg: belege/011_wp_core_veraendert_kunde-zwei_example_httpdocs.txt
 - ⚠️  **kunde-zwei.example/httpdocs: 1 Core-fremde Datei(en) in wp-admin/wp-includes — prüfen**
-  Beleg: belege/12_wp_core_fremd_kunde-zwei_example_httpdocs.txt
+  Beleg: belege/012_wp_core_fremd_kunde-zwei_example_httpdocs.txt
 
 ## 13b. .HTACCESS — SICHERUNG UND EINORDNUNG
 
@@ -362,7 +362,7 @@ Order allow,deny                                      Apache-2.2-Zugriffssyntax 
 <Files filefuns.php> … Allow from all                 Sperre fuer alles, Freigabe fuer genau diese eine PHP-Datei
 ```
 
-  Beleg: belege/13_htaccess_fremd_kunde-zwei_example_backups_updater-abc123_nextcloud-28_0_1_2-1700000000__htaccess.txt
+  Beleg: belege/013_htaccess_fremd_kunde-zwei_example_backups_updater-abc123_nextcloud-28_0_1_2-1700000000__htaccess.txt
 - 🔴 **KRITISCH: kunde-zwei.example/cloud.kunde-zwei.example/.htaccess (nextcloud): 3 Angreifer-Direktive(n) in der .htaccess**
 
 ```
@@ -371,7 +371,7 @@ Order allow,deny                                      Apache-2.2-Zugriffssyntax 
 <Files filefuns.php> … Allow from all                 Sperre fuer alles, Freigabe fuer genau diese eine PHP-Datei
 ```
 
-  Beleg: belege/14_htaccess_fremd_kunde-zwei_example_cloud_kunde-zwei_example__htaccess.txt
+  Beleg: belege/014_htaccess_fremd_kunde-zwei_example_cloud_kunde-zwei_example__htaccess.txt
 - 🔴 **KRITISCH: kunde-zwei.example/httpdocs/.htaccess (wordpress): 2 Angreifer-Direktive(n) in der .htaccess**
 
 ```
@@ -379,15 +379,15 @@ AddType application/x-httpd-php .jpg                  PHP-Ausfuehrung fuer eine 
 php_value auto_prepend_file /var/www/vhosts/<anderer Kunde 2>  auto_prepend_file auf eine Datei im Webspace
 ```
 
-  Beleg: belege/15_htaccess_fremd_kunde-zwei_example_httpdocs__htaccess.txt
+  Beleg: belege/015_htaccess_fremd_kunde-zwei_example_httpdocs__htaccess.txt
 - 🔴 **KRITISCH: kunde-zwei.example/httpdocs/wp-content/uploads/.htaccess (unbekannt): 1 Angreifer-Direktive(n) in der .htaccess**
 
 ```
 <Files bild.php> … Allow from all                     Freigabe fuer eine PHP-Datei in einem Verzeichnis, in das keine gehoert
 ```
 
-  Beleg: belege/16_htaccess_fremd_kunde-zwei_example_httpdocs_wp-content_uploads__htaccess.txt
-  Beleg: belege/17_htaccess_einordnung.txt
+  Beleg: belege/016_htaccess_fremd_kunde-zwei_example_httpdocs_wp-content_uploads__htaccess.txt
+  Beleg: belege/017_htaccess_einordnung.txt
 
 ### 13b.3 Wirksamkeit
 

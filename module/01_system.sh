@@ -10,6 +10,10 @@
 # Wird vom Runner eingebunden, nicht einzeln ausgefuehrt.
 # Vorgabewerte der hier gefuellten Variablen: lib/befunde.sh
 
+# Belegstufe dieses Abschnitts (#1). Systemzustand des Servers. Der Kunde bekommt davon nichts — ausser der
+# Betreiber haelt eine Angabe fuer seinen Befund fuer noetig.
+BELEG_STUFE=server
+
 h1 "1. SYSTEM-ÜBERSICHT"
 # ============================================================
 
@@ -64,7 +68,11 @@ if [[ -f "$CHANGELOG" ]]; then
   CHANGELOG_TAIL=$(tail -40 "$CHANGELOG" 2>/dev/null || true)
   info "Letzte Einträge (zum Abgleich mit den Befunden):"
   code "$CHANGELOG_TAIL"
-  evidence "admin_changelog" "$(cat "$CHANGELOG" 2>/dev/null)"
+  # DER Anlassfall für #1: der Betreiber-Changelog nennt SSL-Arbeiten am
+  # Server-Host und interne Betriebsnotizen. Mit dem geprüften Kunden hat er
+  # nichts zu tun — auch maskiert nicht. Er ging trotzdem in einem Kundenpaket
+  # mit, weil ein Beleg bis v3.11 gar keine Einstufung trug.
+  evidence "admin_changelog" "$(cat "$CHANGELOG" 2>/dev/null)" betreiber
 else
   warn "Kein /root/changelog.md — Admin-Änderungen nicht dokumentiert. Befunde können nicht gegen dokumentierte Wartung abgeglichen werden. Empfehlung: Änderungsprotokoll führen."
 fi

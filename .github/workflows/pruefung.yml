@@ -66,6 +66,36 @@ jobs:
           fi
           echo "  ok — keine assoziativen Arrays"
 
+      - name: Belegstufen sind vollständig und plausibel (#1)
+        # Der Prüfstand läuft mit --nur-website; die Abschnitte der Ebene
+        # `system` erzeugen dabei gar keine Belege, und ihre Einstufung wäre
+        # von keinem Vergleich gedeckt. Deshalb hier statisch.
+        run: |
+          fehler=0
+          # 1. Jedes Modul, das Belege erhebt, muss seine Stufe benennen.
+          #    Ohne Angabe gilt `betreiber` — richtig als Vorgabe, aber als
+          #    unausgesprochene Entscheidung wertlos.
+          while IFS= read -r m; do
+            grep -q 'evidence "' "$m" || continue
+            grep -q '^BELEG_STUFE=' "$m" || {
+              echo "::error file=$m::Modul erhebt Belege, benennt aber keine BELEG_STUFE (#1)."
+              fehler=1
+            }
+          done < <(git ls-files 'module/*.sh')
+          # 2. Ein Abschnitt der Ebene `system` darf nichts als `kunde`
+          #    einstufen. Er misst den Server des Betreibers, nicht den
+          #    Webauftritt des geprüften Kunden — genau die Verwechslung, aus
+          #    der #1 entstanden ist.
+          while IFS= read -r m; do
+            grep -qE '^# @ebene:[[:space:]]*system' "$m" || continue
+            if grep -nE '^BELEG_STUFE=kunde|evidence .* kunde$' "$m"; then
+              echo "::error file=$m::Abschnitt der Ebene 'system' stuft einen Beleg als 'kunde' ein (#1)."
+              fehler=1
+            fi
+          done < <(git ls-files 'module/*.sh')
+          [[ $fehler -eq 0 ]] && echo "  ok — Belegstufen vollständig und plausibel"
+          exit $fehler
+
       - name: Selbsttest des Versionsvergleichs
         # Der Abgleich installierter Fassungen gegen Verwundbarkeitsbereiche
         # steht und fällt mit der Ordnung der Versionen. Ist sie an einer

@@ -10,6 +10,11 @@
 # Wird vom Runner eingebunden, nicht einzeln ausgefuehrt.
 # Vorgabewerte der hier gefuellten Variablen: lib/befunde.sh
 
+# Belegstufe dieses Abschnitts (#1). Root-Logins, sudo-Eskalation, SSH-Schluessel: das ist der Server des
+# Betreibers. Es gehoert in den Betreiberbericht und darf, wo es einen
+# Kundenbefund traegt, maskiert mitgehen.
+BELEG_STUFE=server
+
 h1 "13. ROOT- & ESKALATIONS-PRÜFUNG"
 # ============================================================
 # Zentrale Frage: Hat ein Angreifer Root-Rechte erlangt oder blieb der

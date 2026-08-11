@@ -10,6 +10,9 @@
 # Wird vom Runner eingebunden, nicht einzeln ausgefuehrt.
 # Vorgabewerte der hier gefuellten Variablen: lib/befunde.sh
 
+# Belegstufe dieses Abschnitts (#1). SSH-, FTP- und Panel-Zugriffe sind serverweit.
+BELEG_STUFE=server
+
 h1 "3. ZUGRIFFS-ANALYSE"
 # ============================================================
 

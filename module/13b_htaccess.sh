@@ -48,6 +48,9 @@
 # vorkommt. Beide Fehlerrichtungen sind teuer: ein uebersehener Angreifer
 # bleibt drin, eine falsch als fremd eingestufte Regel wird geloescht.
 
+# Belegstufe dieses Abschnitts (#1). Die .htaccess-Dateien liegen im Webbaum des geprueften Auftritts.
+BELEG_STUFE=kunde
+
 h1 "13b. .HTACCESS — SICHERUNG UND EINORDNUNG"
 
 HTA_DIR="${BELEGE_DIR}/htaccess"

@@ -10,6 +10,11 @@
 # Wird vom Runner eingebunden, nicht einzeln ausgefuehrt.
 # Vorgabewerte der hier gefuellten Variablen: lib/befunde.sh
 
+# Belegstufe dieses Abschnitts (#1). Vorgabe `server`, weil dieser Abschnitt beides prueft: den Webbaum des
+# Kunden UND /tmp, /root, /etc. Die Belege aus dem Webbaum sind unten
+# einzeln als `kunde` gekennzeichnet.
+BELEG_STUFE=server
+
 h1 "7. DATEISYSTEM-SCAN"
 # ============================================================
 
@@ -30,7 +35,7 @@ RECENT_PHP=$(find "${SCAN_PATHS[@]}" -name "*.php" -mtime -"$DAYS_BACK" -ls 2>/d
 if [[ -n "$RECENT_PHP" ]]; then
   info "Kürzlich veränderte .php-Dateien:"
   code "$(echo "$RECENT_PHP" | head -30)"
-  evidence "veraenderte_php_dateien" "$RECENT_PHP"
+  evidence "veraenderte_php_dateien" "$RECENT_PHP" kunde
 else
   ok "Keine kürzlich veränderten PHP-Dateien gefunden"
 fi
@@ -118,10 +123,10 @@ SHA256:
 $UPLOAD_HASHES
 
 ALLE FUNDE (inkl. ${GUARD_COUNT} Guard-/Plugin-Dateien, zur Nachvollziehbarkeit):
-$PHP_IN_UPLOADS_RAW"
+$PHP_IN_UPLOADS_RAW" kunde
 else
   ok "Keine verdächtigen PHP-Dateien in Upload-Verzeichnissen (${GUARD_COUNT} legitime Guard-/Plugin-Dateien gefiltert)"
-  [[ -n "$PHP_IN_UPLOADS_RAW" ]] && evidence "php_in_uploads_nur_guards" "$PHP_IN_UPLOADS_RAW"
+  [[ -n "$PHP_IN_UPLOADS_RAW" ]] && evidence "php_in_uploads_nur_guards" "$PHP_IN_UPLOADS_RAW" kunde
 fi
 
 h2 "7.3 Webshell-Muster (Inhalt) — zweistufig"
@@ -180,14 +185,14 @@ if [[ "$WEBSHELL_COUNT" -gt 0 ]]; then
   info "Betroffene Domains (Dropper-Cluster):"
   code "$DROPPER_CLUSTER"
   echo -e "\n**Dropper-Details:**\n\`\`\`\n$DROPPER_DETAIL\n\`\`\`" >> "$REPORT_FILE"
-  evidence "webshell_dropper_kritisch" "$DROPPER_DETAIL"
+  evidence "webshell_dropper_kritisch" "$DROPPER_DETAIL" kunde
 else
   ok "Keine kleinen Obfuskations-Dropper gefunden"
 fi
 
 if [[ "$WEBSHELL_REVIEW" -gt 0 ]]; then
   warn "Obfuskations-Muster in ${WEBSHELL_REVIEW} größeren Datei(en) — manuell prüfen (oft legitime Frameworks)" web
-  evidence "webshell_review_gross" "$REVIEW_DETAIL"
+  evidence "webshell_review_gross" "$REVIEW_DETAIL" kunde
 fi
 
 # ── Zweite Stufe: gefährliche Funktionen in kleinen Dateien ─────────────────
@@ -216,7 +221,7 @@ done < <(grep -rlPi "$PATTERN_REGEX_MED" "${SCAN_PATHS[@]}" --include="*.php" \
 if [[ "$MED_COUNT" -gt 0 ]]; then
   warn "Gefährliche Funktionen (exec-Familie, Bot-Ausblendung, Login-Gate) in ${MED_COUNT} kleinen Datei(en) — sichten" web
   code "$(echo "$MED_DETAIL" | grep '^=== ' | sed 's|=== ||;s| ===||' | head -20)"
-  evidence "gefaehrliche_funktionen_klein" "$MED_DETAIL"
+  evidence "gefaehrliche_funktionen_klein" "$MED_DETAIL" kunde
 else
   ok "Keine gefährlichen Funktionen in kleinen PHP-Dateien"
 fi
@@ -227,7 +232,7 @@ HIDDEN=$(find "${SCAN_PATHS[@]}" -name ".*" -not -name ".htaccess" -not -name ".
 if [[ -n "$HIDDEN" ]]; then
   warn "Versteckte Dateien/Verzeichnisse gefunden — manuell prüfen" web
   code "$HIDDEN"
-  evidence "versteckte_dateien" "$HIDDEN"
+  evidence "versteckte_dateien" "$HIDDEN" kunde
 else
   ok "Keine auffälligen versteckten Dateien"
 fi
@@ -251,7 +256,7 @@ SUSP_NAMES=$(find "${SCAN_PATHS[@]}" -type f \
 if [[ -n "$SUSP_NAMES" ]]; then
   warn "Dateinamen mit verdächtigen Schlüsselwörtern (manuell gegen Inhalt prüfen)" web
   code "$(echo "$SUSP_NAMES" | xargs -r ls -la 2>/dev/null)"
-  evidence "verdaechtige_dateinamen" "$(echo "$SUSP_NAMES" | xargs -r ls -la 2>/dev/null)"
+  evidence "verdaechtige_dateinamen" "$(echo "$SUSP_NAMES" | xargs -r ls -la 2>/dev/null)" kunde
 else
   ok "Keine verdächtigen Dateinamen (außerhalb Core/vendor/cache/plugins)"
 fi
@@ -267,7 +272,7 @@ if [[ -n "$HTACCESS_REDIRECTS" ]]; then
     HT_CONTENT+="=== $f ==="$'\n'"$(cat "$f" 2>/dev/null)"$'\n'
     code "$(cat "$f" 2>/dev/null)"
   done <<< "$HTACCESS_REDIRECTS"
-  evidence "htaccess_weiterleitungen" "$HT_CONTENT"
+  evidence "htaccess_weiterleitungen" "$HT_CONTENT" kunde
 else
   ok "Keine externen Weiterleitungen in .htaccess gefunden"
 fi
@@ -309,7 +314,7 @@ if [[ -n "$HT_WHITELIST" ]]; then
   HT_WL_ANZ=$(grep -c '^=== ' <<< "$HT_WHITELIST" || echo 0)
   crit ".htaccess gibt gezielt einzelne PHP-Datei(en) frei — typisch für abgesicherte Webshells (${HT_WL_ANZ})" web
   code "$HT_WHITELIST"
-  evidence "htaccess_einzelfreigabe_php" "$HT_WHITELIST"
+  evidence "htaccess_einzelfreigabe_php" "$HT_WHITELIST" kunde
 else
   ok "Keine .htaccess mit gezielter Freigabe einzelner PHP-Dateien"
 fi
@@ -378,7 +383,7 @@ IMMUTABLE=$(find "${SCAN_PATHS[@]}" -maxdepth 6 -type f -name "*.php" 2>/dev/nul
 if [[ -n "$IMMUTABLE" ]]; then
   crit "PHP-Dateien mit Immutable-Flag — Malware schützt sich so vor Löschung" web
   code "$IMMUTABLE"
-  evidence "immutable_dateien" "$IMMUTABLE"
+  evidence "immutable_dateien" "$IMMUTABLE" kunde
 else
   ok "Keine Immutable-Flags auf PHP-Dateien (Stichprobe max. 8000 Dateien)"
 fi
@@ -515,7 +520,7 @@ else
         # gehört gesichtet, keiner ist für sich ein Befund.
         warn "php-malware-finder: $PMF_ANZ Datei(en) mit Treffern — nach Regelanzahl sortiert, jeder Treffer gehört gesichtet" web
         code "$(echo "$PMF_RANG" | head -40)"
-        evidence "php_malware_finder_treffer" "$PMF_RANG"
+        evidence "php_malware_finder_treffer" "$PMF_RANG" kunde
     else
         ok "php-malware-finder: keine Treffer"
     fi
@@ -565,7 +570,7 @@ if [[ -n "$MEDIA_HITS" ]]; then
         DISGUISED_PAYLOADS+="$mf"$'\n'
     done <<< "$MEDIA_HITS"
     code "$MEDIA_DETAIL"
-    evidence "php_in_mediendateien" "$MEDIA_DETAIL"
+    evidence "php_in_mediendateien" "$MEDIA_DETAIL" kunde
 else
     ok "Kein PHP-Code in Medien- oder Asset-Dateien"
 fi
@@ -616,7 +621,7 @@ if [[ -n "$ZEIT_CLUSTER" ]]; then
   done <<< "$ZEIT_CLUSTER"
   info "Auffällig viele Dateien mit identischem Zeitstempel — Ursache klären"
   code "$ZC_DETAIL"
-  evidence "zeitstempel_cluster" "$ZC_DETAIL"
+  evidence "zeitstempel_cluster" "$ZC_DETAIL" kunde
 else
   ok "Keine auffälligen Zeitstempel-Häufungen"
 fi

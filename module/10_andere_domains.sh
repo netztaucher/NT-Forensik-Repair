@@ -10,6 +10,12 @@
 # Wird vom Runner eingebunden, nicht einzeln ausgefuehrt.
 # Vorgabewerte der hier gefuellten Variablen: lib/befunde.sh
 
+# Belegstufe dieses Abschnitts (#1): der Vorgabewert `betreiber`, ausdruecklich.
+# Dieser Abschnitt zaehlt auf, welche ANDEREN Kunden auf dem Server liegen.
+# Das ist die Kundenliste des Betreibers. Sie in eine Uebergabe zu legen,
+# waere der Datenschutzverstoss, den #1 verhindern soll.
+BELEG_STUFE=betreiber
+
 h1 "10. ANDERE DOMAINS AUF DEM SERVER"
 # ============================================================
 

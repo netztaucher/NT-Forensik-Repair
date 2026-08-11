@@ -13,6 +13,11 @@
 #
 # Wird vom Runner eingebunden, nicht einzeln ausgefuehrt.
 
+# Belegstufe dieses Abschnitts (#1). Gilt fuer alle Rezepte: sie pruefen je EINE Installation im Pruefumfang.
+# Die Rezeptdateien selbst setzen nichts — sie werden hier hineingeladen und
+# laufen unter dieser Vorgabe.
+BELEG_STUFE=kunde
+
 h1 "12r. ANWENDUNGS-PRÜFREZEPTE"
 
 if [[ ! -d "$REZEPT_DIR" ]]; then

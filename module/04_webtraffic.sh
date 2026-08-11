@@ -10,6 +10,11 @@
 # Wird vom Runner eingebunden, nicht einzeln ausgefuehrt.
 # Vorgabewerte der hier gefuellten Variablen: lib/befunde.sh
 
+# Belegstufe dieses Abschnitts (#1). Bewusst `server` und nicht `kunde`, obwohl die Belege nach Domain benannt
+# sind: im Betreiberlauf stehen darin die Logzeilen ALLER Domains, auch
+# fremder. Was davon zum Kunden darf, entscheidet die Maskierung im Paket.
+BELEG_STUFE=server
+
 h1 "4. WEB-TRAFFIC ANALYSE"
 # ============================================================
 
