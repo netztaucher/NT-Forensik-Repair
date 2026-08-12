@@ -1,63 +1,67 @@
-Wordfence Intelligence Vulnerability Database
-=============================================
+Wordfence Intelligence Vulnerability Database — Lizenz und Vermerke
+====================================================================
 
-DIESE DATEI IST NOCH EIN GERUEST. Solange die Zeile PLATZHALTER weiter unten
-steht, weigert sich werkzeuge/wordpress-daten-update.sh, einen
-Wordfence-Bestand zu schreiben. Das ist Absicht: sobald die Daten im
-oeffentlichen Repository liegen, sind sie ausgeliefert, und die Auflagen
-gelten ab diesem Augenblick.
+DIESE DATEI IST ERZEUGT. Sie wird von werkzeuge/wordpress-daten-update.sh
+bei jedem Bestandsaufbau aus dem Feld 'copyrights' des Feeds neu
+abgeleitet — nicht von Hand gepflegt und nicht aus einer aelteren
+Fassung uebernommen.
 
-Was hier hineingehoert und warum
---------------------------------
+Grund: §5c der Bedingungen behaelt eine einseitige Aenderung vor. Ein
+Lizenztext, der nicht zu dem Bestand passt, mit dem er ausgeliefert
+wird, belegt nichts. Weil Text und Daten aus demselben Abruf stammen,
+kann das hier nicht auseinanderlaufen.
 
-Die Nutzungsbedingungen gewaehren die Weitergabe ausdruecklich (§3a), verlangen
-dafuer aber je Kopie DREI Dinge:
+  Abgerufen am      : 2026-08-12
+  Datensaetze gesamt: 38456
 
-  1. den Copyright-Vermerk von Defiant, Inc.
-  2. den Lizenztext im Wortlaut
-  3. einen Hyperlink auf den jeweiligen Datensatz
+  Hinweis des Feeds : This record contains material that is subject to copyright
 
-Punkt 3 ist erfuellt: die Spalte 'quelle' jeder Zeile in vuln/*.tsv traegt den
-Verweis. Punkt 1 und 2 sind der Grund fuer diese Datei — ein Verweis je Zeile
-genuegt der Auflage nicht.
+Die Auflage verlangt je Kopie drei Dinge. Alle drei sind erfuellt:
 
-Der Wortlaut wird NICHT aus dem Gedaechtnis eingesetzt und NICHT aus einer
-aelteren Fassung uebernommen. Er wird zum Zeitpunkt des Bezugs von der Quelle
-geholt und hier eingefuegt, zusammen mit dem Abrufdatum. Grund: §5c behaelt
-eine einseitige Aenderung der Bedingungen vor. Ein Lizenztext, der nicht zu
-dem Bestand passt, mit dem er ausgeliefert wird, belegt nichts.
+  1. Verweis auf den einzelnen Datensatz — Spalte 'quelle' jeder Zeile
+     in vuln/*.tsv, aus dem Feld 'references' des Feeds.
+  2. Copyright-Vermerk  — unten, im Wortlaut aus der Quelle.
+  3. Lizenztext         — unten, im Wortlaut aus der Quelle.
 
-  Quelle der Bedingungen : https://www.wordfence.com/wordfence-intelligence-terms-and-conditions/
-  Abgerufen am           : [DATUM EINTRAGEN]
-  Fassung/Stand laut Text: [STAND EINTRAGEN]
 
-Copyright-Vermerk
------------------
+defiant
+--------------------
+Betrifft 38456 von 38456 Datensaetzen (100.0 %).
 
-[COPYRIGHT-VERMERK VON DEFIANT, INC. IM WORTLAUT EINSETZEN]
+Copyright-Vermerk im Wortlaut:
 
-Lizenztext
-----------
+  Copyright 2012-2026 Defiant Inc.
 
-[LIZENZTEXT IM WORTLAUT EINSETZEN — vollstaendig, nicht sinngemaess]
+Lizenztext im Wortlaut:
 
-Offene Rechtsfrage: MITRE-Anzeigepflicht
-----------------------------------------
+  Defiant hereby grants you a perpetual, worldwide, non-exclusive, no-charge, royalty-free, irrevocable copyright license to reproduce, prepare derivative works of, publicly display, publicly perform, sublicense, and distribute this software vulnerability information. Any copy of the software vulnerability information you make for such purposes is authorized provided that you include a hyperlink to this vulnerability record and reproduce Defiant's copyright designation and this license in any such copy.
 
-Wordfence nennt fuer die CVE-Anteile eine Anzeigepflicht gegenueber dem
-Endnutzer. Ob die eine Nennung IN DER TREFFERAUSGABE verlangt oder nur eine
-Beilage, ist nicht geklaert; zwei gegenlaeufige Auslegungen wurden in der
-Recherche beide verworfen (docs/recherche-schwachstellenquellen.md).
+  Bedingungen: https://www.wordfence.com/wordfence-intelligence-terms-and-conditions/
 
-Die beiden Auslegungen fuehren zu verschiedenem Aufwand:
+mitre
+--------------------
+Betrifft 35662 von 38456 Datensaetzen (92.7 %).
 
-  Beilage genuegt          -> diese Datei und NOTICE reichen aus
-  Nennung in der Ausgabe   -> es braucht ein Autorenfeld im Befundschema, das
-                              bis in findings.json und den Bericht durchgereicht
-                              wird. Das ist genau die Aenderung aus Issue #13,
-                              dort fuer DRL-lizenzierte Regelwerke beschrieben.
+Copyright-Vermerk im Wortlaut:
 
-Vor der ersten Auslieferung ist die Frage zu entscheiden. Wird die zweite
-Auslegung gewaehlt, ist #13 kein Nebenschauplatz mehr, sondern Voraussetzung.
+  Copyright 1999-2026 The MITRE Corporation
 
-PLATZHALTER — diese Zeile entfernen, wenn oben alles eingesetzt ist.
+Lizenztext im Wortlaut:
+
+  CVE Usage: MITRE hereby grants you a perpetual, worldwide, non-exclusive, no-charge, royalty-free, irrevocable copyright license to reproduce, prepare derivative works of, publicly display, publicly perform, sublicense, and distribute Common Vulnerabilities and Exposures (CVE®). Any copy you make for such purposes is authorized provided that you reproduce MITRE's copyright designation and this license in any such copy.
+
+  Bedingungen: https://www.cve.org/Legal/TermsOfUse
+
+
+Zur MITRE-Anzeigepflicht — entschieden
+--------------------------------------
+
+Beide Lizenztexte binden die Weitergabe wortgleich an 'reproduce ... in
+any such copy'. Keiner von beiden verlangt eine Nennung gegenueber dem
+Endnutzer oder in der Trefferausgabe. Diese Datei reist mit dem Bestand
+und ist damit die Kopie, in der die Vermerke stehen.
+
+Daraus folgt: eine Beilage genuegt. Ein Autorenfeld im Befundschema
+(Issue #13) ist fuer diese Quelle keine Voraussetzung. Waere es eine,
+stuende hier der Grund; die Frage war vor der ersten Auslieferung offen
+und ist am 2026-08-12 aus dem Wortlaut des Feeds beantwortet worden.
