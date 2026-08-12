@@ -2,7 +2,31 @@
 
 Alle nennenswerten Änderungen an `wp_plesk_forensik.sh`.
 
-## [unveröffentlicht]
+## [3.12.0] — 2026-08-11
+
+Diese Fassung räumt hinter einem Umbau auf, den niemand als unfertig erkannt
+hatte. Beim Umzug der WordPress- und Nextcloud-Prüfungen nach `rezepte/` waren
+zwölf Befundvariablen stehengeblieben, die seither niemand mehr füllte —
+`findings.json` gab sie weiter aus, als leere Listen. Eine leere Liste liest
+sich wie „nichts gefunden". Der Reparaturteil bekam seither keine
+Quarantäne-Kandidaten mehr, und zwei Zähler standen dauerhaft auf 0, während
+derselbe Bericht die Funde namentlich auflistete.
+
+Der zweite Schwerpunkt ist die **Trennung zwischen Betreiber und Kunde**: jeder
+Beleg trägt jetzt eine Einstufung, und aus einem Lauf lässt sich ein
+übergabefähiges Paket schnüren, statt es von Hand zu sortieren.
+
+Der dritte ist **weniger Rauschen**: der fremde YARA-Regelsatz filtert seine
+Trefferliste gegen Dateien, die als unverändert gegenüber dem Original
+bestätigt sind. Im Prüfstand rückt der eingebaute Schadcode damit von hinten
+auf Platz 1.
+
+Was diese Fassung nicht kann, steht bei den einzelnen Einträgen. Die Fassung
+selbst erzwingt übrigens **keine neue Prüfstand-Referenz mehr** — die
+Normalisierung erfasst die Bannerzeile jetzt mit; bis v3.11 tat sie es nicht,
+und jede Neuaufnahme nach einem Versionssprung übernahm stillschweigend jede
+echte Abweichung mit, die im selben Sprung entstanden war.
+
 
 ### Neu — Composer-Abhängigkeiten der Plugins gegen GHSA prüfen (#14)
 
