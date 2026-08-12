@@ -771,12 +771,12 @@ except Exception:
         jnum=$(j_vernum "$jver")
         if [[ "$jnum" -gt 0 ]]; then
           _hits=""
-          while IFS=$'\t' read -r _lo _hi _cve _sev _typ; do
+          while IFS=$'\x1f' read -r _lo _hi _cve _sev _typ; do
             [[ "${_lo:0:1}" == "#" || -z "${_cve:-}" ]] && continue
             _lonum=$(j_vernum "$_lo"); _hinum=$(j_vernum "$_hi")
             [[ "$_lonum" -gt 0 && "$jnum" -ge "$_lonum" && "$jnum" -le "$_hinum" ]] || continue
             _hits+="${_cve}"$'\t'"${_sev:-}"$'\t'"${_typ:-}"$'\n'
-          done < "$_corecve"
+          done < <(tr '\t' '\037' < "$_corecve")
           if [[ -n "$_hits" ]]; then
             _n=$(printf '%s\n' "$_hits" | grep -c . || true)
             _hoch=$(printf '%s' "$_hits" | grep -ciE '	High	|	Critical	' || true)
@@ -831,7 +831,7 @@ for zeile in sys.stdin.read().splitlines():
 
           # a) Tabelle der Fälle mit belegter Massenausnutzung
           if [[ -f "$_krit" ]]; then
-            while IFS=$'\t' read -r _kel _kfolder _kmax _kfix _kcve _kkev _khinweis; do
+            while IFS=$'\x1f' read -r _kel _kfolder _kmax _kfix _kcve _kkev _khinweis; do
               [[ "${_kel:0:1}" == "#" || -z "${_kel:-}" ]] && continue
               [[ "$_kel" == "$_el" ]] || continue
               # Ordner nur vergleichen, wenn die Tabelle einen nennt — sonst
@@ -851,12 +851,12 @@ for zeile in sys.stdin.read().splitlines():
                 JOOMLA_FLAGS=$((JOOMLA_FLAGS+1))
                 _vuln+="${_el}"$'\t'"${_v}"$'\t'"${_kcve}"$'\n'
               fi
-            done < "$_krit"
+            done < <(tr '\t' '\037' < "$_krit")
           fi
 
           # b) Liste verwundbarer Erweiterungen
           if [[ -f "$_vel" ]]; then
-            while IFS=$'\t' read -r _vell _veltyp _velf _velname _velpatch _velstatus _velcve _velurl; do
+            while IFS=$'\x1f' read -r _vell _veltyp _velf _velname _velpatch _velstatus _velcve _velurl; do
               [[ "${_vell:0:1}" == "#" || -z "${_vell:-}" ]] && continue
               [[ "$_vell" == "$_el" ]] || continue
               [[ -z "${_velf:-}" || "${_velf}" == "-" || "${_velf}" == "${_folder}" ]] || continue
@@ -876,7 +876,7 @@ for zeile in sys.stdin.read().splitlines():
                   _vuln+="${_el}"$'\t'"${_v}"$'\t'"< ${_velpatch}"$'\n'
                 fi
               fi
-            done < "$_vel"
+            done < <(tr '\t' '\037' < "$_vel")
           fi
         done <<< "$_extver"
 

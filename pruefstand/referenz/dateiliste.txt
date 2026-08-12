@@ -3,6 +3,7 @@
 ./.online/plugin-checksums/pruefstand-alt-2.0.3.json
 ./.online/plugin-checksums/pruefstand-kev-1.2.json
 ./.online/plugin-checksums/pruefstand-kev-3.0.json
+./.online/plugin-checksums/pruefstand-ohne-fix-1.0.json
 ./.pruefsummen_bestaetigt.txt
 ./.pruefsummen_kern.txt
 ./betreiber/00_LIESMICH.txt

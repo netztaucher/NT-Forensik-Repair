@@ -172,7 +172,21 @@ rezept_version() {
 
   # Betroffene einzeln melden — anders als beim ⚪ unten ist hier jeder Fall
   # eine eigene Handlung: dieses Plugin auf diese Fassung bringen.
-  while IFS=$'\t' read -r zustand typ slug version bereich behoben cve kev _quelle; do
+  # TAB IST IN BASH EIN IFS-WHITESPACE-ZEICHEN.
+  #
+  # Auch wenn IFS nur auf Tab steht, gilt eine Folge von Tabs als EIN Trenner.
+  # Leere Mittelfelder verschwinden damit, und alles dahinter rutscht nach
+  # links. Bei einem Datensatz ohne behobene Fassung (26 % des Bestandes) stand
+  # deshalb im Bericht die Quell-URL an der Stelle der CVE-Nummer und die
+  # CVE-Nummer hinter "behoben in".
+  #
+  # Der Prüfbaum konnte das nicht sehen: seine Fixture-Zeilen führen in jedem
+  # Feld einen Wert. Gefunden hat es der erste Lauf gegen eine echte
+  # Installation.
+  #
+  # Unit Separator (0x1f) ist kein Whitespace — dort bleiben leere Felder
+  # erhalten.
+  while IFS=$'\x1f' read -r zustand typ slug version bereich behoben cve kev _quelle; do
     [[ "$zustand" == "BETROFFEN" ]] || continue
     # "composer guzzlehttp/guzzle" liest sich fuer einen Kunden wie ein
     # Werkzeugname. Gemeint ist eine Programmbibliothek, die ein Plugin
@@ -187,7 +201,7 @@ rezept_version() {
     else
       befund_melden wordpress version warn "${satz}." "$REZ_PFAD" web
     fi
-  done <<< "$ergebnis"
+  done <<< "${ergebnis//$'\t'/$'\x1f'}"
 
   n_betroffen=$(printf '%s\n' "$ergebnis" | grep -c '^BETROFFEN' || true)
   n_unbewertbar=$(printf '%s\n' "$ergebnis" | grep -c '^UNBEWERTBAR' || true)
