@@ -208,6 +208,81 @@ Ein Protokolleintrag belegt, dass jemand einen bekannten Angriffsweg *ausprobier
 - **Verschlüsselte/gestagte Payloads**, die erst zur Laufzeit nachladen, sind statisch schwer zu fassen.
 - Der Dateinamen-Check (§7.5) ist bewusst nur eine ⚠️ — er ist namensbasiert und rauschanfällig.
 
+---
+
+## 9. Warum kein fremdes Regelwerk übernommen ist
+
+Die Signaturen dieses Werkzeugs sind selbst geschrieben. Das ist keine
+Erfindungsfreude, sondern eine Lizenzentscheidung — und sie kostet Abdeckung,
+deshalb steht sie hier.
+
+### Der Konflikt: Urhebernennung in der Trefferausgabe
+
+Die einschlägigen offenen Regelwerke stehen unter der **Detection Rule License
+1.1**, allen voran die SigmaHQ-Regeln. Die DRL ist **nicht** grundsätzlich
+unvereinbar: sie erlaubt kommerzielle Nutzung, Verkauf, Änderung und Weitergabe,
+kostenfrei.
+
+Sie verlangt die Urhebernennung aber **in der Trefferausgabe**. Eine Meldung,
+die auf einem Regel-Match beruht, muss die Autorenkennung mitführen. Bei
+Weitergabe müssen zusätzlich `author`, ein Verweis auf das Regelset und der
+Lizenztext erhalten bleiben.
+
+Für dieses Werkzeug heißt das: der Regelautor müsste bis in `findings.json` und
+in den Bericht durchgereicht werden. `befund_melden` führt heute App,
+Kategorie, Schwere, Text und Pfad — **ein Autorenfeld je Regel gibt es nicht.**
+
+Das ist eine Änderung am Ausgabevertrag gegenüber NT-Repair. Und in einem
+Bericht ans BSI ist eine erklärungsbedürftige Fremdkennung neben jedem Befund
+kein Detail.
+
+Dieselbe Klausel hat schon dazu geführt, dass `signature-base` für die
+Joomla-Prüfung nicht übernommen wurde.
+
+### Zur Abgrenzung: Wordfence Intelligence ist ein anderer Fall
+
+Der Schwachstellenbestand (§12) stammt aus einer fremden Quelle und wird
+mitgeliefert — dort trägt die Auflage. Grund: Defiant und MITRE binden die
+Weitergabe wortgleich an *reproduce … in any such copy*, verlangen also eine
+**Beilage** und keine Nennung in der Ausgabe. `LICENSE` und `NOTICE` genügen.
+
+Das ist genau der Unterschied, an dem die DRL scheitert. Siehe
+`rezepte/wordpress/daten/QUELLEN.md`.
+
+### Was sich ändern müsste
+
+Falls einmal ein DRL-Regelwerk konkret gebraucht wird:
+
+1. optionales Feld `regel_autor` (plus Regelset-URI) in `befund_melden`
+2. Durchreichen nach `findings.json` und in die Berichte — mindestens Technik-
+   und Betreiberspur; ob in den Kundenbericht, wäre eine eigene Entscheidung
+3. **Erst danach** das Regelwerk übernehmen
+
+Das Feld hinzuzufügen ist am `findings.json`-Vertrag verträglich — neue Felder
+sind erlaubt, siehe `docs/findings-schnittstelle.md`. Ohne konkretes Regelwerk
+wäre es aber ein Feld, das nichts trägt.
+
+### Was stattdessen die Abdeckung liefert
+
+§13c nutzt einen fremden Regelsatz — `php-malware-finder` — und zwar auf dem
+einzigen Weg, der ohne Autorenfeld gangbar ist. Zwei Eigenschaften zusammen
+machen ihn möglich:
+
+1. **Er wird nicht mitgeliefert.** Der Satz steht unter LGPL-3.0, dieses
+   Repository unter MIT; er wird vor Ort geholt. Damit stellt sich die Frage
+   der Weitergabe gar nicht erst.
+2. **Seine Treffer sind keine Befunde.** Der Abschnitt heißt
+   *Suchhilfsmittel* und beantwortet „Welche Datei sollte ein Prüfer sich
+   zuerst ansehen?" — er erzeugt eine Rangfolge für die Sichtung, keine
+   Meldung. Ohne Trefferausgabe keine Nennungspflicht in der Trefferausgabe.
+
+Beides muss gelten. Ein mitgelieferter Satz wäre auch als Sichtungshilfe ein
+Weitergabefall; ein Satz, dessen Treffer zu Befunden werden, bräuchte auch
+ungebündelt das Autorenfeld.
+
+Was dort auffällt, führt zu einer **eigenen** Regel oder zu gar keiner — aber
+nie zu einer übernommenen.
+
 Deshalb gilt: Das Tool **beschleunigt und dokumentiert** die Forensik, ersetzt aber nicht das geschulte Auge bei der Bewertung.
 
 ---
