@@ -30,7 +30,7 @@
 [1m[0;34m══════════════════════════════════════════[0m
 
 [0;36m▶ 7.0 Datei-Inventar (Inode und Zeitstempel sichern)[0m
-  [0m·  Inventar: 634 Datei(en) erfasst, davon 634 mit Anlegezeit (belege/00_dateien.tsv)
+  [0m·  Inventar: 636 Datei(en) erfasst, davon 636 mit Anlegezeit (belege/00_dateien.tsv)
 
 [0;36m▶ 7.1 Kürzlich veränderte PHP-Dateien (letzte 30 Tage)[0m
   [0;33mDurchsuche Webspace (kann dauern...)[0m
@@ -123,6 +123,7 @@
 [0;36m▶ 12r.2.x kunde-drei.example/httpdocs[0m
   [0;36m⚪[0m kunde-drei.example/httpdocs: 1 Bestandteil(e) ohne lesbare Fassung — für sie ist keine Aussage zur Angreifbarkeit möglich
   [0;32m✓[0m kunde-drei.example/httpdocs: keine bekannte Schwachstelle im vorliegenden Datenbestand (Stand <STAND>)
+  [0m·  kunde-drei.example/httpdocs: robots.txt vorhanden, zuletzt geändert <ZEIT> — als Zeitanker vermerkt
   [0;32m✓[0m kunde-drei.example/httpdocs: keine Doorway-.htaccess-Signatur
   [0;32m✓[0m kunde-drei.example/httpdocs: keine @include base64_decode()-Injektion
   [0;32m✓[0m kunde-drei.example/httpdocs: 2 Plugin(s) gegen wordpress.org geprüft — keine veränderte Codedatei
@@ -147,6 +148,7 @@
   [0;33m⚠[0m  kunde-zwei.example/httpdocs: theme pruefstand-thema 0.9 ist von einer bekannten Schwachstelle betroffen ((* … 1.0)) CVE-2026-90005 — behoben in 1.0.
   [0;33m⚠[0m  kunde-zwei.example/httpdocs: Bibliothek (in einem Plugin) pruefstand/bibliothek 1.2.0 ist von einer bekannten Schwachstelle betroffen ([1.0.0 … 1.4.0)) CVE-2026-90006 — behoben in 1.4.0.
   [0;36m⚪[0m kunde-zwei.example/httpdocs: 5 Bestandteil(e) ohne lesbare Fassung — für sie ist keine Aussage zur Angreifbarkeit möglich
+  [0;31m✗[0m  [1mkunde-zwei.example/httpdocs: robots.txt verweist auf eine Sitemap über index.php/ — Kennzeichen eines Doorway-Generators IN der Datenbank; ein Dateiscan findet ihn nicht (robots.txt vom <ZEIT>)[0m
   [0;32m✓[0m kunde-zwei.example/httpdocs: keine Doorway-.htaccess-Signatur
   [0;31m✗[0m  [1mkunde-zwei.example/httpdocs: 1 Datei(en) mit @include base64_decode() — getarnte Payload-Nachladung[0m
   [0;33m⚠[0m  kunde-zwei.example/httpdocs: 1 mu-Plugin(s) — laufen ohne Aktivierung und erscheinen in keiner Pluginliste
@@ -207,7 +209,7 @@
 [1m[0;32m  ANALYSE ABGESCHLOSSEN — Lauf <LAUF-ID>[0m
 [1m[0;32m══════════════════════════════════════════[0m
 
-[1mBefunde:[0m       🔴 15 kritisch, ⚠️ 17 Warnungen, ✅ 22 ok, ⚪ 9 nicht messbar
+[1mBefunde:[0m       🔴 16 kritisch, ⚠️ 17 Warnungen, ✅ 22 ok, ⚪ 9 nicht messbar
 [0;33m               9 Prüfung(en) ohne Ergebnis — das ist keine Entwarnung.[0m
                  Webshell-Mustersuche nicht ausgeführt — grep beherrscht kein -P (PCRE). Auf macOS ist BSD-grep die Vorgabe; GNU grep oder ugrep installieren. Das ist KEINE Entwarnung.
                  kunde-zwei.example/cloud.kunde-zwei.example: Werkzeug antwortet nicht verwertbar — nicht geprüft

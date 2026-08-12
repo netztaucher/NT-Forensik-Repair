@@ -526,6 +526,48 @@ rezept_kern() {
 
 # ── Dateibasierte Merkmale ───────────────────────────────────
 rezept_sonder() {
+  # ── Vergiftete robots.txt (#47) ────────────────────────────
+  #
+  # Der Doorway-Generator der SEO-Spam-Kampagne sitzt in der DATENBANK, nicht
+  # auf der Platte. Ein reiner Dateiscan meldet die Kampagne als sauber — und
+  # genau das tat dieses Werkzeug beim Befall vom 12.08.2026 auf 23 Seiten.
+  #
+  # Was der Angreifer aber anfassen MUSS, ist die robots.txt: Google findet die
+  # Doorway-Seiten sonst nicht. Dort stand:
+  #
+  #   Sitemap: https://…/index.php/sitemap.xml
+  #
+  # WAS HIER KEIN BEFUND IST — und das ist der wichtige Teil:
+  # WordPress liefert seit 5.5 selbst eine VIRTUELLE Sitemap unter
+  # /wp-sitemap.xml, Yoast unter /sitemap_index.xml. "Sitemap ohne Datei" ist
+  # also der Normalfall. Wer darauf anschlaegt, meldet jede gepflegte Seite.
+  #
+  # Das Merkmal ist der Pfad DURCH index.php: die PATHINFO-Form
+  # 'index.php/…' benutzt kein verbreitetes Plugin. Sie ist der Weg, eine
+  # beliebige Adresse von PHP beantworten zu lassen, ohne Rewrite-Regeln zu
+  # brauchen — und damit ohne Spur im Dateisystem.
+  #
+  # Die mtime der Datei ist nebenbei der ZEITANKER: sie ueberlebt, weil
+  # niemand robots.txt ansieht. Im Vorfall war sie zwei Wochen aelter als das
+  # aelteste Zugriffsprotokoll und datierte den Einbruch 19 Tage zurueck.
+  if [[ -f "${REZ_PFAD}/robots.txt" ]]; then
+    local _sm _mt
+    _sm=$(grep -iE '^[[:space:]]*Sitemap:' "${REZ_PFAD}/robots.txt" 2>/dev/null || true)
+    _mt=$(datei_meta "${REZ_PFAD}/robots.txt" mtime 2>/dev/null || true)
+    if printf '%s' "$_sm" | grep -qE 'index\.php/'; then
+      befund_melden wordpress schadcode crit \
+        "${REZ_KURZ}: robots.txt verweist auf eine Sitemap über index.php/ — Kennzeichen eines Doorway-Generators IN der Datenbank; ein Dateiscan findet ihn nicht${_mt:+ (robots.txt vom ${_mt})}" \
+        "${REZ_PFAD}/robots.txt" web
+      code "$_sm"
+      evidence "wp_robots_doorway_$(echo "$REZ_KURZ" | tr '/.' '__')" \
+               "${REZ_PFAD}/robots.txt   mtime: ${_mt:-?}"$'\n'"$_sm" kunde
+    elif [[ -n "$_sm" ]]; then
+      # Kein Verdacht — nur der Zeitanker. Eine gegenstaendliche robots.txt in
+      # einer WordPress-Wurzel ist verbreitet und voellig legitim.
+      info "${REZ_KURZ}: robots.txt vorhanden${_mt:+, zuletzt geändert ${_mt}} — als Zeitanker vermerkt"
+    fi
+  fi
+
   # Doorway-.htaccess: eine FilesMatch-Regel, die nur index.php und cache.php
   # zulässt. Kleine Datei, eindeutige Signatur.
   local DW
