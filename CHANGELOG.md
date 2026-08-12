@@ -14,6 +14,21 @@ Jetzt liegen **45.121 Zeilen auf 18.062 verschiedene Slugs** in
 `rezepte/wordpress/daten/vuln/`. Der erste echte Abruf war zugleich der erste
 Formattest — von 38.456 Datensätzen wurde **kein einziger verworfen**.
 
+### Behoben — das Manifest bestätigte seine eigene Lieferung nicht
+
+`MANIFEST.sha256` führte einen veralteten Hash für `NOTICE`: die Datei war
+**nach** dem Erzeugen des Manifests noch bearbeitet worden. `shasum -c` schlug
+damit auf `main` fehl.
+
+Das Manifest ist der Beleg dafür, gegen welchen Datenstand ein Befund
+entstanden ist — für einen Bericht an einen Kunden oder ans BSI ist das keine
+Nebensache. Eines, das seine eigene Lieferung nicht bestätigt, belegt nichts,
+und es fällt niemandem auf, solange es niemand nachrechnet.
+
+Gefunden hat es der neue Zeitplan bei seinem ersten echten Lauf, an der
+einzigen Stelle, an der jemand nachrechnete. Der Lizenz-Prüfstand rechnet es
+jetzt bei jedem Lauf nach — genannt zu sein genügt nicht.
+
 ### Hinzugefügt — der Bestand erneuert sich selbst, wöchentlich
 
 `.github/workflows/schwachstellen-bestand.yml`, montags, dazu von Hand über
