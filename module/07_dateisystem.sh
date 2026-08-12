@@ -526,12 +526,27 @@ h2 "7.13 PHP-Code in Medien- und Asset-Dateien"
 # Gesucht wird ausschliesslich der vollständige Öffner "<?php". Die Kurzformen
 # "<?=" und "<?" sind zwei bis drei Bytes und treten in Binärdaten zufällig
 # auf — ein Versuch damit erzeugte 5.323 Fehlalarme auf einem einzigen Webspace.
+# DIE ENDUNGSLISTE WAR AN VIDEOS BLIND — GEMESSEN AM ECHTEN BEFALL
+#
+# Am 12.08.2026 lagen auf einem Server mit 475 vhosts 32 getarnte Nutzlasten.
+# Dieser Abschnitt fand 17. Die fehlenden 15 hiessen .avi (7), .mov (5),
+# .wmv (4), .mpg, .mpeg — die Liste kannte von den Bewegtbildformaten nur
+# .mp4. Ein Angreifer, der seine Shell "video.avi" nennt, war unsichtbar.
+#
+# Bewusst NICHT aufgenommen: .js und .css. Dieselbe Messung fand dort 39 bzw.
+# 30 Dateien mit <?php — durchweg legitime, von PHP erzeugte Templates. Sie
+# aufzunehmen haette 69 Fehlalarme erzeugt und den Abschnitt entwertet.
 MEDIA_HITS=$(find "${SCAN_PATHS[@]}" -type f -size -20M \
     \( -iname "*.png" -o -iname "*.jpg" -o -iname "*.jpeg" -o -iname "*.gif" \
        -o -iname "*.webp" -o -iname "*.bmp" -o -iname "*.ico" -o -iname "*.svg" \
        -o -iname "*.tif" -o -iname "*.tiff" -o -iname "*.woff" -o -iname "*.woff2" \
        -o -iname "*.ttf" -o -iname "*.otf" -o -iname "*.eot" -o -iname "*.pdf" \
-       -o -iname "*.mp3" -o -iname "*.mp4" -o -iname "*.wav" \) 2>/dev/null \
+       -o -iname "*.mp3" -o -iname "*.mp4" -o -iname "*.wav" \
+       -o -iname "*.avi" -o -iname "*.mov" -o -iname "*.wmv" \
+       -o -iname "*.mpg" -o -iname "*.mpeg" -o -iname "*.m4v" \
+       -o -iname "*.mkv" -o -iname "*.webm" -o -iname "*.flv" \
+       -o -iname "*.ogg" -o -iname "*.oga" -o -iname "*.ogv" \
+       -o -iname "*.aac" -o -iname "*.flac" -o -iname "*.m4a" -o -iname "*.wma" \) 2>/dev/null \
   | nf_strip_self \
   | tr '\n' '\0' \
   | xargs -0 -r -P4 -n200 grep -laF '<?php' 2>/dev/null | sort -u || true)

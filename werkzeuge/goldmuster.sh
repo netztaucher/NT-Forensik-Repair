@@ -406,6 +406,19 @@ PHP
   # Als Nicht-PHP getarnte Nutzlast.
   printf '\x89PNG\r\n\x1a\n<?php system($_GET["x"]); ?>\n' \
     > "${k2}/wp-content/uploads/2026/03/logo.png"
+  # Bewegtbild-Endungen — die Luecke aus dem echten Befall vom 12.08.2026.
+  #
+  # Dort lagen 32 getarnte Nutzlasten, 7.13 fand 17. Die fehlenden 15 hiessen
+  # .avi (7), .mov (5), .wmv (4), .mpg, .mpeg: die Endungsliste kannte von den
+  # Videoformaten nur .mp4. Der Pruefbaum kannte die Luecke ebenfalls nicht —
+  # er hatte nur .png.
+  #
+  # Ohne Verdachtsmerkmal im Code, wie bei der PNG-Probe weiter unten: gesucht
+  # ist der BEHAELTER, nicht was das PHP tut.
+  printf 'RIFF\x00\x00\x00\x00AVI <?php $u="https://beispiel.invalid/n.php"; ?>\n' \
+    > "${k2}/wp-content/uploads/2026/03/clip.avi"
+  printf '\x00\x00\x00\x14ftypqt  <?php $u="https://beispiel.invalid/n.php"; ?>\n' \
+    > "${k2}/wp-content/uploads/2026/03/clip.mov"
   # Zweite getarnte Nutzlast — bewusst OHNE jedes Verdachtsmerkmal.
   #
   # Die Probe darueber enthaelt system($_GET[…]) und schlaegt damit auch bei

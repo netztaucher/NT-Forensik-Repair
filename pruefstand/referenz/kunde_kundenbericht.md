@@ -32,17 +32,17 @@
 
 ## 3. Was wir technisch gefunden haben
 
-- **20 Schadcode-Fundstelle(n)** in Ihrem Webauftritt. Was jede einzelne ist und wozu sie dient, steht in der Einordnung unten und vollständig in `befunde_details.md`.
+- **22 Schadcode-Fundstelle(n)** in Ihrem Webauftritt. Was jede einzelne ist und wozu sie dient, steht in der Einordnung unten und vollständig in `befunde_details.md`.
 - 1 weitere Fundstelle(n) sind noch einzuordnen — sie sind kein belegter Schadcode, aber auch nicht abgehakt. Liste in `befunde_details.md`.
 
-**Schadcode-Einordnung — 20 Fundstelle(n):**
+**Schadcode-Einordnung — 22 Fundstelle(n):**
 
 | Art | Anzahl | Was damit bezweckt wird |
 |---|---|---|
 | Verändertes Plugin | 8 | Fremder Code in einem legitimen Plugin — nachträglich eingebaute Hintertür |
+| Getarnte Payload | 4 | Nachladbarer Schadcode in Nicht-PHP-Datei |
 | Manipulierte .htaccess | 4 | Zugriffsregeln zugunsten des Angreifers — hält seine Dateien erreichbar und sperrt Mitbewerber aus |
 | Code-Injection | 2 | Schadcode in legitime Dateien eingeschleust |
-| Getarnte Payload | 2 | Nachladbarer Schadcode in Nicht-PHP-Datei |
 | PHP im Upload-Verzeichnis | 2 | Ausführbarer Code dort, wo nur Dateien liegen sollen — der klassische Weg einer hochgeladenen Shell |
 | Bekannte Schaddatei | 1 | Nach Namensmuster erkanntes Angriffswerkzeug (Dateimanager, Uploader, Shell) |
 | Tarnstruktur | 1 | Angelegte Verzeichnisse, die echte nachahmen — Ablage für Nutzlasten |
@@ -54,7 +54,7 @@
 
 - PHP-Dateien in Upload-Verzeichnissen (nach Guard-Filter, extrem verdächtig; 4 Guard-/Plugin-Dateien gefiltert)
 - .htaccess gibt gezielt einzelne PHP-Datei(en) frei — typisch für abgesicherte Webshells (3)
-- PHP-Code in 2 Mediendatei(en) — in einem echten Bild gehört kein PHP
+- PHP-Code in 4 Mediendatei(en) — in einem echten Bild gehört kein PHP
 - kunde-zwei.example/cloud.kunde-zwei.example: bekannte Schaddatei der Nextcloud-Kampagne (filefuns.php)
 - kunde-zwei.example/cloud.kunde-zwei.example: Root-.htaccess trägt Angreifer-Merkmale (Freigabeliste mit fremden Dateinamen)
 - kunde-zwei.example/cloud.kunde-zwei.example: verschachtelte Verzeichnisse (z. B. config/config) — typisch für diese Kampagne

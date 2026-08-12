@@ -270,6 +270,45 @@ Kunde 1 mit genau einem Mustertreffer, der entlastet wird.
 Damit sind es drei Lagen statt zwei: nichts entlastet, teilweise entlastet,
 alles entlastet. Der halbvolle Fall allein übersieht den leeren.
 
+## [unveröffentlicht]
+
+### Behoben — §7.13 war an Videoformaten blind: 17 von 32 Nutzlasten gefunden
+
+Gemessen an einem **echten Befall** auf einem Server mit 475 vhosts
+(12.08.2026, parallele Vorfallsuntersuchung). Dort lagen 32 als Mediendateien
+getarnte Hintertüren. Dieser Abschnitt fand **17**.
+
+Die fehlenden 15: `.avi` (7), `.mov` (5), `.wmv` (4), `.mpg`, `.mpeg`. Die
+Endungsliste kannte von den Bewegtbildformaten **nur `.mp4`**. Wer seine Shell
+`video.avi` nennt, war unsichtbar.
+
+Aufgenommen sind jetzt zusätzlich `.avi .mov .wmv .mpg .mpeg .m4v .mkv .webm
+.flv .ogg .oga .ogv .aac .flac .m4a .wma`.
+
+**Bewusst nicht aufgenommen: `.js` und `.css`.** Dieselbe Messung fand dort 39
+bzw. 30 Dateien mit `<?php` — durchweg legitime, von PHP erzeugte Templates.
+Sie aufzunehmen hätte 69 Fehlalarme erzeugt und den Abschnitt entwertet.
+
+Der Prüfbaum kannte die Lücke ebenfalls nicht — er hatte nur `.png`. Neu sind
+eine `.avi` und eine `.mov`, beide ohne Verdachtsmerkmal im Code: geprüft wird
+der Behälter, nicht was das PHP tut. Die Referenz geht damit von 2 auf 4
+erkannte Mediendateien.
+
+### Behoben — FastCGI galt als verdächtiger Prozess
+
+§8.2e meldete „Web-User haben eigene (Nicht-PHP-FPM-)Prozesse — prüfen". Der
+Filter kannte nur `php-fpm`. Auf einem Server mit 475 vhosts laufen aber
+regelmäßig Seiten im FastCGI-Modus, und deren Prozesse heißen `php-cgi`:
+
+```
+web72   /opt/plesk/php/8.3/bin/php-cgi -c .../nightworks-berlin.de/etc/php.ini
+```
+
+Bei der Messung war **jeder einzelne Treffer** dieses Abschnitts ein solcher
+`php-cgi`. Ein Befund, der auf einer verbreiteten Betriebsart immer anschlägt,
+wird beim nächsten Mal überlesen — und dann fällt auch der echte nicht mehr
+auf.
+
 ## [3.14.0] — 2026-08-12
 
 Eine Fassung mit einem Thema: **der Schwachstellenabgleich läuft nicht mehr

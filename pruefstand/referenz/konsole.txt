@@ -30,7 +30,7 @@
 [1m[0;34m══════════════════════════════════════════[0m
 
 [0;36m▶ 7.0 Datei-Inventar (Inode und Zeitstempel sichern)[0m
-  [0m·  Inventar: 632 Datei(en) erfasst, davon 632 mit Anlegezeit (belege/00_dateien.tsv)
+  [0m·  Inventar: 634 Datei(en) erfasst, davon 634 mit Anlegezeit (belege/00_dateien.tsv)
 
 [0;36m▶ 7.1 Kürzlich veränderte PHP-Dateien (letzte 30 Tage)[0m
   [0;33mDurchsuche Webspace (kann dauern...)[0m
@@ -71,7 +71,7 @@
   [0m·  YARA-Scan nicht aktiviert — mit --yara einschalten (auf großen Webspaces langsam)
 
 [0;36m▶ 7.13 PHP-Code in Medien- und Asset-Dateien[0m
-  [0;31m✗[0m  [1mPHP-Code in 2 Mediendatei(en) — in einem echten Bild gehört kein PHP[0m
+  [0;31m✗[0m  [1mPHP-Code in 4 Mediendatei(en) — in einem echten Bild gehört kein PHP[0m
 
 [0;36m▶ 7.14 Massenhaft gleiche Zeitstempel (Spurenverwischung)[0m
   [0;32m✓[0m Keine auffälligen Zeitstempel-Häufungen
