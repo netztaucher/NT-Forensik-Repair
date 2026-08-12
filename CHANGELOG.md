@@ -2,6 +2,35 @@
 
 Alle nennenswerten Änderungen an `wp_plesk_forensik.sh`.
 
+## [unveröffentlicht]
+
+### Geändert — der Bereinigungsteil springt von 0.5.3 auf 0.7.0
+
+`paket/repair-0.7.0.enc` ersetzt `repair-0.5.3.enc`; `PAKET_VERSION` und
+`PAKET_SHA256` im Lader zeigen darauf. Die alte Fassung bleibt im Verzeichnis
+liegen — ein Rückfall ist damit ein Zweizeiler und kein Wiederherstellen aus
+der Historie.
+
+Was der neue Stand mitbringt (NT-Repair 0.6.0 und 0.7.0):
+
+- Die Berichte behaupten keine Wirksamkeit mehr ohne Kontrolllauf. Bis 0.5.3
+  setzten sie die Fundzahl der **Untersuchung** als „verbleibende
+  Schadcode-Dateien" ein und schrieben „technisch verifiziert" darüber — in
+  einer Meldung an eine Datenschutz-Aufsichtsbehörde.
+- Die Fundzahl kommt aus `metrics.schadcode_gesamt` statt aus
+  `metrics.webshell_count`, das nur Dropper-Signaturen kennt.
+- `actionable.signatur_treffer` und `actionable.plugin_veraendert` werden
+  gelesen.
+- Die Quarantäne hält `dev`, `inode` und alle drei Zeitstempel **vor** dem
+  Verschieben fest und gleicht sie gegen `belege/00_dateien.tsv` ab.
+- Auswahl je Datei statt alles-oder-nichts.
+- `--apply` verlangt eine Haltung zum Kontrolllauf.
+
+**ACHTUNG, Reihenfolge:** der Lader fragt den Lizenzserver nach genau dieser
+Fassung. Ist der Schlüssel zu 0.7.0 dort noch nicht eingetragen, scheitert
+**jeder** Kundenlauf mit „Lizenzserver kennt Fassung 0.7.0 nicht". Diese
+Änderung darf erst zusammenlaufen, wenn der Schlüssel steht.
+
 ## [3.13.0] — 2026-08-12
 
 Eine Fassung mit einem einzigen Thema: **die Zeitstempel überleben die
