@@ -132,37 +132,21 @@ if [[ -n "$PMF_OUT" ]]; then
     # die Trefferliste als Programm.
     PMF_ROH="${BELEGE_DIR}/.pmf_roh"
     printf '%s\n' "$PMF_OUT" > "$PMF_ROH"
+    # Die Entscheidung "gegen eine amtliche Pruefsumme bestaetigt?" steht seit
+    # v3.14 in lib/pruefsummen_filter.py — sie wird auch von Abschnitt 13d
+    # gebraucht. Zwei Kopien waeren die naechste Gelegenheit zum
+    # Auseinanderlaufen; genau daran entstand der Fehlalarm vom 12.08.2026.
     PMF_GEFILTERT=$(
+      NT_LIB="${BASE_DIR}/lib" \
       PMF_WL="$PMF_WL" PMF_WL_KERN="$PMF_WL_KERN" PMF_AUSNAHMEN="$PMF_AUSNAHMEN" \
       python3 - "$PMF_ROH" <<'PY'
 import os, sys
+sys.path.insert(0, os.environ["NT_LIB"])
+from pruefsummen_filter import freigabe_bauen
 
-def zeilen(pfad):
-    try:
-        with open(pfad, encoding="utf-8", errors="replace") as fh:
-            return {z.strip() for z in fh if z.strip()}
-    except OSError:
-        return set()
-
-bestaetigt = zeilen(os.environ.get("PMF_WL", ""))
-kerne      = zeilen(os.environ.get("PMF_WL_KERN", ""))
-ausnahmen  = {z.strip() for z in os.environ.get("PMF_AUSNAHMEN", "").splitlines() if z.strip()}
-
-# Der Kern ist als VERZEICHNIS bestaetigt, nicht Datei fuer Datei:
-# verify-checksums nennt ausschliesslich die Abweichungen. Alles unter
-# wp-admin/ und wp-includes/ einer geprueften Instanz, das nicht selbst als
-# Abweichung gemeldet wurde, ist damit bestaetigt.
-kern_praefixe = tuple(
-    os.path.join(k, teil) + os.sep
-    for k in kerne for teil in ("wp-admin", "wp-includes")
-)
-
-def freigegeben(pfad):
-    if pfad in ausnahmen:
-        return False
-    if pfad in bestaetigt:
-        return True
-    return pfad.startswith(kern_praefixe)
+freigegeben = freigabe_bauen(os.environ.get("PMF_WL", ""),
+                             os.environ.get("PMF_WL_KERN", ""),
+                             os.environ.get("PMF_AUSNAHMEN", ""))
 
 for zeile in open(sys.argv[1], encoding="utf-8", errors="replace").read().splitlines():
     # yara schreibt "<regelname> <pfad>". Der Pfad kann Leerzeichen enthalten,

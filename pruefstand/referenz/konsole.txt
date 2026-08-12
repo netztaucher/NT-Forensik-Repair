@@ -30,19 +30,20 @@
 [1m[0;34m══════════════════════════════════════════[0m
 
 [0;36m▶ 7.0 Datei-Inventar (Inode und Zeitstempel sichern)[0m
-  [0m·  Inventar: 628 Datei(en) erfasst, davon 628 mit Anlegezeit (belege/00_dateien.tsv)
+  [0m·  Inventar: 630 Datei(en) erfasst, davon 630 mit Anlegezeit (belege/00_dateien.tsv)
 
 [0;36m▶ 7.1 Kürzlich veränderte PHP-Dateien (letzte 30 Tage)[0m
   [0;33mDurchsuche Webspace (kann dauern...)[0m
   [0m·  Kürzlich veränderte .php-Dateien:
 
 [0;36m▶ 7.2 PHP-Dateien in Upload-Verzeichnissen[0m
-  [0;31m✗[0m  [1mPHP-Dateien in Upload-Verzeichnissen (nach Guard-Filter, extrem verdächtig; 3 Guard-/Plugin-Dateien gefiltert)[0m
+  [0;31m✗[0m  [1mPHP-Dateien in Upload-Verzeichnissen (nach Guard-Filter, extrem verdächtig; 4 Guard-/Plugin-Dateien gefiltert)[0m
 
 [0;36m▶ 7.3 Webshell-Muster (Inhalt) — zweistufig[0m
   [0;33mScanne auf Webshell-Signaturen (inkl. obfuskierte Cookie-Backdoors)...[0m
-  [0;32m✓[0m Keine kleinen Obfuskations-Dropper gefunden
-  [0;32m✓[0m Keine gefährlichen Funktionen in kleinen PHP-Dateien
+  [0;36m⚪[0m Webshell-Mustersuche nicht ausgeführt — grep beherrscht kein -P (PCRE). Auf macOS ist BSD-grep die Vorgabe; GNU grep oder ugrep installieren. Das ist KEINE Entwarnung.
+  [0m·  0 Treffer der Stufe 1, 0 der Stufe 2 — Einordnung in Abschnitt 13d
+  [0m·  0 kleine Datei(en) mit gefährlichen Funktionen — Einordnung in Abschnitt 13d
 
 [0;36m▶ 7.4 Versteckte Dateien und Verzeichnisse im Webspace[0m
   [0;32m✓[0m Keine auffälligen versteckten Dateien
@@ -182,6 +183,9 @@
   [0;33m⚠[0m  php-malware-finder: 4 Datei(en) mit Treffern — nach Regelanzahl sortiert, jeder Treffer gehört gesichtet (9 als unverändert bestätigte Datei(en) herausgefiltert)
   [0m·  Quelle: Prüfstand-Attrappe, Regelstand 0 Tage alt — der Regelsatz wird vom Projekt kaum noch gepflegt
 
+[0;36m▶ 13d Einordnung der Mustertreffer aus 7.3[0m
+  [0m·  Keine Einordnung möglich — die Mustersuche in 7.3 ist nicht gelaufen
+
 [1m[0;34m══════════════════════════════════════════[0m
 [1m[0;34m  14. ZUSAMMENFASSUNG[0m
 [1m[0;34m══════════════════════════════════════════[0m
@@ -199,8 +203,9 @@
 [1m[0;32m  ANALYSE ABGESCHLOSSEN — Lauf <LAUF-ID>[0m
 [1m[0;32m══════════════════════════════════════════[0m
 
-[1mBefunde:[0m       🔴 15 kritisch, ⚠️ 17 Warnungen, ✅ 23 ok, ⚪ 5 nicht messbar
-[0;33m               5 Prüfung(en) ohne Ergebnis — das ist keine Entwarnung.[0m
+[1mBefunde:[0m       🔴 15 kritisch, ⚠️ 17 Warnungen, ✅ 21 ok, ⚪ 6 nicht messbar
+[0;33m               6 Prüfung(en) ohne Ergebnis — das ist keine Entwarnung.[0m
+                 Webshell-Mustersuche nicht ausgeführt — grep beherrscht kein -P (PCRE). Auf macOS ist BSD-grep die Vorgabe; GNU grep oder ugrep installieren. Das ist KEINE Entwarnung.
                  kunde-zwei.example/cloud.kunde-zwei.example: Werkzeug antwortet nicht verwertbar — nicht geprüft
                  kunde-drei.example/httpdocs: 1 Bestandteil(e) ohne lesbare Fassung — für sie ist keine Aussage zur Angreifbarkeit möglich
                  kunde-drei.example/httpdocs: 1 Plugin(s) ohne Prüfsummensatz und alle Themes — Unversehrtheit nicht feststellbar (Premium, Fork, Eigenbau; für Themes veröffentlicht wordpress.org keine Prüfsummen)

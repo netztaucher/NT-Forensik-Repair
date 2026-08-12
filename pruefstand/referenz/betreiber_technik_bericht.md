@@ -33,7 +33,7 @@
 
 ### 7.0 Datei-Inventar (Inode und Zeitstempel sichern)
 
-  Inventar: 628 Datei(en) erfasst, davon 628 mit Anlegezeit (belege/00_dateien.tsv)
+  Inventar: 630 Datei(en) erfasst, davon 630 mit Anlegezeit (belege/00_dateien.tsv)
 
 ### 7.1 Kürzlich veränderte PHP-Dateien (letzte 30 Tage)
 
@@ -43,6 +43,7 @@
 <INODE> -rw-r--r-- <EIGNER> 0 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/uploads/index.php
 <INODE> -rw-r--r-- <EIGNER> 12 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/uploads/cache/index.php
 <INODE> -rw-r--r-- <EIGNER> 12 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/uploads/forminator/index.php
+<INODE> -rw-r--r-- <EIGNER> 128 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/uploads/pruefstand/dropper.php
 <INODE> -rw-r--r-- <EIGNER> 17 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-load.php
 <INODE> -rw-r--r-- <EIGNER> 1971 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/plugins/pruefstand-vorlagen/dad1/default.php
 <INODE> -rw-r--r-- <EIGNER> 1971 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/plugins/pruefstand-vorlagen/dad2/default.php
@@ -55,7 +56,6 @@
 <INODE> -rw-r--r-- <EIGNER> 33998 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/plugins/pruefstand-ohne-fix/gross-injiziert.php
 <INODE> -rw-r--r-- <EIGNER> 34 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/joomla.kunde-zwei.example/libraries/src/Version.php
 <INODE> -rw-r--r-- <EIGNER> 43 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/uploads/2026/03/bild.php
-<INODE> -rw-r--r-- <EIGNER> 53 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/plugins/pruefstand-kev/lib/d.php
 <INODE> -rw-r--r-- <EIGNER> 53 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/plugins/pruefstand-kev/lib/e.php
 <INODE> -rw-r--r-- <EIGNER> 57 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/plugins/pruefstand-kopflos/lib/a.php
 <INODE> -rw-r--r-- <EIGNER> 57 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/plugins/pruefstand-kopflos/lib/b.php
@@ -76,7 +76,7 @@
 
 ### 7.2 PHP-Dateien in Upload-Verzeichnissen
 
-- 🔴 **KRITISCH: PHP-Dateien in Upload-Verzeichnissen (nach Guard-Filter, extrem verdächtig; 3 Guard-/Plugin-Dateien gefiltert)**
+- 🔴 **KRITISCH: PHP-Dateien in Upload-Verzeichnissen (nach Guard-Filter, extrem verdächtig; 4 Guard-/Plugin-Dateien gefiltert)**
 
 ```
 <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/uploads/2026/03/bild.php
@@ -88,8 +88,9 @@
 
 ### 7.3 Webshell-Muster (Inhalt) — zweistufig
 
-- ✅ Keine kleinen Obfuskations-Dropper gefunden
-- ✅ Keine gefährlichen Funktionen in kleinen PHP-Dateien
+- ⚪ **Nicht messbar: Webshell-Mustersuche nicht ausgeführt — grep beherrscht kein -P (PCRE). Auf macOS ist BSD-grep die Vorgabe; GNU grep oder ugrep installieren. Das ist KEINE Entwarnung.**
+  0 Treffer der Stufe 1, 0 der Stufe 2 — Einordnung in Abschnitt 13d
+  0 kleine Datei(en) mit gefährlichen Funktionen — Einordnung in Abschnitt 13d
 
 ### 7.4 Versteckte Dateien und Verzeichnisse im Webspace
 
@@ -468,6 +469,10 @@ php_value auto_prepend_file /var/www/vhosts/<anderer Kunde 2>  auto_prepend_file
   Beleg: belege/023_php_malware_finder_treffer.txt
   Quelle: Prüfstand-Attrappe, Regelstand 0 Tage alt — der Regelsatz wird vom Projekt kaum noch gepflegt
 
+### 13d Einordnung der Mustertreffer aus 7.3
+
+  Keine Einordnung möglich — die Mustersuche in 7.3 ist nicht gelaufen
+
 ## 14. ZUSAMMENFASSUNG
 
   Fundstellen-Details: <PRUEFSTAND>/ablage/forensik/<LAUF-ID>/kunde/befunde_details.md (20 Fund(e), 7 Familien, 1 zu prüfen)
@@ -478,12 +483,13 @@ php_value auto_prepend_file /var/www/vhosts/<anderer Kunde 2>  auto_prepend_file
 |---|---|
 | 🔴 Kritische Befunde | 15 |
 | ⚠️ Warnungen | 17 |
-| ✅ Unauffällige Prüfungen | 22 |
-| ⚪ Nicht messbar | 5 |
+| ✅ Unauffällige Prüfungen | 20 |
+| ⚪ Nicht messbar | 6 |
 
-> **5 Prüfung(en) haben keine Aussage geliefert.** Ihr Ergebnis ist weder
+> **6 Prüfung(en) haben keine Aussage geliefert.** Ihr Ergebnis ist weder
 > ein Befund noch eine Entwarnung — der jeweilige Bereich ist ungeprüft:
 >
+> - Webshell-Mustersuche nicht ausgeführt — grep beherrscht kein -P (PCRE). Auf macOS ist BSD-grep die Vorgabe; GNU grep oder ugrep installieren. Das ist KEINE Entwarnung.
 > - kunde-zwei.example/cloud.kunde-zwei.example: Werkzeug antwortet nicht verwertbar — nicht geprüft
 > - kunde-drei.example/httpdocs: 1 Bestandteil(e) ohne lesbare Fassung — für sie ist keine Aussage zur Angreifbarkeit möglich
 > - kunde-drei.example/httpdocs: 1 Plugin(s) ohne Prüfsummensatz und alle Themes — Unversehrtheit nicht feststellbar (Premium, Fork, Eigenbau; für Themes veröffentlicht wordpress.org keine Prüfsummen)

@@ -166,6 +166,79 @@ Prüfsummendatei und veränderte Nicht-Codedatei (#40), unveränderte Core-Datei
 mit Mustertreffer (#42). Sie gehören mit der jeweiligen Reparatur dazu — eine
 Fixture für #42 würde sonst den Fehlalarm als Sollwert einfrieren.
 
+## [unveröffentlicht]
+
+### Behoben — die Webshell-Mustersuche lief auf macOS nie und meldete Entwarnung
+
+Der schwerste Einzelfund. `PATTERN_REGEX` ist ein PCRE; BSD-grep (macOS)
+kennt `-P` nicht und bricht mit „invalid option -- P" ab. Das
+`2>/dev/null || true` fing es weg: die Trefferliste blieb leer, und Abschnitt
+7.3 meldete **„Keine kleinen Obfuskations-Dropper gefunden"** — eine
+Entwarnung aus einer Suche, die nie gelaufen ist.
+
+Auf den Kundenservern (Linux, GNU grep) lief sie. Aber die
+**Goldmuster-Referenz entsteht auf einem macOS-Arbeitsplatz** — sie schrieb
+„keine Funde" fest, und §7.3 war damit lokal vollständig ungeprüft. Genau
+deshalb fiel auch nicht auf, dass der Prüfbaum den kritischen Pfad gar nicht
+erreichte.
+
+Jetzt eine Probe davor. Fehlt PCRE, gibt es einen ⚪-Befund mit dem Satz
+„Das ist KEINE Entwarnung" — und Abschnitt 13d schweigt, statt daneben
+„keine Dropper gefunden" zu schreiben.
+
+Derselbe Fehler wie bei der Werkzeug-Probe in 12r: ein Ausfall, der aussieht
+wie ein Ergebnis.
+
+### Behoben — §7.3 urteilte, bevor die Prüfsummen-Entlastung existierte (#42)
+
+Am 12.08.2026 meldete das Werkzeug auf einem **gesunden** Kundensystem
+`wp-includes/class-wp-simplepie-sanitize-kses.php` als Webshell. Zeile 42 ist
+ein SimplePie-`preg_match` mit der HTML-Whitespace-Zeichenklasse aus der
+WHATWG-Spezifikation. Zwei Zeilen darüber stand im selben Bericht
+„WordPress-Core unverändert (verify-checksums)".
+
+Ein 🔴 löst die volle Sofortmaßnahmen-Liste aus — alle Passwörter rotieren,
+SSH-Root abschalten.
+
+**Ursache:** die Listen der gegen amtliche Prüfsummen bestätigten Dateien
+entstehen in 12r. §7.3 läuft in Modul 07, davor.
+
+**Neu: Abschnitt 13d.** Der teure Baumdurchlauf bleibt in 7.3, das Urteil
+wandert dorthin, wo die Entlastung vorliegt — dieselbe Überlegung, die
+seinerzeit 7.12 zu 13c gemacht hat, für 7.3 aber nie gezogen worden war.
+
+Betroffen sind alle drei Stufen: kritische Dropper, Sichtungsstufe und
+gefährliche Funktionen in kleinen Dateien.
+
+**Kein stilles Wegfiltern.** Was entlastet wird, steht in der Meldung
+(„2 Datei(en) … (1 gegen amtliche Prüfsummen entlastet)") und in einem
+eigenen Beleg. Ein Befund, der lautlos verschwindet, ist die nächste stille
+Entwarnung.
+
+Die Entscheidung selbst steht jetzt in `lib/pruefsummen_filter.py` mit
+eigenem Selbsttest (9 Fälle) und wird von 13c **und** 13d genutzt. Zwei
+Kopien wären die nächste Gelegenheit zum Auseinanderlaufen — genau daran
+entstand dieser Fehlalarm.
+
+### Hinzugefügt — das Abnahmekriterium im Prüfbaum
+
+Zwei kleine Dateien mit acht Hex-Escapes, der Machart der echten Kern-Datei
+nachgebaut:
+
+- unter dem **geprüften** Kern von Kunde 3 → **muss entlastet werden**
+- ausserhalb jedes Kerns bei Kunde 2 → **muss 🔴 bleiben**
+
+Auf Linux verifiziert, weil §7.3 auf macOS nicht läuft:
+
+```
+🔴 KRITISCH: Webshells/Dropper gefunden: 2 Datei(en) < 3000 B mit Obfuskation
+             (1 gegen amtliche Prüfsummen entlastet)
+```
+
+Fällt die erste nicht weg, greift die Entlastung nicht. Fällt die zweite weg,
+entlastet der Filter zu viel — und das wäre die stille Entwarnung, gegen die
+der ganze Abschnitt gebaut ist.
+
 ## [3.14.0] — 2026-08-12
 
 Eine Fassung mit einem Thema: **der Schwachstellenabgleich läuft nicht mehr
