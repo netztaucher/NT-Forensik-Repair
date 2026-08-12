@@ -8,7 +8,7 @@
 | **Datum** | <ZEIT> |
 | **Geprüfter Server** | imac |
 | **Prüfungs-ID** | <LAUF-ID> |
-| **Befunde** | 🔴 15 kritisch · ⚠️ 16 auffällig · ⚪ 5 nicht messbar |
+| **Befunde** | 🔴 15 kritisch · ⚠️ 16 auffällig · ⚪ 6 nicht messbar |
 
 ---
 
@@ -52,7 +52,7 @@
 
 **Kritische Einzelbefunde:**
 
-- PHP-Dateien in Upload-Verzeichnissen (nach Guard-Filter, extrem verdächtig; 3 Guard-/Plugin-Dateien gefiltert)
+- PHP-Dateien in Upload-Verzeichnissen (nach Guard-Filter, extrem verdächtig; 4 Guard-/Plugin-Dateien gefiltert)
 - .htaccess gibt gezielt einzelne PHP-Datei(en) frei — typisch für abgesicherte Webshells (3)
 - PHP-Code in 2 Mediendatei(en) — in einem echten Bild gehört kein PHP
 - kunde-zwei.example/cloud.kunde-zwei.example: bekannte Schaddatei der Nextcloud-Kampagne (filefuns.php)

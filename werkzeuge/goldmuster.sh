@@ -768,6 +768,32 @@ PHP
 
   # Kunde 3 ist die Gegenprobe: alles aktuell, nichts darf gemeldet werden.
   wp_kern "$k3" 6.9.2
+
+  # ── Das Abnahmekriterium fuer Abschnitt 13d ──────────────────────────
+  #
+  # Abgenommen vom echten Fehlalarm am 12.08.2026: eine UNVERAENDERTE
+  # Kern-Datei loeste 7.3 Stufe 1 aus, weil sie klein ist und acht
+  # Hex-Escapes enthaelt. Im Original war es
+  # wp-includes/class-wp-simplepie-sanitize-kses.php mit der
+  # HTML-Whitespace-Zeichenklasse aus der WHATWG-Spezifikation.
+  #
+  # Zwei Dateien, weil eine nichts beweist:
+  #
+  #   a) unter dem geprueften Kern von Kunde 3 -> MUSS entlastet werden.
+  #      Kunde 3 ist die Gegenprobe: sein Kern besteht verify-checksums.
+  #   b) ausserhalb jedes Kerns bei Kunde 2    -> MUSS 🔴 bleiben.
+  #
+  # Faellt (a) nicht weg, greift die Entlastung nicht. Faellt (b) weg,
+  # entlastet der Filter zu viel — und das waere die stille Entwarnung,
+  # gegen die dieser ganze Abschnitt gebaut ist.
+  _hexkette() {   # acht Hex-Escapes, wie in der echten Zeichenklasse
+    printf '\\x09\\x0A\\x0B\\x0C\\x0D\\x20\\x2F\\x3E'
+  }
+  printf '<?php\n// Pruefstand: sieht aus wie Obfuskation, ist Kern-Code\nif ( preg_match( %s/[^%s]*%s, $d ) ) { return true; }\n' \
+         "'" "$(_hexkette)" "'" > "${k3}/wp-includes/class-pruefstand-sanitize.php"
+  mkdir -p "${k2}/wp-content/uploads/pruefstand"
+  printf '<?php\n// Pruefstand: dieselbe Machart, aber ausserhalb jedes Kerns\n$x = "%s"; @eval($_POST[%sc%s]);\n' \
+         "$(_hexkette)" "'" "'" > "${k2}/wp-content/uploads/pruefstand/dropper.php"
   wp_plugin "$k3" pruefstand-kev      3.0 "Pruefstand KEV"
   wp_plugin "$k3" pruefstand-alt      3.1 "Pruefstand Alt"
   wp_plugin "$k3" pruefstand-aktuell  4.0 "Pruefstand Aktuell"

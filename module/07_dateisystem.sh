@@ -156,8 +156,29 @@ h2 "7.3 Webshell-Muster (Inhalt) — zweistufig"
 echo -e "  ${YLW}Scanne auf Webshell-Signaturen (inkl. obfuskierte Cookie-Backdoors)...${NC}"
 
 
-WEBSHELL_HITS=$(grep -rlPi "$PATTERN_REGEX" "${SCAN_PATHS[@]}" --include="*.php" \
-  --exclude-dir=phpunit --exclude-dir=sebastian --exclude-dir=mockery 2>/dev/null || true)
+# ── OHNE -P KEINE SUCHE, UND DAS MUSS MAN SEHEN ──────────────────────────
+#
+# PATTERN_REGEX ist ein PCRE. BSD-grep (macOS) kennt -P nicht und bricht mit
+# "invalid option -- P" ab. Bis v3.14 fing das `2>/dev/null || true` weg: die
+# Trefferliste blieb leer, und der Abschnitt meldete "Keine kleinen
+# Obfuskations-Dropper gefunden" — eine Entwarnung aus einer Suche, die nie
+# gelaufen ist.
+#
+# Auf den Kundenservern (Linux, GNU grep) lief sie. Aber die
+# Goldmuster-Referenz entsteht auf einem macOS-Arbeitsplatz, und dort schrieb
+# sie "keine Funde" fest — der ganze Abschnitt war lokal ungeprueft.
+#
+# Genau derselbe Fehler wie bei der Werkzeug-Probe in 12r: ein Ausfall, der
+# aussieht wie ein Ergebnis. Deshalb hier eine Probe davor.
+if ! echo 'x' | grep -qP 'x' 2>/dev/null; then
+  befund_melden dateisystem erkennung unklar \
+    "Webshell-Mustersuche nicht ausgeführt — grep beherrscht kein -P (PCRE). Auf macOS ist BSD-grep die Vorgabe; GNU grep oder ugrep installieren. Das ist KEINE Entwarnung." "-" web
+  WEBSHELL_HITS=""
+  NF_OHNE_PCRE=1
+else
+  WEBSHELL_HITS=$(grep -rlPi "$PATTERN_REGEX" "${SCAN_PATHS[@]}" --include="*.php" \
+    --exclude-dir=phpunit --exclude-dir=sebastian --exclude-dir=mockery 2>/dev/null || true)
+fi
 
 DROPPER_CLUSTER=""
 WEBSHELL_COUNT=0        # Tier 1: kritische Dropper
@@ -202,21 +223,23 @@ ${fzeit}Treffer: ${preview}
   done <<< "$WEBSHELL_HITS"
 fi
 
-if [[ "$WEBSHELL_COUNT" -gt 0 ]]; then
-  crit "Webshells/Dropper gefunden: ${WEBSHELL_COUNT} Datei(en) < ${DROPPER_MAX_BYTES} B mit Obfuskation" web
-  DROPPER_CLUSTER=$(echo "$DROPPER_DETAIL" | grep "^=== " | sed 's|=== /var/www/vhosts/||;s| ===||' | cut -d/ -f1 | sort | uniq -c | sort -rn || true)
-  info "Betroffene Domains (Dropper-Cluster):"
-  code "$DROPPER_CLUSTER"
-  echo -e "\n**Dropper-Details:**\n\`\`\`\n$DROPPER_DETAIL\n\`\`\`" >> "$REPORT_FILE"
-  evidence "webshell_dropper_kritisch" "$DROPPER_DETAIL" kunde
-else
-  ok "Keine kleinen Obfuskations-Dropper gefunden"
-fi
-
-if [[ "$WEBSHELL_REVIEW" -gt 0 ]]; then
-  warn "Obfuskations-Muster in ${WEBSHELL_REVIEW} größeren Datei(en) — manuell prüfen (oft legitime Frameworks)" web
-  evidence "webshell_review_gross" "$REVIEW_DETAIL" kunde
-fi
+# ── DIE EINORDNUNG STEHT IN ABSCHNITT 13d ────────────────────────────────
+#
+# Hier wird gesucht und aufbereitet, aber nicht geurteilt. Grund: die Listen
+# der gegen amtliche Pruefsummen bestaetigten Dateien entstehen erst in 12r
+# (`wp core verify-checksums` und die Pruefsummen von wordpress.org). Dieser
+# Abschnitt laeuft davor und kann sie nicht kennen.
+#
+# Bis v3.14 urteilte er trotzdem. Am 12.08.2026 meldete er deshalb auf einem
+# gesunden Kundensystem eine UNVERAENDERTE Kern-Datei als Webshell —
+# wp-includes/class-wp-simplepie-sanitize-kses.php, deren Zeile 42 ein
+# SimplePie-preg_match mit der HTML-Whitespace-Zeichenklasse ist. Im selben
+# Bericht stand zwei Zeilen darueber "WordPress-Core unveraendert
+# (verify-checksums)". Ein KRITISCH loest die volle Sofortmassnahmen-Liste aus.
+#
+# Derselbe Grund, aus dem 7.12 zu 13c wurde: der teure Baumdurchlauf bleibt
+# frueh, das Urteil wandert dorthin, wo die Entlastung vorliegt.
+info "${WEBSHELL_COUNT} Treffer der Stufe 1, ${WEBSHELL_REVIEW} der Stufe 2 — Einordnung in Abschnitt 13d"
 
 # ── Zweite Stufe: gefährliche Funktionen in kleinen Dateien ─────────────────
 # PATTERN_REGEX_MED trifft Funktionen, die auch legitim vorkommen — ein
@@ -238,16 +261,13 @@ Größe: ${fsize} B | mtime: $(stat -c %y "$f" 2>/dev/null) | SHA256: $(sha256su
 Angelegt (crtime): $(stat -c %w "$f" 2>/dev/null)
 Treffer: $(grep -noPi "$PATTERN_REGEX_MED" "$f" 2>/dev/null | head -2 | cut -c1-160)
 "$'\n'
-done < <(grep -rlPi "$PATTERN_REGEX_MED" "${SCAN_PATHS[@]}" --include="*.php" \
-           --exclude-dir=phpunit --exclude-dir=sebastian --exclude-dir=mockery 2>/dev/null | sort || true)
+done < <(if [[ "${NF_OHNE_PCRE:-0}" == "1" ]]; then :; else
+           grep -rlPi "$PATTERN_REGEX_MED" "${SCAN_PATHS[@]}" --include="*.php" \
+             --exclude-dir=phpunit --exclude-dir=sebastian --exclude-dir=mockery 2>/dev/null | sort || true
+         fi)
 
-if [[ "$MED_COUNT" -gt 0 ]]; then
-  warn "Gefährliche Funktionen (exec-Familie, Bot-Ausblendung, Login-Gate) in ${MED_COUNT} kleinen Datei(en) — sichten" web
-  code "$(echo "$MED_DETAIL" | grep '^=== ' | sed 's|=== ||;s| ===||' | head -20)"
-  evidence "gefaehrliche_funktionen_klein" "$MED_DETAIL" kunde
-else
-  ok "Keine gefährlichen Funktionen in kleinen PHP-Dateien"
-fi
+# Auch hier nur sammeln — die Einordnung steht in 13d, siehe oben.
+info "${MED_COUNT} kleine Datei(en) mit gefährlichen Funktionen — Einordnung in Abschnitt 13d"
 
 h2 "7.4 Versteckte Dateien und Verzeichnisse im Webspace"
 HIDDEN=$(find "${SCAN_PATHS[@]}" -name ".*" -not -name ".htaccess" -not -name ".well-known" \
