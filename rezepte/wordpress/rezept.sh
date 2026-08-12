@@ -132,7 +132,13 @@ rezept_version() {
   # hier zwar streng, wuerde aber auf JEDEM Lauf stehen, solange der Bestand
   # nicht erzeugt ist, und damit zu Rauschen. Sobald ein Bestand da ist,
   # entscheidet sein Alter (unten) wieder ueber ⚪.
-  if ! ls "${basis}"/vuln/*.tsv >/dev/null 2>&1; then
+  # Geprueft wird auf DATENZEILEN, nicht auf Dateien. Eine Tabelle, die nur aus
+  # Kopfzeilen besteht, ist kein Bestand — sie sieht aber wie einer aus, und
+  # der Vergleich liefe dann gegen nichts: jedes Plugin kaeme als SAUBER
+  # zurueck ("keine bekannte Schwachstelle im vorliegenden Bestand"), also als
+  # stille Entwarnung. Genau so lagen die Dateien nach einem Testlauf im
+  # Repository, bevor es auffiel.
+  if ! grep -rhv '^#' "${basis}"/vuln/*.tsv 2>/dev/null | grep -q .; then
     # Einmal je Lauf, nicht je Installation: die Aussage gilt global, und auf
     # einem Server mit vierzig Instanzen waeren vierzig gleiche Zeilen nur
     # Rauschen. Die Variable ueberlebt die Schleife — der Rahmen zieht nur

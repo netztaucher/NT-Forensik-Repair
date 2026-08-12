@@ -33,6 +33,31 @@ Fassung. Ist der Schlüssel zu 0.7.0 dort noch nicht eingetragen, scheitert
 
 ## [unveröffentlicht]
 
+### Behoben — leere Schwachstellen-Tabellen galten als Datenbestand
+
+Nach einem Testlauf lagen drei `vuln/*.tsv` mit **nur Kopfzeilen** im
+Repository. Sie sahen aus wie ein Bestand, enthielten aber nichts — und
+`rezept_version` prüfte auf die Existenz der **Dateien**, nicht auf
+Datenzeilen. Der Abgleich wäre also gegen nichts gelaufen und hätte jedes
+Plugin als `SAUBER` gemeldet: „keine bekannte Schwachstelle im vorliegenden
+Bestand".
+
+Das ist der gefährlichste Zustand von allen, weil er nach Prüfung aussieht.
+Ohne die Dateien sagt das Werkzeug ehrlich „Kein Datenbestand vorhanden —
+Abgleich übersprungen".
+
+Geprüft wird jetzt auf Datenzeilen. Die drei leeren Tabellen sind entfernt;
+der Prüfstand hält beide Richtungen fest und prüft zusätzlich, dass gar keine
+`vuln/*.tsv` im Repository liegen, solange das Lizenz-Gate zu ist — eine leere
+Tabelle dort wäre ein Widerspruch in sich.
+
+### Behoben — `grep -c … || echo 0` schrieb doppelte Nullen nach VERSION
+
+Derselbe Fehler, den dieses Repository an drei anderen Stellen ausdrücklich
+dokumentiert: `grep -c` gibt bei null Treffern bereits eine `0` aus **und**
+endet ungleich 0, der Rückfall hängt eine zweite an. In `VERSION` stand
+daraufhin `0\n0 Zeile(n)`.
+
 ### Neu — das Lizenz-Gate ist eine Sperre, kein Häkchen (#8)
 
 Sobald ein Wordfence-Bestand im öffentlichen Repository liegt, ist er
