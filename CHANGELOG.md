@@ -239,6 +239,37 @@ Fällt die erste nicht weg, greift die Entlastung nicht. Fällt die zweite weg,
 entlastet der Filter zu viel — und das wäre die stille Entwarnung, gegen die
 der ganze Abschnitt gebaut ist.
 
+## [unveröffentlicht]
+
+### Behoben — 13d zählte doppelt, wenn ALLE Treffer entlastet wurden
+
+Fehler in der Reparatur von #42, gefunden beim Bestätigungslauf auf dem echten
+System. Der Bericht meldete:
+
+```
+🔴 KRITISCH: 1 Datei(en) < 3000 B mit Obfuskation (1 gegen amtliche Prüfsummen entlastet)
+```
+
+Bei **einem** Treffer. Dieselbe Datei stand zugleich im Beleg „kritisch" und im
+Beleg „entlastet".
+
+**Ursache:** der erste Entwurf schrieb beide Blöcke hintereinander in einen
+Datenstrom, getrennt durch eine Zeile mit `0x1e`, und schnitt sie mit
+`sed -n '1,/^\x1e$/p'` wieder auseinander. Ein sed-Bereich `1,/re/` prüft sein
+Endmuster aber erst **ab Zeile 2**. Lag der Trenner auf Zeile 1 — also genau
+dann, wenn die Restliste leer ist — endete der Bereich nie, und beide Hälften
+enthielten alles.
+
+Jetzt schreibt das Python zwei Dateien. Kein Trenner im Datenstrom, keine
+Bereichsangabe, keine Escaping-Frage.
+
+**Warum der Prüfbaum es nicht sah:** bei Kunde 2 und 3 blieb immer etwas übrig.
+Die Lage „alles entlastet, Restliste leer" kam nicht vor. Neu ist deshalb
+Kunde 1 mit genau einem Mustertreffer, der entlastet wird.
+
+Damit sind es drei Lagen statt zwei: nichts entlastet, teilweise entlastet,
+alles entlastet. Der halbvolle Fall allein übersieht den leeren.
+
 ## [3.14.0] — 2026-08-12
 
 Eine Fassung mit einem Thema: **der Schwachstellenabgleich läuft nicht mehr

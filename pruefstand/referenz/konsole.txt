@@ -30,7 +30,7 @@
 [1m[0;34m══════════════════════════════════════════[0m
 
 [0;36m▶ 7.0 Datei-Inventar (Inode und Zeitstempel sichern)[0m
-  [0m·  Inventar: 630 Datei(en) erfasst, davon 630 mit Anlegezeit (belege/00_dateien.tsv)
+  [0m·  Inventar: 632 Datei(en) erfasst, davon 632 mit Anlegezeit (belege/00_dateien.tsv)
 
 [0;36m▶ 7.1 Kürzlich veränderte PHP-Dateien (letzte 30 Tage)[0m
   [0;33mDurchsuche Webspace (kann dauern...)[0m
@@ -131,6 +131,7 @@
   [0m·  kunde-drei.example/httpdocs: kein Wordfence in dieser Installation — keine Zweitmeinung verfügbar
 
 [0;36m▶ 12r.2.x kunde-eins.example/httpdocs[0m
+  [0;32m✓[0m kunde-eins.example/httpdocs: keine bekannte Schwachstelle im vorliegenden Datenbestand (Stand <STAND>)
   [0;32m✓[0m kunde-eins.example/httpdocs: keine Doorway-.htaccess-Signatur
   [0;32m✓[0m kunde-eins.example/httpdocs: keine @include base64_decode()-Injektion
   [0;32m✓[0m kunde-eins.example/httpdocs: WordPress-Core unverändert (verify-checksums)
@@ -203,7 +204,7 @@
 [1m[0;32m  ANALYSE ABGESCHLOSSEN — Lauf <LAUF-ID>[0m
 [1m[0;32m══════════════════════════════════════════[0m
 
-[1mBefunde:[0m       🔴 15 kritisch, ⚠️ 17 Warnungen, ✅ 21 ok, ⚪ 6 nicht messbar
+[1mBefunde:[0m       🔴 15 kritisch, ⚠️ 17 Warnungen, ✅ 22 ok, ⚪ 6 nicht messbar
 [0;33m               6 Prüfung(en) ohne Ergebnis — das ist keine Entwarnung.[0m
                  Webshell-Mustersuche nicht ausgeführt — grep beherrscht kein -P (PCRE). Auf macOS ist BSD-grep die Vorgabe; GNU grep oder ugrep installieren. Das ist KEINE Entwarnung.
                  kunde-zwei.example/cloud.kunde-zwei.example: Werkzeug antwortet nicht verwertbar — nicht geprüft

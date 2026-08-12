@@ -33,7 +33,7 @@
 
 ### 7.0 Datei-Inventar (Inode und Zeitstempel sichern)
 
-  Inventar: 630 Datei(en) erfasst, davon 630 mit Anlegezeit (belege/00_dateien.tsv)
+  Inventar: 632 Datei(en) erfasst, davon 632 mit Anlegezeit (belege/00_dateien.tsv)
 
 ### 7.1 Kürzlich veränderte PHP-Dateien (letzte 30 Tage)
 
@@ -322,6 +322,7 @@ Order allow,deny
 
 ### 12r.2.x kunde-eins.example/httpdocs
 
+- ✅ kunde-eins.example/httpdocs: keine bekannte Schwachstelle im vorliegenden Datenbestand (Stand <STAND>)
 - ✅ kunde-eins.example/httpdocs: keine Doorway-.htaccess-Signatur
 - ✅ kunde-eins.example/httpdocs: keine @include base64_decode()-Injektion
 - ✅ kunde-eins.example/httpdocs: WordPress-Core unverändert (verify-checksums)
@@ -483,7 +484,7 @@ php_value auto_prepend_file /var/www/vhosts/<anderer Kunde 2>  auto_prepend_file
 |---|---|
 | 🔴 Kritische Befunde | 15 |
 | ⚠️ Warnungen | 17 |
-| ✅ Unauffällige Prüfungen | 20 |
+| ✅ Unauffällige Prüfungen | 21 |
 | ⚪ Nicht messbar | 6 |
 
 > **6 Prüfung(en) haben keine Aussage geliefert.** Ihr Ergebnis ist weder
