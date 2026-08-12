@@ -239,6 +239,76 @@ Fällt die erste nicht weg, greift die Entlastung nicht. Fällt die zweite weg,
 entlastet der Filter zu viel — und das wäre die stille Entwarnung, gegen die
 der ganze Abschnitt gebaut ist.
 
+## [unveröffentlicht]
+
+### Behoben — 13d zählte doppelt, wenn ALLE Treffer entlastet wurden
+
+Fehler in der Reparatur von #42, gefunden beim Bestätigungslauf auf dem echten
+System. Der Bericht meldete:
+
+```
+🔴 KRITISCH: 1 Datei(en) < 3000 B mit Obfuskation (1 gegen amtliche Prüfsummen entlastet)
+```
+
+Bei **einem** Treffer. Dieselbe Datei stand zugleich im Beleg „kritisch" und im
+Beleg „entlastet".
+
+**Ursache:** der erste Entwurf schrieb beide Blöcke hintereinander in einen
+Datenstrom, getrennt durch eine Zeile mit `0x1e`, und schnitt sie mit
+`sed -n '1,/^\x1e$/p'` wieder auseinander. Ein sed-Bereich `1,/re/` prüft sein
+Endmuster aber erst **ab Zeile 2**. Lag der Trenner auf Zeile 1 — also genau
+dann, wenn die Restliste leer ist — endete der Bereich nie, und beide Hälften
+enthielten alles.
+
+Jetzt schreibt das Python zwei Dateien. Kein Trenner im Datenstrom, keine
+Bereichsangabe, keine Escaping-Frage.
+
+**Warum der Prüfbaum es nicht sah:** bei Kunde 2 und 3 blieb immer etwas übrig.
+Die Lage „alles entlastet, Restliste leer" kam nicht vor. Neu ist deshalb
+Kunde 1 mit genau einem Mustertreffer, der entlastet wird.
+
+Damit sind es drei Lagen statt zwei: nichts entlastet, teilweise entlastet,
+alles entlastet. Der halbvolle Fall allein übersieht den leeren.
+
+## [unveröffentlicht]
+
+### Behoben — §7.13 war an Videoformaten blind: 17 von 32 Nutzlasten gefunden
+
+Gemessen an einem **echten Befall** auf einem Server mit 475 vhosts
+(12.08.2026, parallele Vorfallsuntersuchung). Dort lagen 32 als Mediendateien
+getarnte Hintertüren. Dieser Abschnitt fand **17**.
+
+Die fehlenden 15: `.avi` (7), `.mov` (5), `.wmv` (4), `.mpg`, `.mpeg`. Die
+Endungsliste kannte von den Bewegtbildformaten **nur `.mp4`**. Wer seine Shell
+`video.avi` nennt, war unsichtbar.
+
+Aufgenommen sind jetzt zusätzlich `.avi .mov .wmv .mpg .mpeg .m4v .mkv .webm
+.flv .ogg .oga .ogv .aac .flac .m4a .wma`.
+
+**Bewusst nicht aufgenommen: `.js` und `.css`.** Dieselbe Messung fand dort 39
+bzw. 30 Dateien mit `<?php` — durchweg legitime, von PHP erzeugte Templates.
+Sie aufzunehmen hätte 69 Fehlalarme erzeugt und den Abschnitt entwertet.
+
+Der Prüfbaum kannte die Lücke ebenfalls nicht — er hatte nur `.png`. Neu sind
+eine `.avi` und eine `.mov`, beide ohne Verdachtsmerkmal im Code: geprüft wird
+der Behälter, nicht was das PHP tut. Die Referenz geht damit von 2 auf 4
+erkannte Mediendateien.
+
+### Behoben — FastCGI galt als verdächtiger Prozess
+
+§8.2e meldete „Web-User haben eigene (Nicht-PHP-FPM-)Prozesse — prüfen". Der
+Filter kannte nur `php-fpm`. Auf einem Server mit 475 vhosts laufen aber
+regelmäßig Seiten im FastCGI-Modus, und deren Prozesse heißen `php-cgi`:
+
+```
+web72   /opt/plesk/php/8.3/bin/php-cgi -c .../nightworks-berlin.de/etc/php.ini
+```
+
+Bei der Messung war **jeder einzelne Treffer** dieses Abschnitts ein solcher
+`php-cgi`. Ein Befund, der auf einer verbreiteten Betriebsart immer anschlägt,
+wird beim nächsten Mal überlesen — und dann fällt auch der echte nicht mehr
+auf.
+
 ## [3.14.0] — 2026-08-12
 
 Eine Fassung mit einem Thema: **der Schwachstellenabgleich läuft nicht mehr

@@ -76,10 +76,20 @@ _einordnen() {   # _einordnen <blob>; setzt _REST, _WEG, _N_REST, _N_WEG
   [[ -n "${1:-}" ]] || return 0
   local roh="${BELEGE_DIR}/.einordnung_roh"
   printf '%s' "$1" > "$roh"
-  local ergebnis
-  ergebnis=$(
-    NT_LIB="${BASE_DIR}/lib" PMF_WL="$_WL" PMF_WL_KERN="$_WL_KERN" \
-    PMF_AUSNAHMEN="$_AUSN" python3 - "$roh" <<'PY'
+  # ZWEI DATEIEN, KEIN TRENNER IM DATENSTROM.
+  #
+  # Der erste Entwurf schrieb beide Bloecke hintereinander, getrennt durch
+  # eine Zeile mit 0x1e, und schnitt sie mit `sed -n '1,/^\x1e$/p'` wieder
+  # auseinander. Das ist falsch: bei einem Bereich `1,/re/` prueft sed das
+  # Endmuster erst AB ZEILE 2. Lag der Trenner auf Zeile 1 — also wenn ALLE
+  # Treffer entlastet wurden — endete der Bereich nie, und beide Haelften
+  # enthielten alles. Auf dem echten System stand dieselbe Datei daraufhin
+  # zugleich unter "kritisch" und unter "entlastet".
+  #
+  # Der Pruefbaum sah es nicht, weil dort immer etwas uebrig blieb.
+  NT_LIB="${BASE_DIR}/lib" PMF_WL="$_WL" PMF_WL_KERN="$_WL_KERN" \
+  PMF_AUSNAHMEN="$_AUSN" \
+  python3 - "$roh" "${roh}.rest" "${roh}.weg" <<'PY'
 import os, sys
 sys.path.insert(0, os.environ["NT_LIB"])
 from pruefsummen_filter import freigabe_bauen
@@ -103,17 +113,18 @@ for zeile in text.splitlines(keepends=True):
     elif pfad is not None:
         block.append(zeile)
 ablegen()
-# Zwei Bloecke, getrennt durch eine Zeile, die im Inhalt nicht vorkommen kann.
-sys.stdout.write("".join(rest))
-sys.stdout.write("\x1e\n")
-sys.stdout.write("".join(weg))
+open(sys.argv[2], "w", encoding="utf-8").write("".join(rest))
+open(sys.argv[3], "w", encoding="utf-8").write("".join(weg))
 PY
-  )
-  _REST=$(printf '%s' "$ergebnis" | sed -n '1,/^\x1e$/p' | sed '$d')
-  _WEG=$(printf  '%s' "$ergebnis" | sed -n '/^\x1e$/,$p' | sed '1d')
-  _N_REST=$(printf '%s\n' "$_REST" | grep -c '^=== ' || true)
-  _N_WEG=$(printf  '%s\n' "$_WEG"  | grep -c '^=== ' || true)
-  rm -f "$roh"
+  _REST=$(cat "${roh}.rest" 2>/dev/null || true)
+  _WEG=$(cat  "${roh}.weg"  2>/dev/null || true)
+  # Gezaehlt wird auf der DATEI, nicht auf der Variablen: eine leere Variable
+  # ergibt bei `printf '%s\n'` eine Leerzeile, und die zaehlt grep zwar nicht
+  # als Treffer, aber der Unterschied zwischen "leer" und "eine Leerzeile"
+  # hat hier schon einmal Zahlen verfaelscht.
+  _N_REST=$(grep -c '^=== ' "${roh}.rest" 2>/dev/null || true); _N_REST="${_N_REST:-0}"
+  _N_WEG=$(grep -c  '^=== ' "${roh}.weg"  2>/dev/null || true); _N_WEG="${_N_WEG:-0}"
+  rm -f "$roh" "${roh}.rest" "${roh}.weg"
 }
 
 # Ein Satz, der die Entlastung benennt — oder gar nichts, wenn keine stattfand.

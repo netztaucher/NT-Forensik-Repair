@@ -100,9 +100,21 @@ else
 fi
 
 # 8.2e Langlaufende Prozesse der Web-User (psacln/psaserv/www-data)
+# FastCGI IST NICHT VERDAECHTIG.
+#
+# Der Filter kannte nur php-fpm. Auf einem Server mit 475 vhosts laufen aber
+# regelmaessig Seiten im FastCGI-Modus statt FPM, und deren Prozesse heissen
+# php-cgi:
+#
+#   web72   /opt/plesk/php/8.3/bin/php-cgi -c .../nightworks-berlin.de/etc/php.ini
+#
+# Gemessen am echten Befall vom 12.08.2026: jeder einzelne Treffer dieses
+# Abschnitts war ein solcher php-cgi. Ein Befund, der auf einer verbreiteten
+# Betriebsart immer anschlaegt, wird beim naechsten Mal ueberlesen — und dann
+# faellt auch der echte nicht mehr auf.
 WEBUSER_PROCS=$(ps -eo user,pid,etime,pcpu,cmd --sort=-etime 2>/dev/null \
   | awk '$1 ~ /^(psacln|psaserv|www-data)/ || $1 ~ /^web[0-9]/' \
-  | grep -vE "php-fpm|apache|nginx" | head -15 || true)
+  | grep -vE "php-fpm|php-cgi|apache|nginx" | head -15 || true)
 if [[ -n "$WEBUSER_PROCS" ]]; then
   warn "Web-User haben eigene (Nicht-PHP-FPM-)Prozesse — prüfen"
   code "$WEBUSER_PROCS"
