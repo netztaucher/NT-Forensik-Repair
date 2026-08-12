@@ -393,6 +393,40 @@ einen Verdachtsfall (`wpadmin`); Kunde 3 bleibt als Gegenprobe leer.
 Auf Linux verifiziert — auf macOS ist die Datenbankprüfung mangels PCRE nicht
 ausführbar.
 
+## [unveröffentlicht]
+
+### Hinzugefügt — vergiftete robots.txt findet den Doorway-Generator in der Datenbank (#47)
+
+Der Generator der SEO-Spam-Kampagne sitzt in der **Datenbank**, nicht auf der
+Platte. Ein reiner Dateiscan meldet die Kampagne als sauber — und genau das tat
+dieses Werkzeug beim Befall vom 12.08.2026 auf 23 Seiten.
+
+Was der Angreifer aber anfassen **muss**, ist die `robots.txt`; Google findet
+die Doorway-Seiten sonst nicht. Dort stand:
+
+```
+Sitemap: https://…/index.php/sitemap.xml
+```
+
+**Was hier ausdrücklich KEIN Befund ist:** WordPress liefert seit 5.5 selbst
+eine virtuelle Sitemap unter `/wp-sitemap.xml`, Yoast unter
+`/sitemap_index.xml`. „Sitemap ohne Datei" ist der **Normalfall**. Wer darauf
+anschlägt, meldet jede gepflegte Seite.
+
+Das Merkmal ist der Pfad **durch `index.php`**: die PATHINFO-Form benutzt kein
+verbreitetes Plugin. Sie ist der Weg, eine beliebige Adresse von PHP
+beantworten zu lassen, ohne Rewrite-Regeln — und damit ohne Spur im
+Dateisystem.
+
+Die mtime der Datei wird als **Zeitanker** mitgeführt. Sie überlebt, weil
+niemand `robots.txt` ansieht: im Vorfall war sie zwei Wochen älter als das
+älteste Zugriffsprotokoll und datierte den Einbruch 19 Tage zurück.
+
+Prüfbaum, beide Richtungen: Kunde 2 trägt die Kampagnen-Fassung (🔴 mit Beleg),
+Kunde 3 eine völlig normale mit der WordPress-Sitemap (kein Befund, nur der
+Zeitanker). Die Gegenprobe ist hier der eigentliche Test — eine Regel, die auf
+`/wp-sitemap.xml` anspricht, wäre wertlos.
+
 ## [3.14.0] — 2026-08-12
 
 Eine Fassung mit einem Thema: **der Schwachstellenabgleich läuft nicht mehr

