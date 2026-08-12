@@ -21,8 +21,21 @@ Auflagen erstrecken.
 |---|---|---|---|---|
 | `kev/kev-wordpress.tsv` | Katalog bekannt ausgenutzter Schwachstellen der CISA (`cisa.gov`) | Werk einer US-Behörde, **gemeinfrei** | CVE-Nummer, Hersteller, Produkt, Aufnahmedatum, Ransomware-Kennzeichen. **Kein** `shortDescription`, **kein** `requiredAction` — das sind formulierte Texte. | 2026-08-07 |
 
-Mehr nicht. Die Schwachstellentabellen unter `vuln/` sind **noch nicht erzeugt**
-— siehe unten.
+| `vuln/wp-core.tsv`, `vuln/wp-plugins.tsv`, `vuln/wp-themes.tsv` | Wordfence Intelligence Vulnerability Database, Defiant, Inc. | Weitergabe gestattet, **unter Auflagen** — Vermerk und Lizenztext je Kopie, siehe `LICENSE` | Slug, Versionsbereich, behobene Fassung, CVE-Nummer, CVSS-Wert, Verweis auf den Datensatz. **Kein** `description`, **kein** `remediation`, **keine** `researchers`. | 2026-08-12 |
+
+Mehr nicht.
+
+Warum der Bestand mit im Repository liegt: die Auslieferung **ist** der Clone
+(`git clone --depth 1` auf den Kundenserver, siehe README). Was hier nicht
+liegt, ist dort nicht da — und der Wordfence-Schlüssel darf ausdrücklich weder
+ins Repository noch auf einen Kundenserver, der Server kann also nicht selbst
+abrufen. Der flache Clone überträgt keinen Verlauf; der Zuwachs je Aufbau
+belastet nur die Arbeitskopie des Betreibers.
+
+Dazu kommt der Belegzweck: ein Befund muss später einem **bestimmten**
+Datenstand zuzuordnen sein. Dafür sind `VERSION` und `MANIFEST.sha256` da. Ein
+Bestand, der nur zur Laufzeit irgendwo herkommt, lässt sich für einen Bericht
+an einen Kunden oder ans BSI nicht nachweisen.
 
 ---
 
