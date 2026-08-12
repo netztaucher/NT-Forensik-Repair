@@ -571,6 +571,54 @@ PHP
 
   printf '<?php\n// wp-load\n' > "${k3}/wp-load.php"
 
+  # ════════════════════════════════════════════════════════════
+  # ABGLEICH GEGEN DIE ECHTEN LAGEN — Stand 2026-08-12
+  # ════════════════════════════════════════════════════════════
+  #
+  # An einem Tag fanden zwei Laeufe gegen EINE echte Installation fuenf
+  # Fehler, die 46 Selbsttestfaelle, ein deckungsgleiches Goldmuster und vier
+  # Pruefstaende nicht sehen konnten. Vier davon hatten dieselbe Ursache:
+  # der Pruefbaum kannte eine Form nicht, die es in der Wirklichkeit gibt.
+  # Der fuenfte war schlimmer — die wp-cli-Attrappe war an den Defekt
+  # ANGEPASST worden (siehe 'core version' weiter oben).
+  #
+  # Deshalb hier die Liste der Formen, die auf dem gemessenen System
+  # vorkamen, und was der Pruefbaum davon abdeckt. Wer eine Form ergaenzt,
+  # traegt sie hier nach.
+  #
+  #   Form                                        Vorbild        abgedeckt
+  #   ------------------------------------------- -------------- ---------
+  #   Plugin mit Kopf und Fassung                 15 von 17      ja
+  #   Plugin ohne lesbaren Kopf, PHP oben         —              ja (kopflos)
+  #   Verzeichnis ohne JEDE PHP-Datei             chronosly-     ja (#39)
+  #                                               addons
+  #   Verzeichnis mit PHP NUR in Unterordnern,    chronosly-     ja (#39)
+  #   ohne Kopf                                   templates
+  #   .php-Datei mit reinem JSON, eine Riesen-    dad7/          ja
+  #   zeile                                       default.php
+  #   Schwachstellenzeile ohne 'behoben'          26 % des       ja (#38)
+  #                                               Bestandes
+  #   Schwachstellenzeile ohne 'kev'              99,7 %         ja
+  #   Bereich '* … *', trifft jede Fassung        WP-Core        ja (#38)
+  #   wp-cli antwortet nicht ohne --path          jede Instanz   ja (#41)
+  #
+  # NOCH NICHT ABGEDECKT — jeweils mit offenem Issue:
+  #
+  #   Pruefsummensatz fuehrt Datei, die fehlt      2 Dateien      #40
+  #   veraenderte Nicht-Codedatei (readme, .po)    —              #40
+  #   UNVERAENDERTE Core-Datei mit Mustertreffer   1 Datei        #42
+  #
+  # Die drei gehoeren mit der jeweiligen Reparatur dazu, nicht vorher: eine
+  # Fixture fuer #42 wuerde sonst den Fehlalarm als Sollwert einfrieren.
+  #
+  # WAS DIESER BAUM GRUNDSAETZLICH NICHT LEISTET
+  #
+  # Ein Rauschmass. Auf dem echten System listete §7.15 235 Dateien ueber der
+  # Schwelle — 222 davon mit genau 3 Punkten, also exakt auf INJEKTION_
+  # PUNKTE_MIN. Hier sind es eine Handvoll. Der Pruefbaum kann pruefen, DASS
+  # der Detektor trennt; wo die Schwelle liegen muss, kann nur eine Messung
+  # an einem echten Server sagen (#9).
+  #
   # ── Erweiterungen fuer den Versionsabgleich ─────────────────
   # Ohne Plugins im Baum konnte der Pruefstand den Trefferpfad von
   # rezept_version nie ueben: er sah nur den Fall "nichts zu vergleichen".
@@ -637,6 +685,49 @@ PHP
     printf '/*\nTheme Name: %s\nVersion: %s\n*/\n' "$4" "$3" > "${ziel}/style.css"
   }
 
+  # ── Was unter plugins/ liegt und KEIN Plugin ist ─────────────────────
+  #
+  # Abgenommen vom ersten Lauf gegen ein echtes System (#9). Dort lagen unter
+  # wp-content/plugins/ zwei Verzeichnisse, die WordPress selbst in keiner
+  # Pluginliste fuehrt, weil ihnen der Kopf fehlt — Chronosly legt daneben
+  # seine Daten und Vorlagen ab:
+  #
+  #   chronosly-addons     0 PHP-Dateien ueberhaupt, nur eine version.json
+  #   chronosly-templates  0 PHP-Dateien oben, 12 in Unterordnern, kein Kopf
+  #
+  # Der Prüfbaum kannte nur 'pruefstand-kopflos': PHP OBEN, aber ohne Kopf.
+  # Die beiden echten Formen fehlten, und deshalb blieb unbemerkt, dass
+  # _wp_bestand jedes Verzeichnis unter plugins/ als Plugin zaehlt und beide
+  # als "ohne lesbare Fassung" meldet — der ⚪-Anteil faellt dadurch zu hoch
+  # aus.
+  #
+  # ACHTUNG: die Referenz haelt damit vorerst das FALSCHE Verhalten fest.
+  # Das ist Absicht — sobald #39 behoben ist, zeigt der Referenzvergleich
+  # genau, was sich aendert. Ohne die Fixture waere die Reparatur unbelegbar.
+  wp_nichtplugin() {   # wp_nichtplugin <installation>
+    local basis="$1/wp-content/plugins"
+    # a) gar keine PHP-Datei, nur eine lesbare Fassungsangabe im JSON
+    mkdir -p "${basis}/pruefstand-daten"
+    printf '{"version":"2.4.0","name":"Pruefstand Daten"}\n' \
+      > "${basis}/pruefstand-daten/version.json"
+    # b) PHP nur in Unterordnern, und der Inhalt ist reines JSON auf EINER
+    #    Zeile. Genau die Machart der echten Vorlagendateien — und damit auch
+    #    das Rauschmaterial, an dem sich §7.15 bewaehren muss: lange Zeile,
+    #    hohe Dichte, kein Schadcode.
+    local i
+    for i in 1 2; do
+      mkdir -p "${basis}/pruefstand-vorlagen/dad${i}"
+      {
+        printf '{"boxes":[{"type":"%s","style":"width:23.5%%;clear:none;float:left;"' "$i"
+        local j
+        for j in $(seq 1 40); do
+          printf ',{"name":"feld_%s","value":"","label":"Feld %s"}' "$j" "$j"
+        done
+        printf ']}\n'
+      } > "${basis}/pruefstand-vorlagen/dad${i}/default.php"
+    done
+  }
+
   # Kunde 2: eine Luecke mit belegter Ausnutzung (🔴), eine ohne (⚠️), eine
   # Fassung ausserhalb des Bereichs (✅) und eine ohne lesbaren Kopf (⚪).
   wp_kern() {   # wp_kern <installation> <fassung>
@@ -660,6 +751,8 @@ PHP
   # die halbe Meldung, und weder das Goldmuster noch 46 Selbsttestfaelle
   # zeigten etwas. In den echten Daten trifft das 26 % aller Datensaetze.
   wp_plugin "$k2" pruefstand-ohne-fix 1.0   "Pruefstand Ohne Fix"
+  # Die beiden Nicht-Plugin-Verzeichnisse aus dem echten Baum (#39).
+  wp_nichtplugin "$k2"
   # Composer-Abhaengigkeit eines Plugins (#14). Kunde 2 traegt die verwundbare
   # Fassung, Kunde 3 die behobene — derselbe Baum deckt damit Treffer UND
   # Gegenprobe ab. Die dev-Fassung prueft den dritten Fall: nicht vergleichbar,
