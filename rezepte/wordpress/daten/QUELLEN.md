@@ -135,28 +135,55 @@ wie sich der Bestand später nachweisen lässt.
 
 ---
 
-## Offen vor der ersten Auslieferung
+## Vor der ersten Auslieferung — erledigt am 2026-08-12
 
-Diese Punkte sind **erledigt, bevor der erste Wordfence-Bestand eingecheckt
-wird** — nicht danach:
+Diese vier Punkte waren die Bedingung dafür, dass ein Wordfence-Bestand
+eingecheckt werden darf. Sie sind mit dem ersten echten Abruf beantwortet.
 
-1. **`rezepte/wordpress/daten/LICENSE` anlegen** mit dem Copyright-Vermerk von Defiant
-   und dem Lizenztext. Die Bedingungen verlangen beides je Kopie; der Verweis je
-   Zeile allein genügt nicht.
-2. **MITRE-Anzeigepflicht klären.** Wordfence nennt für CVE-Anteile eine
-   Anzeigepflicht gegenüber dem Endnutzer. Ob das eine Pflicht zur Nennung **in
-   der Trefferausgabe** ist — dann derselbe Konflikt wie bei DRL 1.1, der hier
-   bereits zum Ausschluss von Regelwerken geführt hat — oder nur eine
-   Beilagepflicht, ist ungeklärt.
-3. **Feedformat gegenprüfen.** Der Normalisierer in
-   `werkzeuge/wordpress-daten-update.sh` ist gegen die dokumentierte Struktur
-   gebaut und gegen einen nachgebauten Feed getestet, **nicht gegen den echten**
-   — dafür fehlte der Schlüssel. Der erste echte Lauf ist gleichzeitig der erste
-   Formattest. Er weist aus, wie viele Datensätze nicht übernommen wurden; steht
-   dort eine große Zahl, stimmt die Annahme über das Format nicht.
-4. **Abdeckung auszählen.** Wie viele Datensätze hat der Feed, wie viele
-   verschiedene Slugs? Ohne diese Zahl lässt sich nicht beurteilen, ob die
-   Abhängigkeit von einer einzigen Quelle tragbar ist.
+1. **`LICENSE` mit Copyright-Vermerk und Lizenztext.** Erledigt — und anders
+   gelöst als geplant. Der Feed führt je Datensatz ein Feld `copyrights` mit
+   Vermerk, Lizenztext und Bedingungsverweis **im Wortlaut**. Der Text muss
+   deshalb weder abgeschrieben noch von der Webseite geholt werden; er wird bei
+   jedem Bestandsaufbau aus dem Abzug abgeleitet.
+
+   Das ist die bessere Lösung, weil sie §5c baulich beantwortet statt durch
+   Vorsatz: Lizenztext und Bestand stammen zwangsläufig aus demselben Abruf.
+   Nebenbei war der ursprüngliche Weg gar nicht gangbar — die Seite mit den
+   Bedingungen beantwortet Skriptzugriffe mit HTTP 202 und leerem Rumpf.
+
+2. **MITRE-Anzeigepflicht.** Geklärt, aus dem Wortlaut im Feed. Beide
+   Lizenztexte binden die Weitergabe wortgleich an *reproduce … in any such
+   copy*. Weder Defiant noch MITRE verlangt eine Nennung gegenüber dem
+   Endnutzer oder in der Trefferausgabe; MITRE verlangt nicht einmal den
+   Hyperlink, den Defiant fordert.
+
+   **Eine Beilage genügt.** `LICENSE` und `NOTICE` reisen mit dem Bestand und
+   sind die Kopie, in der die Vermerke stehen. Der Konflikt mit DRL 1.1, der
+   hier zum Ausschluss von Regelwerken geführt hat, besteht bei dieser Quelle
+   nicht. Das Autorenfeld aus Issue #13 ist keine Voraussetzung.
+
+3. **Feedformat gegengeprüft.** Erster echter Lauf: 38.456 Datensätze,
+   **kein einziger verworfen** — weder ohne `software`, noch ohne Slug, noch
+   mit unbekanntem Typ, noch ohne Versionsbereich. Die Annahme über das Format
+   stimmt.
+
+4. **Abdeckung ausgezählt.** 45.121 Zeilen auf 18.062 verschiedene Slugs:
+
+   | Tabelle | Zeilen | verschiedene Slugs |
+   |---|---:|---:|
+   | `wp-core.tsv` | 3.044 | 1 |
+   | `wp-plugins.tsv` | 38.964 | 15.921 |
+   | `wp-themes.tsv` | 3.113 | 2.140 |
+
+   Die Zahlen stehen ab jetzt bei jedem Aufbau neu in `VERSION`. Zeilen allein
+   sagen wenig — 40.000 Einträge auf 300 Slugs wären etwas ganz anderes.
+
+### Was dabei offen bleibt
+
+Der Feed kennt **keinen Teilabruf** und ist strikt ratenbegrenzt: der zweite
+Abruf innerhalb weniger Minuten kam mit HTTP 429 zurück. Ein Aufbau ist damit
+ein 150-MB-Vorgang, der sich nicht beliebig wiederholen lässt. Wer am
+Normalisierer arbeitet, hebt den Abzug auf und nutzt `--aus-datei`.
 
 ---
 *netztaucher | digital*
