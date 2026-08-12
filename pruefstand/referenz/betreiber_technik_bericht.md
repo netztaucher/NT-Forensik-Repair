@@ -31,6 +31,10 @@
 ## 7. DATEISYSTEM-SCAN
 
 
+### 7.0 Datei-Inventar (Inode und Zeitstempel sichern)
+
+  Inventar: 603 Datei(en) erfasst, davon 603 mit Anlegezeit (belege/00_dateien.tsv)
+
 ### 7.1 Kürzlich veränderte PHP-Dateien (letzte 30 Tage)
 
   Kürzlich veränderte .php-Dateien:

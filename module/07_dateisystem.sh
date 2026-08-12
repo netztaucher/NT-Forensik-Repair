@@ -18,6 +18,29 @@ BELEG_STUFE=server
 h1 "7. DATEISYSTEM-SCAN"
 # ============================================================
 
+h2 "7.0 Datei-Inventar (Inode und Zeitstempel sichern)"
+# Steht bewusst VOR allen Prüfungen. Nicht weil dieser Lauf etwas verändern
+# würde — er ist read-only —, sondern weil das Inventar die Grundlage für
+# alles ist, was danach mit den Dateien geschieht: Quarantäne, Bereinigung,
+# Wiederherstellung. Was erst nach der Bereinigung erhoben wird, beschreibt
+# den Zustand danach.
+#
+# Kein Befund, keine Zählung. Eine Bestandsaufnahme ist weder auffällig noch
+# unauffällig; sie zu bewerten wäre eine Aussage, die sie nicht trägt.
+INVENTAR_DATEI="${BELEGE_DIR}/00_dateien.tsv"
+INVENTAR_N=$(datei_inventar "$INVENTAR_DATEI" "${SCAN_PATHS[@]}")
+if [[ "${INVENTAR_N:-0}" -gt 0 ]]; then
+  # Wieviele davon ihre Anlegezeit preisgeben, gehört dazu: ext4 führt sie,
+  # meldet sie aber nur bei ausreichend grossem Inode. Ohne diese Zahl liest
+  # sich eine Spalte voller "-" wie ein Fehler des Werkzeugs statt wie eine
+  # Eigenschaft des Dateisystems.
+  INVENTAR_CRT=$(awk -F'\t' '!/^#/ && $9 != "-" {n++} END{print n+0}' "$INVENTAR_DATEI" 2>/dev/null || echo 0)
+  info "Inventar: ${INVENTAR_N} Datei(en) erfasst, davon ${INVENTAR_CRT} mit Anlegezeit (belege/00_dateien.tsv)"
+  [[ "${INVENTAR_CRT:-0}" -eq 0 ]] && \
+    info "Kein Dateisystem mit auslesbarer Anlegezeit — nach einer Quarantäne bleibt nur die mtime, und die lässt sich mit touch verstellen"
+else
+  unklar "Datei-Inventar konnte nicht erhoben werden — nach einer Bereinigung sind die Zeitstempel nicht mehr rekonstruierbar"
+fi
 
 h2 "7.1 Kürzlich veränderte PHP-Dateien (letzte ${DAYS_BACK} Tage)"
 echo -e "  ${YLW}Durchsuche Webspace (kann dauern...)${NC}"

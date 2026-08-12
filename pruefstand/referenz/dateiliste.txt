@@ -15,6 +15,7 @@
 ./betreiber/belege/007_wp_version_nicht_bewertbar_kunde-drei_example_httpdocs.txt
 ./betreiber/belege/008_wp_version_nicht_bewertbar_kunde-zwei_example_httpdocs.txt
 ./betreiber/belege/009_wp_schwachstellen_kunde-zwei_example_httpdocs.txt
+./betreiber/belege/00_dateien.tsv
 ./betreiber/belege/00_manifest.txt
 ./betreiber/belege/00_verzeichnis.tsv
 ./betreiber/belege/010_wp_include_injektion_kunde-zwei_example_httpdocs.txt
