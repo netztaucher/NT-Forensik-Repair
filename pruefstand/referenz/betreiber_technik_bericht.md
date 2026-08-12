@@ -331,6 +331,7 @@ Order allow,deny
   Beleg: belege/009_wp_ohne_pruefsummen_kunde-drei_example_httpdocs.txt
 - ✅ kunde-drei.example/httpdocs: WordPress-Core unverändert (verify-checksums)
   kunde-drei.example/httpdocs: kein Wordfence in dieser Installation — keine Zweitmeinung verfügbar
+- ⚪ **Nicht messbar: kunde-drei.example/httpdocs: Datenbank nicht geprüft (grep beherrscht kein -P (PCRE) — die Werte aus wp-config.php sind damit nicht lesbar). Das ist KEINE Entwarnung.**
 
 ### 12r.2.x kunde-eins.example/httpdocs
 
@@ -339,6 +340,7 @@ Order allow,deny
 - ✅ kunde-eins.example/httpdocs: keine @include base64_decode()-Injektion
 - ✅ kunde-eins.example/httpdocs: WordPress-Core unverändert (verify-checksums)
   kunde-eins.example/httpdocs: kein Wordfence in dieser Installation — keine Zweitmeinung verfügbar
+- ⚪ **Nicht messbar: kunde-eins.example/httpdocs: Datenbank nicht geprüft (grep beherrscht kein -P (PCRE) — die Werte aus wp-config.php sind damit nicht lesbar). Das ist KEINE Entwarnung.**
 
 ### 12r.2.x kunde-zwei.example/httpdocs
 
@@ -418,6 +420,7 @@ Modified plugin file: wp-content/plugins/pruefstand-aktuell/pruefstand-aktuell.p
 ```
 
   kunde-zwei.example/httpdocs: Wordfence führt 1 Plugin(s) als aufgegeben (kein Hersteller-Support mehr)
+- ⚪ **Nicht messbar: kunde-zwei.example/httpdocs: Datenbank nicht geprüft (grep beherrscht kein -P (PCRE) — die Werte aus wp-config.php sind damit nicht lesbar). Das ist KEINE Entwarnung.**
 
 ## 13b. .HTACCESS — SICHERUNG UND EINORDNUNG
 
@@ -497,17 +500,20 @@ php_value auto_prepend_file /var/www/vhosts/<anderer Kunde 2>  auto_prepend_file
 | 🔴 Kritische Befunde | 15 |
 | ⚠️ Warnungen | 17 |
 | ✅ Unauffällige Prüfungen | 21 |
-| ⚪ Nicht messbar | 6 |
+| ⚪ Nicht messbar | 9 |
 
-> **6 Prüfung(en) haben keine Aussage geliefert.** Ihr Ergebnis ist weder
+> **9 Prüfung(en) haben keine Aussage geliefert.** Ihr Ergebnis ist weder
 > ein Befund noch eine Entwarnung — der jeweilige Bereich ist ungeprüft:
 >
 > - Webshell-Mustersuche nicht ausgeführt — grep beherrscht kein -P (PCRE). Auf macOS ist BSD-grep die Vorgabe; GNU grep oder ugrep installieren. Das ist KEINE Entwarnung.
 > - kunde-zwei.example/cloud.kunde-zwei.example: Werkzeug antwortet nicht verwertbar — nicht geprüft
 > - kunde-drei.example/httpdocs: 1 Bestandteil(e) ohne lesbare Fassung — für sie ist keine Aussage zur Angreifbarkeit möglich
 > - kunde-drei.example/httpdocs: 1 Plugin(s) ohne Prüfsummensatz und alle Themes — Unversehrtheit nicht feststellbar (Premium, Fork, Eigenbau; für Themes veröffentlicht wordpress.org keine Prüfsummen)
+> - kunde-drei.example/httpdocs: Datenbank nicht geprüft (grep beherrscht kein -P (PCRE) — die Werte aus wp-config.php sind damit nicht lesbar). Das ist KEINE Entwarnung.
+> - kunde-eins.example/httpdocs: Datenbank nicht geprüft (grep beherrscht kein -P (PCRE) — die Werte aus wp-config.php sind damit nicht lesbar). Das ist KEINE Entwarnung.
 > - kunde-zwei.example/httpdocs: 5 Bestandteil(e) ohne lesbare Fassung — für sie ist keine Aussage zur Angreifbarkeit möglich
 > - kunde-zwei.example/httpdocs: 4 Plugin(s) ohne Prüfsummensatz und alle Themes — Unversehrtheit nicht feststellbar (Premium, Fork, Eigenbau; für Themes veröffentlicht wordpress.org keine Prüfsummen)
+> - kunde-zwei.example/httpdocs: Datenbank nicht geprüft (grep beherrscht kein -P (PCRE) — die Werte aus wp-config.php sind damit nicht lesbar). Das ist KEINE Entwarnung.
 
 ### 14.2 Empfohlene Sofortmaßnahmen
 

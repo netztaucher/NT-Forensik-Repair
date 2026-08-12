@@ -187,6 +187,39 @@ if ($befehl === 'core version') {
     echo (strpos($pfad, 'kunde-drei') !== false ? "6.9.2" : "6.4.1"), "\n";
     exit(0);
 }
+# ── Datenbankabfragen ────────────────────────────────────────────────
+# rezept_sql versucht zuerst mysql und faellt dann auf `wp db query` zurueck.
+# Im Pruefbaum gibt es keine Datenbank, also landet jede Abfrage hier.
+#
+# Bis v3.14 antwortete die Attrappe darauf mit exit(0) und KEINER Ausgabe.
+# Damit fand der Pruefbaum nie einen Angreifer-Admin — und der ganze Weg von
+# der Erkennung ueber findings.json bis zur Bereinigung war ungeprueft. Genau
+# deshalb blieb unbemerkt, dass actionable.rogue_wp_admins den
+# Installationspfad verliert und die Bereinigung damit nicht handeln kann.
+if ($befehl === 'db query') {
+    # Das SQL steht NICHT an fester Stelle: rezept_sql ruft
+    # `wp db query --skip-column-names "<sql>"`, der Schalter schiebt es auf
+    # argv[4]. Deshalb alle Argumente zusammenfassen statt zu indizieren.
+    $sql = implode(' ', array_slice($argv, 3));
+    # a) kuerzlich angelegte Administratoren — belegt, nicht Verdacht.
+    #    Nur bei Kunde 2; Kunde 3 ist die Gegenprobe und muss leer bleiben.
+    if (strpos($sql, 'user_registered >') !== false) {
+        if (strpos($pfad, 'kunde-zwei') !== false) {
+            echo "wp_backup\tadmin@beispiel.invalid\t2026-08-11 03:14:07\n";
+            echo "svc_updater\tsvc@beispiel.invalid\t2026-08-11 03:14:09\n";
+        }
+        exit(0);
+    }
+    # b) angreifertypischer Name oder Adresse — Verdacht, kein Beleg.
+    #    Die Bereinigung darf diese Konten nie deaktivieren, nur notieren.
+    if (strpos($sql, 'REGEXP') !== false) {
+        if (strpos($pfad, 'kunde-zwei') !== false) {
+            echo "wpadmin\talt@beispiel.invalid\n";
+        }
+        exit(0);
+    }
+    exit(0);
+}
 if ($befehl === 'core verify-checksums') {
     if (strpos($pfad, 'kunde-zwei') !== false) {
         echo "Warning: File doesn't verify against checksum: wp-includes/load.php\n";

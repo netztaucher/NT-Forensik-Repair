@@ -45,6 +45,21 @@ DOORWAY_DIRS=""        # Verzeichnisse mit Doorway-.htaccess-Signatur
 CORE_INJECT_HITS=""    # Dateien mit @include base64_decode() (Bootstrap-Injektion)
 DISGUISED_PAYLOADS=""  # als Nicht-PHP getarnte Payloads (<?php in .ttf/.png/.gif/.css…)
 ROGUE_ADMINS=""        # via wp-cli-Fallback gefundene Angreifer-Admins
+# ── Handlungsfaehige Fassung derselben Konten ────────────────
+# ROGUE_ADMINS traegt den Instanznamen in einer Kopfzeile "=== kurz ===".
+# findings.json filtert die beim Bauen der Liste heraus — in
+# actionable.rogue_wp_admins standen deshalb Benutzernamen OHNE Installation.
+# Auf einem Server mit 475 vhosts ist das nicht handlungsfaehig, sondern
+# gefaehrlich: derselbe Name existiert dort vielfach.
+#
+# Genau daran scheiterte die Bereinigung: die Aktionsart rogue_admin_removed
+# war im Berichtsgenerator vorgesehen, wurde aber nie erzeugt, weil ihr die
+# Daten fehlten.
+#
+# Diese beiden Sammler fuehren je Zeile den VOLLEN Pfad mit:
+#   <pfad>\t<benutzer>\t<email>\t<angelegt>
+ROGUE_ADMINS_DETAIL=""    # belegt: nach dem Vorfall angelegt
+SUSPECT_ADMINS_DETAIL=""  # Verdacht: angreifertypischer Name/Adresse
 NC_HTACCESS_MAL=""     # Nextcloud: .htaccess mit Angreifer-Merkmalen
 NC_MALWARE=""          # Nextcloud: bekannte Schaddateien und aufgeblaehte index.php
 NC_NESTED=""           # Nextcloud: verschachtelte Verzeichnisse (config/config)

@@ -129,6 +129,7 @@
   [0;36m⚪[0m kunde-drei.example/httpdocs: 1 Plugin(s) ohne Prüfsummensatz und alle Themes — Unversehrtheit nicht feststellbar (Premium, Fork, Eigenbau; für Themes veröffentlicht wordpress.org keine Prüfsummen)
   [0;32m✓[0m kunde-drei.example/httpdocs: WordPress-Core unverändert (verify-checksums)
   [0m·  kunde-drei.example/httpdocs: kein Wordfence in dieser Installation — keine Zweitmeinung verfügbar
+  [0;36m⚪[0m kunde-drei.example/httpdocs: Datenbank nicht geprüft (grep beherrscht kein -P (PCRE) — die Werte aus wp-config.php sind damit nicht lesbar). Das ist KEINE Entwarnung.
 
 [0;36m▶ 12r.2.x kunde-eins.example/httpdocs[0m
   [0;32m✓[0m kunde-eins.example/httpdocs: keine bekannte Schwachstelle im vorliegenden Datenbestand (Stand <STAND>)
@@ -136,6 +137,7 @@
   [0;32m✓[0m kunde-eins.example/httpdocs: keine @include base64_decode()-Injektion
   [0;32m✓[0m kunde-eins.example/httpdocs: WordPress-Core unverändert (verify-checksums)
   [0m·  kunde-eins.example/httpdocs: kein Wordfence in dieser Installation — keine Zweitmeinung verfügbar
+  [0;36m⚪[0m kunde-eins.example/httpdocs: Datenbank nicht geprüft (grep beherrscht kein -P (PCRE) — die Werte aus wp-config.php sind damit nicht lesbar). Das ist KEINE Entwarnung.
 
 [0;36m▶ 12r.2.x kunde-zwei.example/httpdocs[0m
   [0;33m⚠[0m  kunde-zwei.example/httpdocs: core wordpress 6.4.1 ist von einer bekannten Schwachstelle betroffen ([6.0 … 6.4.1]) CVE-2026-90004 — behoben in 6.4.2.
@@ -159,6 +161,7 @@
   [0;33m⚠[0m  kunde-zwei.example/httpdocs: Wordfence hat Pfade vom Scan ausgenommen — ein unauffälliger Wordfence-Bericht ist für diese Bereiche KEINE Entwarnung
   [0;33m⚠[0m  kunde-zwei.example/httpdocs: Wordfence meldet 1 Datei(en) als verändert gegenüber dem Original — Integritätsabweichung, kein Signaturtreffer
   [0m·  kunde-zwei.example/httpdocs: Wordfence führt 1 Plugin(s) als aufgegeben (kein Hersteller-Support mehr)
+  [0;36m⚪[0m kunde-zwei.example/httpdocs: Datenbank nicht geprüft (grep beherrscht kein -P (PCRE) — die Werte aus wp-config.php sind damit nicht lesbar). Das ist KEINE Entwarnung.
   [0;36mübersprungen:[0m 13. Root- & Eskalations-Prüfung
 
 [1m[0;34m══════════════════════════════════════════[0m
@@ -204,14 +207,17 @@
 [1m[0;32m  ANALYSE ABGESCHLOSSEN — Lauf <LAUF-ID>[0m
 [1m[0;32m══════════════════════════════════════════[0m
 
-[1mBefunde:[0m       🔴 15 kritisch, ⚠️ 17 Warnungen, ✅ 22 ok, ⚪ 6 nicht messbar
-[0;33m               6 Prüfung(en) ohne Ergebnis — das ist keine Entwarnung.[0m
+[1mBefunde:[0m       🔴 15 kritisch, ⚠️ 17 Warnungen, ✅ 22 ok, ⚪ 9 nicht messbar
+[0;33m               9 Prüfung(en) ohne Ergebnis — das ist keine Entwarnung.[0m
                  Webshell-Mustersuche nicht ausgeführt — grep beherrscht kein -P (PCRE). Auf macOS ist BSD-grep die Vorgabe; GNU grep oder ugrep installieren. Das ist KEINE Entwarnung.
                  kunde-zwei.example/cloud.kunde-zwei.example: Werkzeug antwortet nicht verwertbar — nicht geprüft
                  kunde-drei.example/httpdocs: 1 Bestandteil(e) ohne lesbare Fassung — für sie ist keine Aussage zur Angreifbarkeit möglich
                  kunde-drei.example/httpdocs: 1 Plugin(s) ohne Prüfsummensatz und alle Themes — Unversehrtheit nicht feststellbar (Premium, Fork, Eigenbau; für Themes veröffentlicht wordpress.org keine Prüfsummen)
+                 kunde-drei.example/httpdocs: Datenbank nicht geprüft (grep beherrscht kein -P (PCRE) — die Werte aus wp-config.php sind damit nicht lesbar). Das ist KEINE Entwarnung.
+                 kunde-eins.example/httpdocs: Datenbank nicht geprüft (grep beherrscht kein -P (PCRE) — die Werte aus wp-config.php sind damit nicht lesbar). Das ist KEINE Entwarnung.
                  kunde-zwei.example/httpdocs: 5 Bestandteil(e) ohne lesbare Fassung — für sie ist keine Aussage zur Angreifbarkeit möglich
                  kunde-zwei.example/httpdocs: 4 Plugin(s) ohne Prüfsummensatz und alle Themes — Unversehrtheit nicht feststellbar (Premium, Fork, Eigenbau; für Themes veröffentlicht wordpress.org keine Prüfsummen)
+                 kunde-zwei.example/httpdocs: Datenbank nicht geprüft (grep beherrscht kein -P (PCRE) — die Werte aus wp-config.php sind damit nicht lesbar). Das ist KEINE Entwarnung.
 
 [1mLauf-Ordner:[0m     <PRUEFSTAND>/ablage/forensik/<LAUF-ID>
 
