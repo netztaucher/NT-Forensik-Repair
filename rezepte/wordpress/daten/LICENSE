@@ -1,0 +1,63 @@
+Wordfence Intelligence Vulnerability Database
+=============================================
+
+DIESE DATEI IST NOCH EIN GERUEST. Solange die Zeile PLATZHALTER weiter unten
+steht, weigert sich werkzeuge/wordpress-daten-update.sh, einen
+Wordfence-Bestand zu schreiben. Das ist Absicht: sobald die Daten im
+oeffentlichen Repository liegen, sind sie ausgeliefert, und die Auflagen
+gelten ab diesem Augenblick.
+
+Was hier hineingehoert und warum
+--------------------------------
+
+Die Nutzungsbedingungen gewaehren die Weitergabe ausdruecklich (§3a), verlangen
+dafuer aber je Kopie DREI Dinge:
+
+  1. den Copyright-Vermerk von Defiant, Inc.
+  2. den Lizenztext im Wortlaut
+  3. einen Hyperlink auf den jeweiligen Datensatz
+
+Punkt 3 ist erfuellt: die Spalte 'quelle' jeder Zeile in vuln/*.tsv traegt den
+Verweis. Punkt 1 und 2 sind der Grund fuer diese Datei — ein Verweis je Zeile
+genuegt der Auflage nicht.
+
+Der Wortlaut wird NICHT aus dem Gedaechtnis eingesetzt und NICHT aus einer
+aelteren Fassung uebernommen. Er wird zum Zeitpunkt des Bezugs von der Quelle
+geholt und hier eingefuegt, zusammen mit dem Abrufdatum. Grund: §5c behaelt
+eine einseitige Aenderung der Bedingungen vor. Ein Lizenztext, der nicht zu
+dem Bestand passt, mit dem er ausgeliefert wird, belegt nichts.
+
+  Quelle der Bedingungen : https://www.wordfence.com/wordfence-intelligence-terms-and-conditions/
+  Abgerufen am           : [DATUM EINTRAGEN]
+  Fassung/Stand laut Text: [STAND EINTRAGEN]
+
+Copyright-Vermerk
+-----------------
+
+[COPYRIGHT-VERMERK VON DEFIANT, INC. IM WORTLAUT EINSETZEN]
+
+Lizenztext
+----------
+
+[LIZENZTEXT IM WORTLAUT EINSETZEN — vollstaendig, nicht sinngemaess]
+
+Offene Rechtsfrage: MITRE-Anzeigepflicht
+----------------------------------------
+
+Wordfence nennt fuer die CVE-Anteile eine Anzeigepflicht gegenueber dem
+Endnutzer. Ob die eine Nennung IN DER TREFFERAUSGABE verlangt oder nur eine
+Beilage, ist nicht geklaert; zwei gegenlaeufige Auslegungen wurden in der
+Recherche beide verworfen (docs/recherche-schwachstellenquellen.md).
+
+Die beiden Auslegungen fuehren zu verschiedenem Aufwand:
+
+  Beilage genuegt          -> diese Datei und NOTICE reichen aus
+  Nennung in der Ausgabe   -> es braucht ein Autorenfeld im Befundschema, das
+                              bis in findings.json und den Bericht durchgereicht
+                              wird. Das ist genau die Aenderung aus Issue #13,
+                              dort fuer DRL-lizenzierte Regelwerke beschrieben.
+
+Vor der ersten Auslieferung ist die Frage zu entscheiden. Wird die zweite
+Auslegung gewaehlt, ist #13 kein Nebenschauplatz mehr, sondern Voraussetzung.
+
+PLATZHALTER — diese Zeile entfernen, wenn oben alles eingesetzt ist.
