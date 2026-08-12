@@ -33,7 +33,7 @@
 
 ### 7.0 Datei-Inventar (Inode und Zeitstempel sichern)
 
-  Inventar: 625 Datei(en) erfasst, davon 625 mit Anlegezeit (belege/00_dateien.tsv)
+  Inventar: 628 Datei(en) erfasst, davon 628 mit Anlegezeit (belege/00_dateien.tsv)
 
 ### 7.1 Kürzlich veränderte PHP-Dateien (letzte 30 Tage)
 
@@ -44,6 +44,8 @@
 <INODE> -rw-r--r-- <EIGNER> 12 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/uploads/cache/index.php
 <INODE> -rw-r--r-- <EIGNER> 12 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/uploads/forminator/index.php
 <INODE> -rw-r--r-- <EIGNER> 17 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-load.php
+<INODE> -rw-r--r-- <EIGNER> 1971 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/plugins/pruefstand-vorlagen/dad1/default.php
+<INODE> -rw-r--r-- <EIGNER> 1971 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/plugins/pruefstand-vorlagen/dad2/default.php
 <INODE> -rw-r--r-- <EIGNER> 202 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/uploads/2026/03/hilfe.php
 <INODE> -rw-r--r-- <EIGNER> 230 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/joomla.kunde-zwei.example/configuration.php
 <INODE> -rw-r--r-- <EIGNER> 29 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-includes/version.php
@@ -53,8 +55,6 @@
 <INODE> -rw-r--r-- <EIGNER> 33998 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/plugins/pruefstand-ohne-fix/gross-injiziert.php
 <INODE> -rw-r--r-- <EIGNER> 34 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/joomla.kunde-zwei.example/libraries/src/Version.php
 <INODE> -rw-r--r-- <EIGNER> 43 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/uploads/2026/03/bild.php
-<INODE> -rw-r--r-- <EIGNER> 53 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/plugins/pruefstand-kev/lib/b.php
-<INODE> -rw-r--r-- <EIGNER> 53 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/plugins/pruefstand-kev/lib/c.php
 <INODE> -rw-r--r-- <EIGNER> 53 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/plugins/pruefstand-kev/lib/d.php
 <INODE> -rw-r--r-- <EIGNER> 53 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/plugins/pruefstand-kev/lib/e.php
 <INODE> -rw-r--r-- <EIGNER> 57 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/plugins/pruefstand-kopflos/lib/a.php
@@ -334,7 +334,7 @@ Order allow,deny
 - ⚠️  **kunde-zwei.example/httpdocs: plugin pruefstand-ohne-fix 1.0 ist von einer bekannten Schwachstelle betroffen ([* … *]) CVE-2026-90007.**
 - ⚠️  **kunde-zwei.example/httpdocs: theme pruefstand-thema 0.9 ist von einer bekannten Schwachstelle betroffen ((* … 1.0)) CVE-2026-90005 — behoben in 1.0.**
 - ⚠️  **kunde-zwei.example/httpdocs: Bibliothek (in einem Plugin) pruefstand/bibliothek 1.2.0 ist von einer bekannten Schwachstelle betroffen ([1.0.0 … 1.4.0)) CVE-2026-90006 — behoben in 1.4.0.**
-- ⚪ **Nicht messbar: kunde-zwei.example/httpdocs: 3 Bestandteil(e) ohne lesbare Fassung — für sie ist keine Aussage zur Angreifbarkeit möglich**
+- ⚪ **Nicht messbar: kunde-zwei.example/httpdocs: 5 Bestandteil(e) ohne lesbare Fassung — für sie ist keine Aussage zur Angreifbarkeit möglich**
   Beleg: belege/010_wp_version_nicht_bewertbar_kunde-zwei_example_httpdocs.txt
   Beleg: belege/011_wp_schwachstellen_kunde-zwei_example_httpdocs.txt
 - ✅ kunde-zwei.example/httpdocs: keine Doorway-.htaccess-Signatur
@@ -365,7 +365,7 @@ Order allow,deny
 ```
 
   Beleg: belege/013_wp_plugin_veraendert_kunde-zwei_example_httpdocs.txt
-- ⚪ **Nicht messbar: kunde-zwei.example/httpdocs: 2 Plugin(s) ohne Prüfsummensatz und alle Themes — Unversehrtheit nicht feststellbar (Premium, Fork, Eigenbau; für Themes veröffentlicht wordpress.org keine Prüfsummen)**
+- ⚪ **Nicht messbar: kunde-zwei.example/httpdocs: 4 Plugin(s) ohne Prüfsummensatz und alle Themes — Unversehrtheit nicht feststellbar (Premium, Fork, Eigenbau; für Themes veröffentlicht wordpress.org keine Prüfsummen)**
   Beleg: belege/014_wp_ohne_pruefsummen_kunde-zwei_example_httpdocs.txt
 - 🔴 **KRITISCH: kunde-zwei.example/httpdocs: 1 veränderte Core-Datei(en) — Injektion oder Manipulation**
 
@@ -487,8 +487,8 @@ php_value auto_prepend_file /var/www/vhosts/<anderer Kunde 2>  auto_prepend_file
 > - kunde-zwei.example/cloud.kunde-zwei.example: Werkzeug antwortet nicht verwertbar — nicht geprüft
 > - kunde-drei.example/httpdocs: 1 Bestandteil(e) ohne lesbare Fassung — für sie ist keine Aussage zur Angreifbarkeit möglich
 > - kunde-drei.example/httpdocs: 1 Plugin(s) ohne Prüfsummensatz und alle Themes — Unversehrtheit nicht feststellbar (Premium, Fork, Eigenbau; für Themes veröffentlicht wordpress.org keine Prüfsummen)
-> - kunde-zwei.example/httpdocs: 3 Bestandteil(e) ohne lesbare Fassung — für sie ist keine Aussage zur Angreifbarkeit möglich
-> - kunde-zwei.example/httpdocs: 2 Plugin(s) ohne Prüfsummensatz und alle Themes — Unversehrtheit nicht feststellbar (Premium, Fork, Eigenbau; für Themes veröffentlicht wordpress.org keine Prüfsummen)
+> - kunde-zwei.example/httpdocs: 5 Bestandteil(e) ohne lesbare Fassung — für sie ist keine Aussage zur Angreifbarkeit möglich
+> - kunde-zwei.example/httpdocs: 4 Plugin(s) ohne Prüfsummensatz und alle Themes — Unversehrtheit nicht feststellbar (Premium, Fork, Eigenbau; für Themes veröffentlicht wordpress.org keine Prüfsummen)
 
 ### 14.2 Empfohlene Sofortmaßnahmen
 

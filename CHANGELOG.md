@@ -115,6 +115,57 @@ Das ist der vierte Fund dieser Art an einem Tag — nach #38, #39 und #40. Die
 drei anderen waren Lücken in den Fixtures. Dieser hier war keine Lücke,
 sondern eine Anpassung an den Defekt.
 
+## [unveröffentlicht]
+
+### Geändert — der Prüfbaum kennt jetzt die Formen des echten Systems
+
+An einem Tag fanden zwei Läufe gegen **eine** echte Installation fünf Fehler,
+die 46 Selbsttestfälle, ein deckungsgleiches Goldmuster und vier Prüfstände
+nicht sehen konnten. Vier hatten dieselbe Ursache: der Prüfbaum kannte eine
+Form nicht, die es in der Wirklichkeit gibt.
+
+Statt weiter einzeln nachzurüsten, wenn wieder etwas auffällt, sind die Formen
+des gemessenen Systems jetzt erhoben und gegen den Prüfbaum gehalten. Die
+Liste steht im Baumbauer selbst, damit sie beim nächsten Fund fortgeschrieben
+wird statt neu erhoben.
+
+**Neu im Baum**, beide direkt vom echten System abgenommen:
+
+- `pruefstand-daten` — Verzeichnis unter `plugins/` **ohne jede PHP-Datei**,
+  nur eine `version.json`. Vorbild: `chronosly-addons`.
+- `pruefstand-vorlagen` — PHP **nur in Unterordnern**, kein Kopf, und der
+  Inhalt ist reines JSON auf einer Riesenzeile. Vorbild:
+  `chronosly-templates/dad7/default.php`.
+
+Der Prüfbaum kannte bisher nur `pruefstand-kopflos`: PHP **oben**, ohne Kopf.
+Die beiden echten Formen fehlten — und deshalb blieb unbemerkt, dass
+`_wp_bestand` jedes Verzeichnis unter `plugins/` als Plugin zählt. Der
+Referenzlauf zeigt es jetzt: „3 Bestandteil(e) ohne lesbare Fassung" wird zu
+**5**, „2 Plugin(s) ohne Prüfsummensatz" zu **4**.
+
+**Die Referenz hält damit vorerst das falsche Verhalten fest.** Das ist
+Absicht und im Baumbauer vermerkt: sobald #39 behoben ist, zeigt der
+Referenzvergleich genau, was sich ändert. Ohne die Fixture wäre die Reparatur
+unbelegbar.
+
+Nebenbei liefert `pruefstand-vorlagen` §7.15 das Rauschmaterial, das ihm
+fehlte — lange Zeile, hohe Dichte, kein Schadcode.
+
+### Dokumentiert — was der Prüfbaum grundsätzlich nicht leisten kann
+
+Ein Rauschmaß. Auf dem echten System listete §7.15 **235 Dateien** über der
+Schwelle, 222 davon mit genau 3 Punkten — also exakt auf
+`INJEKTION_PUNKTE_MIN`. Im Prüfbaum sind es eine Handvoll.
+
+Er kann prüfen, **dass** der Detektor trennt. Wo die Schwelle liegen muss,
+kann nur eine Messung an einem echten Server sagen. Das gehört so
+festgehalten, damit niemand die Schwellen aus dem Prüfbaum ableitet.
+
+Drei Formen bleiben bewusst offen, jeweils mit Issue: fehlende
+Prüfsummendatei und veränderte Nicht-Codedatei (#40), unveränderte Core-Datei
+mit Mustertreffer (#42). Sie gehören mit der jeweiligen Reparatur dazu — eine
+Fixture für #42 würde sonst den Fehlalarm als Sollwert einfrieren.
+
 ## [3.14.0] — 2026-08-12
 
 Eine Fassung mit einem Thema: **der Schwachstellenabgleich läuft nicht mehr
