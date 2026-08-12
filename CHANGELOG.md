@@ -4,6 +4,93 @@ Alle nennenswerten Änderungen an `wp_plesk_forensik.sh`.
 
 ## [unveröffentlicht]
 
+### Hinzugefügt — der Schwachstellenabgleich hat einen Datenbestand (#7, #8)
+
+Bis heute meldete jeder Lauf „Kein Datenbestand vorhanden — Abgleich
+übersprungen". Das war der größte einzelne Funktionsausfall des Werkzeugs: der
+Abgleich war gebaut, geprüft und lief gegen nichts.
+
+Jetzt liegen **45.121 Zeilen auf 18.062 verschiedene Slugs** in
+`rezepte/wordpress/daten/vuln/`. Der erste echte Abruf war zugleich der erste
+Formattest — von 38.456 Datensätzen wurde **kein einziger verworfen**.
+
+### Hinzugefügt — der Bestand erneuert sich selbst, wöchentlich
+
+`.github/workflows/schwachstellen-bestand.yml`, montags, dazu von Hand über
+`workflow_dispatch`.
+
+Die Taktung ist keine Geschmacksfrage. `WP_DATEN_MAX_TAGE` steht auf **30** —
+danach meldet das Rezept den eigenen Abgleich als „nicht belastbar" und bricht
+ihn ab (`rezept.sh:160`). Wöchentlich hält vier Puffer bis zur Marke; fällt ein
+Lauf aus, bleibt Zeit für den nächsten.
+
+Ein Githook wäre das falsche Werkzeug gewesen: `.git/hooks/` wird nicht
+versioniert und nicht geklont, hängt am falschen Auslöser — der Bestand
+veraltet mit der Zeit, nicht mit Commits — und der Schlüssel läge auf einer
+Arbeitsplatte statt an einer Stelle mit Zugriffskontrolle.
+
+Der Lauf öffnet einen **PR**, keinen Direktpush. Die Abdeckungszahlen stehen im
+PR-Text: sackt die Zahl der verschiedenen Slugs gegenüber dem Vorlauf ab, ist
+das ein Vorfall bei der Quelle und kein Update.
+
+Die Prüfstände laufen **im erzeugenden Lauf**, nicht erst im PR. Ein PR aus dem
+`GITHUB_TOKEN` löst per GitHub-Regel keine weiteren Workflows aus — sonst käme
+ein ungeprüftes Datenpaket zum Zusammenführen, und es sähe geprüft aus.
+
+Kein Fremd-Action: der Lauf trägt einen Schlüssel und hat `contents: write`,
+jede weitere Action wäre eine zusätzliche Stelle, der beides anvertraut werden
+müsste. Der PR entsteht mit `gh`. Ausgelöst wird nur über `schedule` und
+`workflow_dispatch`, damit Fork-PRs das Secret nie sehen.
+
+Dazu `docs/schwachstellen-bestand.md` — was im Bestand steht, warum er
+mitgeliefert wird, und was Rückgabewert 2 bedeutet (nicht wiederholen: es ist
+der §5c-Fall).
+
+### Geändert — LICENSE wird aus dem Feed abgeleitet statt von Hand gepflegt
+
+Der Feed führt je Datensatz ein Feld `copyrights` mit Copyright-Vermerk und
+Lizenztext **im Wortlaut**, für Defiant durchgängig und für MITRE bei allen
+Sätzen mit CVE-Bezug. `lizenz_schreiben()` leitet `LICENSE` daraus ab.
+
+Das ersetzt eine Sperre durch eine Bauart. §5c der Bedingungen behält eine
+einseitige Änderung vor; bisher hing es an Sorgfalt, dass der eingetragene Text
+zu dem Bestand passt, mit dem er ausgeliefert wird. Jetzt stammen beide
+zwangsläufig aus **demselben Abruf**. Der geplante Weg — Text von der Webseite
+holen — wäre ohnehin nicht gangbar gewesen: sie beantwortet Skriptzugriffe mit
+HTTP 202 und leerem Rumpf.
+
+Weichen die Sätze eines Abzugs im Lizenztext voneinander ab, bricht der Aufbau
+ab und schreibt nichts. Das ist genau der Zustand, in dem eine Änderung der
+Bedingungen anläuft — er darf nicht mit der erstbesten Fassung geglättet
+werden.
+
+`LICENSE` und `NOTICE` stehen jetzt mit im `MANIFEST.sha256`. Ein Manifest, das
+die Daten sichert und den Lizenztext ausspart, sichert die Lieferung nur halb.
+
+### Entschieden — die MITRE-Anzeigepflicht verlangt keine Nennung in der Ausgabe
+
+Die Frage war seit der Recherche offen und stand als Voraussetzung vor der
+ersten Auslieferung. Sie ist aus dem Wortlaut im Feed beantwortet: beide
+Lizenztexte binden die Weitergabe an *reproduce … in any such copy*, keiner
+verlangt eine Nennung gegenüber dem Endnutzer. **Eine Beilage genügt** —
+`LICENSE` und `NOTICE` reisen mit dem Bestand.
+
+Damit ist das Autorenfeld aus #13 für diese Quelle keine Voraussetzung. Für
+DRL-lizenzierte Regelwerke bleibt die Lage unverändert.
+
+### Geändert — der Lizenz-Prüfstand prüft die neuen Sollwerte
+
+Er prüfte bis hierher eine Welt, die es nicht mehr gibt: „Gate zu, keine
+Daten". Umgedreht statt abgeschwächt — der eingecheckte Bestand **muss** jetzt
+vorliegen und Datenzeilen führen, `LICENSE` **muss** öffnen und beide
+Rechteinhaber führen. Dazu vier neue Gegenproben um `lizenz_schreiben()`:
+Lizenztext wörtlich übernommen, zwei Fassungen brechen ab, fehlendes
+`copyrights` bricht ab, und nach einem Abbruch liegt **kein** Bestand.
+
+Dafür hat `wordpress-daten-update.sh` die Naht `NT_DATEN_DIR` bekommen — ohne
+sie ließe sich „schreibt bei fehlender Lizenz nichts" nur prüfen, indem man das
+echte Verzeichnis beschreibt.
+
 ### Geändert — der Bereinigungsteil springt von 0.5.3 auf 0.7.0
 
 `paket/repair-0.7.0.enc` ersetzt `repair-0.5.3.enc`; `PAKET_VERSION` und

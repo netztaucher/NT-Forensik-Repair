@@ -1,0 +1,193 @@
+name: Schwachstellen-Bestand erneuern
+
+# Warum das ein Zeitplan ist und kein Githook.
+#
+# Der Bestand veraltet mit der ZEIT, nicht mit Commits. Und er veraltet nicht
+# lautlos: steht er laenger als WP_DATEN_MAX_TAGE (30), meldet das Rezept den
+# eigenen Abgleich als "nicht belastbar" und bricht ihn ab
+# (rezepte/wordpress/rezept.sh:160). Ein Werkzeug, das seinen Kernabgleich
+# stillschweigend einstellt, ist schlimmer als eines, das ihn nie hatte.
+#
+# Ein Githook koennte das nicht leisten: .git/hooks wird nicht versioniert und
+# nicht geklont, haengt am falschen Ausloeser und legte den Schluessel auf eine
+# Arbeitsplatte statt an eine Stelle mit Zugriffskontrolle.
+#
+# Woechentlich, nicht taeglich: der Feed kennt keinen Teilabruf, jeder Lauf
+# holt rund 150 MB, und er ist strikt ratenbegrenzt (zweiter Abruf innerhalb
+# von Minuten -> HTTP 429). Woechentlich haelt vier Puffer zur 30-Tage-Marke.
+
+on:
+  schedule:
+    # Montags 04:17 UTC. Nicht zur vollen Stunde: dort draengen sich die
+    # Zeitplaene aller Repositories, und GitHub verschiebt dann.
+    - cron: '17 4 * * 1'
+  workflow_dispatch:
+
+# SCHLUESSEL UND FORKS: dieser Workflow laeuft ausschliesslich ueber schedule
+# und workflow_dispatch, also immer im Zusammenhang des Hauptrepositories.
+# Fork-PRs sehen das Secret damit nie. 'pull_request_target' darf hier NIE
+# auftauchen — es liefe mit Secrets im Zusammenhang des Zielrepositories und
+# machte den Schluessel fuer jeden Fork erreichbar.
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: schwachstellen-bestand
+  cancel-in-progress: false
+
+jobs:
+  bestand:
+    name: Feed abrufen, pruefen, PR oeffnen
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Schluessel vorhanden?
+        env:
+          WORDFENCE_API_KEY: ${{ secrets.WORDFENCE_API_KEY }}
+        run: |
+          if [[ -z "${WORDFENCE_API_KEY}" ]]; then
+            echo "::error::Secret WORDFENCE_API_KEY ist nicht hinterlegt."
+            echo "Anlegen unter Settings -> Secrets and variables -> Actions."
+            echo "Schluessel selbst: wordfence.com -> Integrations."
+            exit 1
+          fi
+
+      # Der eigentliche Lauf. Das Werkzeug holt, leitet LICENSE aus dem Feld
+      # 'copyrights' des Abzugs ab, prueft das Gate und normalisiert erst
+      # danach — siehe werkzeuge/wordpress-daten-update.sh.
+      #
+      # Rueckgabewert 2 heisst: die Lizenzlage stimmt nicht. Das ist KEIN
+      # Infrastrukturfehler, sondern der Fall, fuer den §5c vorgesorgt hat —
+      # er wird hier ausdruecklich benannt, damit ihn niemand als Aussetzer
+      # abtut und neu startet.
+      - name: Bestand aufbauen
+        id: aufbau
+        env:
+          WORDFENCE_API_KEY: ${{ secrets.WORDFENCE_API_KEY }}
+        run: |
+          set +e
+          bash werkzeuge/wordpress-daten-update.sh --wordfence 2>&1 | tee /tmp/aufbau.log
+          rc=${PIPESTATUS[0]}
+          set -e
+          if [[ "$rc" -eq 2 ]]; then
+            echo "::error::Aufbau am Lizenz-Gate abgebrochen (Rueckgabewert 2)."
+            echo "::error::Entweder fuehrt der Abzug zwei verschiedene Lizenzfassungen"
+            echo "::error::— dann laeuft gerade eine Aenderung der Bedingungen an —"
+            echo "::error::oder das Feld 'copyrights' fehlt im Feed. Beides gehoert"
+            echo "::error::geprueft, nicht wiederholt. Siehe docs/schwachstellen-bestand.md."
+            exit 2
+          fi
+          [[ "$rc" -eq 0 ]] || { echo "::error::Abruf fehlgeschlagen (rc=${rc})."; exit "$rc"; }
+
+      # Ein leerer oder halber Bestand sieht aus wie ein Bestand und liest sich
+      # als Entwarnung: ohne Datenzeilen kaeme jedes Plugin als SAUBER zurueck.
+      # Deshalb hier abfangen und nicht erst im Kundenbericht.
+      - name: Bestand hat Datenzeilen
+        run: |
+          fehlt=0
+          for t in wp-core wp-plugins wp-themes; do
+            f="rezepte/wordpress/daten/vuln/${t}.tsv"
+            n=$(grep -vc '^#' "$f" 2>/dev/null || true)
+            if [[ ! -s "$f" || "${n:-0}" -lt 1 ]]; then
+              echo "::error file=${f}::keine Datenzeilen — das waere eine stille Entwarnung"
+              fehlt=1
+            else
+              echo "  ${t}.tsv: ${n} Datenzeilen"
+            fi
+          done
+          exit "$fehlt"
+
+      # Die Pruefstaende laufen HIER, nicht erst im PR. Ein PR, den der
+      # GITHUB_TOKEN oeffnet, loest per GitHub-Regel keine weiteren Workflows
+      # aus — die Pruefung wuerde also gar nicht anspringen. Ohne diesen
+      # Schritt kaeme ein ungeprueftes Datenpaket zum Zusammenfuehren.
+      - name: Lizenz-Pruefstand
+        run: bash werkzeuge/lizenz-pruefstand.sh
+
+      - name: Vergleicher-Selbsttest
+        run: python3 lib/wp_schwachstellen.py --selbsttest
+
+      # Kein Direktpush auf main. Ein 7-MB-Datenwechsel gehoert gesehen, und
+      # die Abdeckungszahlen im PR-Text sind der Ort, an dem ein Einbruch
+      # auffaellt — eine Quelle, die ploetzlich halb so viele Slugs fuehrt, ist
+      # ein Vorfall und kein Update.
+      #
+      # Bewusst mit Bordmitteln statt mit einer Fremd-Action: dieser Lauf
+      # traegt einen Schluessel und hat 'contents: write'. Jede zusaetzliche
+      # Action waere eine weitere Stelle, der beides anvertraut werden muesste.
+      - name: Pull Request oeffnen
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          STAND=$(date -u +%Y-%m-%d)
+          ZWEIG="daten/schwachstellen-bestand"
+
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add rezepte/wordpress/daten/vuln \
+                  rezepte/wordpress/daten/LICENSE \
+                  rezepte/wordpress/daten/VERSION \
+                  rezepte/wordpress/daten/MANIFEST.sha256
+
+          if git diff --cached --quiet; then
+            echo "Bestand unveraendert — kein PR noetig."
+            exit 0
+          fi
+
+          # Abdeckung fuer den PR-Text. Aus VERSION, damit im PR genau die
+          # Zahlen stehen, die auch ausgeliefert werden.
+          ABDECKUNG=$(sed -n '/^Abdeckung/,$p' rezepte/wordpress/daten/VERSION | tail -n +2)
+
+          git checkout -B "$ZWEIG"
+          git commit -q -m "data(wordfence): Schwachstellen-Bestand erneuern (Stand ${STAND})" \
+                        -m "Erzeugt vom Zeitplan in .github/workflows/schwachstellen-bestand.yml.
+          LICENSE ist aus demselben Abzug abgeleitet wie die Daten."
+          git push -f origin "$ZWEIG"
+
+          # Laeuft schon einer, nur den Zweig erneuern — sonst haeuft jeder
+          # Wochenlauf einen weiteren PR auf denselben Pfaden an.
+          if gh pr list --head "$ZWEIG" --state open --json number -q '.[0].number' | grep -q .; then
+            echo "PR besteht bereits, Zweig erneuert."
+            exit 0
+          fi
+
+          gh pr create --base main --head "$ZWEIG" \
+            --title "data(wordfence): Schwachstellen-Bestand erneuern (Stand ${STAND})" \
+            --body "Erneuert den Schwachstellen-Bestand. Erzeugt vom Zeitplan, nicht von Hand.
+
+          ## Abdeckung
+
+          \`\`\`
+          ${ABDECKUNG}
+          \`\`\`
+
+          **Vor dem Zusammenfuehren ansehen:** sackt die Zahl der verschiedenen Slugs
+          gegenueber dem Vorlauf deutlich ab, ist das ein Vorfall bei der Quelle und
+          kein Update. Zeilen allein sagen wenig.
+
+          ## Was bereits geprueft ist
+
+          Diese Schritte sind im erzeugenden Lauf gelaufen, weil ein PR aus dem
+          \`GITHUB_TOKEN\` per GitHub-Regel keine weiteren Workflows ausloest:
+
+          - Aufbau ohne Abbruch am Lizenz-Gate
+          - alle drei Tabellen fuehren Datenzeilen
+          - \`werkzeuge/lizenz-pruefstand.sh\`
+          - \`python3 lib/wp_schwachstellen.py --selbsttest\`
+
+          \`LICENSE\` ist aus **demselben Abzug** abgeleitet wie die Daten — Text und
+          Bestand koennen nicht auseinanderlaufen.
+
+          ## Was hier NICHT geprueft ist
+
+          Das Goldmuster. Es vergleicht gegen eine Referenz von einem
+          macOS-Arbeitsplatz und schlaegt unter Linux bei jedem Lauf aus. Der
+          Pruefbaum nutzt ohnehin eigene Kunstdaten und ist von diesem Bestand
+          unabhaengig — ein Datenwechsel kann die Referenz nicht bewegen.
+
+          Hintergrund: \`docs/schwachstellen-bestand.md\`"

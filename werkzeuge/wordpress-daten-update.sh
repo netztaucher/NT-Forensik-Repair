@@ -35,16 +35,24 @@
 # Derselbe Grundsatz wie bei daten/joomla/QUELLEN.md. Er ist hier zusaetzlich
 # praktisch: weniger fremder Text heisst weniger Lizenzflaeche.
 #
-# Die Attributionsauflage von Defiant bleibt davon unberuehrt: jeder Datensatz
-# fuehrt seinen Verweis in der Spalte 'quelle' mit. VOR der ersten Auslieferung
-# eines Wordfence-Bestandes muss zusaetzlich rezepte/wordpress/daten/LICENSE mit dem
-# Lizenztext angelegt werden — siehe rezepte/wordpress/daten/QUELLEN.md, Abschnitt
-# 'Offen vor der ersten Auslieferung'.
+# Die Attributionsauflage von Defiant bleibt davon unberuehrt. Sie verlangt je
+# Kopie drei Dinge, und alle drei entstehen maschinell:
+#
+#   1. Verweis auf den Datensatz -> Spalte 'quelle' jeder Zeile
+#   2. Copyright-Vermerk         -> LICENSE, aus dem Feld 'copyrights' des Feeds
+#   3. Lizenztext im Wortlaut    -> LICENSE, ebendaher
+#
+# Punkt 2 und 3 waren bis v3.13 Handarbeit mit einer Sperre davor. Seit der
+# Feed sein Feld 'copyrights' mitliefert, ist das ueberfluessig — siehe
+# lizenz_schreiben() weiter unten und QUELLEN.md.
 # ============================================================
 set -uo pipefail
 
 HIER="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-DATEN="${HIER}/rezepte/wordpress/daten"
+# NT_DATEN_DIR ist die Naht fuer den Pruefstand: er muss pruefen koennen, dass
+# bei fehlender Lizenz KEIN Bestand entsteht — und das geht nur, wenn er dabei
+# nicht das echte Verzeichnis beschreibt.
+DATEN="${NT_DATEN_DIR:-${HIER}/rezepte/wordpress/daten}"
 
 WF_BASIS="https://www.wordfence.com/api/intelligence/v3/vulnerabilities"
 KEV_URL="https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json"
@@ -82,13 +90,9 @@ lizenz_gate() {
         return 1
     fi
     if grep -q '^PLATZHALTER' "$lic"; then
-        fehler "${lic} ist noch ein Geruest."
-        fehler "Es fehlen: Copyright-Vermerk und Lizenztext im Wortlaut, dazu das"
-        fehler "Abrufdatum. Die Datei sagt selbst, was wohin gehoert."
-        fehler ""
-        fehler "Nicht aus dem Gedaechtnis einsetzen: §5c behaelt eine einseitige"
-        fehler "Aenderung der Bedingungen vor, der Text gehoert zum Zeitpunkt des"
-        fehler "Bezugs geholt."
+        fehler "${lic} ist noch ein Geruest — lizenz_schreiben hat nicht gegriffen."
+        fehler "Das ist ein Fehler im Ablauf, keine Handarbeit: der Lizenztext"
+        fehler "wird seit v3.14 aus dem Feld 'copyrights' des Feeds abgeleitet."
         return 1
     fi
     for marke in 'DATUM EINTRAGEN' 'STAND EINTRAGEN' 'IM WORTLAUT EINSETZEN'; do
@@ -98,6 +102,141 @@ lizenz_gate() {
         fi
     done
     return 0
+}
+
+# ── Lizenztext aus dem Feed ableiten (#8) ────────────────────
+#
+# Der Feed fuehrt je Datensatz ein Feld 'copyrights' mit Vermerk und Lizenztext
+# im Wortlaut — fuer Defiant durchgaengig, fuer MITRE bei allen Saetzen mit
+# CVE-Bezug. Damit muss der Text weder abgeschrieben noch von der Webseite
+# geholt werden (die blockt Skriptzugriff mit HTTP 202 und leerem Rumpf).
+#
+# Das loest §5c baulich statt durch Vorsatz: Lizenztext und Bestand stammen
+# zwangsläufig aus DEMSELBEN Abruf. Eine einseitige Aenderung der Bedingungen
+# kann nicht mehr unbemerkt an einem alten Text vorbeilaufen.
+#
+# Die Gegenprobe steckt in der Auswertung selbst: weichen die Saetze im
+# Lizenztext voneinander ab, wird abgebrochen. Ein Bestand, in dem zwei
+# Fassungen nebeneinander stehen, laesst sich nicht mit einer ausliefern.
+lizenz_schreiben() {
+    local roh="$1"
+    python3 - "$roh" "${DATEN}/LICENSE" "$(date -u +%Y-%m-%d)" <<'PY'
+import json, sys
+
+roh, ziel, datum = sys.argv[1], sys.argv[2], sys.argv[3]
+try:
+    with open(roh, encoding="utf-8", errors="replace") as fh:
+        daten = json.load(fh)
+except Exception as e:
+    print("  FEHLER: Feed nicht lesbar (%s)" % e)
+    sys.exit(1)
+
+# Je Partei alle vorkommenden Fassungen einsammeln. Nicht die erste nehmen und
+# hoffen: genau die Annahme "wird schon ueberall gleich sein" ist die, die
+# spaeter niemand mehr nachweisen kann.
+parteien = {}
+meldungen = set()
+for satz in daten.values():
+    if not isinstance(satz, dict):
+        continue
+    c = satz.get("copyrights") or {}
+    if not isinstance(c, dict):
+        continue
+    if isinstance(c.get("message"), str):
+        meldungen.add(c["message"])
+    for name, eintrag in c.items():
+        if not isinstance(eintrag, dict):
+            continue
+        p = parteien.setdefault(name, {"n": 0, "fassungen": set()})
+        p["n"] += 1
+        p["fassungen"].add((eintrag.get("notice") or "",
+                            eintrag.get("license") or "",
+                            eintrag.get("license_url") or ""))
+
+if not parteien:
+    print("  FEHLER: Feed fuehrt kein Feld 'copyrights' — Format geaendert?")
+    print("  Ohne Lizenztext aus der Quelle wird nichts geschrieben.")
+    sys.exit(1)
+
+uneinig = [n for n, p in parteien.items() if len(p["fassungen"]) != 1]
+if uneinig:
+    for n in uneinig:
+        print("  FEHLER: %s fuehrt %d verschiedene Lizenzfassungen im selben "
+              "Bestand." % (n, len(parteien[n]["fassungen"])))
+    print("  Abbruch: ein Bestand mit zwei Fassungen laesst sich nicht mit")
+    print("  einer ausliefern. Die Abweichung gehoert geprueft, nicht geglaettet.")
+    sys.exit(1)
+
+gesamt = len(daten)
+zeilen = []
+schreib = zeilen.append
+schreib("Wordfence Intelligence Vulnerability Database — Lizenz und Vermerke")
+schreib("=" * 68)
+schreib("")
+schreib("DIESE DATEI IST ERZEUGT. Sie wird von werkzeuge/wordpress-daten-update.sh")
+schreib("bei jedem Bestandsaufbau aus dem Feld 'copyrights' des Feeds neu")
+schreib("abgeleitet — nicht von Hand gepflegt und nicht aus einer aelteren")
+schreib("Fassung uebernommen.")
+schreib("")
+schreib("Grund: §5c der Bedingungen behaelt eine einseitige Aenderung vor. Ein")
+schreib("Lizenztext, der nicht zu dem Bestand passt, mit dem er ausgeliefert")
+schreib("wird, belegt nichts. Weil Text und Daten aus demselben Abruf stammen,")
+schreib("kann das hier nicht auseinanderlaufen.")
+schreib("")
+schreib("  Abgerufen am      : %s" % datum)
+schreib("  Datensaetze gesamt: %d" % gesamt)
+schreib("")
+if meldungen:
+    for m in sorted(meldungen):
+        schreib("  Hinweis des Feeds : %s" % m)
+    schreib("")
+schreib("Die Auflage verlangt je Kopie drei Dinge. Alle drei sind erfuellt:")
+schreib("")
+schreib("  1. Verweis auf den einzelnen Datensatz — Spalte 'quelle' jeder Zeile")
+schreib("     in vuln/*.tsv, aus dem Feld 'references' des Feeds.")
+schreib("  2. Copyright-Vermerk  — unten, im Wortlaut aus der Quelle.")
+schreib("  3. Lizenztext         — unten, im Wortlaut aus der Quelle.")
+schreib("")
+for name in sorted(parteien):
+    notice, lizenz, url = next(iter(parteien[name]["fassungen"]))
+    n = parteien[name]["n"]
+    schreib("")
+    schreib(name)
+    schreib("-" * max(len(name), 20))
+    schreib("Betrifft %d von %d Datensaetzen (%.1f %%)." % (n, gesamt, 100.0 * n / gesamt))
+    schreib("")
+    schreib("Copyright-Vermerk im Wortlaut:")
+    schreib("")
+    schreib("  " + notice)
+    schreib("")
+    schreib("Lizenztext im Wortlaut:")
+    schreib("")
+    for absatz in lizenz.split("\n"):
+        schreib("  " + absatz if absatz.strip() else "")
+    schreib("")
+    schreib("  Bedingungen: %s" % url)
+
+schreib("")
+schreib("")
+schreib("Zur MITRE-Anzeigepflicht — entschieden")
+schreib("--------------------------------------")
+schreib("")
+schreib("Beide Lizenztexte binden die Weitergabe wortgleich an 'reproduce ... in")
+schreib("any such copy'. Keiner von beiden verlangt eine Nennung gegenueber dem")
+schreib("Endnutzer oder in der Trefferausgabe. Diese Datei reist mit dem Bestand")
+schreib("und ist damit die Kopie, in der die Vermerke stehen.")
+schreib("")
+schreib("Daraus folgt: eine Beilage genuegt. Ein Autorenfeld im Befundschema")
+schreib("(Issue #13) ist fuer diese Quelle keine Voraussetzung. Waere es eine,")
+schreib("stuende hier der Grund; die Frage war vor der ersten Auslieferung offen")
+schreib("und ist am %s aus dem Wortlaut des Feeds beantwortet worden." % datum)
+
+with open(ziel, "w", encoding="utf-8") as fh:
+    fh.write("\n".join(zeilen).rstrip() + "\n")
+
+print("  LICENSE erzeugt — %s" % ", ".join(
+    "%s (%d Saetze)" % (n, parteien[n]["n"]) for n in sorted(parteien)))
+PY
 }
 
 # ── Abdeckung auszaehlen (#8) ────────────────────────────────
@@ -347,7 +486,11 @@ stand_schreiben() {
         fi
     } > "${DATEN}/VERSION"
 
-    ( cd "$DATEN" && find . -type f \( -name '*.tsv' -o -name VERSION \) \
+    # LICENSE und NOTICE gehoeren mit in die Pruefsummen: sie sind der Teil der
+    # Lieferung, der die Weitergabe deckt. Ein Manifest, das die Daten sichert
+    # und den Lizenztext auslaesst, sichert die Lieferung nur halb.
+    ( cd "$DATEN" && find . -type f \
+          \( -name '*.tsv' -o -name VERSION -o -name LICENSE -o -name NOTICE \) \
         | LC_ALL=C sort \
         | while read -r f; do
             if command -v sha256sum >/dev/null 2>&1; then sha256sum "$f";
@@ -358,17 +501,25 @@ stand_schreiben() {
 
 AKTION="${1:-}"
 case "$AKTION" in
+    # REIHENFOLGE: erst holen, dann Lizenz aus dem Abzug schreiben, dann das
+    # Gate, erst danach normalisieren. Der Lizenztext steckt im Feed — er kann
+    # nicht vor dem Abruf vorliegen. Geschuetzt bleibt trotzdem, was zu
+    # schuetzen war: wordfence_normalisieren ist der einzige Schritt, der einen
+    # Bestand ins Repository schreibt, und er laeuft erst nach dem Gate.
     --wordfence)
-        lizenz_gate || exit 2
         echo "== Wordfence Intelligence =="
         ROH=$(mktemp); trap 'rm -f "$ROH"' EXIT
-        wordfence_holen "$ROH" && wordfence_normalisieren "$ROH" && kev_verknuepfen
+        wordfence_holen "$ROH"    || exit 1
+        lizenz_schreiben "$ROH"   || exit 2
+        lizenz_gate               || exit 2
+        wordfence_normalisieren "$ROH" && kev_verknuepfen
         stand_schreiben
         ;;
     --aus-datei)
-        lizenz_gate || exit 2
         [[ -n "${2:-}" && -f "${2:-}" ]] || { fehler "Datei angeben"; exit 2; }
         echo "== Wordfence Intelligence (aus Datei ${2}) =="
+        lizenz_schreiben "$2"     || exit 2
+        lizenz_gate               || exit 2
         wordfence_normalisieren "$2" && kev_verknuepfen
         stand_schreiben
         ;;
