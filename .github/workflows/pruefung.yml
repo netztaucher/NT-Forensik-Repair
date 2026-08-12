@@ -108,6 +108,14 @@ jobs:
         # Bestand.
         run: bash werkzeuge/lizenz-pruefstand.sh
 
+      - name: Selbsttest des Injektionsmasses (7.15)
+        # Zwei Richtungen, beide nötig. Ein Mass, das nur "meldet den
+        # Schadcode" prüft, wäre durch "meldet immer" zu bestehen — und genau
+        # das ist der Fehlerfall, der hier weh tut: minifizierte Dateien,
+        # Template-Dateien mit 401 PHP-Öffnern und legitimes eval mitten in
+        # einer grossen Klasse müssen SCHWEIGEN.
+        run: python3 lib/injektion_pruefen.py --selbsttest
+
       - name: Selbsttest des Versionsvergleichs
         # Der Abgleich installierter Fassungen gegen Verwundbarkeitsbereiche
         # steht und fällt mit der Ordnung der Versionen. Ist sie an einer
@@ -267,7 +275,33 @@ jobs:
           # Der Composer-Abgleich (#14). Ohne Bestand erhebt das Rezept die
           # Abhängigkeiten gar nicht — der Befund fällt weg.
           gegenprobe "#14 Composer-Abgleich"       NT_PRUEFSTAND_OHNE_COMPOSER=1
+          # 7.15. Ohne die Nutzlast bleiben die grossen Dateien im Prüfbaum
+          # unauffällig — der Vergleich MUSS das bemerken.
+          gegenprobe "7.15 Injektion in grossen Dateien" NT_PRUEFSTAND_OHNE_INJEKTION=1
           bash werkzeuge/goldmuster.sh vergleichen
+
+      - name: Abnahmekriterium 7.15 — injiziert meldet, sauber schweigt
+        run: |
+          # Der Referenzvergleich allein prüft das NICHT: er meldet nur, ob
+          # sich etwas geändert hat. Eine Referenz, in der auch die saubere
+          # Datei steht, gilt ihm als "unverändert" — sie hielte das
+          # Scheitern fest statt es zu melden.
+          #
+          # Beide Dateien sind gleich gross und gleich gebaut und
+          # unterscheiden sich nur um die angehängte Nutzlast. Damit ist das
+          # hier eine Aussage über das Mass und nicht über den Prüfbaum.
+          B=pruefstand/referenz/betreiber_technik_bericht.md
+          A=$(awk '/^### 7\.15/{s=1} /^### 12\.|^## /{if(s)exit} s' "$B")
+          if ! grep -q 'gross-injiziert\.php' <<<"$A"; then
+            echo "::error::7.15 meldet die injizierte Datei nicht."
+            printf '%s\n' "$A" | head -20; exit 1
+          fi
+          if grep -q 'gross-sauber\.php' <<<"$A"; then
+            echo "::error::7.15 meldet auch die saubere Datei gleicher Grösse — das Mass trennt nicht."
+            printf '%s\n' "$A" | head -20; exit 1
+          fi
+          N=$(grep -c 'gross-injiziert\.php' <<<"$A")
+          echo "  ok — ${N} injizierte Datei(en) gemeldet, keine saubere"
 
       - name: Abnahmekriterium #18 — Schadcode unter den ersten fünf
         run: |

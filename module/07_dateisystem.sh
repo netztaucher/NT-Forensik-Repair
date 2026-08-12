@@ -587,3 +587,64 @@ else
 fi
 
 # ============================================================
+h2 "7.15 Injektion in grosse Dateien (ohne Referenz)"
+# Der blinde Fleck von 7.3, ausdrücklich benannt.
+#
+# 7.3 trennt zweistufig nach GRÖSSE: Muster plus Datei unter
+# DROPPER_MAX_BYTES ist kritisch, alles darüber geht in die Sichtungsstufe.
+# Das trägt für Dropper — ein Dropper ist fast nur Obfuskation und deshalb
+# winzig. Blind ist die Regel für den umgekehrten Fall: eine Injektion IN eine
+# grosse, legitime Datei.
+#
+# Eine kommerzielle Plugin-Datei hat 50–400 kB. Wird dort Code eingeschleust,
+# landet sie bestenfalls in der Sichtung, zusammen mit jeder
+# Krypto-Bibliothek des Servers. Ohne Mustertreffer sagt das Werkzeug gar
+# nichts. Und prüfen lässt es sich nicht: für kommerzielle Plugins
+# veröffentlicht niemand Prüfsummen (siehe 13c und Issue #30).
+#
+# lib/injektion_pruefen.py misst deshalb nicht die Datei, sondern die
+# VERTEILUNG darin — längste Zeile, Lage, Dichte kodierter Zeichen im Fenster,
+# angehängter Code. Ein 300-Byte-Fremdkörper in 400 kB verschwindet in jedem
+# Durchschnitt über die ganze Datei, aber nicht in diesen vier Massen.
+#
+# BEWUSST `info` UND KEIN BEFUND. Die Schwellen stammen aus den Fällen des
+# Selbsttests, nicht aus einer Messung an einem echten Server — die hängt an
+# der Abnahme (#9). Erst messen, dann einstufen; dasselbe Vorgehen wie beim
+# EXTRA-Zweig der Plugin-Integrität und bei #11. Ein Filter mit geratenen
+# Schwellen als Warnung auszuliefern wäre die nächste Geräuschquelle.
+#
+# Das Mass kann eine Datei belasten, nie entlasten. Wer sauberen, umbrochenen
+# Code mitten in eine grosse Datei schreibt, bleibt unsichtbar — das ist die
+# Grenze des Verfahrens und steht so in docs/erkennung.md.
+if ! werkzeug_da python3; then
+  info "python3 fehlt — Injektionsmass übersprungen"
+elif [[ ! -r "${BASE_DIR}/lib/injektion_pruefen.py" ]]; then
+  info "lib/injektion_pruefen.py fehlt — Injektionsmass übersprungen"
+else
+  # Gebündelt über xargs, nicht je Datei: ein Python-Start pro Datei wären bei
+  # 25.000 PHP-Dateien 25.000 Prozessstarts. Dieselbe Überlegung wie beim
+  # gebündelten yara-Aufruf in 13c.
+  INJ_TREFFER=$(find "${SCAN_PATHS[@]}" -type f -size -3M \
+                     \( -name "*.php" -o -name "*.phtml" -o -name "*.inc" \) 2>/dev/null \
+                | nf_strip_self \
+                | tr '\n' '\0' \
+                | xargs -0 -r -n200 python3 "${BASE_DIR}/lib/injektion_pruefen.py" 2>/dev/null \
+                | LC_ALL=C sort -k2,2nr -k1,1 || true)
+  INJ_ANZ=$(printf '%s\n' "$INJ_TREFFER" | grep -c . || true)
+  if [[ "${INJ_ANZ:-0}" -gt 0 ]]; then
+    info "${INJ_ANZ} grosse Datei(en) mit auffälliger Verteilung — nach Punkten sortiert, Einordnung offen"
+    code "$(printf '%s\n' "$INJ_TREFFER" | head -20)"
+    evidence "injektion_grosse_dateien" "# Punkte und Merkmale je Datei, absteigend.
+# ANHANG    Code hinter dem letzten schliessenden Tag
+# LANGZEILE längste Zeile in Bytes
+# DICHTE    kodierte Zeichen im dichtesten 512-Byte-Fenster
+# BASE64    Länge des längsten Base64-Tokens
+# RANDLAGE  der Fund liegt im äussersten Rand der Datei
+#
+# KEIN BEFUND. Die Schwellen sind bis zu einer Messung an einem echten
+# Server geraten (#9). Diese Liste ist eine Rangfolge für die Sichtung.
+${INJ_TREFFER}" kunde
+  else
+    ok "Keine grosse Datei mit auffälliger Verteilung"
+  fi
+fi

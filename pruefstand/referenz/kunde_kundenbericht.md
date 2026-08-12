@@ -32,14 +32,14 @@
 
 ## 3. Was wir technisch gefunden haben
 
-- **18 Schadcode-Fundstelle(n)** in Ihrem Webauftritt. Was jede einzelne ist und wozu sie dient, steht in der Einordnung unten und vollständig in `befunde_details.md`.
+- **20 Schadcode-Fundstelle(n)** in Ihrem Webauftritt. Was jede einzelne ist und wozu sie dient, steht in der Einordnung unten und vollständig in `befunde_details.md`.
 - 1 weitere Fundstelle(n) sind noch einzuordnen — sie sind kein belegter Schadcode, aber auch nicht abgehakt. Liste in `befunde_details.md`.
 
-**Schadcode-Einordnung — 18 Fundstelle(n):**
+**Schadcode-Einordnung — 20 Fundstelle(n):**
 
 | Art | Anzahl | Was damit bezweckt wird |
 |---|---|---|
-| Verändertes Plugin | 6 | Fremder Code in einem legitimen Plugin — nachträglich eingebaute Hintertür |
+| Verändertes Plugin | 8 | Fremder Code in einem legitimen Plugin — nachträglich eingebaute Hintertür |
 | Manipulierte .htaccess | 4 | Zugriffsregeln zugunsten des Angreifers — hält seine Dateien erreichbar und sperrt Mitbewerber aus |
 | Code-Injection | 2 | Schadcode in legitime Dateien eingeschleust |
 | Getarnte Payload | 2 | Nachladbarer Schadcode in Nicht-PHP-Datei |
@@ -60,7 +60,7 @@
 - kunde-zwei.example/cloud.kunde-zwei.example: verschachtelte Verzeichnisse (z. B. config/config) — typisch für diese Kampagne
 - kunde-zwei.example/httpdocs: plugin pruefstand-kev 1.2 ist von einer bekannten Schwachstelle betroffen ((* … 2.0)) CVE-2026-90001 — behoben in 2.0. Diese Lücke wird nachweislich aktiv ausgenutzt — sofort handeln.
 - kunde-zwei.example/httpdocs: 1 Datei(en) mit @include base64_decode() — getarnte Payload-Nachladung
-- kunde-zwei.example/httpdocs: 6 veränderte Plugin-Codedatei(en) gegenüber wordpress.org — Plugin neu installieren, Dateien vorher sichern
+- kunde-zwei.example/httpdocs: 8 veränderte Plugin-Codedatei(en) gegenüber wordpress.org — Plugin neu installieren, Dateien vorher sichern
 - kunde-zwei.example/httpdocs: 1 veränderte Core-Datei(en) — Injektion oder Manipulation
 - kunde-zwei.example/backups/updater-abc123/nextcloud-28.0.1.2-1700000000/.htaccess (nextcloud): 3 Angreifer-Direktive(n) in der .htaccess
 - kunde-zwei.example/cloud.kunde-zwei.example/.htaccess (nextcloud): 3 Angreifer-Direktive(n) in der .htaccess
