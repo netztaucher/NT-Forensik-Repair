@@ -227,10 +227,51 @@ fi
 # ── Prüfumfang ableiten ──────────────────────────────────────
 # Als Funktion, weil das Startmenü den Umfang nachträglich ändern kann.
 # Der Runner ruft sie auf, nachdem das Menü durch ist.
+
+# Wo liegt der Dokumentenstamm dieser Domain wirklich?
+#
+# ${VHOSTS_DIR}/<domain> ist die Plesk-Vorgabe, aber nur die Vorgabe. Wer eine
+# Domain in ein anderes Abo legt, bekommt dort ein leeres Geruest — anon_ftp,
+# cgi-bin, error_docs und ein httpdocs ohne Inhalt —, waehrend die Installation
+# unter dem Abo der Hauptdomain liegt. Auf einem geprueften Host traf das 29
+# Domains: /var/www/vhosts/tdl.therapeut.digital/httpdocs war leer, die
+# Installation lag unter /var/www/vhosts/<abo>/tdl.therapeut.digital.
+#
+# Das Geruest zu pruefen liefert "keine Installation im Pruefumfang" und einen
+# Bericht ohne Befunde. Das ist keine Entwarnung, sieht aber genauso aus.
+# Deshalb fragen wir Plesk statt zu raten.
+plesk_www_root() {   # plesk_www_root <domain>  ->  Pfad oder leer
+  command -v plesk >/dev/null 2>&1 || return 0
+  plesk db -Ne "SELECT h.www_root FROM domains d JOIN hosting h ON h.dom_id = d.id WHERE d.name = '${1//\'/}' LIMIT 1" 2>/dev/null | head -1
+}
+
+# Aus dem Dokumentenstamm den zu pruefenden Ordner ableiten.
+# Standard-Layout .../<domain>/httpdocs -> eine Ebene hoeher, damit logs/ und
+# conf/ im Umfang bleiben (bisheriges Verhalten). Jedes andere Layout -> genau
+# der gemeldete Pfad. Nicht der Elternordner: der waere bei abweichendem Layout
+# das ganze Abo mit allen fremden Domains darin.
+scan_pfad_aus_www_root() {   # scan_pfad_aus_www_root <www_root>
+  local wr="$1"
+  [[ -n "$wr" ]] || return 1
+  if [[ "$(basename "$wr")" == "httpdocs" ]]; then printf '%s\n' "$(dirname "$wr")"
+  else                                             printf '%s\n' "$wr"; fi
+}
+
 scan_path_bestimmen() {
+  local _wr _plesk_pfad
   case "$SCOPE_MODE" in
     path)   SCAN_PATH="$SCAN_PATH_ARG"; SCAN_PATHS=("$SCAN_PATH") ;;
-    domain) SCAN_PATH="${VHOSTS_DIR}/${DOMAIN}"; SCAN_PATHS=("$SCAN_PATH") ;;
+    domain)
+            SCAN_PATH="${VHOSTS_DIR}/${DOMAIN}"
+            _wr="$(plesk_www_root "$DOMAIN")"
+            _plesk_pfad="$(scan_pfad_aus_www_root "$_wr")"
+            if [[ -n "$_plesk_pfad" && "$_plesk_pfad" != "$SCAN_PATH" ]]; then
+              echo -e "${YLW}Hinweis:${NC} ${DOMAIN} liegt laut Plesk nicht unter ${SCAN_PATH}." >&2
+              echo    "         Dokumentenstamm: ${_wr}" >&2
+              echo    "         Geprüft wird:    ${_plesk_pfad}" >&2
+              SCAN_PATH="$_plesk_pfad"
+            fi
+            SCAN_PATHS=("$SCAN_PATH") ;;
     abo)    abo_pfade_bestimmen ;;
     *)      SCAN_PATH="$VHOSTS_DIR"; SCAN_PATHS=("$SCAN_PATH") ;;   # global
   esac
@@ -241,12 +282,72 @@ scan_path_bestimmen() {
   # der denkbar groesste Datenschutzunfall. Ein Tippfehler in der Domain
   # genuegte.
   if [[ "$SCOPE_MODE" == "domain" && ! -d "$SCAN_PATH" ]]; then
-    echo -e "${RED}Fehler:${NC} Für --domain ${DOMAIN} gibt es kein Verzeichnis unter ${VHOSTS_DIR}." >&2
+    echo -e "${RED}Fehler:${NC} Für --domain ${DOMAIN} gibt es kein Verzeichnis unter ${SCAN_PATH}." >&2
     echo    "        Tippfehler? Verfügbare Verzeichnisse:" >&2
     ls -1d "${VHOSTS_DIR}"/*/ 2>/dev/null | sed "s|${VHOSTS_DIR}/||;s|/$||" | head -20 | sed 's/^/          /' >&2
     echo    "        Für einen serverweiten Lauf ausdrücklich --global angeben." >&2
     exit 2
   fi
+
+  # Ein vhost-Geruest ohne Inhalt ist kein Pruefumfang. Wer hier weiterlaeuft,
+  # bekommt einen Bericht ohne Befunde und haelt ihn fuer eine Entwarnung.
+  if [[ "$SCOPE_MODE" == "domain" ]] \
+     && [[ -d "${SCAN_PATH}/httpdocs" ]] \
+     && [[ -z "$(ls -A "${SCAN_PATH}/httpdocs" 2>/dev/null)" ]]; then
+    echo -e "${RED}Fehler:${NC} ${SCAN_PATH}/httpdocs ist leer — dort liegt keine Installation." >&2
+    echo    "        Das ist ein Plesk-Geruest, kein Webauftritt. Ein Lauf darauf" >&2
+    echo    "        meldet null Befunde und sieht wie eine Entwarnung aus." >&2
+    if command -v plesk >/dev/null 2>&1; then
+      echo  "        Plesk nennt als Dokumentenstamm: $(plesk_www_root "$DOMAIN")" >&2
+    fi
+    echo    "        Mit --path auf den tatsächlichen Pfad prüfen." >&2
+    exit 2
+  fi
+}
+
+# ── Abschnittsauswahl gegen die tatsaechlich vorhandenen Module pruefen ──────
+#
+# --nur nimmt jede Zahl entgegen. Steht dort eine Nummer, die es nicht gibt,
+# laeuft nur Abschnitt 14 (Berichte, laeuft immer mit) und der Bericht meldet
+# "0 kritisch" — bei counts durchweg 0 und leerem Belegordner. Das ist die
+# gefaehrlichste Ausgabe des Werkzeugs: sie sieht aus wie ein Ergebnis.
+#
+# Der konkrete Anlass: --nur 11. Abschnitt 11 war einmal die WordPress-
+# Datenbankpruefung und ist heute ein Rezept (12r). Die Nummer steht weiterhin
+# in Anleitungen und stand bis zu diesem Commit auch im eigenen Startmenue.
+modul_auswahl_pruefen() {
+  [[ -n "${MODUL_NUR}${MODUL_OHNE}" ]] || return 0
+  case "$MODUL_NUR" in ebene:*) return 0 ;; esac
+
+  local bekannt="" f nr eintrag unbekannt=""
+  for f in "${SELF_DIR}"/module/*.sh; do
+    [[ -f "$f" ]] || continue
+    nr="$(sed -n 's/^# @nummer:[[:space:]]*//p' "$f" 2>/dev/null | head -1)"
+    [[ -n "$nr" ]] && bekannt="${bekannt}${nr},"
+  done
+  [[ -n "$bekannt" ]] || return 0   # keine Modulkoepfe lesbar -> nicht im Weg stehen
+
+  for eintrag in ${MODUL_NUR//,/ } ${MODUL_OHNE//,/ }; do
+    [[ -n "$eintrag" ]] || continue
+    case ",${bekannt}" in *",${eintrag},"*) continue ;; esac
+    unbekannt="${unbekannt}${eintrag} "
+  done
+  [[ -n "$unbekannt" ]] || return 0
+
+  echo -e "${RED}Fehler:${NC} unbekannte Abschnittsnummer(n): ${unbekannt% }" >&2
+  echo    "        Vorhanden: ${bekannt%,}" >&2
+  case " $unbekannt " in
+    *" 11 "*)
+      echo "" >&2
+      echo -e "        ${BOLD}Abschnitt 11 gibt es nicht mehr.${NC}" >&2
+      echo    "        Die WordPress-Prüfung ist ein Rezept:  --nur-rezept wordpress" >&2
+      echo    "        Für Joomla:                            --nur-joomla" >&2
+      echo    "        Für Nextcloud:                         --nur-nextcloud" >&2
+      ;;
+  esac
+  echo "" >&2
+  echo "        Ein Lauf mit unbekannter Nummer prüft nichts und meldet 0 Befunde." >&2
+  exit 2
 }
 
 # Welche vhost-Verzeichnisse dieser Lauf ansehen darf — eine Zeile je Pfad.

@@ -118,7 +118,10 @@ EINLEITUNG
   _frage "Auswahl" "1" umfang
   case "$umfang" in
     2) MODUL_NUR="ebene:website" ;;
-    3) MODUL_NUR="11,12" ;;
+    # 12 = Joomla, 12r = Anwendungs-Rezepte (WordPress, Nextcloud).
+    # Stand bis 2026-08-12 auf "11,12": Abschnitt 11 gibt es seit der
+    # Umstellung auf Rezepte nicht mehr, der Punkt prüfte also nur Joomla.
+    3) MODUL_NUR="12,12r" ;;
     4) _frage "Abschnittsnummern, kommagetrennt" "12" liste; MODUL_NUR="$liste" ;;
     *) MODUL_NUR="" ;;
   esac

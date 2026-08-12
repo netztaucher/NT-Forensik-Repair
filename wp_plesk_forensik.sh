@@ -82,6 +82,9 @@ fi
 
 # Erst jetzt steht fest, was geprüft wird — das Menü kann Umfang und Domain
 # geändert haben, und der Laufordner trägt die Domain im Namen.
+# Die Abschnittsauswahl wird davor geprüft: eine unbekannte Nummer soll den
+# Lauf beenden, bevor ein Laufordner mit einem leeren Bericht darin entsteht.
+modul_auswahl_pruefen
 scan_path_bestimmen
 ablage_einrichten
 
