@@ -32,9 +32,31 @@ json_arr() {   # stdin: ein Item pro Zeile → JSON-Array von Strings
   printf '%s]' "$out"
 }
 
+# stdin: <pfad>\t<benutzer>\t<email>\t<angelegt> → JSON-Array von Objekten
+#
+# Warum Objekte und nicht wieder Strings: die Bereinigung muss `wp --path=…`
+# aufrufen koennen. Ein Benutzername ohne Installation ist auf einem Server
+# mit 475 vhosts nicht handlungsfaehig, sondern gefaehrlich — derselbe Name
+# existiert dort vielfach. Genau daran scheiterte rogue_admin_removed.
+#
+# Fehlende Felder bleiben leer statt zu verrutschen: gelesen wird nach
+# Spaltennummer, nicht nach Anzahl.
+json_admin_arr() {
+  local first=1 out="[" line pfad ben mail wann
+  while IFS=$'\t' read -r pfad ben mail wann; do
+    [ -z "${pfad}${ben}" ] && continue
+    [ "$first" -eq 1 ] && first=0 || out="${out},"
+    out="${out}{\"pfad\":\"$(printf '%s' "${pfad:-}" | json_esc)\""
+    out="${out},\"benutzer\":\"$(printf '%s' "${ben:-}" | json_esc)\""
+    out="${out},\"email\":\"$(printf '%s' "${mail:-}" | json_esc)\""
+    out="${out},\"angelegt\":\"$(printf '%s' "${wann:-}" | json_esc)\"}"
+  done
+  printf '%s]' "$out"
+}
+
 emit_findings_json() {
   local ws php suid tmpx immu cron sysd persist procs wpc fkeys aips bips suspadm nchta ncmal ncnest ncint
-  local corei coresne doorw coreinj disg rogue
+  local corei coresne doorw coreinj disg rogue rogued suspadmd
   corei=$(printf '%s\n' "${CORE_INJECTED:-}"      | json_arr)
   coresne=$(printf '%s\n' "${CORE_SNE:-}"         | json_arr)
   doorw=$(printf '%s\n' "${DOORWAY_DIRS:-}"       | json_arr)
@@ -42,6 +64,12 @@ emit_findings_json() {
   disg=$(printf '%s\n' "${DISGUISED_PAYLOADS:-}"  | json_arr)
   rogue=$(printf '%s\n' "${ROGUE_ADMINS:-}"       | grep -vE '^=== |^$' | json_arr)
   suspadm=$(printf '%s\n' "${SUSPECT_ADMINS:-}"   | grep -vE '^=== |^$' | json_arr)
+  # Die handlungsfaehige Fassung: je Eintrag ein Objekt MIT Installationspfad.
+  # Die beiden flachen Listen daruber bleiben unveraendert — sie zaehlen und
+  # werden vom Berichtsgenerator gelesen. Neu ist additiv, siehe
+  # docs/findings-schnittstelle.md.
+  rogued=$(printf '%s\n'   "${ROGUE_ADMINS_DETAIL:-}"   | json_admin_arr)
+  suspadmd=$(printf '%s\n' "${SUSPECT_ADMINS_DETAIL:-}" | json_admin_arr)
   # v3.12 (#3): zwei Quellen, die es vorher gar nicht als Liste gab. Die
   # Signaturtreffer standen bis hierher ausschliesslich im Menschentext, und
   # zwar nur der erste je Muster — der Reparaturteil bekam sie nie zu sehen,
@@ -243,6 +271,8 @@ print(json.dumps(raus, ensure_ascii=False))' 2>/dev/null || echo '{}')
     "disguised_payloads": ${disg:-[]},
     "rogue_wp_admins": ${rogue:-[]},
     "suspect_wp_admins": ${suspadm:-[]},
+    "rogue_wp_admins_detail": ${rogued:-[]},
+    "suspect_wp_admins_detail": ${suspadmd:-[]},
     "nextcloud_htaccess": ${nchta:-[]},
     "nextcloud_malware": ${ncmal:-[]},
     "nextcloud_nested": ${ncnest:-[]},

@@ -309,6 +309,62 @@ Bei der Messung war **jeder einzelne Treffer** dieses Abschnitts ein solcher
 wird beim nächsten Mal überlesen — und dann fällt auch der echte nicht mehr
 auf.
 
+## [unveröffentlicht]
+
+### Hinzugefügt — Angreifer-Konten sind jetzt handlungsfähig an die Bereinigung übergeben
+
+`actionable.rogue_wp_admins` trug bisher nur Benutzername, E-Mail und Datum.
+Die Kopfzeile mit der Installation wird beim Bauen der Liste herausgefiltert —
+**welche Installation gemeint war, stand nicht drin.** Auf einem Server mit 475
+vhosts ist ein Benutzername ohne Pfad nicht handlungsfähig, sondern gefährlich:
+derselbe Name existiert dort vielfach.
+
+Genau daran scheiterte die Bereinigung. Die Aktionsart `rogue_admin_removed`
+ist im Berichtsgenerator und in der Statusmail vorgesehen, wurde aber **nie
+erzeugt** — ihr fehlten die Daten.
+
+Neu, additiv neben den bestehenden Listen:
+
+```json
+"rogue_wp_admins_detail":   [{"pfad":"…","benutzer":"…","email":"…","angelegt":"…"}],
+"suspect_wp_admins_detail": [{"pfad":"…","benutzer":"…","email":"…","angelegt":""}]
+```
+
+Belegt und Verdacht bleiben getrennt — die Trennung stammt aus dem Rezept und
+ist dort begründet: *„das ist ein Verdacht, kein Beleg — eine automatische
+Bereinigung darf diese Konten nie anfassen."* Der Verdacht bekommt die
+strukturierte Fassung trotzdem, damit er im Bericht **namentlich und der
+richtigen Installation zugeordnet** auftaucht.
+
+### Behoben — die WordPress-Datenbankprüfung fiel auf macOS spurlos aus
+
+Beim Bauen des Prüfbaums für die Konten aufgefallen. `rezept_db` stieg bei
+fehlgeschlagenem Zugang mit einem nackten `|| return 0` aus: **kein Befund,
+keine Zeile, nichts.** Eine Installation ohne Datenbankprüfung sah im Bericht
+aus wie eine mit unauffälligem Ergebnis.
+
+Der Grund ist derselbe wie bei §7.3 und der Werkzeug-Probe: `rezept_konf_wert`
+liest die Werte aus `wp-config.php` mit `grep -oP`, und BSD-grep kennt kein
+`-P`. Auf einem macOS-Arbeitsplatz lieferte der Griff nach `DB_NAME` deshalb
+immer leer — **die Datenbankprüfung lief dort nie.** Auch nicht im Prüfbaum,
+dessen Referenz von genau dort stammt.
+
+Jetzt ein Befund mit dem Grund im Klartext und dem Satz „Das ist KEINE
+Entwarnung."
+
+### Geändert — die wp-cli-Attrappe beantwortet Datenbankabfragen
+
+Sie fiel bei allem außer `core version` und `core verify-checksums` still auf
+`exit(0)` ohne Ausgabe. Der Prüfbaum fand damit **nie** einen Angreifer-Admin,
+und der ganze Weg von der Erkennung über `findings.json` bis zur Bereinigung
+war ungeprüft.
+
+Kunde 2 liefert jetzt zwei belegte Konten (`wp_backup`, `svc_updater`) und
+einen Verdachtsfall (`wpadmin`); Kunde 3 bleibt als Gegenprobe leer.
+
+Auf Linux verifiziert — auf macOS ist die Datenbankprüfung mangels PCRE nicht
+ausführbar.
+
 ## [3.14.0] — 2026-08-12
 
 Eine Fassung mit einem Thema: **der Schwachstellenabgleich läuft nicht mehr

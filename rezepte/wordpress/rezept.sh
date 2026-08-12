@@ -622,7 +622,25 @@ rezept_db() {
     befund_melden wordpress datenbank unklar "${REZ_KURZ}: weder mysql-Client noch wp-cli vorhanden — Datenbank nicht geprüft" "$REZ_PFAD" web
     return 0
   fi
-  rezept_db_zugang "${REZEPT_DIR}/wordpress" "${REZ_PFAD}/wp-config.php" || return 0
+  # EIN STILLER AUSSTIEG IST HIER FALSCH.
+  #
+  # Bis v3.14 stand hier nur `|| return 0`. Schlug der Zugang fehl, verschwand
+  # die gesamte Datenbankpruefung SPURLOS — kein Befund, keine Zeile, nichts.
+  # Im Bericht sah eine Installation ohne DB-Pruefung genauso aus wie eine mit
+  # unauffaelligem Ergebnis.
+  #
+  # Der haeufigste Grund ist keine kaputte Konfiguration, sondern ein fehlendes
+  # PCRE: rezept_konf_wert liest die Werte mit `grep -oP`, und BSD-grep kennt
+  # kein -P. Auf einem macOS-Arbeitsplatz lieferte der Griff nach DB_NAME
+  # deshalb immer leer — und damit lief die Datenbankpruefung dort NIE. Auch
+  # nicht im Pruefbaum, dessen Referenz von genau dort stammt.
+  if ! rezept_db_zugang "${REZEPT_DIR}/wordpress" "${REZ_PFAD}/wp-config.php"; then
+    local _grund="Zugangsdaten nicht lesbar"
+    echo 'x' | grep -qP 'x' 2>/dev/null || _grund="grep beherrscht kein -P (PCRE) — die Werte aus wp-config.php sind damit nicht lesbar"
+    befund_melden wordpress datenbank unklar \
+      "${REZ_KURZ}: Datenbank nicht geprüft (${_grund}). Das ist KEINE Entwarnung." "${REZ_PFAD}/wp-config.php" web
+    return 0
+  fi
   if ! rezept_sql "SELECT 1;" >/dev/null 2>&1; then
     befund_melden wordpress datenbank warn "${REZ_KURZ}: keine DB-Verbindung (Zugang prüfen) — Datenbankabfragen übersprungen" "${REZ_PFAD}/wp-config.php" web
     return 0
@@ -645,6 +663,12 @@ rezept_db() {
     # metrics.rogue_wp_admins dauerhaft auf 0, waehrend derselbe Bericht die
     # Konten namentlich auffuehrte (#2).
     ROGUE_ADMINS+="=== ${REZ_KURZ} ==="$'\n'"$NEU"$'\n'
+    # Dieselben Konten noch einmal, mit vollem Pfad je Zeile — das ist die
+    # Fassung, mit der die Bereinigung arbeiten kann (siehe lib/befunde.sh).
+    while IFS= read -r _z; do
+      [[ -n "$_z" ]] || continue
+      ROGUE_ADMINS_DETAIL+="${REZ_PFAD}"$'\t'"${_z}"$'\n'
+    done <<< "$NEU"
   else
     befund_melden wordpress datenbank ok "${REZ_KURZ}: keine kürzlich angelegten Administratoren" "$REZ_PFAD"
   fi
@@ -662,6 +686,16 @@ rezept_db() {
     befund_melden wordpress datenbank warn "${REZ_KURZ}: Administrator mit angreifertypischem Namen oder Adresse — Verdacht, kein Beleg" "$REZ_PFAD" web
     code "$VERDACHT"
     SUSPECT_ADMINS+="=== ${REZ_KURZ} ==="$'\n'"$VERDACHT"$'\n'
+    # Auch der Verdacht bekommt die handlungsfaehige Fassung — nicht, damit
+    # etwas damit geschieht, sondern damit er im Bericht NAMENTLICH und der
+    # richtigen Installation zugeordnet auftaucht. Ein Verdacht, den niemand
+    # zuordnen kann, ist auf 475 vhosts wertlos.
+    #
+    # Die Bereinigung darf diese Konten nicht deaktivieren; sie notiert sie.
+    while IFS= read -r _z; do
+      [[ -n "$_z" ]] || continue
+      SUSPECT_ADMINS_DETAIL+="${REZ_PFAD}"$'\t'"${_z}"$'\n'
+    done <<< "$VERDACHT"
   fi
 
   # c) Manipulierte Optionen. siteurl/home weisen auf einen Redirect-Hijack,
