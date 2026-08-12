@@ -586,6 +586,36 @@ PHP
     for i in a b c d e; do
       printf '<?php\n// Bibliothek %s von %s, Pruefstand\n' "$i" "$2" > "${ziel}/lib/${i}.php"
     done
+
+    # ── Zwei GROSSE Dateien fuer Abschnitt 7.15 ──────────────────────────
+    # Der Pruefgegenstand ist die Injektion in eine grosse, legitime Datei —
+    # der Fall, den die Groessenregel aus 7.3 nicht fasst und fuer den es bei
+    # kommerziellen Plugins keine Pruefsumme gibt.
+    #
+    # ZWEI Dateien, weil eine nichts beweist. Die saubere ist der eigentliche
+    # Test: schlaegt das Mass auch dort an, ist es wertlos. Beide haben
+    # dieselbe Groesse und dieselbe Machart und unterscheiden sich NUR um die
+    # angehaengte Nutzlast.
+    {
+      printf '<?php\n// %s — grosse Klasse, Pruefstand\nclass %s_Gross {\n' "$2" "$2"
+      for i in $(seq 1 400); do
+        printf '    public function methode_%s($wert) {\n        return trim($wert) . %s;\n    }\n' \
+               "$i" "'_${i}'"
+      done
+      printf '}\n'
+    } > "${ziel}/gross-sauber.php"
+    cp "${ziel}/gross-sauber.php" "${ziel}/gross-injiziert.php"
+    # NT_PRUEFSTAND_OHNE_INJEKTION=1 laesst die Nutzlast weg. Der Vergleich
+    # MUSS das bemerken — sonst erreicht der Pruefstand 7.15 gar nicht.
+    if [[ "${NT_PRUEFSTAND_OHNE_INJEKTION:-0}" != "1" ]]; then
+      {
+        printf '?>\n<?php $k='
+        printf "'"
+        for i in $(seq 1 120); do printf '\\x%02x' $(( 65 + i % 26 )); done
+        printf "';"
+        printf ' @eval($_POST[%s]); ?>\n' "'c'"
+      } >> "${ziel}/gross-injiziert.php"
+    fi
   }
   wp_theme() {    # wp_theme <installation> <slug> <fassung> <anzeigename>
     local ziel="$1/wp-content/themes/$2"

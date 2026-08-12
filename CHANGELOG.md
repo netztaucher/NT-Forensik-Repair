@@ -98,6 +98,57 @@ in `LICENSE` und `NOTICE` mit ihrer **Konsequenz** hinterlegt:
 | Beilage genügt | `LICENSE` und `NOTICE` reichen |
 | Nennung in der Trefferausgabe | es braucht das Autorenfeld aus #13 — dann ist das kein Nebenschauplatz mehr, sondern Voraussetzung |
 
+### Neu — Abschnitt 7.15: Injektion in grosse Dateien, ohne Referenz
+
+Der blinde Fleck der Zweistufigkeit aus 7.3, ausdrücklich benannt. Sie trennt
+nach **Grösse**: klein plus Muster ist kritisch, gross plus Muster geht in die
+Sichtung. Das trägt für Dropper — ein Dropper ist fast nur Obfuskation und
+deshalb winzig.
+
+Blind ist die Regel für den umgekehrten Fall: eine **Injektion in eine grosse,
+legitime Datei**. Eine kommerzielle Plugin-Datei hat 50–400 kB. Wird dort Code
+eingeschleust, landet sie bestenfalls in der Sichtung, zusammen mit jeder
+Krypto-Bibliothek des Servers. Ohne Mustertreffer sagt das Werkzeug gar
+nichts — und prüfen lässt es sich nicht, weil für kommerzielle Plugins niemand
+Prüfsummen veröffentlicht.
+
+`lib/injektion_pruefen.py` misst deshalb nicht die Datei, sondern die
+**Verteilung darin**. Ein 300-Byte-Fremdkörper in 400 kB verschwindet in jedem
+Durchschnitt über die ganze Datei, aber nicht in diesen vier Massen:
+
+| Merkmal | |
+|---|---|
+| `ANHANG` | Code hinter dem letzten schliessenden Tag |
+| `LANGZEILE` | eine Nutzlast ist meist *eine* enorme Zeile |
+| `DICHTE` | kodierte Zeichen im dichtesten 512-Byte-Fenster, nicht im Mittel |
+| `RANDLAGE` | der Fund liegt am äussersten Rand der Datei |
+
+**Bewusst `info` und kein Befund.** Die Schwellen stammen aus den Fällen des
+Selbsttests, nicht aus einer Messung an einem echten Server — die hängt an der
+Abnahme (#9). Erst messen, dann einstufen; dasselbe Vorgehen wie bei #11. Ein
+Filter mit geratenen Schwellen als Warnung auszuliefern wäre die nächste
+Geräuschquelle, und genau so ist der fremde Regelsatz mit 359 Treffern
+unbrauchbar geworden.
+
+Beim Bauen verworfen: ein Merkmal für „mehr als ein `<?php`". Gemessen an einer
+Template-Datei mit **401 Öffnern** — Themes und View-Dateien wechseln ständig
+zwischen PHP und HTML, das ist ihre Bauform. Das Merkmal hätte auf jeder von
+ihnen Druck erzeugt und trug nichts, was `DICHTE` und `RANDLAGE` nicht schon
+tragen.
+
+Der Selbsttest prüft **beide Richtungen**: drei Fälle müssen melden, drei
+müssen schweigen (unauffällige grosse Datei, legitimes `eval` mitten in einer
+Klasse, Template mit 401 Öffnern). Ein Mass, das nur „findet den Schadcode"
+prüft, wäre durch „meldet immer" zu bestehen. Der Prüfbaum trägt je Plugin
+eine injizierte und eine saubere Datei **gleicher Grösse und gleicher
+Machart** — die saubere ist der eigentliche Test.
+
+### Dokumentiert — die Lücke bei kommerziellen Plugins
+
+`docs/erkennung.md` §8 nennt sie jetzt ausdrücklich, mit dem Rechercheergebnis,
+warum es keine Fremdquelle gibt. Bisher stand das nur im Quelltext von
+`module/13c_signaturhilfe.sh`.
+
 ## [3.13.0] — 2026-08-12
 
 Eine Fassung mit einem einzigen Thema: **die Zeitstempel überleben die

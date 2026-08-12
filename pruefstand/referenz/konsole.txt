@@ -30,7 +30,7 @@
 [1m[0;34m══════════════════════════════════════════[0m
 
 [0;36m▶ 7.0 Datei-Inventar (Inode und Zeitstempel sichern)[0m
-  [0m·  Inventar: 603 Datei(en) erfasst, davon 603 mit Anlegezeit (belege/00_dateien.tsv)
+  [0m·  Inventar: 617 Datei(en) erfasst, davon 617 mit Anlegezeit (belege/00_dateien.tsv)
 
 [0;36m▶ 7.1 Kürzlich veränderte PHP-Dateien (letzte 30 Tage)[0m
   [0;33mDurchsuche Webspace (kann dauern...)[0m
@@ -74,6 +74,9 @@
 
 [0;36m▶ 7.14 Massenhaft gleiche Zeitstempel (Spurenverwischung)[0m
   [0;32m✓[0m Keine auffälligen Zeitstempel-Häufungen
+
+[0;36m▶ 7.15 Injektion in grosse Dateien (ohne Referenz)[0m
+  [0m·  7 grosse Datei(en) mit auffälliger Verteilung — nach Punkten sortiert, Einordnung offen
   [0;36mübersprungen:[0m 8. Netzwerk & Dienste
   [0;36mübersprungen:[0m 9. Sicherheits-Dienste
   [0;36mübersprungen:[0m 10. Andere Domains
@@ -142,7 +145,7 @@
   [0;32m✓[0m kunde-zwei.example/httpdocs: keine Doorway-.htaccess-Signatur
   [0;31m✗[0m  [1mkunde-zwei.example/httpdocs: 1 Datei(en) mit @include base64_decode() — getarnte Payload-Nachladung[0m
   [0;33m⚠[0m  kunde-zwei.example/httpdocs: 1 mu-Plugin(s) — laufen ohne Aktivierung und erscheinen in keiner Pluginliste
-  [0;31m✗[0m  [1mkunde-zwei.example/httpdocs: 6 veränderte Plugin-Codedatei(en) gegenüber wordpress.org — Plugin neu installieren, Dateien vorher sichern[0m
+  [0;31m✗[0m  [1mkunde-zwei.example/httpdocs: 8 veränderte Plugin-Codedatei(en) gegenüber wordpress.org — Plugin neu installieren, Dateien vorher sichern[0m
   [0;36m⚪[0m kunde-zwei.example/httpdocs: 2 Plugin(s) ohne Prüfsummensatz und alle Themes — Unversehrtheit nicht feststellbar (Premium, Fork, Eigenbau; für Themes veröffentlicht wordpress.org keine Prüfsummen)
   [0;31m✗[0m  [1mkunde-zwei.example/httpdocs: 1 veränderte Core-Datei(en) — Injektion oder Manipulation[0m
   [0;33m⚠[0m  kunde-zwei.example/httpdocs: 1 Core-fremde Datei(en) in wp-admin/wp-includes — prüfen

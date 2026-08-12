@@ -180,6 +180,29 @@ Ein Protokolleintrag belegt, dass jemand einen bekannten Angriffsweg *ausprobier
 
 ## 8. Grenzen
 
+- **Kommerzielle Plugins sind nicht auf Unversehrtheit prüfbar.** Für sie
+  veröffentlicht niemand Prüfsummen — wordpress.org deckt nur das
+  Verzeichnis ab, und es gibt keine brauchbare Fremdquelle (geprüft:
+  WPHashes deckt Premium nicht ab und verlangt für kommerzielle Nutzung eine
+  Lizenzverhandlung, wpessentials drosselt auf 25–75 Abfragen/Stunde, das
+  WP-CLI-Projekt für kommerzielle Anbieter blieb im Versuchsstadium).
+
+  Ausgerechnet diese Plugins sind die lautesten Fundorte des fremden
+  Regelsatzes (§13c) — UpdraftPlus, WP All Import Pro, Wordfence. Der
+  Rauschfilter dort erreicht sie nicht, und §7.15 kann sie nur belasten, nie
+  entlasten.
+
+  **Was das heisst:** eine veränderte Datei eines kommerziellen Plugins wird
+  gefunden, wenn der eingeschleuste Code sich verrät — durch Verschleierung,
+  eine enorme Zeile, Anhang hinter dem letzten Tag. Wer sauberen,
+  umbrochenen Code mitten in eine grosse Datei schreibt, bleibt unsichtbar.
+  Siehe Issue #30.
+
+- **§7.15 ist ein Mass, kein Befund.** Seine Schwellen stammen aus den Fällen
+  des Selbsttests, nicht aus einer Messung an einem echten Server. Bis die
+  vorliegt, meldet der Abschnitt `info` und liefert eine Rangfolge für die
+  Sichtung — keine Aussage über Schuld.
+
 - **Keine Garantie auf Vollständigkeit.** Neue Obfuskationsvarianten können der Signatur entgehen.
 - **Log-Reichweite** begrenzt die Zeitachse — sehr alte Erstinfektionen liegen evtl. außerhalb der rotierten Logs (Datei-Zeitstempel helfen).
 - **Verschlüsselte/gestagte Payloads**, die erst zur Laufzeit nachladen, sind statisch schwer zu fassen.

@@ -1,11 +1,11 @@
 # Fundstellen-Details
 
 > Pfade **relativ zum Kundenverzeichnis** (nicht der absolute Serverpfad).
-> Erzeugt: <ZEIT> · Prüfung `<LAUF-ID>` · 18 Fundstelle(n), 1 zu prüfen.
+> Erzeugt: <ZEIT> · Prüfung `<LAUF-ID>` · 20 Fundstelle(n), 1 zu prüfen.
 
 | Familie | Anzahl | Geschäftsmodell |
 |---|---|---|
-| Verändertes Plugin | 6 | Fremder Code in einem legitimen Plugin — nachträglich eingebaute Hintertür |
+| Verändertes Plugin | 8 | Fremder Code in einem legitimen Plugin — nachträglich eingebaute Hintertür |
 | Manipulierte .htaccess | 4 | Zugriffsregeln zugunsten des Angreifers — hält seine Dateien erreichbar und sperrt Mitbewerber aus |
 | Code-Injection | 2 | Schadcode in legitime Dateien eingeschleust |
 | Getarnte Payload | 2 | Nachladbarer Schadcode in Nicht-PHP-Datei |
@@ -13,8 +13,10 @@
 | Bekannte Schaddatei | 1 | Nach Namensmuster erkanntes Angriffswerkzeug (Dateimanager, Uploader, Shell) |
 | Tarnstruktur | 1 | Angelegte Verzeichnisse, die echte nachahmen — Ablage für Nutzlasten |
 
-## Verändertes Plugin (6) — Fremder Code in einem legitimen Plugin — nachträglich eingebaute Hintertür
+## Verändertes Plugin (8) — Fremder Code in einem legitimen Plugin — nachträglich eingebaute Hintertür
 
+- `kunde-zwei.example/httpdocs/wp-content/plugins/pruefstand-aktuell/gross-injiziert.php`
+- `kunde-zwei.example/httpdocs/wp-content/plugins/pruefstand-aktuell/gross-sauber.php`
 - `kunde-zwei.example/httpdocs/wp-content/plugins/pruefstand-aktuell/pruefstand-aktuell.php`
 - `kunde-zwei.example/httpdocs/wp-content/plugins/pruefstand-aktuell/lib/b.php`
 - `kunde-zwei.example/httpdocs/wp-content/plugins/pruefstand-aktuell/lib/c.php`

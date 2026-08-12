@@ -499,3 +499,26 @@ DROPPER_MAX_BYTES=3000
 # der Abstand normales dpkg-Verhalten ist.
 ZEITSTEMPEL_ZUSATZ_SEK=2592000     # 30 Tage
 ZEITSTEMPEL_ALLEIN_SEK=7776000     # 90 Tage
+
+# ── Injektion in grosse Dateien (7.15) ───────────────────────
+#
+# Die Zweistufigkeit oben trennt nach GROESSE: klein plus Muster ist kritisch,
+# gross plus Muster geht in die Sichtung. Das traegt für Dropper — und ist
+# blind für den umgekehrten Fall, eine Injektion IN eine grosse, legitime
+# Datei. Eine kommerzielle Plugin-Datei hat 50–400 kB; für sie gibt es keine
+# amtliche Prüfsumme, an der sich das prüfen liesse.
+#
+# lib/injektion_pruefen.py misst deshalb nicht die Datei, sondern die
+# Verteilung darin. Diese Werte steuern es; das Programm liest sie aus der
+# Umgebung und hat dieselben Vorgaben noch einmal, damit es allein lauffähig
+# bleibt (baumscan.sh bindet konfig.sh bewusst nicht ein).
+#
+# ALLE VIER SIND GERATEN. Sie stammen aus den Fällen im Selbsttest, nicht aus
+# einer Messung an einem echten Server — die hängt an der Abnahme (#9). Bis
+# dahin meldet 7.15 `info` und keinen Befund. Ein Filter, dessen Schwellen
+# niemand gemessen hat, wird sonst die nächste Geräuschquelle; genau so ist
+# der fremde Regelsatz mit 359 Treffern unbrauchbar geworden.
+export INJEKTION_GROSS_AB=3000       # darunter ist 7.3 zuständig
+export INJEKTION_ZEILE_MAX=2000      # längste Zeile, ab der es auffällt
+export INJEKTION_RANDLAGE_PCT=5      # Rand der Datei in Prozent
+export INJEKTION_PUNKTE_MIN=3        # ab wann eine Datei genannt wird
