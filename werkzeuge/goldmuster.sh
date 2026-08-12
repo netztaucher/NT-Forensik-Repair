@@ -83,6 +83,7 @@ wp_datenbestand_bauen() {
 pruefstand-kev	*	0	2.0	0	2.0	CVE-2026-90001	9.8	ja	https://beispiel.invalid/1
 pruefstand-alt	2.0	1	2.4.1	1	2.5	CVE-2026-90002	6.5		https://beispiel.invalid/2
 pruefstand-aktuell	1.0	1	3.0	0	3.0	CVE-2026-90003	5.3		https://beispiel.invalid/3
+pruefstand-ohne-fix	*	1	*	1		CVE-2026-90007	7.1		https://beispiel.invalid/7
 TSV
 
   cat > "${D}/vuln/wp-core.tsv" <<'TSV'
@@ -637,6 +638,15 @@ PHP
   # auch Kunde 3 — und die Gegenprobe waere keine mehr.
   wp_plugin "$k2" pruefstand-aktuell  4.1   "Pruefstand Aktuell"
   wp_plugin "$k2" pruefstand-kopflos  -     "Pruefstand Kopflos"
+  # Betroffen, aber OHNE behobene Fassung — und ohne KEV-Kennzeichen. Damit hat
+  # die Ergebniszeile zwei LEERE MITTELFELDER, und genau das fehlte hier: alle
+  # anderen Fixture-Zeilen fuehren in jedem Feld einen Wert.
+  #
+  # Bash fasst aufeinanderfolgende Tabulatoren zu EINEM Trenner zusammen, auch
+  # wenn IFS nur auf Tab steht. Ohne diese Zeile verschob sich im echten Lauf
+  # die halbe Meldung, und weder das Goldmuster noch 46 Selbsttestfaelle
+  # zeigten etwas. In den echten Daten trifft das 26 % aller Datensaetze.
+  wp_plugin "$k2" pruefstand-ohne-fix 1.0   "Pruefstand Ohne Fix"
   # Composer-Abhaengigkeit eines Plugins (#14). Kunde 2 traegt die verwundbare
   # Fassung, Kunde 3 die behobene — derselbe Baum deckt damit Treffer UND
   # Gegenprobe ab. Die dev-Fassung prueft den dritten Fall: nicht vergleichbar,

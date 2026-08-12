@@ -2,6 +2,51 @@
 
 Alle nennenswerten Änderungen an `wp_plesk_forensik.sh`.
 
+## [unveröffentlicht]
+
+### Behoben — bei jeder vierten Schwachstelle stand die falsche Angabe im Bericht
+
+Gefunden vom **ersten Lauf gegen eine echte Installation** (#9), in den ersten
+drei Sekunden. Im Bericht stand:
+
+```
+core wordpress 7.0.3 ... ([* … *]) https://www.wordfence.com/... — behoben in CVE-2017-14990.
+```
+
+Soll wäre `([6.0 … 6.4.1]) CVE-2026-90004 — behoben in 6.4.2`. Die Quell-URL
+stand an der Stelle der CVE-Nummer, die CVE-Nummer hinter „behoben in".
+
+**Die Ursache:** Tab ist in bash ein IFS-Whitespace-Zeichen. Auch wenn `IFS`
+nur auf Tab steht, gilt eine *Folge* von Tabs als **ein** Trenner — leere
+Mittelfelder verschwinden, und alles dahinter rutscht nach links. Betroffen war
+jeder Datensatz ohne behobene Fassung: **11.732 von 45.121, also 26 %.**
+
+Umgestellt auf Unit Separator (0x1f), der kein Whitespace ist.
+
+**Dieselbe Ursache im Joomla-Pfad**, und dort schlimmer: `vel.tsv` hat in
+**allen 199 Zeilen** ein leeres Mittelfeld, `joomla-ext-kritisch.tsv` in 16 von
+17. Drei Leseschleifen umgestellt (`12_joomla.sh`, Kern-CVE, kritische
+Erweiterungen, VEL).
+
+Die vier SQL-Leseschleifen bleiben unverändert — sie sind seit jeher durch
+`IF(…,'-',…)` in der Abfrage abgesichert, mit einem Kommentar, der genau diese
+Falle beschreibt. Das Wissen war da; es war nur nicht auf die Stellen
+angewendet, die aus **Dateien** lesen.
+
+### Behoben — der Prüfbaum hatte die Lücke nicht, die die echten Daten haben
+
+Warum 46 Selbsttestfälle und ein deckungsgleiches Goldmuster nichts sahen:
+**jede Fixture-Zeile führte in jedem Feld einen Wert.** Der Fall „betroffen,
+aber ohne Fix" kam schlicht nicht vor — obwohl er in den echten Daten gut jeden
+vierten Datensatz betrifft.
+
+Neu: `pruefstand-ohne-fix`, eine Zeile mit **zwei leeren Mittelfeldern**
+(`behoben` und `kev`). Vor dem Aufnehmen der Referenz gegen den zurückgedrehten
+Fix geprüft — sie erzeugt dann exakt den Produktionsfehler.
+
+Das ist die eigentliche Lehre aus diesem Fund: eine Fixture, die nur
+vollständige Datensätze kennt, prüft die halbe Wirklichkeit.
+
 ## [3.14.0] — 2026-08-12
 
 Eine Fassung mit einem Thema: **der Schwachstellenabgleich läuft nicht mehr
