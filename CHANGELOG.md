@@ -2,7 +2,25 @@
 
 Alle nennenswerten Änderungen an `wp_plesk_forensik.sh`.
 
-## [unveröffentlicht]
+## [3.13.0] — 2026-08-12
+
+Eine Fassung mit einem einzigen Thema: **die Zeitstempel überleben die
+Bereinigung.**
+
+Sie liegen im Inode. Wird eine Datei verschoben, quarantänisiert oder
+gelöscht, sind sie weg — und mit ihnen die Antwort auf die Frage, die nach
+einem Vorfall zählt: seit wann liegt das Ding dort. Daran hängt, ab wann Daten
+als abgeflossen gelten müssen, und damit der Inhalt der DSGVO-Meldung.
+
+Bis hierher hielt das Werkzeug die Zeitstempel nur für die Handvoll Dateien
+fest, für die ohnehin ein Beleg entstand. Für alles andere gab es keine
+Aufzeichnung — auch nicht für die Nachbardateien, ohne die sich später nicht
+mehr sagen lässt, was in derselben Sekunde sonst noch angefasst wurde.
+
+Der Gegenpart liegt in NT-Repair (#16 dort): dort muss nach dem Verschieben
+über `dev`+`inode` nachgewiesen werden, dass es dieselbe Datei ist. Erst dann
+ist die Kette geschlossen.
+
 
 ### Neu — Datei-Inventar mit Inode und allen Zeitstempeln (#25)
 
