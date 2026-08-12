@@ -382,6 +382,129 @@ datei_steckbrief() {   # datei_steckbrief <kriterium> <regex> <datei>
 # faelschlich mitgeht, ist ein Datenschutzverstoss. Ein Modul, das seine
 # Belege einstufen will, setzt BELEG_STUFE einmal am Kopf; einzelne Aufrufe
 # ueberschreiben das mit dem dritten Parameter.
+# ── Datei-Inventar mit Inode und allen Zeitstempeln (#25) ────
+#
+#   datei_inventar <zieldatei> <pfad...>
+#
+# WOZU
+#
+# Zeitstempel liegen im Inode. Wird eine Datei verschoben, quarantaenisiert
+# oder geloescht, sind sie weg — und mit ihnen die Antwort auf die Frage, die
+# nach einem Vorfall zaehlt: seit wann liegt das Ding dort. Daran haengt, ab
+# wann Daten als abgeflossen gelten muessen, und damit der Inhalt der
+# DSGVO-Meldung.
+#
+# WAS DIESE DATEI BEWEIST — UND WAS NICHT
+#
+# Sie BEWAHRT nichts. Sie haelt eine Beobachtung fest: zum Zeitpunkt T, auf
+# Host H, mit Fassung V wurden diese Werte gesehen. Was vorher war, sagt sie
+# nicht. Das ist keine Schwaeche, solange es dransteht — mit dem SHA256SUMS
+# des Laufs versiegelt ist es eine bezeugte Beobachtung.
+#
+# DER EIGENTLICHE PUNKT: dev UND inode
+#
+# Abgeschriebene Zeitstempel beweisen nichts, die kann jeder schreiben.
+# Tragend wird das Inventar durch die Geraetenummer und den Inode: nach der
+# Quarantaene wird die verschobene Datei erneut gestattet, und stimmen beide
+# ueberein, ist bewiesen, dass es DASSELBE Dateiobjekt ist. Die
+# aufgezeichnete crtime gilt dann weiter, obwohl die ctime durch das
+# Verschieben zerstoert wurde. Stimmen sie nicht ueberein (Kopie ueber eine
+# Dateisystemgrenze, tar-Archiv), zeigt der Datensatz den Bruch, statt ihn zu
+# verdecken. Aus einem Abschrieb wird damit ein Kettenglied.
+#
+# WARUM GEBUENDELT
+#
+# Ein `stat`-Aufruf je Datei waeren bei 100.000 Dateien 100.000 Prozessstarts.
+# GNU-find kann alles in einem Durchgang (`-printf`, mit `%B@` auch die
+# Anlegezeit), BSD-stat nimmt beliebig viele Dateien auf einmal entgegen.
+# Geprueft wird die FAEHIGKEIT, nicht die Plattform: auf dieser Maschine
+# steht `bfs` im Pfad, das -printf kann, waehrend /usr/bin/find es nicht kann.
+#
+# ZEITEN ALS EPOCHENSEKUNDEN
+#
+# Ein forensischer Datensatz soll keine Zeitzonen-Mehrdeutigkeit tragen.
+# Fehlt die Anlegezeit (ext4 fuehrt sie, meldet sie aber nur bei ausreichend
+# grossem Inode), steht dort "-" und keine 0 — eine 0 liest sich wie 1970,
+# nicht wie "nicht messbar".
+#
+# WELCHER ZEITSTEMPEL WAS TAUGT — GEMESSEN, NICHT ANGENOMMEN
+#
+#   mtime   mit `touch` beliebig setzbar. Der Wert, den ein Angreifer faelscht.
+#   ctime   von KEINEM touch setzbar; der Kern setzt sie bei jeder
+#           Inode-Aenderung auf jetzt. Damit ist "mtime deutlich aelter als
+#           ctime" das eigentliche Signal fuer Rueckdatierung.
+#           ABER: das Verschieben in die Quarantaene ist selbst eine
+#           Inode-Aenderung — danach ist sie ueberschrieben. Genau deshalb
+#           gibt es dieses Inventar.
+#   crtime  ueberlebt `touch` auf ext4. Auf APFS NICHT: dort haelt der Kern
+#           crtime <= mtime, und ein `touch -t 2020` zieht die Anlegezeit mit
+#           in die Vergangenheit. Nachgemessen am 12.08.2026:
+#               vorher            mtime=1786510340  crtime=1786510340
+#               touch -t 2020     mtime=1577833200  crtime=1577833200
+#               touch -t 2030     mtime=1893452400  crtime=1577833200
+#           Rueckdatierung faelscht dort also beide, Vordatierung nur eine.
+#           Der Zielserver ist Linux, dort traegt crtime — aber die Aussage
+#           "crtime laesst sich nicht verstellen" gilt nicht ueberall, und
+#           ein Beleg soll nicht mehr behaupten, als er halten kann.
+datei_inventar() {   # <zieldatei> <pfad...>
+  local ziel="$1"; shift
+  [[ "$#" -gt 0 ]] || return 0
+
+  {
+    echo "# NT-Forensik — Datei-Inventar"
+    echo "# Erhoben: $(date -u +"%Y-%m-%dT%H:%M:%SZ") (UTC)"
+    echo "# Host: $(hostname -f 2>/dev/null || hostname)"
+    echo "# Tool: wp_plesk_forensik.sh v${TOOL_VERSION}"
+    echo "#"
+    echo "# Diese Datei haelt fest, was zum Zeitpunkt oben zu sehen war — nicht,"
+    echo "# was vorher war. dev und inode erlauben es, eine spaeter verschobene"
+    echo "# Datei als dieselbe wiederzuerkennen; stimmen sie nach einer"
+    echo "# Bereinigung nicht mehr, wurde kopiert statt verschoben und die"
+    echo "# Anlegezeit ist verloren."
+    echo "#"
+    echo "# Zeiten in Sekunden seit 1970-01-01 UTC. '-' heisst nicht messbar."
+    echo "#"
+    printf '# dev\tinode\tmodus\teigner\tgruppe\tgroesse\tmtime\tctime\tcrtime\tpfad\n'
+  } > "$ziel"
+
+  # Zwei Wege, dasselbe Feldlayout. Der Pfad steht bewusst in der LETZTEN
+  # Spalte — er ist die einzige, die einen Tabulator enthalten koennte.
+  #
+  # Geprueft wird die FAEHIGKEIT, nicht die Plattform. Auf dem Arbeitsplatz
+  # steht `bfs` im Pfad, das -printf beherrscht, waehrend /usr/bin/find es
+  # nicht kann; eine Abfrage auf `uname` haette dort den falschen Zweig
+  # gewaehlt.
+  if find "$1" -maxdepth 0 -printf '' 2>/dev/null; then
+    find "$@" -type f \
+         -printf '%D\t%i\t%m\t%u\t%g\t%s\t%T@\t%C@\t%B@\t%p\n' 2>/dev/null \
+      | awk -F'\t' 'BEGIN { OFS = "\t" }
+          {
+            # Bruchteile abschneiden. GNU liefert "1786509287.9950781560";
+            # die Nanosekunden sagen nichts, was die Sekunde nicht sagt, und
+            # sie machen die Datei um ein Fuenftel groesser.
+            #
+            # Fehlt die Anlegezeit, liefert GNU-find ein leeres Feld oder 0.
+            # Beides wird zu "-": eine 0 liest sich wie 1970, ein leeres Feld
+            # wie "kein Befund" — gemeint ist "nicht messbar".
+            for (i = 7; i <= 9; i++) {
+              sub(/\..*/, "", $i)
+              if ($i == "" || $i == "0") $i = "-"
+            }
+            print
+          }' >> "$ziel"
+  else
+    # BSD-stat nimmt beliebig viele Dateien auf einmal entgegen; %t ist dort
+    # der Tabulator, %OLp die Rechte in Oktal und %N der Dateiname.
+    find "$@" -type f -print0 2>/dev/null \
+      | xargs -0 stat -f '%d%t%i%t%OLp%t%Su%t%Sg%t%z%t%m%t%c%t%B%t%N' 2>/dev/null \
+      >> "$ziel"
+  fi
+
+  # Die Zahl gehoert genannt. Ein Inventar, dessen Umfang niemand kennt, ist
+  # keines — und ein leeres faellt sonst gar nicht auf.
+  grep -vc '^#' "$ziel" 2>/dev/null || echo 0
+}
+
 evidence() {
   EVIDENCE_IDX=$((EVIDENCE_IDX+1))
   # %03d, nicht %02d: bei 103 Aufrufstellen sortiert `10_` vor `9_`, und die

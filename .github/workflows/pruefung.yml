@@ -121,6 +121,16 @@ jobs:
         # gemeldet" gehört dort ein Fall, der NICHT gemeldet werden darf.
         run: bash werkzeuge/kern-pruefstand.sh
 
+      - name: Datei-Inventar über eine Quarantäne hinweg (#25)
+        # Eigener Prüfstand, weil die Referenz von den Belegen nur die
+        # DATEINAMEN festhält. `00_dateien.tsv` ist ein Beleg — und nicht
+        # irgendeiner: er ist die einzige Aufzeichnung, die eine Quarantäne
+        # überlebt. Geprüft wird, was er leisten soll, nicht seine Form:
+        # eine verschobene Datei muss sich über dev+inode wiedererkennen
+        # lassen, und ein Bruch der Kette (Kopie statt Verschiebung) muss
+        # sichtbar werden statt still zu bleiben.
+        run: bash werkzeuge/inventar-pruefstand.sh
+
       - name: Urteile von baumscan.sh
         # Eigener Prüfstand, weil goldmuster.sh wp_plesk_forensik.sh prüft und
         # die Urteile in baumscan.sh leben. Und mit Soll-Werten statt

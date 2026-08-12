@@ -2,6 +2,66 @@
 
 Alle nennenswerten Änderungen an `wp_plesk_forensik.sh`.
 
+## [unveröffentlicht]
+
+### Neu — Datei-Inventar mit Inode und allen Zeitstempeln (#25)
+
+Zeitstempel liegen im Inode. Wird eine Datei verschoben, quarantänisiert oder
+gelöscht, sind sie weg — und mit ihnen die Antwort auf die Frage, die nach
+einem Vorfall zählt: **seit wann liegt das Ding dort.** Daran hängt, ab wann
+Daten als abgeflossen gelten müssen, und damit der Inhalt der DSGVO-Meldung.
+
+Abschnitt **7.0** erhebt deshalb vor allen Prüfungen ein Inventar über den
+gesamten Prüfumfang und legt es als `belege/00_dateien.tsv` ab, mitversiegelt
+vom bestehenden `SHA256SUMS`:
+
+```
+dev  inode  modus  eigner  gruppe  groesse  mtime  ctime  crtime  pfad
+```
+
+**Der eigentliche Punkt sind `dev` und `inode`.** Abgeschriebene Zeitstempel
+beweisen nichts — die kann jeder schreiben. Nach der Quarantäne wird die
+verschobene Datei erneut `stat`-et: stimmen Gerätenummer und Inode überein,
+ist bewiesen, dass es dasselbe Dateiobjekt ist, und die aufgezeichneten Werte
+gelten weiter. Stimmen sie nicht überein — Kopie über eine Dateisystemgrenze,
+tar-Archiv —, zeigt der Datensatz den Bruch, statt ihn zu verdecken. Aus einem
+Abschrieb wird damit ein **Kettenglied**. Gegenstück: netztaucher/NT-Repair#16.
+
+Das Inventar erfasst **alles**, nicht nur die Funde. Die Frage nach einem
+Vorfall lautet fast immer „was hat sich sonst noch in derselben Sekunde
+geändert?", und die ist nur beantwortbar, wenn auch das Unauffällige
+aufgezeichnet wurde. 100.000 Zeilen sind rund 12 MB — nichts neben dem
+Log-Archiv.
+
+Erhoben wird gebündelt: `find -printf` unter GNU, `xargs stat -f` unter BSD.
+Ein `stat`-Aufruf je Datei wären bei 100.000 Dateien 100.000 Prozessstarts.
+Geprüft wird dabei die **Fähigkeit**, nicht die Plattform — auf dem
+Arbeitsplatz steht `bfs` im Pfad, das `-printf` beherrscht, während
+`/usr/bin/find` es nicht kann.
+
+Was das Inventar **nicht** ist: eine Bewahrung. Es hält eine Beobachtung fest —
+„zum Zeitpunkt T, auf Host H, mit Fassung V wurden diese Werte gesehen". Was
+vorher war, sagt es nicht. Das steht im Kopf der Datei.
+
+### Gemessen — `crtime` ist nur auf ext4 fälschungssicher
+
+Die Aussage „die Anlegezeit lässt sich mit `touch` nicht verstellen" gilt
+nicht überall. Auf APFS hält der Kern `crtime <= mtime`, und eine
+**Rückdatierung zieht die Anlegezeit mit**:
+
+```
+vorher          mtime=1786510340  crtime=1786510340
+touch -t 2020   mtime=1577833200  crtime=1577833200   ← beide gefälscht
+touch -t 2030   mtime=1893452400  crtime=1577833200   ← nur die mtime
+```
+
+Der Zielserver ist Linux, dort trägt `crtime`. Aber der verlässliche
+Anhaltspunkt für eine Rückdatierung ist auf **jeder** Plattform die `ctime`:
+sie ist von keinem `touch` setzbar, der Kern setzt sie bei jeder
+Inode-Änderung. Genau sie überschreibt das Verschieben in die Quarantäne —
+weshalb es dieses Inventar überhaupt gibt. Die Messung steht im Quelltext,
+nicht nur hier.
+
 ## [3.12.0] — 2026-08-11
 
 Diese Fassung räumt hinter einem Umbau auf, den niemand als unfertig erkannt
