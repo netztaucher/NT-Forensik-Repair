@@ -63,6 +63,60 @@ mkdir -p "${DATEN}/vuln" "${DATEN}/kev"
 #
 # Der Feed kennt keinen Teilabruf: beide Endpunkte liefern immer den ganzen
 # Bestand und nehmen keine Parameter. Ein Delta gibt es also nur lokal.
+# ── Das Lizenz-Gate (#8) ─────────────────────────────────────
+#
+# Sobald ein Wordfence-Bestand im oeffentlichen Repository liegt, ist er
+# AUSGELIEFERT — und die Auflagen gelten ab diesem Augenblick, nicht ab dem
+# naechsten Release. Die Weitergabe ist nur gedeckt, wenn Copyright-Vermerk und
+# Lizenztext je Kopie beiliegen; der Verweis je Zeile in der Spalte 'quelle'
+# genuegt der Auflage nicht.
+#
+# Als Punkt auf einer Merkliste war das ein Vorsatz. Hier ist es eine Sperre:
+# solange rezepte/wordpress/daten/LICENSE ein Geruest ist, wird kein Bestand
+# geschrieben. Ein Vorsatz haelt genau bis zu dem Tag, an dem es eilig ist.
+lizenz_gate() {
+    local lic="${DATEN}/LICENSE"
+    if [[ ! -r "$lic" ]]; then
+        fehler "${lic} fehlt."
+        fehler "Ohne Copyright-Vermerk und Lizenztext ist die Weitergabe nicht gedeckt."
+        return 1
+    fi
+    if grep -q '^PLATZHALTER' "$lic"; then
+        fehler "${lic} ist noch ein Geruest."
+        fehler "Es fehlen: Copyright-Vermerk und Lizenztext im Wortlaut, dazu das"
+        fehler "Abrufdatum. Die Datei sagt selbst, was wohin gehoert."
+        fehler ""
+        fehler "Nicht aus dem Gedaechtnis einsetzen: §5c behaelt eine einseitige"
+        fehler "Aenderung der Bedingungen vor, der Text gehoert zum Zeitpunkt des"
+        fehler "Bezugs geholt."
+        return 1
+    fi
+    for marke in 'DATUM EINTRAGEN' 'STAND EINTRAGEN' 'IM WORTLAUT EINSETZEN'; do
+        if grep -qF "$marke" "$lic"; then
+            fehler "${lic}: '[${marke}]' steht noch drin."
+            return 1
+        fi
+    done
+    return 0
+}
+
+# ── Abdeckung auszaehlen (#8) ────────────────────────────────
+#
+# "Wie viele Datensaetze, wie viele verschiedene Slugs?" — ohne diese Zahl
+# laesst sich nicht beurteilen, ob die Abhaengigkeit von einer einzigen Quelle
+# tragbar ist. Sie gehoert deshalb nicht in eine einmalige Auswertung, sondern
+# bei jedem Bestandsaufbau neu erhoben und in VERSION geschrieben.
+abdeckung_zaehlen() {
+    local f typ zeilen slugs
+    for f in "${DATEN}"/vuln/*.tsv; do
+        [[ -r "$f" ]] || continue
+        typ="$(basename "$f")"
+        zeilen=$(grep -cv '^#' "$f" 2>/dev/null || echo 0)
+        slugs=$(grep -v '^#' "$f" 2>/dev/null | cut -f1 | LC_ALL=C sort -u | grep -c . || echo 0)
+        printf '%-33s %6s Zeile(n), %5s verschiedene Slugs\n' "$typ" "$zeilen" "$slugs"
+    done
+}
+
 wordfence_holen() {
     local ziel="$1"
     if [[ -z "${WORDFENCE_API_KEY:-}" ]]; then
@@ -278,6 +332,14 @@ stand_schreiben() {
             printf '%-28s %6s Zeile(n)\n' "$(basename "$f")" \
                    "$(grep -vc '^#' "$f" 2>/dev/null || echo 0)"
         done
+        # Abdeckung je Tabelle (#8). Zeilen allein sagen wenig — eine Quelle mit
+        # 40.000 Eintraegen auf 300 Slugs deckt etwas anderes ab als eine mit
+        # 40.000 auf 12.000. Ohne die zweite Zahl laesst sich nicht beurteilen,
+        # ob die Abhaengigkeit von einer einzigen Quelle tragbar ist.
+        if ls "${DATEN}"/vuln/*.tsv >/dev/null 2>&1; then
+            printf '\nAbdeckung\n'
+            abdeckung_zaehlen
+        fi
     } > "${DATEN}/VERSION"
 
     ( cd "$DATEN" && find . -type f \( -name '*.tsv' -o -name VERSION \) \
@@ -292,12 +354,14 @@ stand_schreiben() {
 AKTION="${1:-}"
 case "$AKTION" in
     --wordfence)
+        lizenz_gate || exit 2
         echo "== Wordfence Intelligence =="
         ROH=$(mktemp); trap 'rm -f "$ROH"' EXIT
         wordfence_holen "$ROH" && wordfence_normalisieren "$ROH" && kev_verknuepfen
         stand_schreiben
         ;;
     --aus-datei)
+        lizenz_gate || exit 2
         [[ -n "${2:-}" && -f "${2:-}" ]] || { fehler "Datei angeben"; exit 2; }
         echo "== Wordfence Intelligence (aus Datei ${2}) =="
         wordfence_normalisieren "$2" && kev_verknuepfen
@@ -349,6 +413,7 @@ case "$AKTION" in
         stand_schreiben
         ;;
     --alles)
+        lizenz_gate || exit 2
         kev_aktualisieren
         echo "== Wordfence Intelligence =="
         ROH=$(mktemp); trap 'rm -f "$ROH"' EXIT

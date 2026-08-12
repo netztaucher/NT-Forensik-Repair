@@ -1,6 +1,6 @@
 # NT-Forensik — WordPress-Eintraege aus dem KEV-Katalog der CISA
 # Quelle: cisa.gov, Werk einer US-Behoerde (gemeinfrei). Siehe ../QUELLEN.md
-# Katalogfassung: 2026.08.06
+# Katalogfassung: 2026.08.11
 # cve	hersteller	produkt	aufgenommen	ransomware
 CVE-2019-9978	WordPress	Social Warfare Plugin	2021-11-03	Unknown
 CVE-2020-11738	WordPress	Snap Creek Duplicator Plugin	2021-11-03	Unknown

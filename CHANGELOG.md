@@ -31,6 +31,48 @@ Fassung. Ist der Schlüssel zu 0.7.0 dort noch nicht eingetragen, scheitert
 **jeder** Kundenlauf mit „Lizenzserver kennt Fassung 0.7.0 nicht". Diese
 Änderung darf erst zusammenlaufen, wenn der Schlüssel steht.
 
+## [unveröffentlicht]
+
+### Neu — das Lizenz-Gate ist eine Sperre, kein Häkchen (#8)
+
+Sobald ein Wordfence-Bestand im öffentlichen Repository liegt, ist er
+**ausgeliefert** — und die Auflagen gelten ab diesem Augenblick, nicht ab dem
+nächsten Release. Die Weitergabe ist nur gedeckt, wenn Copyright-Vermerk und
+Lizenztext je Kopie beiliegen; der Verweis je Zeile in der Spalte `quelle`
+genügt der Auflage nicht.
+
+Als Punkt auf einer Merkliste hielte das genau bis zu dem Tag, an dem es eilig
+ist. `werkzeuge/wordpress-daten-update.sh` bricht deshalb mit Rückgabewert 2
+ab, solange `rezepte/wordpress/daten/LICENSE` ein Gerüst ist — bei
+`--wordfence`, `--alles` **und** `--aus-datei`. Ein gespeicherter Feed ist
+derselbe Bestand.
+
+`--kev` hängt bewusst **nicht** am Gate: der CISA-Katalog ist ein Werk einer
+US-Behörde, gemeinfrei, ohne Auflagen. Ein Gate davor würde den einzigen heute
+pflegbaren Teil blockieren. Auch das ist geprüft.
+
+`LICENSE` liegt als Gerüst bei und sagt selbst, was wohin gehört — samt der
+Begründung, warum der Lizenztext **zum Zeitpunkt des Bezugs** geholt und nicht
+aus einer älteren Fassung übernommen wird: §5c behält eine einseitige Änderung
+der Bedingungen vor.
+
+### Neu — Abdeckung wird bei jedem Bestandsaufbau gezählt
+
+„Wie viele Datensätze, wie viele verschiedene Slugs?" stand als einmalige
+Aufgabe im Issue. Zeilen allein sagen wenig — 40.000 Einträge auf 300 Slugs
+decken etwas anderes ab als 40.000 auf 12.000. Die Zahl wird jetzt bei jedem
+Lauf neu erhoben und steht in `VERSION`.
+
+### Offen — die MITRE-Anzeigepflicht
+
+Nicht entschieden, und das bleibt so, bis jemand es entscheidet. Die Frage ist
+in `LICENSE` und `NOTICE` mit ihrer **Konsequenz** hinterlegt:
+
+| Auslegung | Folge |
+|---|---|
+| Beilage genügt | `LICENSE` und `NOTICE` reichen |
+| Nennung in der Trefferausgabe | es braucht das Autorenfeld aus #13 — dann ist das kein Nebenschauplatz mehr, sondern Voraussetzung |
+
 ## [3.13.0] — 2026-08-12
 
 Eine Fassung mit einem einzigen Thema: **die Zeitstempel überleben die

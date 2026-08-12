@@ -96,6 +96,18 @@ jobs:
           [[ $fehler -eq 0 ]] && echo "  ok — Belegstufen vollständig und plausibel"
           exit $fehler
 
+      - name: Lizenz-Gate vor dem Wordfence-Bestand (#8)
+        # Sobald ein Wordfence-Bestand im öffentlichen Repository liegt, ist er
+        # ausgeliefert — die Auflagen gelten ab diesem Augenblick, nicht ab dem
+        # nächsten Release. Als Punkt auf einer Merkliste hielte das genau bis
+        # zu dem Tag, an dem es eilig ist.
+        #
+        # Geprüft werden beide Richtungen: die Sperre muss greifen, und eine
+        # ausgefüllte LICENSE muss sie öffnen. Eine Sperre, die immer zuschlägt,
+        # bestünde einen einseitigen Test genauso — und es entstünde nie ein
+        # Bestand.
+        run: bash werkzeuge/lizenz-pruefstand.sh
+
       - name: Selbsttest des Versionsvergleichs
         # Der Abgleich installierter Fassungen gegen Verwundbarkeitsbereiche
         # steht und fällt mit der Ordnung der Versionen. Ist sie an einer
