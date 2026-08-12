@@ -311,6 +311,34 @@ auf.
 
 ## [unveröffentlicht]
 
+### Behoben — zwei Hinweise erzeugten auf JEDER WordPress-Installation eine Warnung
+
+Gemessen am Lauf über 475 vhosts. Auf jeder einzelnen Installation standen:
+
+```
+⚠ core wordpress 6.9.6 ist von einer bekannten Schwachstelle betroffen ([* … *]) CVE-2017-14990.
+⚠ core wordpress 6.9.6 ist von einer bekannten Schwachstelle betroffen ([* … *]) CVE-2022-3590.
+```
+
+Bereich `*` bis `*`, keine behobene Fassung — **eine Warnung ohne jede
+Abhilfe, dauerhaft, auf allen Seiten.** Rund tausend Zeilen, die niemand
+abarbeiten kann.
+
+Der Feed markiert beide selbst als `informational: true`: *„WordPress Core –
+All Known Versions"*. Wordfence stuft sie also gar nicht als Schwachstelle
+ein — der Normalisierer übernahm sie trotzdem.
+
+Dieselbe Fehlerart wie beim FastCGI-Fehlalarm: was immer anschlägt, wird
+überlesen — und dann fällt der echte Befund auch nicht mehr auf.
+
+`informational`-Datensätze werden jetzt beim Aufbau übergangen. **Kein stilles
+Wegfiltern:** die Zahl steht im Aufbauprotokoll (`Nicht uebernommen:
+informational=121`).
+
+Die 308 Plugin- und 148 Theme-Einträge ohne behobene Fassung bleiben
+unberührt — das sind echte Lücken in aufgegebenen Erweiterungen, und sie
+melden nur, wenn die Erweiterung installiert ist.
+
 ### Hinzugefügt — Angreifer-Konten sind jetzt handlungsfähig an die Bereinigung übergeben
 
 `actionable.rogue_wp_admins` trug bisher nur Benutzername, E-Mail und Datum.

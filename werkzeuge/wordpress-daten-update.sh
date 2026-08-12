@@ -302,7 +302,7 @@ zeilen = {"core": [], "plugin": [], "theme": []}
 # ausgewiesen. Ein Bestand, der klaglos 8000 Datensaetze schluckt und 300
 # davon wegwirft, sieht vollstaendig aus und ist es nicht.
 verworfen = {"ohne_software": 0, "ohne_slug": 0, "unbekannter_typ": 0,
-             "ohne_bereich": 0}
+             "ohne_bereich": 0, "informational": 0}
 
 def text(wert):
     return "" if wert is None else str(wert).replace("\t", " ").strip()
@@ -318,6 +318,22 @@ for uuid, satz in daten.items():
     quelle = text(satz.get("references", [""])[0] if isinstance(satz.get("references"), list) and satz.get("references") else "")
     if not quelle:
         quelle = "https://www.wordfence.com/threat-intel/vulnerabilities/id/%s" % uuid
+
+    # HINWEISE SIND KEINE SCHWACHSTELLEN.
+    #
+    # Der Feed markiert Datensaetze, die keine behebbare Luecke beschreiben,
+    # mit informational=true. Beim WordPress-Kern sind das Eintraege der Form
+    # "All known versions" — Bereich * bis *, ohne behobene Fassung.
+    #
+    # Uebernommen erzeugen sie auf JEDER Installation eine Warnung, die
+    # niemand je abarbeiten kann. Auf einem Server mit 475 vhosts gemessen:
+    # zwei Zeilen je WordPress, dauerhaft, ohne Abhilfe. Was immer anschlaegt,
+    # wird ueberlesen — und dann faellt der echte Befund auch nicht mehr auf.
+    #
+    # Kein stilles Wegfiltern: sie werden gezaehlt und beim Aufbau ausgewiesen.
+    if satz.get("informational") is True:
+        verworfen["informational"] += 1
+        continue
 
     programme = satz.get("software")
     if not isinstance(programme, list) or not programme:
