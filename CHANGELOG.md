@@ -2,7 +2,23 @@
 
 Alle nennenswerten Änderungen an `wp_plesk_forensik.sh`.
 
-## [unveröffentlicht]
+## [3.14.0] — 2026-08-12
+
+Eine Fassung mit einem Thema: **der Schwachstellenabgleich läuft nicht mehr
+gegen nichts.**
+
+Er war seit Fassung 3.9 gebaut, geprüft und mit Selbsttests hinterlegt. Nur
+meldete jeder Lauf „Kein Datenbestand vorhanden — Abgleich übersprungen". Das
+war der größte einzelne Funktionsausfall des Werkzeugs, und er sah nicht wie
+einer aus: die Zeile stand unauffällig zwischen den anderen.
+
+Jetzt liegen 45.121 Zeilen auf 18.062 verschiedene Slugs im Repository, und ein
+Zeitplan hält sie unter der 30-Tage-Marke, ab der das Werkzeug den eigenen
+Abgleich als nicht belastbar meldet.
+
+Nebenher hat sich eine seit Wochen offene Rechtsfrage aufgelöst — nicht durch
+Auslegung, sondern weil der Lizenztext im Feed selbst mitkommt und dort
+wörtlich steht, was verlangt wird.
 
 ### Hinzugefügt — der Schwachstellenabgleich hat einen Datenbestand (#7, #8)
 
@@ -132,8 +148,6 @@ Was der neue Stand mitbringt (NT-Repair 0.6.0 und 0.7.0):
 Fassung. Ist der Schlüssel zu 0.7.0 dort noch nicht eingetragen, scheitert
 **jeder** Kundenlauf mit „Lizenzserver kennt Fassung 0.7.0 nicht". Diese
 Änderung darf erst zusammenlaufen, wenn der Schlüssel steht.
-
-## [unveröffentlicht]
 
 ### Behoben — leere Schwachstellen-Tabellen galten als Datenbestand
 
