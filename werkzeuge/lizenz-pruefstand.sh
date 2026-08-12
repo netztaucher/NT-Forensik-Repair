@@ -251,6 +251,25 @@ for d in LICENSE NOTICE; do
   fi
 done
 
+# ── Und das Manifest muss stimmen ───────────────────────────────────────────
+# Genannt zu sein genügt nicht. Beim ersten echten Lauf des Zeitplans stand im
+# eingecheckten Manifest ein veralteter Hash für NOTICE: die Datei war NACH dem
+# Erzeugen des Manifests noch bearbeitet worden. Das Manifest ist der Beleg
+# dafür, gegen welchen Datenstand ein Befund entstanden ist — eines, das seine
+# eigene Lieferung nicht bestätigt, belegt nichts und fällt niemandem auf,
+# solange es niemand nachrechnet. Also nachrechnen.
+# stdout MIT umleiten, nicht nur stderr: shasum meldet 'FAILED' auf stdout,
+# und die Zeile stünde sonst unkommentiert zwischen den Prüfzeilen.
+if command -v sha256sum >/dev/null 2>&1; then PRUEF=(sha256sum -c --quiet)
+else                                          PRUEF=(shasum -a 256 -c); fi
+if ( cd "${SELF_DIR}/rezepte/wordpress/daten" && "${PRUEF[@]}" MANIFEST.sha256 ) >/dev/null 2>&1; then
+  pok "MANIFEST.sha256 stimmt mit den ausgelieferten Dateien überein"
+else
+  pfehl "MANIFEST.sha256 stimmt NICHT — der Beleg passt nicht zur Lieferung"
+  ( cd "${SELF_DIR}/rezepte/wordpress/daten" \
+    && shasum -a 256 -c MANIFEST.sha256 2>/dev/null | grep -v ': OK$' | sed 's/^/      /' ) || true
+fi
+
 echo
 if [[ "$FEHLER" -eq 0 ]]; then
   echo -e "${GRN}Alle Soll-Werte erreicht.${NC}"
