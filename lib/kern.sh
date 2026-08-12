@@ -474,7 +474,12 @@ datei_inventar() {   # <zieldatei> <pfad...>
   # steht `bfs` im Pfad, das -printf beherrscht, waehrend /usr/bin/find es
   # nicht kann; eine Abfrage auf `uname` haette dort den falschen Zweig
   # gewaehlt.
-  if find "$1" -maxdepth 0 -printf '' 2>/dev/null; then
+  # NT_INVENTAR_BSD=1 erzwingt den BSD-Zweig. Ohne diesen Schalter wuerde er
+  # NIRGENDS laufen: auf dem Arbeitsplatz steht `bfs` im Pfad und in der CI
+  # GNU-find, beide koennen -printf. Ein Zweig, den kein Pruefstand erreicht,
+  # ist unbelegter Code — und dieser hier liefe ausgerechnet auf der Plattform,
+  # auf der niemand nachsieht.
+  if [[ "${NT_INVENTAR_BSD:-0}" != "1" ]] && find "$1" -maxdepth 0 -printf '' 2>/dev/null; then
     find "$@" -type f \
          -printf '%D\t%i\t%m\t%u\t%g\t%s\t%T@\t%C@\t%B@\t%p\n' 2>/dev/null \
       | awk -F'\t' 'BEGIN { OFS = "\t" }

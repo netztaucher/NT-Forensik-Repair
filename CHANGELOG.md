@@ -43,6 +43,21 @@ Was das Inventar **nicht** ist: eine Bewahrung. Es hält eine Beobachtung fest �
 „zum Zeitpunkt T, auf Host H, mit Fassung V wurden diese Werte gesehen". Was
 vorher war, sagt es nicht. Das steht im Kopf der Datei.
 
+### Prüfstand — beide Erhebungswege, nicht nur der gerade laufende
+
+`datei_inventar` hat zwei Wege: GNU-`find -printf` und gebündeltes BSD-`stat`.
+Der BSD-Zweig wäre **nirgends** gelaufen — auf dem Arbeitsplatz steht `bfs` im
+PATH, in der CI GNU-`find`, beide können `-printf`. Ein Zweig, den kein
+Prüfstand erreicht, ist unbelegter Code, und dieser hier liefe ausgerechnet auf
+der Plattform, auf der niemand nachsieht.
+
+`NT_INVENTAR_BSD=1` erzwingt ihn. Der Prüfstand nutzt das, wo BSD-`stat`
+wirklich vorhanden ist, und prüft zusätzlich, dass **beide Wege denselben
+Inode nennen** — sonst messen sie verschiedene Dinge und niemand wüsste,
+welcher stimmt. Wo BSD-`stat` fehlt (Linux, CI), wird das ausgesprochen statt
+still übersprungen: eine ausgelassene Prüfung, die niemand erwähnt, sieht aus
+wie eine bestandene.
+
 ### Gemessen — `crtime` ist nur auf ext4 fälschungssicher
 
 Die Aussage „die Anlegezeit lässt sich mit `touch` nicht verstellen" gilt

@@ -166,6 +166,38 @@ else
   pfehl "${LEER} Zeile(n) mit leerer Anlegezeit — von 'kein Befund' nicht zu unterscheiden"
 fi
 
+# ── Der zweite Zweig ────────────────────────────────────────────────────────
+# datei_inventar hat zwei Wege: GNU-find mit -printf und BSD-stat gebuendelt.
+# Auf dieser Maschine wie in der CI laeuft immer der GNU-Zweig — auf dem
+# Arbeitsplatz, weil `bfs` im Pfad steht, in der CI, weil dort GNU-find liegt.
+# Der BSD-Zweig liefe damit NIRGENDS, und ausgerechnet auf der Plattform, auf
+# der niemand nachsieht.
+#
+# NT_INVENTAR_BSD=1 erzwingt ihn. Das geht nur, wo BSD-stat wirklich vorhanden
+# ist; GNU-stat kennt kein -f. Fehlt er, wird das GESAGT statt still
+# uebersprungen — eine ausgelassene Pruefung, die niemand erwaehnt, sieht aus
+# wie eine bestandene.
+if stat -f '%d' . >/dev/null 2>&1; then
+  INV_BSD="${ARBEIT}/bsd.tsv"
+  N_BSD=$(NT_INVENTAR_BSD=1 datei_inventar "$INV_BSD" "$QUAR")
+  Z_BSD=$(awk -F'\t' '!/^#/ && $10 ~ /shell\.php$/' "$INV_BSD" | head -1)
+  if [[ "${N_BSD:-0}" -gt 0 && -n "$Z_BSD" ]]; then
+    pok "BSD-Zweig liefert dasselbe Feldlayout (${N_BSD} Datei(en))"
+  else
+    pfehl "BSD-Zweig liefert nichts oder ein anderes Layout"
+  fi
+  # Derselbe Inode wie im GNU-Zweig — sonst messen die beiden Wege
+  # verschiedene Dinge, und welcher stimmt, wuesste niemand.
+  if [[ -n "$Z_BSD" && "$(feld 2 "$Z_BSD")" == "$I_NACH" ]]; then
+    pok "BSD- und GNU-Zweig nennen denselben Inode"
+  else
+    pfehl "BSD-Zweig nennt einen anderen Inode als der GNU-Zweig ($(feld 2 "$Z_BSD") / ${I_NACH})"
+  fi
+else
+  echo "  · BSD-Zweig nicht prüfbar: kein BSD-stat auf dieser Maschine (GNU-stat kennt kein -f)."
+  echo "    Er wird auf dem macOS-Arbeitsplatz geprüft, nicht in der CI."
+fi
+
 echo
 if [[ "$FEHLER" -eq 0 ]]; then
   echo -e "${GRN}Alle Soll-Werte erreicht.${NC}"
