@@ -134,8 +134,28 @@ for _rz in "${REZEPT_DIR}"/*/; do
       fi
       # shellcheck disable=SC2086
       OCC() { als_eigentuemer "$_own" "$REZ_PHP" -d memory_limit=1024M "$REZ_WERKZEUG" "$@" 2>/dev/null; }
+
+      # DER PFAD MUSS AN DIE PROBE.
+      #
+      # Ein mitgeliefertes Werkzeug liegt IN der Installation — occ findet sie
+      # von selbst. Ein externes nicht: wp-cli sucht ab dem Arbeitsverzeichnis,
+      # und das ist der Laufordner, keine WordPress-Installation.
+      #
+      # Bis v3.14 lief die Probe deshalb ohne Pfad und KONNTE nicht gelingen:
+      #   Error: This does not seem to be a WordPress installation.
+      # Die Folge war kein Fehler, sondern ein 'continue' — rezept_kern,
+      # rezept_konfig und rezept_db fielen auf JEDER echten Installation aus.
+      # Damit lief `wp core verify-checksums` nie, und Abschnitt 13c bekam
+      # seine Kern-Whitelist nicht. Im Bericht stand dafuer eine Zeile:
+      # "Werkzeug antwortet nicht verwertbar".
+      # Ersetzung statt printf: ein Format, das mit '--' beginnt, laese printf
+      # als Option ("printf: --: invalid option"). Ausserdem faellt damit jede
+      # Formatstring-Deutung im Pfad weg.
+      _pfadarg=""
+      _pfadform="$(rezept_feld "$_rz" werkzeug_pfad_arg)"
+      [[ -n "$_pfadform" ]] && _pfadarg="${_pfadform//%s/$REZ_PFAD}"
       # shellcheck disable=SC2086
-      rezept_werkzeug_bereit "$_app" "$REZ_KURZ" als_eigentuemer "$_own" "$REZ_PHP" -d memory_limit=1024M "$REZ_WERKZEUG" $_probe || continue
+      rezept_werkzeug_bereit "$_app" "$REZ_KURZ" als_eigentuemer "$_own" "$REZ_PHP" -d memory_limit=1024M "$REZ_WERKZEUG" $_probe ${_pfadarg:+"$_pfadarg"} || continue
     fi
 
     declare -F rezept_kern   >/dev/null && rezept_kern

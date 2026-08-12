@@ -169,8 +169,21 @@ foreach ($argv as $a) {
 }
 $befehl = ($argv[1] ?? '') . ' ' . ($argv[2] ?? '');
 if ($befehl === 'core version') {
-    # Der Rahmen prueft die Form: die Antwort muss mit einer Ziffer beginnen.
-    # Die Probe laeuft OHNE --path, deshalb hier ein fester Wert.
+    # DIESE ATTRAPPE HAT EINEN FEHLER VERDECKT.
+    #
+    # Bis v3.14 stand hier: "Die Probe laeuft OHNE --path, deshalb hier ein
+    # fester Wert." Der Defekt war also beim Bau der Attrappe BEMERKT — und
+    # umgangen statt behoben. Echtes wp-cli kann ohne --path nicht antworten;
+    # die Probe scheiterte auf jeder echten Installation, und mit ihr fielen
+    # Kern-, Konfigurations- und Datenbankpruefung aus.
+    #
+    # Deshalb verhaelt sich die Attrappe jetzt wie das Original: ohne --path
+    # keine Antwort. Faellt der Pfad wieder weg, schlaegt der Pruefbaum aus.
+    if ($pfad === '') {
+        fwrite(STDERR, "Error: This does not seem to be a WordPress installation.\n"
+                     . "Pass --path=`path/to/wordpress` or run `wp core download`.\n");
+        exit(1);
+    }
     echo (strpos($pfad, 'kunde-drei') !== false ? "6.9.2" : "6.4.1"), "\n";
     exit(0);
 }

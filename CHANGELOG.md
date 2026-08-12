@@ -47,6 +47,74 @@ Fix geprüft — sie erzeugt dann exakt den Produktionsfehler.
 Das ist die eigentliche Lehre aus diesem Fund: eine Fixture, die nur
 vollständige Datensätze kennt, prüft die halbe Wirklichkeit.
 
+## [unveröffentlicht]
+
+### Behoben — die Werkzeug-Probe lief ohne Pfad und schaltete die halbe Prüfung ab
+
+Der schwerste Fund des ersten Laufs gegen ein echtes System (#9).
+
+`module/12r_rezepte.sh` prüft vor jeder wp-cli-Nutzung, ob das Werkzeug
+antwortet. Diese Probe rief `wp core version` **ohne `--path`** auf. wp-cli
+sucht dann ab dem Arbeitsverzeichnis — dem Laufordner — und antwortet:
+
+```
+Error: This does not seem to be a WordPress installation.
+```
+
+Die Probe **konnte** nicht gelingen. Ihr Fehlschlag führte zu `continue`, und
+damit fielen auf **jeder echten WordPress-Installation** aus:
+
+- `wp core verify-checksums` — die Kern-Integritätsprüfung
+- `rezept_konfig` und `rezept_db`
+- die Kern-Whitelist `.pruefsummen_kern.txt`, mit der Abschnitt 13c bestätigt
+  unveränderte Dateien entlastet
+
+Im Bericht stand dafür eine Zeile: „Werkzeug antwortet nicht verwertbar".
+
+**Was das gekostet hat**, zeigt die Gegenprobe im Prüfbaum: ohne den Pfad
+verschwinden bei der befallenen Installation der Befund „1 veränderte
+Core-Datei(en) — Injektion oder Manipulation", die Core-fremden Dateien und
+sämtliche Wordfence-Auswertungen. Ein manipulierter Kern wäre unentdeckt
+geblieben.
+
+Auf dem gemessenen System stand stattdessen ein 🔴 „Webshell/Dropper" auf
+`wp-includes/class-wp-simplepie-sanitize-kses.php` — einer unveränderten
+Core-Datei. `wp core verify-checksums` von Hand: *„WordPress installation
+verifies against checksums."*
+
+Neuer Rezept-Schlüssel `werkzeug_pfad_arg`, für WordPress `--path=%s`.
+Nextcloud braucht ihn nicht: `occ` liegt in der Installation, deshalb fiel es
+dort nie auf.
+
+### Behoben — der Befund konnte seinen eigenen Grund nicht nennen
+
+`rezept_werkzeug_bereit` verwarf stderr mit `2>/dev/null`. Die Formprüfung
+liest stdout, und bei einem Fehler ist stdout leer — weggeworfen wurde also
+ausgerechnet der Satz, der die Ursache benennt. Der Befund lautete
+„nicht verwertbar", ohne Klammer, ohne Grund.
+
+stderr wird jetzt getrennt aufgefangen und ergänzt den Befund, wenn stdout
+nichts hergibt. Ein Aufruf, nicht zwei — die Probe läuft je Instanz, und auf
+einem Host mit 68 davon zählt das.
+
+### Behoben — die Attrappe hatte den Fehler ausdrücklich umgangen
+
+Im Prüfbaum stand wörtlich:
+
+```php
+# Die Probe laeuft OHNE --path, deshalb hier ein fester Wert.
+```
+
+Der Defekt war beim Bau der Attrappe **bemerkt** — und umgangen statt behoben.
+Echtes wp-cli kann ohne Pfad nicht antworten; die Attrappe konnte es.
+
+Sie verhält sich jetzt wie das Original: ohne `--path` ein Fehler auf stderr
+und Rückgabewert 1. Fällt der Pfad wieder weg, schlägt der Prüfbaum aus.
+
+Das ist der vierte Fund dieser Art an einem Tag — nach #38, #39 und #40. Die
+drei anderen waren Lücken in den Fixtures. Dieser hier war keine Lücke,
+sondern eine Anpassung an den Defekt.
+
 ## [3.14.0] — 2026-08-12
 
 Eine Fassung mit einem Thema: **der Schwachstellenabgleich läuft nicht mehr
