@@ -132,7 +132,13 @@ rezept_version() {
   # hier zwar streng, wuerde aber auf JEDEM Lauf stehen, solange der Bestand
   # nicht erzeugt ist, und damit zu Rauschen. Sobald ein Bestand da ist,
   # entscheidet sein Alter (unten) wieder ueber ⚪.
-  if ! ls "${basis}"/vuln/*.tsv >/dev/null 2>&1; then
+  # Geprueft wird auf DATENZEILEN, nicht auf Dateien. Eine Tabelle, die nur aus
+  # Kopfzeilen besteht, ist kein Bestand — sie sieht aber wie einer aus, und
+  # der Vergleich liefe dann gegen nichts: jedes Plugin kaeme als SAUBER
+  # zurueck ("keine bekannte Schwachstelle im vorliegenden Bestand"), also als
+  # stille Entwarnung. Genau so lagen die Dateien nach einem Testlauf im
+  # Repository, bevor es auffiel.
+  if ! grep -rhv '^#' "${basis}"/vuln/*.tsv 2>/dev/null | grep -q .; then
     # Einmal je Lauf, nicht je Installation: die Aussage gilt global, und auf
     # einem Server mit vierzig Instanzen waeren vierzig gleiche Zeilen nur
     # Rauschen. Die Variable ueberlebt die Schleife — der Rahmen zieht nur
@@ -246,6 +252,12 @@ _wp_pruefsummen_holen() {   # <slug> <fassung> <zieldatei>
 _wp_plugin_integritaet() {
   local cache liste ergebnis slug ver ziel pdir
   local n_mod n_soft n_extra n_fehlt n_geprueft n_ohne
+  # Je Instanz, nicht ueber den ganzen Lauf: der Beleg heisst
+  # wp_ohne_pruefsummen_<instanz>, und ein Beleg mit dem Namen einer Instanz
+  # darf nicht die Plugins der vorherigen enthalten. Der erste Entwurf liess
+  # die Liste mitwachsen — jeder Beleg war dadurch eine Obermenge des
+  # vorigen, und die Zuordnung Plugin -> Installation war dahin.
+  local OHNE_SATZ=""
 
   cache="${RUN_DIR}/.online/plugin-checksums"
   mkdir -p "$cache"
@@ -261,7 +273,9 @@ _wp_plugin_integritaet() {
     pdir="${REZ_PFAD}/wp-content/plugins/${slug}"
     [[ -d "$pdir" ]] || continue
     if [[ -z "$ver" ]]; then
-      n_ohne=$((n_ohne+1)); continue
+      n_ohne=$((n_ohne+1))
+      OHNE_SATZ+="${REZ_KURZ}"$'\t'"${slug}"$'\t'"(keine Fassung lesbar)"$'\n'
+      continue
     fi
     ziel="${cache}/${slug}-${ver}.json"
     if [[ ! -s "$ziel" ]] && ! _wp_pruefsummen_holen "$slug" "$ver" "$ziel"; then
@@ -269,7 +283,14 @@ _wp_plugin_integritaet() {
       # Kein Prüfsummensatz. Zwei Ursachen, hier nicht unterscheidbar: das
       # Plugin liegt nicht im wordpress.org-Verzeichnis (Premium, Fork,
       # Eigenbau), oder die Fassung ist dort nicht veröffentlicht.
-      n_ohne=$((n_ohne+1)); continue
+      #
+      # Der NAME wird mitgeschrieben, nicht nur gezählt. Die Frage "für welche
+      # Plugins brauchen wir Hersteller-Archive" (#30) liess sich sonst nur aus
+      # der Erinnerung beantworten — und genau diese Plugins sind die lautesten
+      # Fundorte des Rauschfilters in 13c, weil er sie nicht erreicht.
+      n_ohne=$((n_ohne+1))
+      OHNE_SATZ+="${REZ_KURZ}"$'\t'"${slug}"$'\t'"${ver}"$'\n'
+      continue
     fi
     printf '%s\t%s\t%s\t%s\n' "$slug" "$ver" "$pdir" "$ziel" >> "$liste"
   done <<< "$(_wp_bestand)"
@@ -410,8 +431,16 @@ PY
   # Nicht Prüfbares zu EINEM ⚪ — je Plugin würde das die Kundenampel auf fast
   # jeder Seite dauerhaft blockieren. Themes stehen mit drin, weil es für sie
   # überhaupt keine Prüfsummenquelle gibt.
-  [[ "${n_ohne:-0}" -gt 0 ]] && befund_melden wordpress kern unklar \
-    "${REZ_KURZ}: ${n_ohne} Plugin(s) ohne Prüfsummensatz und alle Themes — Unversehrtheit nicht feststellbar (Premium, Fork, Eigenbau; für Themes veröffentlicht wordpress.org keine Prüfsummen)" "$REZ_PFAD" web
+  if [[ "${n_ohne:-0}" -gt 0 ]]; then
+    befund_melden wordpress kern unklar \
+      "${REZ_KURZ}: ${n_ohne} Plugin(s) ohne Prüfsummensatz und alle Themes — Unversehrtheit nicht feststellbar (Premium, Fork, Eigenbau; für Themes veröffentlicht wordpress.org keine Prüfsummen)" "$REZ_PFAD" web
+    # Die Namen in einen Beleg. Ein Sammel-⚪ sagt, WIEVIELE nicht prüfbar
+    # sind; für die Frage, welche Hersteller-Archive beschafft werden müssen
+    # (#30), braucht es WELCHE. Die Zahl allein hat diese Frage bisher
+    # unbeantwortbar gemacht.
+    evidence "wp_ohne_pruefsummen_$(echo "$REZ_KURZ" | tr '/.' '__')" \
+             "$(printf '%s' "$OHNE_SATZ" | LC_ALL=C sort -u)" kunde
+  fi
 
   # Ausdrücklich 0: die Funktion endet sonst auf dem Rückgabewert des letzten
   # Tests und meldete auf der ERFOLGSBAHN eine 1, wenn nichts unbewertbar war.

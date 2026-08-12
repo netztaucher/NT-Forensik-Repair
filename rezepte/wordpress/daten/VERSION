@@ -1,19 +1,2 @@
-2026-08-12 | erzeugt von werkzeuge/wordpress-daten-update.sh
-wp-core.tsv                     0
-0 Zeile(n)
-wp-plugins.tsv                  0
-0 Zeile(n)
-wp-themes.tsv                   0
-0 Zeile(n)
+2026-08-07 | erzeugt von werkzeuge/wordpress-daten-update.sh
 kev-wordpress.tsv                 6 Zeile(n)
-
-Abdeckung
-wp-core.tsv                          0
-0 Zeile(n),   0
-0 verschiedene Slugs
-wp-plugins.tsv                       0
-0 Zeile(n),   0
-0 verschiedene Slugs
-wp-themes.tsv                        0
-0 Zeile(n),   0
-0 verschiedene Slugs

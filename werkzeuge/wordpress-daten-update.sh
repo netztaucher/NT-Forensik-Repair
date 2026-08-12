@@ -111,8 +111,9 @@ abdeckung_zaehlen() {
     for f in "${DATEN}"/vuln/*.tsv; do
         [[ -r "$f" ]] || continue
         typ="$(basename "$f")"
-        zeilen=$(grep -cv '^#' "$f" 2>/dev/null || echo 0)
-        slugs=$(grep -v '^#' "$f" 2>/dev/null | cut -f1 | LC_ALL=C sort -u | grep -c . || echo 0)
+        # Ohne '|| echo 0', siehe stand_schreiben.
+        zeilen=$(grep -cv '^#' "$f" 2>/dev/null)
+        slugs=$(grep -v '^#' "$f" 2>/dev/null | cut -f1 | LC_ALL=C sort -u | grep -c .)
         printf '%-33s %6s Zeile(n), %5s verschiedene Slugs\n' "$typ" "$zeilen" "$slugs"
     done
 }
@@ -329,8 +330,12 @@ stand_schreiben() {
         printf '%s | erzeugt von werkzeuge/wordpress-daten-update.sh\n' "$datum"
         for f in "${DATEN}"/vuln/*.tsv "${DATEN}"/kev/*.tsv; do
             [[ -f "$f" ]] || continue
+            # KEIN '|| echo 0': grep -c gibt bei null Treffern bereits eine 0
+            # aus UND endet ungleich 0. Der Rueckfall haengte damit eine
+            # zweite Null an, und in VERSION stand "0\n0 Zeile(n)". Derselbe
+            # Fehler steckte in nf_fetch und in rezept_kern.
             printf '%-28s %6s Zeile(n)\n' "$(basename "$f")" \
-                   "$(grep -vc '^#' "$f" 2>/dev/null || echo 0)"
+                   "$(grep -vc '^#' "$f" 2>/dev/null)"
         done
         # Abdeckung je Tabelle (#8). Zeilen allein sagen wenig — eine Quelle mit
         # 40.000 Eintraegen auf 300 Slugs deckt etwas anderes ab als eine mit

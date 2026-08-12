@@ -120,6 +120,35 @@ else
   pok "--kev hängt nicht am Gate (gemeinfrei, keine Auflagen)"
 fi
 
+# ── Leere Tabellen sind kein Bestand ────────────────────────────────────────
+# Nach einem Testlauf lagen drei vuln/*.tsv mit NUR Kopfzeilen im Repository.
+# Sie sahen aus wie ein Bestand, enthielten aber nichts — und der Abgleich
+# haette gegen nichts verglichen: jedes Plugin waere als SAUBER
+# zurueckgekommen, also als stille Entwarnung. Der gefaehrlichste Zustand von
+# allen, weil er nach Pruefung aussieht.
+LEER="${ARBEIT}/leere_tabellen"; mkdir -p "${LEER}/vuln"
+printf '# nur eine Kopfzeile\n' > "${LEER}/vuln/wp-plugins.tsv"
+if ! grep -rhv '^#' "${LEER}"/vuln/*.tsv 2>/dev/null | grep -q .; then
+  pok "eine Tabelle aus nur Kopfzeilen gilt nicht als Bestand"
+else
+  pfehl "eine Tabelle aus nur Kopfzeilen gilt als Bestand — stille Entwarnung"
+fi
+# Gegenprobe: mit einer einzigen Datenzeile MUSS sie als Bestand gelten.
+printf 'beispiel\t*\t0\t1.0\t0\t1.0\tCVE-2026-1\t5.0\t\thttps://x.invalid\n' \
+  >> "${LEER}/vuln/wp-plugins.tsv"
+if grep -rhv '^#' "${LEER}"/vuln/*.tsv 2>/dev/null | grep -q .; then
+  pok "eine einzige Datenzeile genügt als Bestand"
+else
+  pfehl "auch mit Datenzeile wird kein Bestand erkannt — der Abgleich liefe nie"
+fi
+# Und die eingecheckte Lage: es darf gar keine vuln/*.tsv geben, solange das
+# Gate zu ist. Eine leere Tabelle im Repository ist ein Widerspruch in sich.
+if ls "${SELF_DIR}"/rezepte/wordpress/daten/vuln/*.tsv >/dev/null 2>&1; then
+  pfehl "es liegen vuln/*.tsv im Repository, obwohl das Lizenz-Gate zu ist"
+else
+  pok "keine vuln/*.tsv im Repository, solange das Gate zu ist"
+fi
+
 echo
 if [[ "$FEHLER" -eq 0 ]]; then
   echo -e "${GRN}Alle Soll-Werte erreicht.${NC}"
