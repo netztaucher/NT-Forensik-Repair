@@ -119,15 +119,32 @@ rezept_konf_wert() {   # rezept_konf_wert <datei> <ausdruck-mit-%s> <schluessel>
 # ein Rezept sie nicht vergessen kann.
 rezept_werkzeug_bereit() {   # rezept_werkzeug_bereit <app> <kurzname> <befehl…>
   local app="$1" kurz="$2"; shift 2
-  local ausgabe
-  ausgabe=$("$@" 2>/dev/null || true)
+  local ausgabe fehlertext
+  # DER GRUND GEHOERT IN DEN BEFUND.
+  #
+  # Bis v3.14 wurde stderr mit 2>/dev/null verworfen. Der Befund lautete dann
+  # "Werkzeug antwortet nicht verwertbar — nicht geprüft", ohne Klammer und
+  # ohne Grund: die Formpruefung liest stdout, und bei einem Fehler ist stdout
+  # leer. Weggeworfen wurde ausgerechnet der Satz, der die Ursache benennt —
+  #   Error: This does not seem to be a WordPress installation.
+  # — und damit blieb ein Ausfall der halben Pruefung monatelang unerklaert.
+  #
+  # stderr wird getrennt aufgefangen: die Formpruefung darf es nicht sehen
+  # (eine Warnung auf stderr macht eine gute Antwort nicht ungueltig), der
+  # Befund dagegen schon. EIN Aufruf, nicht zwei — die Probe laeuft je
+  # Instanz, und auf einem Host mit 68 davon zaehlt das.
+  local _err; _err=$(mktemp)
+  ausgabe=$("$@" 2>"$_err" || true)
+  fehlertext=$(cut -c1-400 "$_err" 2>/dev/null); rm -f "$_err"
   local pruefer; pruefer="$(rezept_feld "${REZEPT_DIR}/${app}" werkzeug_probe_form)"
   case "${pruefer:-json}" in
     json)    printf '%s' "$ausgabe" | python3 -c 'import json,sys;json.load(sys.stdin)' 2>/dev/null ;;
     version) [[ "$ausgabe" =~ ^[0-9]+\.[0-9]+ ]] ;;
     *)       [[ -n "$ausgabe" ]] ;;
   esac || {
-    local grund; grund=$(printf '%s' "$ausgabe" | sed 's/<br\/*>/ /g' | tr -d '\n' | cut -c1-120)
+    local grund
+    grund=$(printf '%s' "${ausgabe:-$fehlertext}" \
+            | sed 's/<br\/*>/ /g' | tr -d '\n' | cut -c1-160)
     befund_melden "$app" erkennung unklar \
       "${kurz}: Werkzeug antwortet nicht verwertbar — nicht geprüft${grund:+ (${grund})}" "$kurz" web
     return 1
