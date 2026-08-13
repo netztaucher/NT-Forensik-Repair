@@ -54,9 +54,29 @@ json_admin_arr() {
   printf '%s]' "$out"
 }
 
+# stdin: <ctime>\t<mtime>\t<pfad> → JSON-Array von Objekten (Abschnitt 13e)
+#
+# Rohe Sekunden, keine formatierten Zeitangaben. Wer die Achse
+# weiterverarbeitet, will rechnen koennen; die lesbare Fassung steht im Bericht
+# und im Beleg. Beide Zeitstempel wandern mit: erst ihr VERHAELTNIS trennt den
+# Angreifer von der eigenen Gegenmassnahme.
+json_zeitachse_arr() {
+  local first=1 out="[" ct mt pfad
+  while IFS=$'\t' read -r ct mt pfad; do
+    [ -z "$pfad" ] && continue
+    [ "$first" -eq 1 ] && first=0 || out="${out},"
+    out="${out}{\"pfad\":\"$(printf '%s' "$pfad" | json_esc)\""
+    out="${out},\"ctime\":${ct:-0},\"mtime\":${mt:-0}}"
+  done
+  printf '%s]' "$out"
+}
+
 emit_findings_json() {
   local ws php suid tmpx immu cron sysd persist procs wpc fkeys aips bips suspadm nchta ncmal ncnest ncint
-  local corei coresne doorw coreinj disg rogue rogued suspadmd
+  local corei coresne doorw coreinj disg rogue rogued suspadmd uzeit
+  # Zeitachse aus 13e. Leer, wenn 13e nichts belastet fand oder uebersprungen
+  # wurde — dann bleibt das Array leer, nicht das Feld weg.
+  uzeit=$(printf '%s\n' "${U_TAB:-}" | json_zeitachse_arr)
   corei=$(printf '%s\n' "${CORE_INJECTED:-}"      | json_arr)
   coresne=$(printf '%s\n' "${CORE_SNE:-}"         | json_arr)
   doorw=$(printf '%s\n' "${DOORWAY_DIRS:-}"       | json_arr)
@@ -246,6 +266,18 @@ print(json.dumps(raus, ensure_ascii=False))' 2>/dev/null || echo '{}')
     "joomla_snapshot_age_days": ${JOOMLA_DATA_AGE:-0},
     "online_mode": $(if [[ "${WANT_ONLINE:-0}" == "1" ]]; then echo true; else echo false; fi),
     "network_fetches": ${onlinef:-[]}
+  },
+  "ursache": {
+    "aeltester_nachweis": ${U_ERST:-0},
+    "juengster_nachweis": ${U_LETZT:-0},
+    "dateien": ${U_ZEILEN:-0},
+    "vorgaenge": ${U_WELLEN:-0},
+    "zeitanker": ${U_ANKER:-0},
+    "inode_spaeter_geaendert": ${U_INODE:-0},
+    "vorwaerts_datiert": ${U_ZUKUNFT:-0},
+    "zeitachse": ${uzeit:-[]},
+    "reichweite_systemnutzer": "$(json_str "${U_REICHWEITE:-}")",
+    "quellenlage": "$(json_str "${U_QUELLEN:-}")"
   },
   "metrics": {
     "webshell_count": ${WEBSHELL_COUNT:-0},

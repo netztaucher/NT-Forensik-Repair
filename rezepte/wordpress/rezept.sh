@@ -561,6 +561,9 @@ rezept_sonder() {
       code "$_sm"
       evidence "wp_robots_doorway_$(echo "$REZ_KURZ" | tr '/.' '__')" \
                "${REZ_PFAD}/robots.txt   mtime: ${_mt:-?}"$'\n'"$_sm" kunde
+      # Auf die Zeitachse in 13e. Diese Datei ist haeufig der aelteste Beleg,
+      # den es ueberhaupt noch gibt — sie ueberlebt, weil niemand sie ansieht.
+      ZEITANKER+="${REZ_PFAD}/robots.txt"$'\n'
     elif [[ -n "$_sm" ]]; then
       # Kein Verdacht — nur der Zeitanker. Eine gegenstaendliche robots.txt in
       # einer WordPress-Wurzel ist verbreitet und voellig legitim.

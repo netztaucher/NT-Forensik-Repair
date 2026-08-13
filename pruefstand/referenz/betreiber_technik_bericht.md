@@ -33,7 +33,7 @@
 
 ### 7.0 Datei-Inventar (Inode und Zeitstempel sichern)
 
-  Inventar: 640 Datei(en) erfasst, davon 640 mit Anlegezeit (belege/00_dateien.tsv)
+  Inventar: 642 Datei(en) erfasst, davon 642 mit Anlegezeit (belege/00_dateien.tsv)
 
 ### 7.1 Kürzlich veränderte PHP-Dateien (letzte 30 Tage)
 
@@ -282,6 +282,7 @@ Order allow,deny
 ### 12.8 Joomla-typische Schaddateien — kunde-zwei.example/joomla.kunde-zwei.example
 
 - ✅ kunde-zwei.example/joomla.kunde-zwei.example: keine Joomla-typischen Schaddateien gefunden
+- ✅ kunde-zwei.example/joomla.kunde-zwei.example: keine bekannten Joomla-Angriffsmuster in den Zugriffsprotokollen
 
 ### 12.10 Joomla-Verdikt
 
@@ -518,6 +519,65 @@ php_value auto_prepend_file /var/www/vhosts/<anderer Kunde 2>  auto_prepend_file
 
   Keine Einordnung möglich — die Mustersuche in 7.3 ist nicht gelaufen
 
+### 13e Infektions-Ursachensuche
+
+
+### 13e.1 Zeitachse der belasteten Dateien
+
+  Aeltester Schreibvorgang: <ZEIT> — juengster: <ZEIT>
+  8 belastete Datei(en), verteilt auf 2 Vorgang/Vorgaenge (Trennung ab 4 s Pause)
+
+```
+<ZEIT>  <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/robots.txt
+<ZEIT>  <PRUEFSTAND>/vhosts/kunde-zwei.example/cloud.kunde-zwei.example/filefuns.php
+<ZEIT>  <PRUEFSTAND>/vhosts/kunde-zwei.example/backups/updater-abc123/nextcloud-28.0.1.2-1700000000/filefuns.php
+<ZEIT>  <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/plugins/beispiel-plugin/assets/banner.png
+<ZEIT>  <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/uploads/2026/03/clip.avi
+<ZEIT>  <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/uploads/2026/03/clip.mov
+    ── Pause: 6 s ──
+<ZEIT>  <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/mu-plugins/cache.php
+<ZEIT>  <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/uploads/2026/03/logo.png
+
+```
+
+  Beleg: belege/026_ursache_zeitachse.txt
+
+### 13e.2 ctime gegen mtime — beide Richtungen
+
+  6 Anker (belastbarer Zeitpunkt), 1 mit spaeter geaenderter Inode, 1 vorwaerts datiert
+- ⚠️  **1 belastete Datei(en) tragen eine in die Zukunft gesetzte mtime — jede nach Datum sortierte Sichtung uebersieht sie**
+
+```
+ANKER     <ZEIT>  seit dem Schreiben unberuehrt — belastbarer Zeitpunkt              <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/robots.txt
+ANKER     <ZEIT>  seit dem Schreiben unberuehrt — belastbarer Zeitpunkt              <PRUEFSTAND>/vhosts/kunde-zwei.example/cloud.kunde-zwei.example/filefuns.php
+ANKER     <ZEIT>  seit dem Schreiben unberuehrt — belastbarer Zeitpunkt              <PRUEFSTAND>/vhosts/kunde-zwei.example/backups/updater-abc123/nextcloud-28.0.1.2-1700000000/filefuns.php
+ANKER     <ZEIT>  seit dem Schreiben unberuehrt — belastbarer Zeitpunkt              <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/plugins/beispiel-plugin/assets/banner.png
+ANKER     <ZEIT>  seit dem Schreiben unberuehrt — belastbarer Zeitpunkt              <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/uploads/2026/03/clip.avi
+ANKER     <ZEIT>  seit dem Schreiben unberuehrt — belastbarer Zeitpunkt              <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/uploads/2026/03/clip.mov
+INODE     <ZEIT>  Inode <SPANNE> spaeter geaendert — mtime stammt nicht von diesem Vorgang   <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/mu-plugins/cache.php
+ZUKUNFT   <ZEIT>  mtime liegt <SPANNE> NACH der ctime — vorwaerts datiert   <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/uploads/2026/03/logo.png
+
+```
+
+  Beleg: belege/027_ursache_zeitstempel_deutung.txt
+
+### 13e.3 Reichweite: geteilter Systemnutzer
+
+- ⚪ **Nicht messbar: Dieser Lauf sieht nur 1 vhost-Verzeichnis(se) — ob der Systemnutzer weitere besitzt, ist hier nicht feststellbar. Mit --global messbar**
+
+### 13e.4 Reichweite der Quellen
+
+  Aeltester Nachweis ist nicht Infektionsbeginn: er ist die aelteste ueberlebende Spur. Aeltere Vorgaenge koennen ueberschrieben, rotiert oder nie protokolliert worden sein.
+
+```
+<PRUEFSTAND>/vhosts/kunde-zwei.example
+    Zugriffsprotokoll reicht zurueck bis <ZEIT>
+    1 aeltere(s) Protokoll(e) liegen komprimiert vor — nicht ausgewertet
+
+```
+
+  Beleg: belege/028_ursache_quellenlage.txt
+
 ## 14. ZUSAMMENFASSUNG
 
   Fundstellen-Details: <PRUEFSTAND>/ablage/forensik/<LAUF-ID>/kunde/befunde_details.md (22 Fund(e), 7 Familien, 1 zu prüfen)
@@ -527,11 +587,11 @@ php_value auto_prepend_file /var/www/vhosts/<anderer Kunde 2>  auto_prepend_file
 | Kategorie | Anzahl |
 |---|---|
 | 🔴 Kritische Befunde | 17 |
-| ⚠️ Warnungen | 17 |
-| ✅ Unauffällige Prüfungen | 22 |
-| ⚪ Nicht messbar | 9 |
+| ⚠️ Warnungen | 18 |
+| ✅ Unauffällige Prüfungen | 23 |
+| ⚪ Nicht messbar | 10 |
 
-> **9 Prüfung(en) haben keine Aussage geliefert.** Ihr Ergebnis ist weder
+> **10 Prüfung(en) haben keine Aussage geliefert.** Ihr Ergebnis ist weder
 > ein Befund noch eine Entwarnung — der jeweilige Bereich ist ungeprüft:
 >
 > - Webshell-Mustersuche nicht ausgeführt — grep beherrscht kein -P (PCRE). Auf macOS ist BSD-grep die Vorgabe; GNU grep oder ugrep installieren. Das ist KEINE Entwarnung.
@@ -543,6 +603,7 @@ php_value auto_prepend_file /var/www/vhosts/<anderer Kunde 2>  auto_prepend_file
 > - kunde-zwei.example/httpdocs: 5 Bestandteil(e) ohne lesbare Fassung — für sie ist keine Aussage zur Angreifbarkeit möglich
 > - kunde-zwei.example/httpdocs: 4 Plugin(s) ohne Prüfsummensatz und alle Themes — Unversehrtheit nicht feststellbar (Premium, Fork, Eigenbau; für Themes veröffentlicht wordpress.org keine Prüfsummen)
 > - kunde-zwei.example/httpdocs: Datenbank nicht geprüft (grep beherrscht kein -P (PCRE) — die Werte aus wp-config.php sind damit nicht lesbar). Das ist KEINE Entwarnung.
+> - Dieser Lauf sieht nur 1 vhost-Verzeichnis(se) — ob der Systemnutzer weitere besitzt, ist hier nicht feststellbar. Mit --global messbar
 
 ### 14.2 Empfohlene Sofortmaßnahmen
 

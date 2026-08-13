@@ -204,7 +204,14 @@ Ein Protokolleintrag belegt, dass jemand einen bekannten Angriffsweg *ausprobier
   Sichtung — keine Aussage über Schuld.
 
 - **Keine Garantie auf Vollständigkeit.** Neue Obfuskationsvarianten können der Signatur entgehen.
-- **Log-Reichweite** begrenzt die Zeitachse — sehr alte Erstinfektionen liegen evtl. außerhalb der rotierten Logs (Datei-Zeitstempel helfen).
+- **Log-Reichweite** begrenzt die Zeitachse — sehr alte Erstinfektionen liegen evtl. außerhalb der rotierten Logs (Datei-Zeitstempel helfen). §13e.4 weist diese Grenze je betroffenem vhost aus, statt sie zu verschweigen.
+- **§13e nennt keinen Infektionsbeginn.** Er nennt den ältesten *überlebenden*
+  Beleg. Beim Befall vom 12.08.2026 lag der (24.07., mtime der vergifteten
+  `robots.txt`) elf Tage vor dem ältesten Zugriffsprotokoll, und Google hatte
+  die erzeugten Seiten schon vorher im Index. Wer aus dieser Zahl ein Datum
+  macht, verwechselt eine Protokollgrenze mit einem Ereignis.
+- **Wellenabstände sind nur Darstellung.** `URSACHE_WELLE_SEK` trennt die
+  Zeitachse optisch; an dem Wert hängt kein Befund.
 - **Verschlüsselte/gestagte Payloads**, die erst zur Laufzeit nachladen, sind statisch schwer zu fassen.
 - Der Dateinamen-Check (§7.5) ist bewusst nur eine ⚠️ — er ist namensbasiert und rauschanfällig.
 

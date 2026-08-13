@@ -8,7 +8,7 @@
 | **Datum** | <ZEIT> |
 | **Geprüfter Server** | imac |
 | **Prüfungs-ID** | <LAUF-ID> |
-| **Befunde** | 🔴 17 kritisch · ⚠️ 16 auffällig · ⚪ 9 nicht messbar |
+| **Befunde** | 🔴 17 kritisch · ⚠️ 17 auffällig · ⚪ 9 nicht messbar |
 
 ---
 
@@ -87,6 +87,7 @@
 - kunde-zwei.example/httpdocs: Wordfence hat Pfade vom Scan ausgenommen — ein unauffälliger Wordfence-Bericht ist für diese Bereiche KEINE Entwarnung
 - kunde-zwei.example/httpdocs: Wordfence meldet 1 Datei(en) als verändert gegenüber dem Original — Integritätsabweichung, kein Signaturtreffer
 - php-malware-finder: 4 Datei(en) mit Treffern — nach Regelanzahl sortiert, jeder Treffer gehört gesichtet (9 als unverändert bestätigte Datei(en) herausgefiltert)
+- 1 belastete Datei(en) tragen eine in die Zukunft gesetzte mtime — jede nach Datum sortierte Sichtung uebersieht sie
 
 ## 4. Reichweite des Angriffs — war nur Ihre Website oder der ganze Server betroffen?
 

@@ -30,7 +30,7 @@
 [1m[0;34m══════════════════════════════════════════[0m
 
 [0;36m▶ 7.0 Datei-Inventar (Inode und Zeitstempel sichern)[0m
-  [0m·  Inventar: 640 Datei(en) erfasst, davon 640 mit Anlegezeit (belege/00_dateien.tsv)
+  [0m·  Inventar: 642 Datei(en) erfasst, davon 642 mit Anlegezeit (belege/00_dateien.tsv)
 
 [0;36m▶ 7.1 Kürzlich veränderte PHP-Dateien (letzte 30 Tage)[0m
   [0;33mDurchsuche Webspace (kann dauern...)[0m
@@ -99,6 +99,7 @@
 
 [0;36m▶ 12.8 Joomla-typische Schaddateien — kunde-zwei.example/joomla.kunde-zwei.example[0m
   [0;32m✓[0m kunde-zwei.example/joomla.kunde-zwei.example: keine Joomla-typischen Schaddateien gefunden
+  [0;32m✓[0m kunde-zwei.example/joomla.kunde-zwei.example: keine bekannten Joomla-Angriffsmuster in den Zugriffsprotokollen
 
 [0;36m▶ 12.10 Joomla-Verdikt[0m
   [0;32m✓[0m JOOMLA-VERDIKT: unauffällig
@@ -194,6 +195,22 @@
 [0;36m▶ 13d Einordnung der Mustertreffer aus 7.3[0m
   [0m·  Keine Einordnung möglich — die Mustersuche in 7.3 ist nicht gelaufen
 
+[0;36m▶ 13e Infektions-Ursachensuche[0m
+
+[0;36m▶ 13e.1 Zeitachse der belasteten Dateien[0m
+  [0m·  Aeltester Schreibvorgang: <ZEIT> — juengster: <ZEIT>
+  [0m·  8 belastete Datei(en), verteilt auf 2 Vorgang/Vorgaenge (Trennung ab 4 s Pause)
+
+[0;36m▶ 13e.2 ctime gegen mtime — beide Richtungen[0m
+  [0m·  6 Anker (belastbarer Zeitpunkt), 1 mit spaeter geaenderter Inode, 1 vorwaerts datiert
+  [0;33m⚠[0m  1 belastete Datei(en) tragen eine in die Zukunft gesetzte mtime — jede nach Datum sortierte Sichtung uebersieht sie
+
+[0;36m▶ 13e.3 Reichweite: geteilter Systemnutzer[0m
+  [0;36m⚪[0m Dieser Lauf sieht nur 1 vhost-Verzeichnis(se) — ob der Systemnutzer weitere besitzt, ist hier nicht feststellbar. Mit --global messbar
+
+[0;36m▶ 13e.4 Reichweite der Quellen[0m
+  [0m·  Aeltester Nachweis ist nicht Infektionsbeginn: er ist die aelteste ueberlebende Spur. Aeltere Vorgaenge koennen ueberschrieben, rotiert oder nie protokolliert worden sein.
+
 [1m[0;34m══════════════════════════════════════════[0m
 [1m[0;34m  14. ZUSAMMENFASSUNG[0m
 [1m[0;34m══════════════════════════════════════════[0m
@@ -211,8 +228,8 @@
 [1m[0;32m  ANALYSE ABGESCHLOSSEN — Lauf <LAUF-ID>[0m
 [1m[0;32m══════════════════════════════════════════[0m
 
-[1mBefunde:[0m       🔴 17 kritisch, ⚠️ 17 Warnungen, ✅ 23 ok, ⚪ 9 nicht messbar
-[0;33m               9 Prüfung(en) ohne Ergebnis — das ist keine Entwarnung.[0m
+[1mBefunde:[0m       🔴 17 kritisch, ⚠️ 18 Warnungen, ✅ 24 ok, ⚪ 10 nicht messbar
+[0;33m               10 Prüfung(en) ohne Ergebnis — das ist keine Entwarnung.[0m
                  Webshell-Mustersuche nicht ausgeführt — grep beherrscht kein -P (PCRE). Auf macOS ist BSD-grep die Vorgabe; GNU grep oder ugrep installieren. Das ist KEINE Entwarnung.
                  kunde-zwei.example/cloud.kunde-zwei.example: Werkzeug antwortet nicht verwertbar — nicht geprüft
                  kunde-drei.example/httpdocs: 1 Bestandteil(e) ohne lesbare Fassung — für sie ist keine Aussage zur Angreifbarkeit möglich
@@ -222,6 +239,7 @@
                  kunde-zwei.example/httpdocs: 5 Bestandteil(e) ohne lesbare Fassung — für sie ist keine Aussage zur Angreifbarkeit möglich
                  kunde-zwei.example/httpdocs: 4 Plugin(s) ohne Prüfsummensatz und alle Themes — Unversehrtheit nicht feststellbar (Premium, Fork, Eigenbau; für Themes veröffentlicht wordpress.org keine Prüfsummen)
                  kunde-zwei.example/httpdocs: Datenbank nicht geprüft (grep beherrscht kein -P (PCRE) — die Werte aus wp-config.php sind damit nicht lesbar). Das ist KEINE Entwarnung.
+                 Dieser Lauf sieht nur 1 vhost-Verzeichnis(se) — ob der Systemnutzer weitere besitzt, ist hier nicht feststellbar. Mit --global messbar
 
 [1mLauf-Ordner:[0m     <PRUEFSTAND>/ablage/forensik/<LAUF-ID>
 
