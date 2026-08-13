@@ -152,6 +152,25 @@ fi
 # nachvollziehen, WAS der Filter herausgenommen hat.
 [[ "${_D_NW:-0}" -gt 0 ]] && evidence "webshell_dropper_entlastet" "$_D_WEG"
 
+# ── DIE ENTLASTUNG MUSS IN findings.json ANKOMMEN ───────────────────────
+#
+# Abschnitt 14 baut actionable.webshell_dropper aus DROPPER_DETAIL, und aus
+# dieser Liste holt sich die Bereinigung ihre Quarantaene-Kandidaten.
+#
+# Bis hierher wirkte die Entlastung NUR im Bericht: dort stand "398 Datei(en)
+# (396 entlastet)", waehrend findings.json unveraendert alle 398 fuehrte —
+# darunter unveraenderte WordPress-Kern-Dateien. Die Bereinigung haette sie in
+# Quarantaene genommen und damit Installationen zerlegt, die nichts hatten.
+#
+# Ein Bericht, der entlastet, und eine Schnittstelle, die es nicht tut, sind
+# schlimmer als gar keine Entlastung: der Betreiber liest die Entwarnung und
+# das Werkzeug handelt trotzdem.
+#
+# 13d laeuft vor 14, deshalb genuegt das Zurueckschreiben hier. Die
+# entlasteten Eintraege sind im Beleg oben festgehalten, sie gehen nicht
+# verloren.
+DROPPER_DETAIL="$_D_REST"
+
 # ── Stufe 2: groessere Dateien, Sichtung ─────────────────────────────────
 _einordnen "${REVIEW_DETAIL:-}"
 if [[ "${_N_REST:-0}" -gt 0 ]]; then
