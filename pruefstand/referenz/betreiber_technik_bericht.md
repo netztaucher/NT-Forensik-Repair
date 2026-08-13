@@ -44,6 +44,8 @@
 <INODE> -rw-r--r-- <EIGNER> 12 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/uploads/cache/index.php
 <INODE> -rw-r--r-- <EIGNER> 12 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/uploads/forminator/index.php
 <INODE> -rw-r--r-- <EIGNER> 128 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/uploads/pruefstand/dropper.php
+<INODE> -rw-r--r-- <EIGNER> 17 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/backups/updater-abc123/nextcloud-28.0.1.2-1700000000/filefuns.php
+<INODE> -rw-r--r-- <EIGNER> 17 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/cloud.kunde-zwei.example/filefuns.php
 <INODE> -rw-r--r-- <EIGNER> 17 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-load.php
 <INODE> -rw-r--r-- <EIGNER> 1971 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/plugins/pruefstand-vorlagen/dad1/default.php
 <INODE> -rw-r--r-- <EIGNER> 1971 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/plugins/pruefstand-vorlagen/dad2/default.php
@@ -56,7 +58,6 @@
 <INODE> -rw-r--r-- <EIGNER> 33998 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/plugins/pruefstand-ohne-fix/gross-injiziert.php
 <INODE> -rw-r--r-- <EIGNER> 34 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/joomla.kunde-zwei.example/libraries/src/Version.php
 <INODE> -rw-r--r-- <EIGNER> 43 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/uploads/2026/03/bild.php
-<INODE> -rw-r--r-- <EIGNER> 53 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/plugins/pruefstand-kev/lib/e.php
 <INODE> -rw-r--r-- <EIGNER> 57 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/plugins/pruefstand-kopflos/lib/a.php
 <INODE> -rw-r--r-- <EIGNER> 57 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/plugins/pruefstand-kopflos/lib/b.php
 <INODE> -rw-r--r-- <EIGNER> 57 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/plugins/pruefstand-kopflos/lib/c.php
@@ -68,7 +69,6 @@
 <INODE> -rw-r--r-- <EIGNER> 58 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/plugins/pruefstand-ohne-fix/lib/d.php
 <INODE> -rw-r--r-- <EIGNER> 58 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/plugins/pruefstand-ohne-fix/lib/e.php
 <INODE> -rw-r--r-- <EIGNER> 73 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/plugins/pruefstand-kopflos/pruefstand-kopflos.php
-<INODE> -rw-r--r-- <EIGNER> 82 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/plugins/pruefstand-kev/pruefstand-kev.php
 <INODE> -rw-r--r-- <EIGNER> 87 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/plugins/pruefstand-ohne-fix/pruefstand-ohne-fix.php
 ```
 

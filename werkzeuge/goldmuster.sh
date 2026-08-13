@@ -1008,9 +1008,21 @@ LOG
     # die Zeiten ueberhaupt auseinanderlaufen. Solange die Ursache im
     # Pruefstand sitzt, gehoert sie auch dorthin.
     #
+    # MITTERNACHT DES LAUFTAGS, nicht die laufende Minute. Der erste Versuch
+    # nahm die laufende Minute — und scheiterte auf der CI: die acht Dateien der
+    # Zeitfolge bekommen ihre mtime SPAETER, und ob das noch dieselbe Minute ist
+    # oder schon die naechste, entscheidet wieder die Uhrzeit des Laufs. In
+    # `find -ls` steht die Minute, also kippte die Rangfolge erneut.
+    #
+    # Mitternacht loest das: der ganze Baum liegt dann eindeutig VOR den acht
+    # Dateien der Zeitfolge, egal wann der Lauf startet. Die Abschneidung bei 50
+    # nimmt damit immer dieselben — die acht zuerst, dann der Rest nach Pfad.
+    # Kein Datumsrechnen noetig, und der Wert bleibt sicher innerhalb der
+    # 30-Tage-Fensters von Abschnitt 7.1.
+    #
     # Ausgenommen: die Zeitstempel-Haeufung fuer 7.14. Ihr fester Wert IST der
     # Pruefgegenstand.
-    local _stempel; _stempel=$(date '+%Y%m%d%H%M.00')
+    local _stempel; _stempel="$(date '+%Y%m%d')0000.00"
     find "$W" -type f ! -name 'eintrag-*.dat' -exec touch -t "$_stempel" {} + 2>/dev/null || true
     # Erste Welle. Die robots.txt zuerst: sie ist im Anlassfall der aelteste
     # Beleg, weil sie einmal angefasst und danach nie wieder angesehen wurde.

@@ -39,6 +39,11 @@
 # sich jemand verlaesst.
 # ============================================================
 
+# Alle Belege dieses Abschnitts gehen an den Kunden: sie handeln von SEINEN
+# Dateien und SEINEM vhost. 13e.3 nennt zwar weitere vhosts desselben
+# Systemnutzers — aber genau die gehoeren demselben Abo, sind also nicht fremd.
+BELEG_STUFE=kunde
+
 h2 "13e Infektions-Ursachensuche"
 
 # ── Zeitangaben portabel ─────────────────────────────────────
