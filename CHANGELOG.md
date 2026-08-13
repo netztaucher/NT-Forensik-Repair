@@ -4,6 +4,41 @@ Alle nennenswerten Änderungen an `wp_plesk_forensik.sh`.
 
 ## [unveröffentlicht]
 
+### Behoben — Kundenbericht und BSI-Meldung nannten eine zu hohe Zahl (#64)
+
+Abschnitt 13d entlastet Mustertreffer gegen amtliche Prüfsummen und schrieb das
+Ergebnis seit #53 in die **Listen** zurück. Die **Zähler** blieben auf dem Stand
+davor. Gemessen am Lauf `20260813_150137_global` (471 Domains):
+
+```
+metrics.webshell_count       398
+actionable.webshell_dropper  292
+```
+
+Dieselbe Datei, dieselbe Sache, zwei Zahlen — 36 % Abweichung.
+
+Und der Zähler bleibt nicht in `findings.json`. Er steht im **Kundenbericht**
+(„398 Schadcode-Dateien … im Webverzeichnis gefunden") und in der Tabelle der
+**BSI-Meldung**. Dort waren 106 Dateien mitgezählt, die gegen die Prüfsummen von
+wordpress.org als unverändert bestätigt sind.
+
+`WEBSHELL_COUNT`, `WEBSHELL_REVIEW` und `MED_COUNT` werden jetzt in 13d
+mitgeschrieben; `REVIEW_DETAIL` und `MED_DETAIL` ebenso, damit Liste und Zahl
+nicht wieder auseinanderlaufen können.
+
+Die rohen Werte gehen nicht verloren, sie bekommen eigene Namen —
+`metrics.webshell_count_roh`, `…_entlastet` und dieselben für die Sichtungsstufe.
+Eine Entlastung, die nur die Zahl kleiner macht, ohne zu sagen wie viel, wäre
+dieselbe Undurchsichtigkeit von der anderen Seite. Die BSI-Tabelle nennt beides
+in einer Zeile, sobald etwas entlastet wurde.
+
+**Die Zusicherung liegt in der CI, nicht im lokalen Prüflauf** — und das ist
+Absicht: auf macOS ist BSD-grep die Vorgabe, §7.3 meldet „kein -P (PCRE)" und
+findet null Treffer. Die eingecheckte Referenz trägt dort Nullen, eine
+Gleichheitsprüfung liefe gegen `0 == 0`. Auf dem Linux-Runner läuft §7.3
+wirklich; erst dort sind die Zahlen belastbar. Der Schritt gibt die Werte aus
+und sagt ausdrücklich, wenn er gegen Nullen läuft.
+
 ### Neu — der Lauf belegt jetzt, dass er aus einer Fassung stammt (#55)
 
 Am 13.08.2026 wurde `/root/nt-forensik` **zwölf Minuten nach dem Start** eines

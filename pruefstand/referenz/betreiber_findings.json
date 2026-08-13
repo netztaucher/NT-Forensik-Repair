@@ -47,6 +47,10 @@
   "metrics": {
     "webshell_count": 0,
     "webshell_review": 0,
+    "webshell_count_roh": 0,
+    "webshell_entlastet": 0,
+    "webshell_review_roh": 0,
+    "webshell_review_entlastet": 0,
     "uploads_guards_gefiltert": 4,
     "injected_core_files": 1,
     "doorway_dirs": 0,

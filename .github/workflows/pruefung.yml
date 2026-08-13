@@ -201,6 +201,47 @@ jobs:
       - name: Referenz auf dieser Plattform aufnehmen
         run: bash werkzeuge/goldmuster.sh aufnehmen
 
+      - name: Zähler und Listen stimmen überein (#64)
+        run: |
+          # Diese Zusicherung steht in der CI und nicht im lokalen Prüflauf,
+          # weil sie auf macOS nichts prüfen KANN: dort ist BSD-grep die
+          # Vorgabe, §7.3 meldet "kein -P (PCRE)" und findet null Treffer.
+          # Die eingecheckte Referenz trägt an dieser Stelle deshalb Nullen —
+          # eine Gleichheitsprüfung gegen sie liefe gegen 0 == 0.
+          #
+          # Auf dem Linux-Runner läuft §7.3 wirklich. Erst hier sind die
+          # Zahlen belastbar.
+          #
+          # Geprüft wird, was am 13.08.2026 auf dem echten Server auseinanderlag:
+          # metrics.webshell_count nannte 398, actionable.webshell_dropper
+          # hatte 292 Einträge. Dieselbe Datei, dieselbe Sache, zwei Zahlen.
+          python3 - <<'PY'
+          import json, sys, glob
+          p = sorted(glob.glob('pruefstand/referenz/betreiber_findings.json'))[0]
+          d = json.load(open(p))
+          m, a = d['metrics'], d['actionable']
+          print(f"webshell_count   {m['webshell_count']:>5}   Liste {len(a['webshell_dropper']):>5}")
+          print(f"  roh {m['webshell_count_roh']}  entlastet {m['webshell_entlastet']}")
+          print(f"webshell_review  {m['webshell_review']:>5}"
+                f"   roh {m['webshell_review_roh']}  entlastet {m['webshell_review_entlastet']}")
+          fehler = []
+          if m['webshell_count'] != len(a['webshell_dropper']):
+              fehler.append('metrics.webshell_count weicht von actionable.webshell_dropper ab')
+          if m['webshell_count'] + m['webshell_entlastet'] != m['webshell_count_roh']:
+              fehler.append('webshell: roh != rest + entlastet')
+          if m['webshell_review'] + m['webshell_review_entlastet'] != m['webshell_review_roh']:
+              fehler.append('webshell_review: roh != rest + entlastet')
+          if m['webshell_count_roh'] == 0:
+              # Kein Abbruch: ob der Prüfbaum auf dieser Plattform überhaupt
+              # Mustertreffer erzeugt, ist eine eigene Frage. Aber sie muss
+              # sichtbar sein — sonst hält eine Zusicherung, die gegen Nullen
+              # läuft, für eine Prüfung.
+              print('HINWEIS: 0 Mustertreffer — die Gleichheit oben ist trivial erfüllt.')
+          for f in fehler:
+              print(f'FEHLER: {f}', file=sys.stderr)
+          sys.exit(1 if fehler else 0)
+          PY
+
       - name: Zweimal vergleichen
         run: |
           # Zweimal, weil eine einzelne Wiederholung eine Instabilität
