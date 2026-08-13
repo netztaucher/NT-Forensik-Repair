@@ -67,6 +67,7 @@ lade lib/muster.sh     # Signaturen, Selbstausschluss
 lade lib/kern.sh       # Ausgabe- und Beleg-Funktionen
 lade lib/rezepte.sh    # Rahmen für die Prüfrezepte unter rezepte/
 lade lib/menue.sh      # Startmenü (nur wenn kein Prüfumfang angegeben wurde)
+lade lib/fortschritt.sh # Fortschrittsspur für werkzeuge/lauf-status.sh
 
 # ── Startmenü ────────────────────────────────────────────────
 # Nur wenn kein Prüfumfang angegeben wurde. Ein Scope-Argument ist eine
@@ -196,11 +197,14 @@ modul_teile_laden() {   # modul_teile_laden <hauptmodul-pfad>
   done
 }
 
+# Die Fortschrittsspur beginnt hier, nicht frueher: vorher steht RUN_DIR nicht.
+fortschritt_beginn
 for _modul in "${SELF_DIR}"/module/*.sh; do
   [[ -r "$_modul" ]] || continue
   _nr=$(modul_feld "$_modul" nummer)
   if modul_gewaehlt "$_nr" "$(modul_feld "$_modul" ebene)"; then
     MODULE_GELAUFEN+="${_nr} "
+    fortschritt_abschnitt "$_nr" "$(modul_feld "$_modul" titel)"
     # Belegstufe vor JEDEM Modul zuruecksetzen (#1). Die Module werden
     # nacheinander in denselben Interpreter gezogen; ohne diese Zeile erbte ein
     # Modul ohne eigene Angabe die Einstufung des vorherigen — und zwar
@@ -216,6 +220,7 @@ for _modul in "${SELF_DIR}"/module/*.sh; do
     echo -e "  ${CYN}übersprungen:${NC} ${_t}"
   fi
 done
+fortschritt_ende
 
 # Ein Teillauf darf sich nicht wie ein vollständiges Ergebnis lesen.
 if [[ -n "$MODULE_UEBERSPRUNGEN" ]]; then

@@ -210,6 +210,7 @@ h2 "8.7 Relay-Backdoors (THC gsocket / gs-netcat)"
 # nie lesen.
 GS_FILE_HITS=$(find /tmp /var/tmp /dev/shm /root /home /usr/local/bin /usr/local/sbin /opt "${SCAN_PATHS[@]}" \
     -xdev -type f -size -30M 2>/dev/null | nf_strip_self \
+    | fortschritt_strom "8.7 gsocket-Inhaltsscan" \
     | xargs -r -d '\n' grep -la -E "$GS_SIG_REGEX" 2>/dev/null \
     | grep -vF "$INSTALLED_PATH" || true)
 if [[ -n "$GS_FILE_HITS" ]]; then

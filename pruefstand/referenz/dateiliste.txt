@@ -1,3 +1,5 @@
+./.fortschritt.tsv
+./.fortschritt.tsv.aktuell
 ./.online/plugin-checksums/pruefstand-aktuell-4.0.json
 ./.online/plugin-checksums/pruefstand-aktuell-4.1.json
 ./.online/plugin-checksums/pruefstand-alt-2.0.3.json
