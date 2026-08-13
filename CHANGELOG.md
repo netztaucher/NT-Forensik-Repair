@@ -461,6 +461,66 @@ Auf Linux verifiziert: `actionable.webshell_dropper` führt 2 Einträge, der
 Bericht sagt „2 Datei(en) (2 entlastet)" — beide Zahlen stimmen überein, und
 die Liste enthält ausschliesslich die Dateien ausserhalb jedes geprüften Kerns.
 
+## [unveröffentlicht]
+
+### Hinzugefügt — man sieht jetzt, wo ein Lauf gerade steht
+
+Ein Lauf über 475 vhosts dauert knapp drei Stunden. Bis hierher gab es keine
+Möglichkeit zu sehen, **wo** er ist: eine wachsende Protokolldatei und sonst
+nichts. Der Stand ließ sich nur von Hand rekonstruieren — Prozess suchen,
+Belege zählen, im Protokoll die letzte Abschnittszeile finden. Genau das habe
+ich am 12.08.2026 mehrfach gemacht, und einmal musste ich eigens nachweisen,
+dass der Lauf arbeitet und nicht hängt.
+
+`werkzeuge/lauf-status.sh` zeigt:
+
+```
+Abschnitt 8 — Netzwerk & Dienste
+  seit 15 min 00 s
+  8.7 gsocket-Inhaltsscan: 412600 Pfade gelesen
+  zuletzt: /var/www/vhosts/beispiel.de/httpdocs/wp-content/cache/x.php
+
+Vergleich mit 20260812_165626_global (2 h 42 min gesamt)
+  Abschnitt 8 dauerte dort 51 min 20 s
+  Voraussichtlich noch 2 h 10 min, Ende gegen 08:47
+```
+
+`--watch` aktualisiert alle 30 s.
+
+**Kein Prozentwert.** Die Abschnitte sind völlig ungleich lang: im Messlauf
+entfielen auf 8.7 allein 51 von 162 Minuten, auf 12r 90. „Abschnitt 8 von 14"
+wären 57 % und nach der Zeit 12 %. Die Restschätzung kommt stattdessen aus dem
+**vorigen Lauf desselben Umfangs**. Gibt es keinen, sagt die Anzeige das,
+statt eine Zahl zu erfinden.
+
+**Die langen Pipelines sind keine Schleifen.** 8.7 und 7.15 sind je ein
+`find | xargs`-Aufruf; bash sieht darin nichts. Der Strom der Pfade läuft aber
+durch die Pipe, und `fortschritt_strom` greift ihn ab — alle 200 Zeilen eine
+Schreiboperation auf eine kleine Datei, gegenüber einem Inhaltsscan über 475
+vhosts nicht messbar.
+
+**Was nicht geht:** §7.3s Mustersuche ist ein einziges `grep -r` über den Baum.
+Dort läuft grep selbst, es gibt keinen Strom. Das bliebe eine Blackbox, es sei
+denn man baut die Suche um — ein hoher Preis für eine Anzeige. Steht so als
+Grenze im Code.
+
+Bei 12r, dem längsten Abschnitt, zählt die Anzeige Installationen (`87 von
+214`) und rechnet daraus hoch. Nur dort ist eine Hochrechnung ehrlich: die
+Schritte sind gleichartig und gezählt.
+
+### Behoben — beinahe eine stille Pipeline-Unterbrechung eingebaut
+
+Der erste Entwurf von `fortschritt_strom` nutzte `systime()` in awk. Das ist
+eine GNU-Erweiterung; BSD-awk (macOS) bricht mit „calling undefined function
+systime" ab — und die Pipeline hätte dann **weniger Treffer geliefert statt
+einen Fehler zu melden.**
+
+Genau die Fehlerart, gegen die dieses Werkzeug gebaut ist, im Werkzeug selbst.
+Aufgefallen bei der Portabilitätsprobe vor dem ersten Lauf.
+
+Der Zeitstempel ist raus: die mtime der Zustandsdatei ist ohnehin der
+Zeitpunkt der letzten Schreiboperation, und die liest die Anzeige von dort.
+
 ## [3.14.0] — 2026-08-12
 
 Eine Fassung mit einem Thema: **der Schwachstellenabgleich läuft nicht mehr

@@ -86,9 +86,17 @@ for _rz in "${REZEPT_DIR}"/*/; do
   _werkzeug="$(rezept_feld "$_rz" werkzeug)"
   _probe="$(rezept_feld "$_rz" werkzeug_probe)"
 
+  # Wie viele Installationen kommen? Ohne diese Zahl sagt "Installation 87"
+  # nichts. Abschnitt 12r ist der laengste des Laufs (90 von 162 Minuten im
+  # Messlauf) — dort ist "87 von 214" die einzige Angabe, die waehrend
+  # anderthalb Stunden etwas aussagt.
+  _rz_n=$(printf '%s\n' "$_inst" | grep -c . 2>/dev/null); _rz_n="${_rz_n:-0}"
+  _rz_i=0
   while IFS= read -r REZ_PFAD; do
     [[ -n "$REZ_PFAD" ]] || continue
     REZ_KURZ="${REZ_PFAD#"$VHOSTS_DIR"/}"
+    _rz_i=$((_rz_i+1))
+    fortschritt_unterschritt "$_rz_i" "$_rz_n" "$REZ_KURZ"
     h2 "12r.${_rz_gelaufen}.x ${REZ_KURZ}"
 
     # Fassung nennen, wo die Deklaration sagt, wie sie zu lesen ist.

@@ -662,6 +662,7 @@ else
   INJ_TREFFER=$(find "${SCAN_PATHS[@]}" -type f -size -3M \
                      \( -name "*.php" -o -name "*.phtml" -o -name "*.inc" \) 2>/dev/null \
                 | nf_strip_self \
+                | fortschritt_strom "7.15 Injektionsmass" \
                 | tr '\n' '\0' \
                 | xargs -0 -r -n200 python3 "${BASE_DIR}/lib/injektion_pruefen.py" 2>/dev/null \
                 | LC_ALL=C sort -k2,2nr -k1,1 || true)
