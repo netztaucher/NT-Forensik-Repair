@@ -4,6 +4,72 @@ Alle nennenswerten Änderungen an `wp_plesk_forensik.sh`.
 
 ## [unveröffentlicht]
 
+### Neu — Abschnitt 13e: Infektions-Ursachensuche (#48)
+
+Beim Befall vom 12.08.2026 wurde der Infektionspfad **von Hand** rekonstruiert;
+das Werkzeug hat dazu nichts beigetragen. 13e trägt nach, was dabei getragen
+hat — und zwar **vor** jedem Eingriff, weil `mv` die ctime zerstört und die
+Bereinigung Dateien in Quarantäne verschiebt.
+
+- **13e.1 Zeitachse.** Dieselben Daten, die 7.14 als Spurenverwischung deutet,
+  ergeben nach ctime sortiert die Ausbreitungschronologie. Im Anlassfall trennte
+  das die beiden Wellen und zeigte, dass der erste Schreibvorgang 19 Tage vor
+  dem vermuteten Datum lag.
+- **13e.2 ctime gegen mtime, beide Richtungen.** 7.3 kannte nur „mtime älter als
+  ctime → Rückdatierung möglich". Dazu kommen jetzt der **Anker**
+  (mtime == ctime: geschrieben und seither unberührt — ein belastbarer
+  Zeitpunkt) und die **später geänderte Inode** (`cp -p` der eigenen
+  Gegenmassnahme, kein Angreiferzugriff). Ohne diese Unterscheidung sah im
+  Anlassfall die eigene Passwortrotation wie ein zweiter Einbruch aus. Eine
+  **vorwärts datierte** mtime ist neu ein eigener Befund: sie hält die Datei
+  aus jeder nach Datum sortierten Sichtung heraus.
+- **13e.3 Reichweite über den Systemnutzer.** Gehören mehrere vhosts demselben
+  Benutzer, erreicht eine Shell sie alle — ohne HTTP. Das erklärte im
+  Anlassfall, warum zwischen 404 und 200 kein schreibender Aufruf steht, und
+  bestimmt den Umfang der Bereinigung.
+- **13e.4 Reichweite der Quellen.** Weist je betroffenem vhost aus, wie weit das
+  Zugriffsprotokoll zurückreicht, und sagt ausdrücklich, dass „ältester
+  Nachweis" nicht „Infektionsbeginn" heisst. Der Abschnitt erzeugt bewusst
+  **keine** Zahl für den Infektionsbeginn.
+
+Die vergiftete `robots.txt` aus #47 geht als Zeitanker auf die Achse — sie
+überlebt, weil niemand sie ansieht, und war im Anlassfall zwei Wochen älter als
+das älteste Protokoll.
+
+`findings.json` bekommt den additiven Block `ursache` (kein Schema-Bump).
+
+### Behoben — 13e.3 hätte grün gemeldet, ohne nachgesehen zu haben
+
+Bei `--path` liefert `scope_vhost_dirs` genau einen Pfad; die Frage „teilt
+dieser vhost seinen Benutzer mit einem anderen?" ist dann nicht mit Nein zu
+beantworten, sondern gar nicht. Der Abschnitt meldet in diesem Fall ⚪ statt ✅.
+Derselbe Fehler in 13e.4: es suchte das Protokollverzeichnis über
+`scope_vhost_dirs` und landete bei `<wurzel>/logs` — einem Pfad, den es in
+keinem Plesk-Layout gibt. Es sucht jetzt vom Fund aus aufwärts.
+
+### Behoben — der Prüfstand schlug bei unverändertem Programm zufällig aus
+
+Drei von zehn Durchläufen wichen ab, ohne dass sich am Programm etwas geändert
+hatte. Drei getrennte Ursachen, alle im Prüfstand:
+
+1. **Der Aufbau überschreitet Sekundengrenzen.** Dateien bekamen dadurch
+   verschiedene ctimes, und die Zeitachse kippte. Der Prüfstand legt die
+   ctime-Folge jetzt selbst fest — eine Sekunde je Datei, nicht in Gruppen:
+   eine Gruppe kann selbst eine Sekundengrenze überschreiten.
+2. **Der Aufbau überschreitet Minutengrenzen.** Abschnitt 7.1 rankt nach mtime
+   und kappt bei 50; welche Datei die Kappung überlebte, hing an der Uhrzeit des
+   Laufs. Der Baum wird jetzt auf eine feste Sekunde gestellt. Der zweite
+   Sortierschlüssel, den `07_dateisystem.sh:48` dagegen eingeführt hatte, half
+   nur gegen Gleichstände — nicht dagegen, dass die Zeiten auseinanderlaufen.
+3. **`sleep 1` schläft mindestens eine Sekunde, nicht genau eine.** Gelegentlich
+   wurden daraus zwei und schnitten eine Welle auf. Die Abstände liegen jetzt
+   bei 1 gegen 6 Sekunden mit einer Schwelle von 4.
+
+Zwei Umwege, die dabei nicht funktioniert haben, stehen im Quelltext: `chmod`
+mit dem Modus, den die Datei schon hat, ruft `chmod(2)` gar nicht erst auf; eine
+Hardlink-Runde setzt zwar die ctime, lässt aber die mtime stehen und wirft die
+Dateien damit aus dem Anker-Fenster.
+
 ### Behoben — bei jeder vierten Schwachstelle stand die falsche Angabe im Bericht
 
 Gefunden vom **ersten Lauf gegen eine echte Installation** (#9), in den ersten

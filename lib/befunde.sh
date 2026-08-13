@@ -49,6 +49,28 @@ CORE_INJECT_HITS=""    # Dateien mit @include base64_decode() (Bootstrap-Injekti
 # Dateinamen eintragen, sonst sperrt er sich selbst aus (Abschnitt 7.6b, #46).
 WEBSHELL_NAMEN=""
 DISGUISED_PAYLOADS=""  # als Nicht-PHP getarnte Payloads (<?php in .ttf/.png/.gif/.css…)
+# Dateien, die der Angreifer anfassen MUSSTE und die seither niemand ansieht.
+# Sie sind der aelteste harte Zeitbeleg: im Anlassfall datierte die mtime der
+# vergifteten robots.txt den Einbruch 19 Tage vor das, was alle fuer den
+# Vorfallstag hielten — und zwei Wochen vor das aelteste Zugriffsprotokoll.
+# Abschnitt 13e nimmt sie auf die Zeitachse (#48).
+ZEITANKER=""
+# ── Ergebnis der Ursachensuche (Abschnitt 13e) ───────────────
+# Wie jede andere Befundvariable hier mit Vorgabe angelegt: Abschnitt 14 liest
+# sie, und ein uebersprungener 13e darf den Bericht unter 'set -u' nicht
+# abbrechen. U_TAB traegt "ctime<TAB>mtime<TAB>pfad" je belasteter Datei,
+# aufsteigend nach ctime.
+U_TAB=""
+U_ERST=""       # Epoche des aeltesten Schreibvorgangs
+U_LETZT=""      # Epoche des juengsten
+U_ZEILEN=0      # Dateien auf der Achse
+U_WELLEN=0      # getrennte Vorgaenge (Pause >= URSACHE_WELLE_SEK)
+U_ANKER=0       # mtime == ctime → seit dem Schreiben unberuehrt
+U_INODE=0       # Inode spaeter geaendert → mtime stammt nicht von diesem Vorgang
+U_ZUKUNFT=0     # mtime vorwaerts datiert
+U_SICHTFELD=0   # vhost-Verzeichnisse, die dieser Lauf ueberhaupt sehen darf
+U_REICHWEITE="" # vhosts, die ein Fund ueber den Systemnutzer miterfasst
+U_QUELLEN=""    # Protokollfenster je betroffenem vhost
 ROGUE_ADMINS=""        # via wp-cli-Fallback gefundene Angreifer-Admins
 # ── Handlungsfaehige Fassung derselben Konten ────────────────
 # ROGUE_ADMINS traegt den Instanznamen in einer Kopfzeile "=== kurz ===".

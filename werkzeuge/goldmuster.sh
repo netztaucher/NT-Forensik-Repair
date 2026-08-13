@@ -525,6 +525,31 @@ PHP
   # mu-Plugin: laeuft ohne Aktivierung.
   printf '<?php @include base64_decode("L3RtcC94");\n' \
     > "${k2}/wp-content/mu-plugins/cache.php"
+
+  # ── Zeitstempel-Deutung fuer 13e.2 (#48) ─────────────────────────────
+  # Ohne diese beiden Stempel traegt der Pruefstand nur ANKER-Faelle (mtime ==
+  # ctime), weil er alles in derselben Sekunde schreibt — 13e.2 waere damit
+  # ungeprueft.
+  #
+  # Die ctime laesst sich NICHT setzen; das ist der Grund, warum der Abschnitt
+  # sie benutzt. Ein Wellenabstand ist im Pruefstand deshalb nicht baubar (er
+  # braeuchte echte ctime-Luecken) — die beiden Deutungen, die am Verhaeltnis
+  # von mtime zu ctime haengen, dagegen schon: `touch -t` setzt die mtime und
+  # zieht die ctime auf jetzt.
+  #
+  #   rueckdatiert → ctime weit nach mtime  → INODE
+  #     Das ist der wp-config.php-Fall des Anlassfalls: `cp -p` der eigenen
+  #     Gegenmassnahme nahm die alte mtime mit. Ohne diese Deutung sieht die
+  #     eigene Rotation wie ein zweiter Einbruch aus.
+  #   vorwaerts    → mtime NACH ctime       → ZUKUNFT
+  #     Normal unmoeglich, jedes Setzen der mtime zieht die ctime mit. Wer das
+  #     tut, will aus jeder nach Datum sortierten Sichtung verschwinden.
+  # Die beiden Stempel setzt die Zeitfolge am Ende von baum_bauen — dort, wo
+  # auch die ctime-Reihenfolge entsteht. Wuerden sie hier stehen, liefe ihre
+  # ctime der Folge davon.
+  #
+  # NT_PRUEFSTAND_OHNE_ZEITDEUTUNG=1 laesst sie weg: 13e.2 sieht dann nur noch
+  # ANKER und meldet weder INODE noch ZUKUNFT — die Gegenprobe muss ausschlagen.
   # .htaccess mit Freigabeliste — sperrt PHP und gibt genau die eigene Datei frei.
   # NT_PRUEFSTAND_OHNE_HTACCESSPROBE=1 legt stattdessen eine harmlose Datei ab.
   if [[ "${NT_PRUEFSTAND_OHNE_HTACCESSPROBE:-0}" != "1" ]]; then
@@ -918,6 +943,113 @@ PHP
 LOG
   printf '[Thu Mar 12 03:14:07.000000 2026] [core:error] [pid 1] AH01797: client denied by server configuration: /remote.php\n' \
     > "${W}/system/kunde-zwei.example/logs/error_log"
+
+  # Zugriffsprotokoll NEBEN dem belasteten vhost. Abschnitt 13e.4 sucht es
+  # dort, nicht unter system/ — es bestimmt, wie weit die Quellen zurueckreichen.
+  # Ohne dieses Verzeichnis meldete 13e.4 dauerhaft "nicht messbar", und der
+  # ganze Zweig blieb ungeprueft.
+  mkdir -p "${W}/kunde-zwei.example/logs"
+  cp "${W}/system/kunde-zwei.example/logs/access_log" \
+     "${W}/kunde-zwei.example/logs/access_log" 2>/dev/null || true
+  # Ein rotiertes, komprimiertes Protokoll. 13e.4 wertet es bewusst NICHT aus,
+  # sondern zaehlt es und sagt das — sonst laege die Reichweite der Quellen
+  # weiter zurueck, als der Abschnitt belegen kann.
+  : > "${W}/kunde-zwei.example/logs/access_log.1.gz"
+
+  # ── ctime-Folge der belasteten Dateien festlegen (13e.1) ─────────────
+  #
+  # WARUM DAS HIER STEHT UND NICHT WEGNORMALISIERT WIRD
+  #
+  # Abschnitt 13e.1 ordnet nach ctime. Der Pruefstand legt seine Dateien in
+  # Millisekunden an; ueberschreitet der Aufbau dabei eine Sekundengrenze,
+  # bekommen einige Dateien N und andere N+1 — und die Achse kippt. Gemessen:
+  # 3 von 10 Durchlaeufen wichen ab, ohne dass sich am Programm etwas geaendert
+  # hatte.
+  #
+  # Die Reihenfolge IST die Aussage dieses Abschnitts. Sie wegzunormalisieren
+  # hiesse, den einzigen Teil nicht zu pruefen, auf den es ankommt. Der
+  # Pruefstand legt sie deshalb selbst fest.
+  #
+  # JE DATEI EINE EIGENE SEKUNDE. Nicht Gruppen — daran ist der erste Versuch
+  # gescheitert: eine Gruppe von fuenf Dateien kann selbst eine Sekundengrenze
+  # ueberschreiten, und dann kippt die Folge INNERHALB der Gruppe. Bei acht
+  # verschiedenen ctimes gibt es keine Gleichstaende, also auch nichts, was
+  # zufaellig anders sortieren koennte.
+  #
+  # `touch` ohne -t ist das richtige Mittel, nicht `chmod` und nicht ein
+  # Hardlink: es setzt mtime UND ctime auf dieselbe Sekunde. Genau das ist der
+  # ANKER-Fall aus 13e.2 — geschrieben und seither unberuehrt.
+  #
+  # Beide anderen Versuche sind daran gescheitert, und beide Gruende sind es
+  # wert, hier zu stehen:
+  #   `chmod` mit dem Modus, den die Datei schon hat, ruft chmod(2) gar nicht
+  #   erst auf — die ctime blieb stehen, und der Eingriff tat nichts, ohne es
+  #   zu sagen.
+  #   Hardlink an/ab setzt die ctime zuverlaessig, laesst aber die mtime stehen.
+  #   Damit lief die ctime der mtime davon, und die Dateien fielen aus dem
+  #   ANKER-Fenster (2 s) heraus: aus 6 Ankern wurden je nach Laufzeit 3.
+  #
+  # Die beiden Sonderfaelle bekommen ihre mtime hier statt weiter oben, damit
+  # ihre ctime in der richtigen Sekunde der Folge landet.
+  if [[ "${NT_PRUEFSTAND_OHNE_ZEITFOLGE:-0}" != "1" ]]; then
+    local k2c="${W}/kunde-zwei.example"
+
+    # ── Erst den ganzen Baum auf EINE Sekunde stellen ──────────────────
+    #
+    # Der Aufbau dauert laenger als eine Sekunde und laenger als eine Minute.
+    # Dateien bekommen dadurch verschiedene mtimes — je nachdem, wann der Lauf
+    # zufaellig gestartet ist. Abschnitt 7.1 rankt nach mtime und schneidet bei
+    # 50 ab; welche Datei die Abschneidung ueberlebt, haengt damit an der
+    # Uhrzeit des Laufs statt am Programm.
+    #
+    # Das ist derselbe Fehler, den 07_dateisystem.sh:48 schon einmal
+    # beschrieben hat — dort wurde der Sortierung ein zweiter Schluessel
+    # gegeben. Der half nur gegen Gleichstaende; er half nicht dagegen, dass
+    # die Zeiten ueberhaupt auseinanderlaufen. Solange die Ursache im
+    # Pruefstand sitzt, gehoert sie auch dorthin.
+    #
+    # MITTERNACHT DES LAUFTAGS, nicht die laufende Minute. Der erste Versuch
+    # nahm die laufende Minute — und scheiterte auf der CI: die acht Dateien der
+    # Zeitfolge bekommen ihre mtime SPAETER, und ob das noch dieselbe Minute ist
+    # oder schon die naechste, entscheidet wieder die Uhrzeit des Laufs. In
+    # `find -ls` steht die Minute, also kippte die Rangfolge erneut.
+    #
+    # Mitternacht loest das: der ganze Baum liegt dann eindeutig VOR den acht
+    # Dateien der Zeitfolge, egal wann der Lauf startet. Die Abschneidung bei 50
+    # nimmt damit immer dieselben — die acht zuerst, dann der Rest nach Pfad.
+    # Kein Datumsrechnen noetig, und der Wert bleibt sicher innerhalb der
+    # 30-Tage-Fensters von Abschnitt 7.1.
+    #
+    # Ausgenommen: die Zeitstempel-Haeufung fuer 7.14. Ihr fester Wert IST der
+    # Pruefgegenstand.
+    local _stempel; _stempel="$(date '+%Y%m%d')0000.00"
+    find "$W" -type f ! -name 'eintrag-*.dat' -exec touch -t "$_stempel" {} + 2>/dev/null || true
+    # Erste Welle. Die robots.txt zuerst: sie ist im Anlassfall der aelteste
+    # Beleg, weil sie einmal angefasst und danach nie wieder angesehen wurde.
+    touch "${k2c}/httpdocs/robots.txt";                                        sleep 1
+    touch "${k2c}/cloud.kunde-zwei.example/filefuns.php";                      sleep 1
+    touch "${k2c}/backups/updater-abc123/nextcloud-28.0.1.2-1700000000/filefuns.php"; sleep 1
+    touch "${k2c}/httpdocs/wp-content/plugins/beispiel-plugin/assets/banner.png"; sleep 1
+    touch "${k2c}/httpdocs/wp-content/uploads/2026/03/clip.avi";               sleep 1
+    touch "${k2c}/httpdocs/wp-content/uploads/2026/03/clip.mov"
+    # Zweite Welle, sechs Sekunden spaeter. Mit URSACHE_WELLE_SEK=4 im Lauf
+    # trennt 13e.1 hier — und NUR hier. Damit ist beides geprueft: dass ein
+    # kleiner Abstand die Welle nicht aufschneidet, und dass ein grosser es tut.
+    #
+    # Warum 1 gegen 6 und nicht 1 gegen 3: `sleep 1` schlaeft MINDESTENS eine
+    # Sekunde. Mit dem Prozessstart der Schleife werden daraus gelegentlich
+    # zwei, und bei einer Schwelle von 2 schnitt das die erste Welle auf —
+    # gemessen in 1 von 10 Durchlaeufen. Die Schwelle liegt deshalb bei 4, mit
+    # Abstand nach beiden Seiten.
+    sleep 6
+    if [[ "${NT_PRUEFSTAND_OHNE_ZEITDEUTUNG:-0}" != "1" ]]; then
+      touch -t 202401010422.05 "${k2c}/httpdocs/wp-content/mu-plugins/cache.php"
+      touch -t 202812310422.05 "${k2c}/httpdocs/wp-content/uploads/2026/03/logo.png"
+    else
+      touch "${k2c}/httpdocs/wp-content/mu-plugins/cache.php"
+      touch "${k2c}/httpdocs/wp-content/uploads/2026/03/logo.png"
+    fi
+  fi
 }
 
 # ── Normalisierung ───────────────────────────────────────────
@@ -977,6 +1109,27 @@ REGELN = [
     # ersetzt — es steht in erzeugten Dokumenten und wechselt taeglich.
     (r'\b\d{2}\.\d{2}\.\d{4},? +\d{2}:\d{2}(:\d{2})?( Uhr)?', '<ZEIT>'),
     (r'\b\d{2}\.\d{2}\.\d{4}\b',                    '<DATUM>'),
+    # Abschnitt 13e.2 rechnet den Abstand zwischen mtime und ctime aus. Die
+    # ctime ist die Sekunde, in der der Pruefstand die Datei angefasst hat —
+    # der Abstand zu einer FESTEN mtime waechst also taeglich. Ohne diese
+    # Regel schlaegt der Vergleich am naechsten Tag fehl, und zwar mit einem
+    # Unterschied, der wie ein Programmfehler aussieht.
+    #
+    # Die Spanne selbst bleibt im Bericht und im Beleg stehen; hier wird nur
+    # die normalisierte Fassung vergleichbar gemacht.
+    (r'\b\d+ Tage \d+ h\b',                         '<SPANNE>'),
+    # Dieselbe Sache in findings.json: die Zeitachse fuehrt ROHE Sekunden,
+    # damit die Gegenstelle rechnen kann. Fuer alles, was der Pruefstand in
+    # derselben Sekunde anlegt, ist das die Laufzeit — also je Lauf anders.
+    # Eng an die vier Feldnamen gebunden, damit die Regel keine anderen Zahlen
+    # trifft.
+    #
+    # Der Platzhalter steht IN Anfuehrungszeichen: die normalisierte Referenz
+    # war bisher gueltiges JSON, und das soll sie bleiben. Ein Ersatz durch ein
+    # nacktes <EPOCHE> haette sie unparsbar gemacht — geprueft wird zwar die
+    # echte Datei, aber wer die Referenz aufmacht, erwartet zu Recht JSON.
+    (r'"(ctime|mtime)":\d+',                        r'"\1":"<EPOCHE>"'),
+    (r'"(aeltester|juengster)_nachweis": *\d+',     r'"\1_nachweis": "<EPOCHE>"'),
     (r'\| \*\*(Analysiert am|Server)\*\* \|.*$',   r'| **\1** | <UMGEBUNG> |'),
     # Aus `find -ls`: Inode und Blockzahl sind Eigenschaften des Dateisystems,
     # Eigentuemer und Gruppe die des ausfuehrenden Kontos, der Zeitstempel der
@@ -1037,6 +1190,22 @@ lauf_ausfuehren() {
   # bei JEDEM Lauf aus — er meldet dann nichts als die Uhrzeit und wird
   # dadurch wertlos. LC_ALL statt LANG, damit es auch eine gesetzte
   # LC_TIME ueberstimmt.
+  #
+  # URSACHE_WELLE_SEK=2: echte Wellenabstaende kann der Pruefstand nicht bauen,
+  # dafuer braeuchte er Luecken in der ctime — und die laesst sich nicht setzen.
+  # Er baut deshalb Abstaende von einer Sekunde und EINEN von drei (siehe
+  # baum_bauen) und senkt die Schwelle auf vier. Damit ist beides geprueft: dass
+  # eine Sekunde die Welle NICHT aufschneidet und sechs es tun. Der Abstand nach
+  # beiden Seiten ist Absicht: `sleep 1` schlaeft mindestens eine Sekunde, nicht
+  # genau eine. Mit der Vorgabe
+  # von einer Stunde bliebe die Wellentrennung in 13e.1 ganz ungeprueft.
+  # Vertretbar, weil an dem Wert kein Befund haengt — er steuert nur, ob eine
+  # Pause als eigene Zeile erscheint.
+  #
+  # ACHTUNG: Diese Zuweisungen sind EINE Befehlszeile mit Fortsetzungen. Ein
+  # Kommentar dazwischen bricht sie auf, und der Lauf endet mit "muss als root
+  # ausgefuehrt werden" — die Vorspann-Variablen erreichen das Skript dann
+  # nicht mehr. Erlaeuterungen gehoeren deshalb hierher, vor den Block.
   LC_ALL=C LANG=C \
   NT_TESTLAUF=1 \
   NT_BASE_DIR="$ABLAGE" \
@@ -1047,6 +1216,7 @@ lauf_ausfuehren() {
   NT_PMF_ATTRAPPE="${NT_PMF_ATTRAPPE-$PMFAUS}" \
   NT_WF_ATTRAPPE="${NT_WF_ATTRAPPE-$WFDATEN}" \
   PATH="${ATTRAPPE}:$PATH" \
+  URSACHE_WELLE_SEK=4 \
   bash "${SELF_DIR}/wp_plesk_forensik.sh" \
        --path "$W" --nur-website --kein-menue >"${ABLAGE}/konsole.txt" 2>&1
   local rc=$?

@@ -37,6 +37,9 @@
 ./betreiber/belege/023_htaccess_fremd_kunde-zwei_example_httpdocs_wp-content_uploads__htaccess.txt
 ./betreiber/belege/024_htaccess_einordnung.txt
 ./betreiber/belege/025_php_malware_finder_treffer.txt
+./betreiber/belege/026_ursache_zeitachse.txt
+./betreiber/belege/027_ursache_zeitstempel_deutung.txt
+./betreiber/belege/028_ursache_quellenlage.txt
 ./betreiber/belege/SHA256SUMS
 ./betreiber/belege/htaccess/00_index.txt
 ./betreiber/belege/htaccess/kunde-drei.example_httpdocs_.htaccess

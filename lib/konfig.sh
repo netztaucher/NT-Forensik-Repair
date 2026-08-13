@@ -622,6 +622,31 @@ DROPPER_MAX_BYTES=3000
 ZEITSTEMPEL_ZUSATZ_SEK=2592000     # 30 Tage
 ZEITSTEMPEL_ALLEIN_SEK=7776000     # 90 Tage
 
+# ── Ursachensuche (Abschnitt 13e, #48) ───────────────────────
+#
+# WELLE: ab welcher Pause zwischen zwei Schreibvorgaengen 13e sie als getrennte
+# Vorgaenge ausweist. Im Anlassfall lagen zwischen den beiden Wellen 14 Tage,
+# INNERHALB der zweiten 13 Minuten fuer 15 Seiten. Eine Stunde trennt das
+# sauber und schneidet keine Welle auf. Der Wert steuert nur die DARSTELLUNG —
+# kein Befund haengt an ihm, und die Achse im Beleg ist immer vollstaendig.
+#
+# Aus der Umgebung uebersteuerbar, wie die uebrigen Pruefstand-Nahtstellen
+# (NT_DATEN_DIR, NT_WF_ATTRAPPE). Der Pruefstand kann echte Wellenabstaende
+# nicht bauen — dafuer braeuchte er Luecken in der ctime, und genau die laesst
+# sich nicht setzen. Er baut deshalb Abstaende von einer Sekunde und senkt die
+# Schwelle. Vertretbar, weil an diesem Wert kein Befund haengt.
+URSACHE_WELLE_SEK="${URSACHE_WELLE_SEK:-3600}"
+# Wie viele Zeilen die Zeitachse IM BERICHT hoechstens zeigt. Auf 475 vhosts
+# blieben nach der Entlastung 251 Dateien; eine Achse darueber liest niemand.
+# Was ueber die Grenze faellt, wird gezaehlt und benannt — der Beleg traegt
+# ohnehin alles. Ein stilles Abschneiden waere dieselbe Luege wie eine stille
+# Entlastung.
+URSACHE_ACHSE_MAX="${URSACHE_ACHSE_MAX:-60}"
+# Wie viele vhosts 13e.4 auf ihr Protokollfenster ansieht. Der Test ist ein
+# `head -1` je Logdatei; auf allen 475 vhosts waere er sinnlos teuer, und
+# Aussagekraft hat er nur dort, wo tatsaechlich etwas liegt.
+URSACHE_LOGS_MAX="${URSACHE_LOGS_MAX:-20}"
+
 # ── Injektion in grosse Dateien (7.15) ───────────────────────
 #
 # Die Zweistufigkeit oben trennt nach GROESSE: klein plus Muster ist kritisch,

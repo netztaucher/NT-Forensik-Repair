@@ -133,7 +133,30 @@ stillschweigend wie ein vollständiger Freispruch — der Fehlerfall, der zählt
 | `metrics.zu_pruefen_gesamt` | Fundstellen des zweiten Rangs: kernfremde Dateien, mu-Plugins, Ausführbares in `/tmp`. Kein belegter Schadcode, deshalb **nicht** in `schadcode_gesamt` enthalten. |
 | `actionable.signatur_treffer` | Treffer aus `rezepte/*/signaturen.tsv`, alle Anwendungen. Bis v3.11 standen diese Dateien ausschliesslich im Menschentext, und dort nur die erste je Muster — Quarantäne-Kandidaten erster Ordnung, die NT-Repair nie zu sehen bekam. |
 | `actionable.plugin_veraendert` | Plugin-Codedateien, die von den Prüfsummen bei wordpress.org abweichen. |
+| `ursache.*` | Ergebnis der Infektions-Ursachensuche (Abschnitt 13e, Issue #48). Rein additiv, kein Schema-Bump. Siehe die Tabelle unten. |
 | `run.scope_mode` / `run.abo_user` / `run.scan_paths` | Der Prüfumfang, maschinenlesbar. `werkzeuge/kundenpaket.sh` braucht ihn, um dieselbe Maskierung anzuwenden wie der Lauf: ohne ihn kann `nf_fremdkunden_maskieren` nicht entscheiden, was „eigen" ist, und maskiert dann lieber gar nicht. Ein Lauf ohne diese Felder bekommt kein automatisches Kundenpaket. |
+
+### `ursache` — die Zeitachse und ihre Reichweite
+
+Kein Quarantäne-Kandidat steht hier. Der Block beantwortet, **wann** etwas
+geschah und **wie weit** sich das belegen lässt — bewusst getrennt von
+`actionable`, damit eine Bereinigung ihn nie als Arbeitsliste missversteht.
+
+| Feld | Bedeutung |
+|---|---|
+| `aeltester_nachweis` / `juengster_nachweis` | Sekunden seit 1970, ctime. **Nicht** der Infektionsbeginn — der älteste überlebende Beleg. |
+| `dateien` | Belastete Dateien auf der Achse. Nur die belastenden Listen, nach der Entlastung durch 13d; die Sichtungsstufen bleiben draussen. |
+| `vorgaenge` | Getrennte Schreibvorgänge (Pause ≥ `URSACHE_WELLE_SEK`). Reine Darstellung. |
+| `zeitanker` | Dateien mit mtime == ctime: geschrieben und seither unberührt — ein belastbarer Zeitpunkt. |
+| `inode_spaeter_geaendert` | ctime deutlich nach mtime. Typisch für `cp -p` einer eigenen Gegenmassnahme, **nicht** für einen Angreiferzugriff. |
+| `vorwaerts_datiert` | mtime nach ctime. Normal unmöglich; die Datei soll aus jeder nach Datum sortierten Sichtung verschwinden. |
+| `zeitachse` | `[{pfad, ctime, mtime}]`, aufsteigend nach ctime. Rohe Sekunden, damit die Gegenstelle rechnen kann. |
+| `reichweite_systemnutzer` | Text: welche weiteren vhosts ein Fund über den geteilten Systembenutzer miterfasst. Bestimmt den Umfang der Bereinigung. |
+| `quellenlage` | Text: wie weit das Zugriffsprotokoll je betroffenem vhost zurückreicht. |
+
+**Warum das vor der Bereinigung erhoben wird:** `mv` zerstört die ctime, und
+die Bereinigung verschiebt Dateien in Quarantäne. Läuft sie zuerst, ist die
+Kausalkette unwiederbringlich weg.
 
 ## ⚠️ Zähler, die nur einen Teil der Wahrheit zeigen
 

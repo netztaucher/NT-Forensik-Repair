@@ -26,5 +26,8 @@
 023_htaccess_fremd_kunde-zwei_example_httpdocs_wp-content_uploads__htaccess.txt
 024_htaccess_einordnung.txt
 025_php_malware_finder_treffer.txt
+026_ursache_zeitachse.txt
+027_ursache_zeitstempel_deutung.txt
+028_ursache_quellenlage.txt
 SHA256SUMS
 htaccess
