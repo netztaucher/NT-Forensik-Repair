@@ -289,6 +289,10 @@ jobs:
           # active_plugins und keine Optionsauszuege — Leiche, PHP-Option und
           # Groessenrangfolge verschwinden aus dem Bericht.
           gegenprobe "12r Persistenz in der Datenbank" NT_PRUEFSTAND_OHNE_DBPROBE=1
+          # #39. Mit Plugin-Kopf sind die beiden Verzeichnisse echte Plugins:
+          # die neuen Zeilen verschwinden und sie zählen wieder in der
+          # Angreifbarkeitsbilanz mit. Prüft das Kriterium, nicht die Fixture.
+          gegenprobe "12r Verzeichnis ohne Plugin-Kopf" NT_PRUEFSTAND_OHNE_NICHTPLUGIN=1
           bash werkzeuge/goldmuster.sh vergleichen
 
       - name: Abnahmekriterium 7.15 — injiziert meldet, sauber schweigt

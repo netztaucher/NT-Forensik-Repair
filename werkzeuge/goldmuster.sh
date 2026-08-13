@@ -718,9 +718,9 @@ PHP
   #   ------------------------------------------- -------------- ---------
   #   Plugin mit Kopf und Fassung                 15 von 17      ja
   #   Plugin ohne lesbaren Kopf, PHP oben         —              ja (kopflos)
-  #   Verzeichnis ohne JEDE PHP-Datei             chronosly-     ja (#39)
+  #   Verzeichnis ohne JEDE PHP-Datei             chronosly-     ja, Regel #39
   #                                               addons
-  #   Verzeichnis mit PHP NUR in Unterordnern,    chronosly-     ja (#39)
+  #   Verzeichnis mit PHP NUR in Unterordnern,    chronosly-     ja, Regel #39
   #   ohne Kopf                                   templates
   #   .php-Datei mit reinem JSON, eine Riesen-    dad7/          ja
   #   zeile                                       default.php
@@ -829,15 +829,26 @@ PHP
   # als "ohne lesbare Fassung" meldet — der ⚪-Anteil faellt dadurch zu hoch
   # aus.
   #
-  # ACHTUNG: die Referenz haelt damit vorerst das FALSCHE Verhalten fest.
-  # Das ist Absicht — sobald #39 behoben ist, zeigt der Referenzvergleich
-  # genau, was sich aendert. Ohne die Fixture waere die Reparatur unbelegbar.
+  # Seit #39 haelt die Referenz das RICHTIGE Verhalten fest: beide
+  # Verzeichnisse fallen aus der Angreifbarkeitsbilanz heraus und bekommen
+  # eigene, sichtbare Zeilen. Der Vergleich hat die Reparatur belegt —
+  # 5 → 2 nicht bewertbare Bestandteile, 4 → 1 Plugin ohne Pruefsummensatz.
+  #
+  # NT_PRUEFSTAND_OHNE_NICHTPLUGIN=1 gibt beiden einen ordentlichen
+  # Plugin-Kopf. Damit sind es echte Plugins, die neuen Zeilen verschwinden,
+  # und sie zaehlen wieder in der Bilanz mit. Die Gegenprobe prueft also das
+  # KRITERIUM (Kopf vorhanden?) und nicht bloss, ob die Fixture da ist.
   wp_nichtplugin() {   # wp_nichtplugin <installation>
     local basis="$1/wp-content/plugins"
+    local _kopf="${NT_PRUEFSTAND_OHNE_NICHTPLUGIN:-0}"
     # a) gar keine PHP-Datei, nur eine lesbare Fassungsangabe im JSON
     mkdir -p "${basis}/pruefstand-daten"
     printf '{"version":"2.4.0","name":"Pruefstand Daten"}\n' \
       > "${basis}/pruefstand-daten/version.json"
+    if [[ "$_kopf" == "1" ]]; then
+      printf '<?php\n/*\nPlugin Name: Pruefstand Daten\nVersion: 2.4.0\n*/\n' \
+        > "${basis}/pruefstand-daten/pruefstand-daten.php"
+    fi
     # b) PHP nur in Unterordnern, und der Inhalt ist reines JSON auf EINER
     #    Zeile. Genau die Machart der echten Vorlagendateien — und damit auch
     #    das Rauschmaterial, an dem sich §7.15 bewaehren muss: lange Zeile,
@@ -854,6 +865,10 @@ PHP
         printf ']}\n'
       } > "${basis}/pruefstand-vorlagen/dad${i}/default.php"
     done
+    if [[ "$_kopf" == "1" ]]; then
+      printf '<?php\n/*\nPlugin Name: Pruefstand Vorlagen\nVersion: 1.0.0\n*/\n' \
+        > "${basis}/pruefstand-vorlagen/pruefstand-vorlagen.php"
+    fi
   }
 
   # Kunde 2: eine Luecke mit belegter Ausnutzung (🔴), eine ohne (⚠️), eine
