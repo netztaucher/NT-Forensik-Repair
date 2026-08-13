@@ -370,6 +370,15 @@ ziel, baum = sys.argv[1], sys.argv[2]
 # "kein Pruefsummensatz", den es auf jeder echten Seite gibt.
 ohne_satz = {("kunde-drei.example", "pruefstand-alt")}
 verfaelscht = {("kunde-zwei.example", "pruefstand-aktuell")}
+# Die beiden Lagen aus #40, beide bei pruefstand-kev auf Kunde 2:
+#   SOFT  — readme.txt liegt im Baum, der Satz traegt eine andere Pruefsumme.
+#           Keine Code-Endung, also Einstufung SOFT statt MOD.
+#   FEHLT — der Satz fuehrt eine Sprachdatei, die auf der Platte nicht liegt.
+#           Auf dem echten System waren es zwei solche Dateien (#9,
+#           Messpunkt 3), und der Bericht nannte nur die Zahl.
+soft_daneben = {("kunde-zwei.example", "pruefstand-kev"): "readme.txt"}
+phantom      = {("kunde-zwei.example", "pruefstand-kev"):
+                "languages/pruefstand-kev-de_DE.mo"}
 
 for kunde in sorted(os.listdir(baum)):
     pdir = os.path.join(baum, kunde, "httpdocs", "wp-content", "plugins")
@@ -396,8 +405,14 @@ for kunde in sorted(os.listdir(baum)):
                 rel = os.path.relpath(p, voll)
                 if (kunde, slug) in verfaelscht and rel.endswith(".php"):
                     roh = roh + b"# abweichend"      # erzwungene Abweichung
+                if soft_daneben.get((kunde, slug)) == rel:
+                    roh = roh + b"# andere fassung"  # SOFT: Nicht-Code weicht ab
                 dateien[rel] = {"md5": hashlib.md5(roh).hexdigest(),
                                 "sha256": hashlib.sha256(roh).hexdigest()}
+        if (kunde, slug) in phantom:
+            # FEHLT: im Satz gefuehrt, auf der Platte nicht vorhanden.
+            dateien[phantom[(kunde, slug)]] = {"md5": "0" * 32,
+                                               "sha256": "0" * 64}
         d = os.path.join(ziel, slug)
         os.makedirs(d, exist_ok=True)
         with open(os.path.join(d, fassung + ".json"), "w", encoding="utf-8") as fh:
@@ -849,6 +864,12 @@ PHP
   }
   wp_kern "$k2" 6.4.1
   wp_plugin "$k2" pruefstand-kev      1.2   "Pruefstand KEV"
+  # Nicht-Codedatei fuer den SOFT-Fall (#40): pruefsummen_bauen verfaelscht
+  # ihre Pruefsumme im Satz, der Vergleich stuft sie als SOFT ein (keine
+  # Code-Endung) — und der Beleg muss ihren Pfad nennen. Bis #40 kannte der
+  # Pruefbaum weder diese Lage noch den FEHLT-Fall; beide gab es auf dem
+  # echten System (#9, Messpunkt 3), und der Bericht nannte nur eine Zahl.
+  printf 'Pruefstand KEV — readme\n' > "${k2}/wp-content/plugins/pruefstand-kev/readme.txt"
   wp_plugin "$k2" pruefstand-alt      2.0.3 "Pruefstand Alt"
   # 4.1 statt 4.0: der Pruefsummensatz liegt je Slug UND Fassung. Haetten beide
   # Kunden dieselbe Fassung, traefe die absichtliche Verfaelschung fuer Kunde 2
@@ -1088,8 +1109,14 @@ LOG
 # koennen, warum der Wert sich zwangslaeufig aendert — sonst verdeckt die
 # Regel eine echte Abweichung.
 normalisieren() {
-  python3 - "$1" <<'PY'
-import re, sys
+  # Der Arbeitspfad wird MITGEGEBEN statt nur ueber das feste Muster
+  # 'nt-goldmuster/lauf' erkannt. Am 13.08.2026 lief eine Aufnahme mit
+  # NT_GOLDMUSTER_DIR=/tmp/gm-belege — aufnehmen schreibt IMMER nach
+  # pruefstand/referenz, das Muster griff nicht, und die eingecheckte
+  # Referenz trug rohe /tmp-Pfade. Jeder folgende Vergleich schlug fehl und
+  # sah aus wie Nichtdeterminismus des Programms.
+  NT_ARBEIT_PFAD="$ARBEIT" python3 - "$1" <<'PY'
+import os, re, sys
 
 # Jede Regel einzeln, jede mit Grund. Wer hier etwas ergaenzt, muss sagen
 # koennen, warum der Wert sich zwangslaeufig aendert.
@@ -1110,6 +1137,10 @@ REGELN = [
     # dass es auffiel. Zeichenklasse deshalb ohne Anfuehrungszeichen und
     # Klammern.
     (r'[^\s"\'\[\],]*?[/.]nt-goldmuster/lauf',      '<PRUEFSTAND>'),
+    # Der TATSAECHLICHE Arbeitspfad dieses Laufs, zusaetzlich zum festen
+    # Muster darueber: mit gesetztem NT_GOLDMUSTER_DIR heisst er anders,
+    # und ohne diese Regel stuenden rohe Pfade in der Referenz.
+    (re.escape(os.environ.get('NT_ARBEIT_PFAD', '/nirgends')), '<PRUEFSTAND>'),
     (r'^(Server|Server-IP|Ausführender|Beginn \(lokal\)):.*$', r'\1: <UMGEBUNG>'),
     # Ausgabe von `date` — Format haengt an der Spracheinstellung, deshalb
     # ueber die umgebende Beschriftung gefasst statt ueber das Datumsmuster.

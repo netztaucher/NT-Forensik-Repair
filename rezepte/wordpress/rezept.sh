@@ -427,11 +427,24 @@ PY
       "${REZ_KURZ}: ${n_geprueft} Plugin(s) gegen wordpress.org geprüft — keine veränderte Codedatei" "$REZ_PFAD"
   fi
 
-  [[ "${n_soft:-0}" -gt 0 ]] && befund_melden wordpress kern warn \
-    "${REZ_KURZ}: ${n_soft} veränderte Nicht-Codedatei(en) in Plugins (readme, Übersetzungen, Stilvorlagen) — meist harmlos" "$REZ_PFAD"
+  # Beide Befunde mit Beleg (#40). Sie standen als nackte Zahl im Bericht —
+  # und genau die fehlenden Dateien waren Messpunkt 3 aus #9. Ohne die Pfade
+  # laesst sich nicht beurteilen, ob es harmlos ist (entfernte Sprachdateien,
+  # abgespeckte Auslieferung) oder ob jemand Dateien geloescht hat. Ein
+  # Befund, der eine Handlung fordert, muss liefern, was man dazu braucht.
+  if [[ "${n_soft:-0}" -gt 0 ]]; then
+    befund_melden wordpress kern warn \
+      "${REZ_KURZ}: ${n_soft} veränderte Nicht-Codedatei(en) in Plugins (readme, Übersetzungen, Stilvorlagen) — meist harmlos" "$REZ_PFAD"
+    evidence "wp_plugin_nichtcode_veraendert_$(echo "$REZ_KURZ" | tr '/.' '__')" \
+             "$(printf '%s\n' "$ergebnis" | awk -F'\t' -v p="$basis" '$1=="SOFT"{print p $2 "/" $4}')"
+  fi
 
-  [[ "${n_fehlt:-0}" -gt 0 ]] && befund_melden wordpress kern warn \
-    "${REZ_KURZ}: ${n_fehlt} im Prüfsummensatz geführte Plugin-Datei(en) fehlen auf der Platte" "$REZ_PFAD"
+  if [[ "${n_fehlt:-0}" -gt 0 ]]; then
+    befund_melden wordpress kern warn \
+      "${REZ_KURZ}: ${n_fehlt} im Prüfsummensatz geführte Plugin-Datei(en) fehlen auf der Platte" "$REZ_PFAD"
+    evidence "wp_plugin_fehlt_$(echo "$REZ_KURZ" | tr '/.' '__')" \
+             "$(printf '%s\n' "$ergebnis" | awk -F'\t' -v p="$basis" '$1=="FEHLT"{print p $2 "/" $4}')"
+  fi
 
   # Zusätzliche PHP-Dateien: vorerst nur Beleg. Plugins legen auch legitim PHP
   # an (Zwischenspeicher, index.php-Wachen); erst nach Messung an echten
