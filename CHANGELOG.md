@@ -508,6 +508,26 @@ Bei 12r, dem längsten Abschnitt, zählt die Anzeige Installationen (`87 von
 214`) und rechnet daraus hoch. Nur dort ist eine Hochrechnung ehrlich: die
 Schritte sind gleichartig und gezählt.
 
+### Ergänzt — auch Abschnitt 13b zählt jetzt
+
+Beim ersten Lauf mit der Anzeige zeigte sich, dass 13b die längste stille
+Phase des ganzen Durchlaufs ist — länger als der Dateisystem-Scan und länger
+als der gsocket-Inhaltsscan.
+
+Zwei Schleifen über dieselbe Liste: 13b.1 sichert **jede** `.htaccess` im
+Prüfumfang mit Prüfsumme, beiden Zeitstempeln, Eigentümer und Rechten, 13b.2
+ordnet die Direktiven ein. Auf einem Server mit 475 vhosts sind das über
+**12.000 Dateien**, zweimal durchlaufen. Man sah Domainnamen vorbeiziehen und
+wusste nicht, ob 200 oder 11.000 abgearbeitet waren.
+
+Beide Schleifen melden jetzt alle 200 Dateien ihren Stand. Der Nenner steht
+ohnehin fest, sobald die Liste gebaut ist.
+
+Die Anzeige selbst ist dafür allgemeiner geworden: `4200 von 12205 — 13b.2
+Direktiven einordnen` statt der 12r-spezifischen Formulierung. Bei sehr
+schnellen Schritten nennt sie die Rate statt der Sekunden je Schritt — „2 je
+Sekunde" ist ablesbar, „0 s je Schritt" wäre es nicht.
+
 ### Behoben — beinahe eine stille Pipeline-Unterbrechung eingebaut
 
 Der erste Entwurf von `fortschritt_strom` nutzte `systime()` in awk. Das ist

@@ -55,6 +55,12 @@ h1 "13b. .HTACCESS — SICHERUNG UND EINORDNUNG"
 
 HTA_DIR="${BELEGE_DIR}/htaccess"
 HTA_LISTE=$(find "${SCAN_PATHS[@]}" -name .htaccess -type f 2>/dev/null | nf_strip_self | sort || true)
+# Der Nenner fuer die Fortschrittsanzeige. Beide Schleifen unten laufen ueber
+# dieselbe Liste — auf einem Server mit 475 vhosts sind das ueber 12.000
+# Dateien, und beide Durchlaeufe dauern zusammen laenger als der komplette
+# Dateisystem-Scan. Ohne Zaehler sieht man Domainnamen vorbeiziehen und weiss
+# nicht, ob 200 oder 11.000 abgearbeitet sind.
+HTA_N=$(printf '%s\n' "$HTA_LISTE" | grep -c . 2>/dev/null); HTA_N="${HTA_N:-0}"
 
 if [[ -z "$HTA_LISTE" ]]; then
   ok "Keine .htaccess-Datei im Prüfumfang"
@@ -76,8 +82,13 @@ h2 "13b.1 Sicherung"
 } > "${HTA_DIR}/00_index.txt"
 
 _hta_gesichert=0
+_hta_i=0
 while IFS= read -r _h; do
   [[ -f "$_h" ]] || continue
+  _hta_i=$((_hta_i+1))
+  # Jede 200. Datei, nicht jede: der Schreibvorgang selbst soll die Sicherung
+  # nicht ausbremsen.
+  (( _hta_i % 200 == 0 )) && fortschritt_unterschritt "$_hta_i" "$HTA_N" "13b.1 .htaccess sichern"
   _flach=$(printf '%s' "${_h#"$VHOSTS_DIR"/}" | tr '/' '_')
   cp -p "$_h" "${HTA_DIR}/${_flach}" 2>/dev/null || continue
   printf '%s | %s | %s | %s | %s | %s | %s\n' \
@@ -117,8 +128,11 @@ hta_system() {   # hta_system <verzeichnis>
 }
 
 HTA_BERICHT=""
+_hta_j=0
 while IFS= read -r _h; do
   [[ -f "$_h" ]] || continue
+  _hta_j=$((_hta_j+1))
+  (( _hta_j % 200 == 0 )) && fortschritt_unterschritt "$_hta_j" "$HTA_N" "13b.2 Direktiven einordnen"
   _hd="$(dirname "$_h")"
   _sys="$(hta_system "$_hd")"
   _kurz="${_h#"$VHOSTS_DIR"/}"

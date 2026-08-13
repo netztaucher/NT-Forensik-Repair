@@ -113,12 +113,21 @@ status_zeigen() {
   local u_zeit u_i u_n u_txt
   IFS=$'\t' read -r _ u_zeit u_i u_n u_txt < <(awk -F'\t' '$1=="unterschritt"' "$spur" | tail -1)
   if [[ -n "${u_i:-}" && "${u_zeit:-0}" -ge "${a_zeit:-0}" ]]; then
-    printf '    Installation %s von %s — %s\n' "$u_i" "$u_n" "$u_txt"
+    # Bewusst allgemein: 12r zaehlt Installationen, 13b .htaccess-Dateien.
+    # Was gezaehlt wird, steht im Text — die Anzeige muss es nicht wissen.
+    printf '    %s von %s — %s\n' "$u_i" "$u_n" "$u_txt"
     # Nur hier ist eine Hochrechnung ehrlich: gleichartige Schritte, gezählt.
     if [[ "${u_i:-0}" -gt 2 && "${u_n:-0}" -gt "${u_i:-0}" ]]; then
       local je=$(( (jetzt - a_zeit) / u_i ))
-      printf '    ≈ %s je Installation, noch %s für diesen Abschnitt\n' \
-             "$(dauer "$je")" "$(dauer $(( je * (u_n - u_i) )))"
+      # Bei sehr schnellen Schritten ist die Sekunde zu grob — dann die Rate.
+      if [[ "$je" -ge 1 ]]; then
+        printf '    ≈ %s je Schritt, noch %s für diesen Abschnitt\n' \
+               "$(dauer "$je")" "$(dauer $(( je * (u_n - u_i) )))"
+      else
+        local proSek=$(( u_i / (jetzt - a_zeit + 1) ))
+        printf '    ≈ %s je Sekunde, noch %s für diesen Abschnitt\n' \
+               "$proSek" "$(dauer $(( (u_n - u_i) / (proSek > 0 ? proSek : 1) )))"
+      fi
     fi
   fi
 
