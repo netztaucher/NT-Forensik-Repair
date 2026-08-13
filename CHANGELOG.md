@@ -4,6 +4,35 @@ Alle nennenswerten Änderungen an `wp_plesk_forensik.sh`.
 
 ## [unveröffentlicht]
 
+### Behoben — Datenordner unter `plugins/` galten als Plugin (#39)
+
+`_wp_bestand` behandelte **jedes** Verzeichnis unter `wp-content/plugins/` als
+Plugin. Chronosly legt dort Daten- und Vorlagenordner ab; WordPress führt sie
+in keiner Pluginliste, weil ihnen der `Plugin Name`-Kopf fehlt. Der Bericht wies
+deshalb auf einer echten Installation „2 Plugin(s) ohne Prüfsummensatz" aus —
+echte Plugins ohne Prüfsummensatz gab es dort **keine**. 12 % „nicht bewertbar"
+als Artefakt. Genau die Sorte Zahl, die beim nächsten Mal übergangen wird.
+
+Kriterium ist jetzt der Kopf, nicht das Verzeichnis. Die erste Fassung dieses
+Issues wollte auf „keine PHP-Datei" prüfen — das hätte `chronosly-templates`
+mit seinen 12 PHP-Dateien in Unterordnern weiterhin als Plugin gezählt. Gesucht
+wird oben wie bisher und **nur wenn dort kein Kopf liegt** rekursiv nach; der
+teure Weg trifft damit die Ausnahmen, nicht die 345 Dateien eines gepflegten
+Plugins.
+
+Kopflose Verzeichnisse fallen **nicht stillschweigend weg** — sie bekommen
+eigene Zeilen, nach Gewicht getrennt:
+
+- **mit PHP-Dateien, ohne Kopf** → ⚠️ mit Beleg. Kann eine Angreifer-Ablage sein.
+- **ohne jede PHP-Datei** → Hinweis mit Beleg. Datenordner.
+
+Am Prüfbaum gemessen: 5 → 2 nicht bewertbare Bestandteile, 4 → 1 Plugin ohne
+Prüfsummensatz. `pruefstand-kopflos` bleibt korrekt ein Plugin — es hat einen
+Kopf, nur keine Fassung.
+
+Gegenprobe `NT_PRUEFSTAND_OHNE_NICHTPLUGIN` prüft das Kriterium: mit Kopf sind
+beide Verzeichnisse wieder Plugins und zählen in der Bilanz mit.
+
 ### Neu — Persistenz in der Datenbank wird erkannt (#47, Erkennungsteil)
 
 Der Doorway-Generator des Anlassfalls sass in der Installation, nicht auf der

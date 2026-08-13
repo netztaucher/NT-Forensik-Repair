@@ -8,7 +8,7 @@
 | **Datum** | <ZEIT> |
 | **Geprüfter Server** | imac |
 | **Prüfungs-ID** | <LAUF-ID> |
-| **Befunde** | 🔴 18 kritisch · ⚠️ 18 auffällig · ⚪ 9 nicht messbar |
+| **Befunde** | 🔴 18 kritisch · ⚠️ 19 auffällig · ⚪ 9 nicht messbar |
 
 ---
 
@@ -75,6 +75,7 @@
 - .htaccess mit externen Weiterleitungen gefunden
 - kunde-zwei.example/joomla.kunde-zwei.example: Joomla-Version nicht bestimmbar (weder joomla.xml noch Version.php lesbar)
 - kunde-zwei.example/joomla.kunde-zwei.example: Standard-Tabellenpräfix jos_ (macht SQL-Injection-Angriffe zielgenau ohne Vorab-Erkundung)
+- kunde-zwei.example/httpdocs: 1 Verzeichnis(se) unter plugins/ mit PHP-Dateien, aber ohne Plugin-Kopf — kein Plugin; kann eine Angreifer-Ablage sein, sichten
 - kunde-zwei.example/httpdocs: core wordpress 6.4.1 ist von einer bekannten Schwachstelle betroffen ([6.0 … 6.4.1]) CVE-2026-90004 — behoben in 6.4.2.
 - kunde-zwei.example/httpdocs: plugin pruefstand-alt 2.0.3 ist von einer bekannten Schwachstelle betroffen ([2.0 … 2.4.1]) CVE-2026-90002 — behoben in 2.5.
 - kunde-zwei.example/httpdocs: plugin pruefstand-ohne-fix 1.0 ist von einer bekannten Schwachstelle betroffen ([* … *]) CVE-2026-90007.

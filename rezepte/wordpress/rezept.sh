@@ -56,15 +56,51 @@ _wp_bestand() {
     [[ -n "$ver" ]] && printf 'core\twordpress\t%s\n' "$ver"
   fi
 
+  # Was ein Plugin IST, entscheidet der Kopf, nicht das Verzeichnis (#39).
+  # Chronosly legt Daten- und Vorlagenordner neben sein Plugin — einer ohne
+  # jede PHP-Datei, einer mit PHP nur in Unterordnern (inhaltlich JSON, ohne
+  # Kopf). WordPress fuehrt beide in keiner Pluginliste; dieses Werkzeug
+  # zaehlte sie als Plugin, und der Bericht wies "2 Plugin(s) ohne
+  # Pruefsummensatz" auf einer Installation aus, die KEIN echtes Plugin ohne
+  # Pruefsummensatz hatte. 12 % "nicht bewertbar" als Artefakt — die Sorte
+  # Zahl, die beim naechsten Mal achselzuckend uebergangen wird.
+  #
+  # Kriterium: ein 'Plugin Name:'-Kopf irgendwo im Verzeichnis. Der billige
+  # Griff (oberste Ebene, wie bisher) zuerst; nur wenn dort kein Kopf liegt,
+  # der teure rekursive — er trifft damit nur die Ausnahmen, nicht die 345
+  # Dateien eines gepflegten Plugins.
+  #
+  # Verzeichnisse ohne Kopf gehen als eigene Zeilenart 'keinplugin' in den
+  # Strom, mit dem Vermerk, ob PHP darin liegt. NICHT stillschweigend weg:
+  # ein kopfloses Verzeichnis mit PHP unter plugins/ kann eine
+  # Angreifer-Ablage sein. Der Aufrufer macht daraus einen sichtbaren
+  # Hinweis — nur eben ausserhalb der Angreifbarkeitsbilanz. (Nebenwirkungen
+  # hier druin waeren verloren: _wp_bestand laeuft in Kommandosubstitution.)
+  local kopf v
   for d in "${REZ_PFAD}"/wp-content/plugins/*/; do
     [[ -d "$d" ]] || continue
-    d="${d%/}"; ver=""
+    d="${d%/}"; ver=""; kopf=""
     for f in "$d"/*.php; do
       [[ -f "$f" ]] || continue
-      ver=$(_wp_kopf_version "$f" "Plugin Name") && [[ -n "$ver" ]] && break
-      ver=""
+      if v=$(_wp_kopf_version "$f" "Plugin Name"); then
+        kopf="${kopf:-$f}"
+        # Wie bisher: die erste Datei, die Kopf UND Fassung traegt, gewinnt.
+        # Eine mit Kopf ohne Fassung bleibt Rueckfalloption.
+        [[ -n "$v" ]] && { ver="$v"; kopf="$f"; break; }
+      fi
     done
-    printf 'plugin\t%s\t%s\n' "$(basename "$d")" "$ver"
+    if [[ -z "$kopf" ]]; then
+      kopf=$(grep -rliE --include='*.php' \
+             '^[[:space:]]*\*?[[:space:]]*Plugin Name[[:space:]]*:' "$d" 2>/dev/null | head -1)
+      [[ -n "$kopf" ]] && ver=$(_wp_kopf_version "$kopf" "Plugin Name")
+    fi
+    if [[ -n "$kopf" ]]; then
+      printf 'plugin\t%s\t%s\n' "$(basename "$d")" "$ver"
+    else
+      local _php=""
+      [[ -n "$(find "$d" -type f -name '*.php' -print 2>/dev/null | head -1)" ]] && _php="php"
+      printf 'keinplugin\t%s\t%s\n' "$(basename "$d")" "$_php"
+    fi
   done
 
   # Themes tragen ihre Fassung in style.css.
@@ -167,6 +203,32 @@ rezept_version() {
 
   bestand=$(_wp_bestand)
   [[ -n "$bestand" ]] || return 0
+
+  # Verzeichnisse ohne Plugin-Kopf aus dem Strom nehmen, BEVOR der
+  # Vergleicher sie als UNBEWERTBAR in die Bilanz zieht (#39) — und sichtbar
+  # melden statt stillschweigend wegzufiltern. Zwei Lagen, zwei Gewichte:
+  # ohne jede PHP-Datei ist es ein Datenordner (Hinweis); mit PHP-Dateien,
+  # aber ohne Kopf, kann es eine Angreifer-Ablage sein (sichten).
+  local keinplugin kp_php kp_ohne
+  keinplugin=$(printf '%s\n' "$bestand" | awk -F'\t' '$1=="keinplugin"')
+  bestand=$(printf '%s\n' "$bestand" | awk -F'\t' '$1!="keinplugin"')
+  if [[ -n "$keinplugin" ]]; then
+    kp_php=$(printf '%s\n' "$keinplugin"  | awk -F'\t' '$3=="php"{print $2}')
+    kp_ohne=$(printf '%s\n' "$keinplugin" | awk -F'\t' '$3!="php" && NF{print $2}')
+    if [[ -n "$kp_php" ]]; then
+      befund_melden wordpress version warn \
+        "${REZ_KURZ}: $(printf '%s\n' "$kp_php" | grep -c .) Verzeichnis(se) unter plugins/ mit PHP-Dateien, aber ohne Plugin-Kopf — kein Plugin; kann eine Angreifer-Ablage sein, sichten" "$REZ_PFAD" web
+      evidence "wp_plugins_ohne_kopf_mit_php_$(echo "$REZ_KURZ" | tr '/.' '__')" \
+               "$(printf '%s\n' "$kp_php" | sed "s|^|${REZ_PFAD}/wp-content/plugins/|")"
+    fi
+    if [[ -n "$kp_ohne" ]]; then
+      info "${REZ_KURZ}: $(printf '%s\n' "$kp_ohne" | grep -c .) Verzeichnis(se) unter plugins/ ohne jede PHP-Datei — Datenordner, kein Plugin, nicht in der Angreifbarkeitsbilanz"
+      evidence "wp_plugins_datenordner_$(echo "$REZ_KURZ" | tr '/.' '__')" \
+               "$(printf '%s\n' "$kp_ohne" | sed "s|^|${REZ_PFAD}/wp-content/plugins/|")"
+    fi
+  fi
+  [[ -n "$bestand" ]] || return 0
+
   ergebnis=$(printf '%s\n' "$bestand" | python3 "$vergleicher" --daten "$basis" 2>/dev/null || true)
   [[ -n "$ergebnis" ]] || return 0
 
