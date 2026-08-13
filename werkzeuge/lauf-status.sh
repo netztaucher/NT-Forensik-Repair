@@ -53,7 +53,16 @@ dauer() {   # dauer <sekunden> → "1 h 23 min" / "4 min 12 s"
 
 status_zeigen() {
   local lauf="$ZIEL"
-  [[ -n "$lauf" ]] || lauf=$(ls -td "$BASIS"/*_* 2>/dev/null | head -1)
+  # NUR Verzeichnisse. `ls -td "$BASIS"/*_*` griff auch Dateien — am
+  # 13.08.2026 lag eine nohup-Logdatei mit Unterstrich im Namen neben den
+  # Laufordnern, war die neueste Fundstelle, und der Status meldete "Kein
+  # Laufordner", waehrend der Lauf lief. Ein Werkzeug, das den Zustand
+  # anzeigen soll und stattdessen von einer Nachbardatei umfaellt, ist
+  # schlimmer als keines: es sieht aus wie "kein Lauf aktiv".
+  # Muster [0-9]*_*: Laufordner heissen YYYYMMDD_HHMMSS_<umfang>. Die
+  # Namenssortierung ist damit zugleich die Zeitsortierung — und anders als
+  # die mtime aendert sich der Name waehrend des Laufs nicht.
+  [[ -n "$lauf" ]] || lauf=$(for d in "$BASIS"/[0-9]*_*/; do [[ -d "$d" ]] && printf '%s\n' "${d%/}"; done | LC_ALL=C sort -r | head -1)
   if [[ -z "$lauf" || ! -d "$lauf" ]]; then
     echo -e "  ${RED}Kein Laufordner unter ${BASIS}${NC}"; return 1
   fi
