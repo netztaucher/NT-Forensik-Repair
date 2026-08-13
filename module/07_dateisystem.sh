@@ -362,6 +362,77 @@ else
   ok "Keine .htaccess mit gezielter Freigabe einzelner PHP-Dateien"
 fi
 
+# ── 7.6b Der Name in der Freigabeliste verraet die Shell ────────────────────
+#
+# Die Regel, die den Befall vom 12.08.2026 gefunden haette, ohne dass Groesse,
+# Endung oder Verschleierung eine Rolle spielen.
+#
+# Ein Angreifer, der seine Ablage per .htaccess absichert, MUSS seinen eigenen
+# Dateinamen freigeben — sonst sperrt ihn seine eigene Haertung aus. In der
+# Messung stand er deshalb im Klartext zwischen den Kerndateien:
+#
+#   58x filefuns.php      <- die Verbreiter-Shell, 5579 B
+#   47x index.php
+#   29x xmlrpc.php, wp-login.php, wp-load.php, wp-cron.php, …
+#
+# Die 29er-Gruppe ist ein vollstaendiger Satz WordPress-Einstiegspunkte, also
+# legitime Haertung. filefuns.php passt in kein Schema — und ist 5579 B gross,
+# rutschte also an der 3000-Byte-Schwelle von 7.3 vorbei und landete unter
+# "oft legitim, manuell pruefen" (#46).
+#
+# ZWEI BEDINGUNGEN, BEIDE NOETIG:
+#   1. der Name steht nicht auf der Liste bekannter Einstiegspunkte
+#   2. eine Datei dieses Namens EXISTIERT im selben Verzeichnis
+#
+# Bedingung 2 ist die wichtigere. Im Vorfall nannten die Freigabelisten rund
+# 30 Shell-Namen (adminfuns.php, connects.php, epinyins.php …) — vorhanden war
+# genau EINER. Der Angreifer hatte seinen Baukasten eingetragen, aber nur ein
+# Modul ausgerollt. Ohne die Existenzpruefung meldete diese Regel 30 Dateien,
+# von denen 29 nicht da sind.
+HTA_NAME_TREFFER=""
+if [[ -n "$HT_WHITELIST" ]]; then
+  _hta_akt=""
+  while IFS= read -r _z; do
+    case "$_z" in
+      "=== "*" ===") _hta_akt="${_z#=== }"; _hta_akt="${_hta_akt% ===}"; continue ;;
+    esac
+    [[ -n "$_hta_akt" ]] || continue
+    # Alle in <Files …> genannten .php-Namen dieser Zeile.
+    printf '%s\n' "$_z" | grep -oiE '<files[^>]*>' 2>/dev/null \
+      | grep -oE '[A-Za-z0-9_.-]+\.php' 2>/dev/null \
+    | while IFS= read -r _n; do
+        [[ -n "$_n" ]] || continue
+        printf '%s\t%s\n' "$_hta_akt" "$_n"
+      done
+  done <<< "$HT_WHITELIST" | LC_ALL=C sort -u | while IFS=$'\t' read -r _hf _n; do
+      # Bekannter Einstiegspunkt? Dann kein Fund.
+      printf '%s' "$_n" | grep -qiE "$HTACCESS_NAMEN_OK" && continue
+      _dir=$(dirname "$_hf")
+      # Nur was WIRKLICH da ist. Ein eingetragener, aber nicht ausgerollter
+      # Name ist eine Absichtserklaerung, kein Befund.
+      [[ -f "${_dir}/${_n}" ]] || continue
+      printf '=== %s ===\nFreigegeben in: %s\nGroesse: %s B | SHA256: %s\n\n' \
+        "${_dir}/${_n}" "$_hf" \
+        "$(datei_meta "${_dir}/${_n}" groesse 2>/dev/null)" \
+        "$(sha256sum "${_dir}/${_n}" 2>/dev/null | awk '{print $1}')"
+    done > "${BELEGE_DIR}/.hta_namen" 2>/dev/null || true
+  HTA_NAME_TREFFER=$(cat "${BELEGE_DIR}/.hta_namen" 2>/dev/null || true)
+  rm -f "${BELEGE_DIR}/.hta_namen"
+fi
+
+if [[ -n "$HTA_NAME_TREFFER" ]]; then
+  _hta_n=$(grep -c '^=== ' <<< "$HTA_NAME_TREFFER" || echo 0)
+  crit "${_hta_n} Datei(en) sind in einer .htaccess namentlich freigegeben, gehören aber zu keinem bekannten Einstiegspunkt — und liegen dort. Für dieses Muster gibt es keinen legitimen Fall" web
+  code "$(grep '^=== ' <<< "$HTA_NAME_TREFFER" | sed 's/^=== //; s/ ===$//' | awk 'NR<=20')"
+  evidence "htaccess_fremdname_vorhanden" "$HTA_NAME_TREFFER" kunde
+  # In die Quarantaeneliste: hier ist die Trennschaerfe hoch genug.
+  while IFS= read -r _p; do
+    [[ -n "$_p" ]] && WEBSHELL_NAMEN+="$_p"$'\n'
+  done < <(grep '^=== ' <<< "$HTA_NAME_TREFFER" | sed 's/^=== //; s/ ===$//')
+else
+  ok "Keine namentlich freigegebene Datei ausserhalb der bekannten Einstiegspunkte"
+fi
+
 h2 "7.7 SUID/SGID-Dateien in Webspace und tmp-Verzeichnissen"
 SUID_FILES=$(find "${SCAN_PATHS[@]}" /tmp /var/tmp /dev/shm -type f \( -perm -4000 -o -perm -2000 \) 2>/dev/null || true)
 if [[ -n "$SUID_FILES" ]]; then

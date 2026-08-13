@@ -30,7 +30,7 @@
 [1m[0;34m══════════════════════════════════════════[0m
 
 [0;36m▶ 7.0 Datei-Inventar (Inode und Zeitstempel sichern)[0m
-  [0m·  Inventar: 636 Datei(en) erfasst, davon 636 mit Anlegezeit (belege/00_dateien.tsv)
+  [0m·  Inventar: 640 Datei(en) erfasst, davon 640 mit Anlegezeit (belege/00_dateien.tsv)
 
 [0;36m▶ 7.1 Kürzlich veränderte PHP-Dateien (letzte 30 Tage)[0m
   [0;33mDurchsuche Webspace (kann dauern...)[0m
@@ -53,7 +53,8 @@
 
 [0;36m▶ 7.6 .htaccess-Dateien prüfen[0m
   [0;33m⚠[0m  .htaccess mit externen Weiterleitungen gefunden
-  [0;31m✗[0m  [1m.htaccess gibt gezielt einzelne PHP-Datei(en) frei — typisch für abgesicherte Webshells (3)[0m
+  [0;31m✗[0m  [1m.htaccess gibt gezielt einzelne PHP-Datei(en) frei — typisch für abgesicherte Webshells (4)[0m
+  [0;31m✗[0m  [1m2 Datei(en) sind in einer .htaccess namentlich freigegeben, gehören aber zu keinem bekannten Einstiegspunkt — und liegen dort. Für dieses Muster gibt es keinen legitimen Fall[0m
 
 [0;36m▶ 7.7 SUID/SGID-Dateien in Webspace und tmp-Verzeichnissen[0m
   [0;32m✓[0m Keine SUID/SGID-Dateien in Webspace oder tmp
@@ -171,9 +172,10 @@
 [1m[0;34m══════════════════════════════════════════[0m
 
 [0;36m▶ 13b.1 Sicherung[0m
-  [0;32m✓[0m 5 von 5 .htaccess-Dateien gesichert (belege/htaccess/)
+  [0;32m✓[0m 6 von 6 .htaccess-Dateien gesichert (belege/htaccess/)
 
 [0;36m▶ 13b.2 Einordnung der Direktiven[0m
+  [0;32m✓[0m kunde-drei.example/httpdocs/.htaccess (wordpress): 4 eigene Direktive(n), nichts Fremdes
   [0;32m✓[0m kunde-eins.example/httpdocs/.htaccess (wordpress): 2 eigene Direktive(n), nichts Fremdes
   [0;31m✗[0m  [1mkunde-zwei.example/backups/updater-abc123/nextcloud-28.0.1.2-1700000000/.htaccess (nextcloud): 3 Angreifer-Direktive(n) in der .htaccess[0m
   [0;31m✗[0m  [1mkunde-zwei.example/cloud.kunde-zwei.example/.htaccess (nextcloud): 3 Angreifer-Direktive(n) in der .htaccess[0m
@@ -209,7 +211,7 @@
 [1m[0;32m  ANALYSE ABGESCHLOSSEN — Lauf <LAUF-ID>[0m
 [1m[0;32m══════════════════════════════════════════[0m
 
-[1mBefunde:[0m       🔴 16 kritisch, ⚠️ 17 Warnungen, ✅ 22 ok, ⚪ 9 nicht messbar
+[1mBefunde:[0m       🔴 17 kritisch, ⚠️ 17 Warnungen, ✅ 23 ok, ⚪ 9 nicht messbar
 [0;33m               9 Prüfung(en) ohne Ergebnis — das ist keine Entwarnung.[0m
                  Webshell-Mustersuche nicht ausgeführt — grep beherrscht kein -P (PCRE). Auf macOS ist BSD-grep die Vorgabe; GNU grep oder ugrep installieren. Das ist KEINE Entwarnung.
                  kunde-zwei.example/cloud.kunde-zwei.example: Werkzeug antwortet nicht verwertbar — nicht geprüft

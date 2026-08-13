@@ -825,6 +825,23 @@ PHP
 
   # Kunde 3 ist die Gegenprobe: alles aktuell, nichts darf gemeldet werden.
   wp_kern "$k3" 6.9.2
+  # ── Legitime Haertung: Freigabeliste NUR mit Kern-Einstiegspunkten ──────
+  # Die Gegenprobe zu Abschnitt 7.6b (#46). Auf dem echten Server standen 29
+  # solcher Dateien — PHP sperren, die Standard-Einstiegspunkte wieder oeffnen.
+  # Das ist die verbreitetste Haertung ueberhaupt.
+  #
+  # Schlaegt die Namensregel hier an, meldet sie jede gehaertete Installation
+  # und ist wertlos. Die Dateien existieren absichtlich — es darf ALLEIN am
+  # Namen haengen.
+  {
+    printf 'Order allow,deny\n'
+    for _n in index.php wp-login.php xmlrpc.php; do
+      printf '<Files "%s">\n  Allow from all\n</Files>\n' "$_n"
+    done
+  } > "${k3}/.htaccess"
+  for _n in index.php wp-login.php xmlrpc.php; do
+    printf '<?php // Kern-Einstiegspunkt, Pruefstand\n' > "${k3}/${_n}"
+  done
   # Gegenprobe zur vergifteten robots.txt bei Kunde 2 (#47): eine voellig
   # normale, mit der VIRTUELLEN Sitemap, die WordPress seit 5.5 selbst
   # ausliefert. Schlaegt die Regel hier an, meldet sie jede gepflegte Seite.

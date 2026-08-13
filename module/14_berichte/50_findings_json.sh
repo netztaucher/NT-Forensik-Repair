@@ -143,6 +143,10 @@ print(json.dumps(raus, ensure_ascii=False))' 2>/dev/null || echo '{}')
   n_rogue=$(printf '%s\n'   "${ROGUE_ADMINS:-}"      | grep -vE '^=== |^$' | grep -c . 2>/dev/null)
   local n_suspp; n_suspp=$(printf '%s\n' "${SUSP_PLUGINS:-}" | grep -c . 2>/dev/null)
   ws=$(echo "${DROPPER_DETAIL:-}"      | grep '^=== ' | sed 's/^=== //; s/ ===$//' | json_arr)
+  # Abschnitt 7.6b: namentlich freigegeben, kein bekannter Einstiegspunkt, und
+  # vorhanden. Eigener Schluessel statt in webshell_dropper hineingemischt —
+  # die Herkunft eines Quarantaenekandidaten muss ablesbar bleiben.
+  local wsn; wsn=$(printf '%s\n' "${WEBSHELL_NAMEN:-}" | json_arr)
   php=$(printf '%s\n' "${PHP_IN_UPLOADS:-}"    | json_arr)
   suid=$(printf '%s\n' "${SUID_FILES:-}"       | json_arr)
   tmpx=$(printf '%s\n' "${TMP_EXECS:-}"        | json_arr)
@@ -264,6 +268,7 @@ print(json.dumps(raus, ensure_ascii=False))' 2>/dev/null || echo '{}')
   },
   "actionable": {
     "webshell_dropper": ${ws:-[]},
+    "htaccess_fremdname": ${wsn:-[]},
     "injected_core": ${corei:-[]},
     "core_should_not_exist": ${coresne:-[]},
     "doorway_dirs": ${doorw:-[]},
