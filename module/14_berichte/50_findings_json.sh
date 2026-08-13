@@ -267,7 +267,15 @@ print(json.dumps(raus, ensure_ascii=False))' 2>/dev/null || echo '{}')
     "nicht_messbar": ${unmess:-[]},
     "scope_mode": "$(json_str "${SCOPE_MODE:-}")",
     "abo_user": "$(json_str "${ABO_USER:-}")",
-    "scan_paths": ${scanp:-[]}
+    "scan_paths": ${scanp:-[]},
+    "programmstand_stabil": $(if [[ "${PROGRAMMSTAND_STABIL:-1}" -eq 1 ]]; then echo true; else echo false; fi)$(
+      # Die Commits stehen NUR im Fehlerfall in der Datei. Im Regelfall waeren
+      # sie ein Wert, der sich mit jedem Commit aendert — der Pruefstand
+      # muesste seine Referenz dann bei jeder Aenderung neu aufnehmen, und ein
+      # Vergleich, der immer ausschlaegt, ist keiner.
+      [[ "${PROGRAMMSTAND_STABIL:-1}" -eq 1 ]] || printf ',\n    "programmstand_vorher": "%s",\n    "programmstand_nachher": "%s"' \
+        "$(json_str "${PROGRAMMSTAND_VORHER:-}")" "$(json_str "${PROGRAMMSTAND_NACHHER:-}")"
+    )
   },
   "htaccess_unwirksam": "${htaunw}",
   "befunde": ${befgen:-{\}},

@@ -611,6 +611,7 @@ ZUKUNFT   <ZEIT>  mtime liegt <SPANNE> NACH der ctime — vorwaerts datiert   <P
 
 ## 14. ZUSAMMENFASSUNG
 
+- ✅ Programmstand über den ganzen Lauf unverändert — die Fassungsangabe belegt diesen Lauf
   Fundstellen-Details: <PRUEFSTAND>/ablage/forensik/<LAUF-ID>/kunde/befunde_details.md (22 Fund(e), 7 Familien, 1 zu prüfen)
 
 ### 14.1 Befund-Statistik
@@ -619,7 +620,7 @@ ZUKUNFT   <ZEIT>  mtime liegt <SPANNE> NACH der ctime — vorwaerts datiert   <P
 |---|---|
 | 🔴 Kritische Befunde | 18 |
 | ⚠️ Warnungen | 22 |
-| ✅ Unauffällige Prüfungen | 23 |
+| ✅ Unauffällige Prüfungen | 24 |
 | ⚪ Nicht messbar | 10 |
 
 > **10 Prüfung(en) haben keine Aussage geliefert.** Ihr Ergebnis ist weder

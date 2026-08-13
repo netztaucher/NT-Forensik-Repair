@@ -10,6 +10,14 @@
 # Neuen Befund ergaenzen heisst: hier eine Zeile eintragen.
 # ============================================================
 
+# ── Programmstand waehrend des Laufs (#55) ───────────────────
+# Der Runner haelt Inhalt und Commit VOR dem ersten `source` fest; Abschnitt
+# 14 prueft vor den Berichten erneut. Vorgabe ist "stabil" — ein Lauf ohne
+# diese Pruefung soll die Fassungsangabe nicht grundlos in Zweifel ziehen.
+PROGRAMMSTAND_STABIL=1
+PROGRAMMSTAND_VORHER=""    # Commit bei Laufbeginn (leer, wenn kein git)
+PROGRAMMSTAND_NACHHER=""   # Commit vor den Berichten
+
 # ── Zähler & Befund-Sammlung für Kunden-/BSI-Bericht ─────────
 N_CRIT=0; N_WARN=0; N_OK=0
 # Vierter Zustand (v3.11): die Pruefung lief, lieferte aber keine Aussage —

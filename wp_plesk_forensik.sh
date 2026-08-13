@@ -44,6 +44,45 @@ set -u
 SELF_PATH="$(readlink -f "$0" 2>/dev/null || echo "$0")"
 SELF_DIR="$(dirname "$SELF_PATH")"
 
+# ── Programmstand festhalten, BEVOR das erste Modul geladen wird (#55) ──
+#
+# Am 13.08.2026 wurde /root/nt-forensik zwoelf Minuten nach dem Start eines
+# Vorfallslaufs von einer anderen Sitzung aktualisiert. Bash liest das
+# Hauptskript ueber einen offenen Deskriptor — die Datei war danach
+# `(deleted)`, und der Lauf lief sauber zu Ende. Die MODULE werden aber
+# nacheinander per `source` geholt: 01–07 kamen aus dem alten Stand, 08 bis 14
+# aus dem neuen. Der Lauf war eine Mischung aus zwei Fassungen und aus keinem
+# einzigen Commit reproduzierbar.
+#
+# Kein Fehler, keine Warnung, nichts im Protokoll. Aufgefallen ist es nur,
+# weil jemand aus einem anderen Grund /proc/<pid>/fd angesehen hat.
+#
+# Die Fassungsangabe in findings.json und in den Berichten ist die Grundlage
+# dafuer, einen Befund spaeter nachzuvollziehen — sie geht an Kunden und ueber
+# die BSI-/DSGVO-Entwuerfe an Behoerden. Hier war sie zur Haelfte falsch.
+#
+# GEPRUEFT WIRD DER INHALT, NICHT NUR DER COMMIT. Ein Ausrollen mit `cp` oder
+# rsync hinterlaesst keinen neuen Commit — und trifft den laufenden
+# Interpreter haerter als git, das Dateien ersetzt statt sie zu ueberschreiben.
+# Der Commit wird zusaetzlich gefuehrt, weil er die Aenderung BENENNBAR macht.
+programmstand_hash() {
+  { cat "$SELF_PATH" 2>/dev/null
+    find "${SELF_DIR}/lib" "${SELF_DIR}/module" "${SELF_DIR}/rezepte" \
+         -type f \( -name '*.sh' -o -name '*.py' \) -print0 2>/dev/null \
+      | LC_ALL=C sort -z | xargs -0 cat 2>/dev/null
+  } | { md5sum 2>/dev/null || md5 -q 2>/dev/null || cksum; } | awk '{print $1}'
+}
+programmstand_commit() {
+  git -C "$SELF_DIR" rev-parse --short HEAD 2>/dev/null || true
+}
+PROGRAMMSTAND_HASH_START="$(programmstand_hash)"
+PROGRAMMSTAND_COMMIT_START="$(programmstand_commit)"
+# Pruefstand-Naht: setzt den Startwert auf eine Marke, die kein Hash sein kann.
+# Der Vergleich in Abschnitt 14 muss dann ausschlagen. Geprueft wird damit die
+# Erkennung samt Bericht und findings.json — nicht die Empfindlichkeit des
+# Hashes selbst; die haengt an `md5sum` und ist unten gegen Ausfall gesichert.
+[[ "${NT_PRUEFSTAND_STAND_WECHSEL:-0}" == "1" ]] && PROGRAMMSTAND_HASH_START="pruefstand-abweichend"
+
 # Aufrufargumente sichern, BEVOR irgendetwas eingebunden wird.
 # 'source' aus einer Funktion heraus setzt $@ auf die Argumente der Funktion,
 # nicht auf die des Skripts — die Kommandozeile käme in lib/konfig.sh sonst
