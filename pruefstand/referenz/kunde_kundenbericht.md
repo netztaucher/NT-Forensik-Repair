@@ -8,7 +8,7 @@
 | **Datum** | <ZEIT> |
 | **Geprüfter Server** | imac |
 | **Prüfungs-ID** | <LAUF-ID> |
-| **Befunde** | 🔴 17 kritisch · ⚠️ 17 auffällig · ⚪ 9 nicht messbar |
+| **Befunde** | 🔴 18 kritisch · ⚠️ 18 auffällig · ⚪ 9 nicht messbar |
 
 ---
 
@@ -64,6 +64,7 @@
 - kunde-zwei.example/httpdocs: 1 Datei(en) mit @include base64_decode() — getarnte Payload-Nachladung
 - kunde-zwei.example/httpdocs: 8 veränderte Plugin-Codedatei(en) gegenüber wordpress.org — Plugin neu installieren, Dateien vorher sichern
 - kunde-zwei.example/httpdocs: 1 veränderte Core-Datei(en) — Injektion oder Manipulation
+- kunde-zwei.example/httpdocs: PHP-Code in wp_options — Optionen tragen Daten, keinen Code; hier legt ein Generator seinen Lader ab
 - kunde-zwei.example/backups/updater-abc123/nextcloud-28.0.1.2-1700000000/.htaccess (nextcloud): 3 Angreifer-Direktive(n) in der .htaccess
 - kunde-zwei.example/cloud.kunde-zwei.example/.htaccess (nextcloud): 3 Angreifer-Direktive(n) in der .htaccess
 - kunde-zwei.example/httpdocs/.htaccess (wordpress): 2 Angreifer-Direktive(n) in der .htaccess
@@ -86,6 +87,7 @@
 - kunde-zwei.example/httpdocs: Wordfence führt 1 Theme(s) als verwundbar
 - kunde-zwei.example/httpdocs: Wordfence hat Pfade vom Scan ausgenommen — ein unauffälliger Wordfence-Bericht ist für diese Bereiche KEINE Entwarnung
 - kunde-zwei.example/httpdocs: Wordfence meldet 1 Datei(en) als verändert gegenüber dem Original — Integritätsabweichung, kein Signaturtreffer
+- kunde-zwei.example/httpdocs: active_plugins führt Einträge ohne Datei auf der Platte — Leiche oder Tarnung, sichten
 - php-malware-finder: 4 Datei(en) mit Treffern — nach Regelanzahl sortiert, jeder Treffer gehört gesichtet (9 als unverändert bestätigte Datei(en) herausgefiltert)
 - 1 belastete Datei(en) tragen eine in die Zukunft gesetzte mtime — jede nach Datum sortierte Sichtung uebersieht sie
 

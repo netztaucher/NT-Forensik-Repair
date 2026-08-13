@@ -622,6 +622,14 @@ DROPPER_MAX_BYTES=3000
 ZEITSTEMPEL_ZUSATZ_SEK=2592000     # 30 Tage
 ZEITSTEMPEL_ALLEIN_SEK=7776000     # 90 Tage
 
+# ── Persistenz in der Datenbank (#47) ────────────────────────
+# Ab welcher Groesse eine Option in die Sichtungs-Rangfolge kommt (e3).
+# GERATEN, nicht gemessen — 256 KiB liegt deutlich ueber dem, was Widgets und
+# Einstellungen brauchen, aber Page-Builder-CSS und Transients erreichen das
+# auch legitim. Deshalb haengt an diesem Wert KEIN Befund, nur eine info-Zeile
+# mit Beleg. Erst messen, dann einstufen — dieselbe Regel wie bei 7.15.
+WP_OPTION_GROSS_BYTES="${WP_OPTION_GROSS_BYTES:-262144}"
+
 # ── Ursachensuche (Abschnitt 13e, #48) ───────────────────────
 #
 # WELLE: ab welcher Pause zwischen zwei Schreibvorgaengen 13e sie als getrennte
