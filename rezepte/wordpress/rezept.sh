@@ -662,6 +662,10 @@ rezept_db() {
   # auf einem System, das beides hat.
   WF_GELAUFEN=0
   if [[ -n "${NT_WF_ATTRAPPE:-}" ]]; then _wp_wordfence; WF_GELAUFEN=1; fi
+  # Dieselbe Naht für den Persistenz-Zweig (#47), aus demselben Grund: eine
+  # Auswertung, die der Prüfstand nie misst, verrutscht unbemerkt.
+  DBP_GELAUFEN=0
+  if [[ -n "${NT_DB_ATTRAPPE:-}" ]]; then _wp_db_persistenz; DBP_GELAUFEN=1; fi
 
   if ! werkzeug_da mysql && [[ -z "${REZ_WERKZEUG:-}" ]]; then
     befund_melden wordpress datenbank unklar "${REZ_KURZ}: weder mysql-Client noch wp-cli vorhanden — Datenbank nicht geprüft" "$REZ_PFAD" web
@@ -754,6 +758,123 @@ rezept_db() {
 
   # d) Wordfence-Bestand auslesen, falls vorhanden (#17).
   [[ "${WF_GELAUFEN:-0}" -eq 1 ]] || _wp_wordfence
+
+  # e) Persistenz in der Datenbank (#47).
+  [[ "${DBP_GELAUFEN:-0}" -eq 1 ]] || _wp_db_persistenz
+}
+
+# ── Persistenz in der Datenbank (#47) ────────────────────────
+# Der Anlassfall: ein Doorway-Generator sass in der Installation, nicht auf
+# der Platte. robots.txt zeigte auf 'index.php/sitemap.xml' — einen virtuellen
+# Pfad, den WordPress beantwortet. Google hatte die erzeugten Seiten im Index,
+# bevor das Protokollfenster beginnt. Ein reiner Dateiscan meldete die
+# Kampagne als sauber.
+#
+# Dieser Zweig sucht den GENERATOR statt nur seine Ausgabe. Drei Fragen:
+#
+#   e1) Steht in active_plugins ein Eintrag, zu dem es KEINE Datei gibt?
+#       WordPress raeumt solche Eintraege beim Aufruf der Plugin-Seite selbst
+#       weg (validate_active_plugins) — ein Eintrag, der sich haelt, heisst
+#       also: entweder sieht niemand auf diese Seite, oder etwas verhindert
+#       das Wegraeumen. Leiche oder Tarnung; beides gehoert gesichtet.
+#   e2) Steht PHP in den Optionen? Ein '<?php' oder ein auto_prepend_file in
+#       wp_options hat keinen legitimen Fall — Optionen tragen Daten, keinen
+#       Code. Das ist der Ort, an dem ein Generator seinen Lader ablegt.
+#   e3) Welche Optionen sind auffaellig gross? Vorlagen und Wortlisten einer
+#       Doorway-Kampagne muessen irgendwo liegen, und wp_options ist der
+#       uebliche Ort. BEWUSST nur info + Beleg: die Schwelle ist geraten, und
+#       legitime Optionen werden gross (Transients, Page-Builder-CSS). Erst
+#       messen, dann einstufen — dieselbe Regel wie bei 7.15.
+#
+# Die Bereinigung fasst NICHTS davon an. Das ist eine offene Entscheidung
+# (#47): eine falsch entfernte Option macht eine Seite unbrauchbar, und anders
+# als bei einer Datei sieht man es nicht sofort. Bis dahin: erkennen und
+# ausweisen.
+_db_sql() {   # _db_sql <kennung> <abfrage>
+  # Pruefstand-Naht wie _wf_sql: NT_DB_ATTRAPPE nennt ein Verzeichnis mit je
+  # einer Datei <kennung>.tsv. Der Pruefbaum hat keine Datenbank.
+  if [[ -n "${NT_DB_ATTRAPPE:-}" ]]; then
+    if [[ -r "${NT_DB_ATTRAPPE}/nur" ]] \
+       && ! grep -qF "$(cat "${NT_DB_ATTRAPPE}/nur")" <<<"${REZ_KURZ}"; then
+      return 0
+    fi
+    [[ -r "${NT_DB_ATTRAPPE}/$1.tsv" ]] && cat "${NT_DB_ATTRAPPE}/$1.tsv"
+    return 0
+  fi
+  rezept_sql "$2"
+}
+
+_wp_db_persistenz() {
+  # Mit gesetzter Attrappe laeuft dieser Zweig fuer JEDE Instanz des
+  # Pruefbaums — aber nur eine hat Daten. Ohne dieses Gate bekaemen die
+  # anderen "kein PHP-Code in wp_options" als gruene Zeile, obwohl nichts
+  # gemessen wurde. Eine Entwarnung ohne Messung ist eine stille Entwarnung;
+  # die Instanzen ausserhalb der Attrappe sagen deshalb GAR nichts.
+  if [[ -n "${NT_DB_ATTRAPPE:-}" ]]; then
+    if [[ -r "${NT_DB_ATTRAPPE}/nur" ]] \
+       && ! grep -qF "$(cat "${NT_DB_ATTRAPPE}/nur")" <<<"${REZ_KURZ}"; then
+      return 0
+    fi
+  fi
+
+  # e1) active_plugins gegen die Platte.
+  local AKTIV LEICHEN=""
+  AKTIV=$(_db_sql aktive_plugins "SELECT option_value FROM ${REZ_PFX:-}options WHERE option_name='active_plugins';")
+  if [[ -n "$AKTIV" ]]; then
+    # PHP-serialisiert: a:2:{i:0;s:19:"akismet/akismet.php";…}. Gebraucht
+    # werden nur die Pfadliterale; die Laengenangaben interessieren nicht.
+    local _e
+    while IFS= read -r _e; do
+      [[ -n "$_e" ]] || continue
+      [[ -f "${REZ_PFAD}/wp-content/plugins/${_e}" ]] || LEICHEN+="${_e}"$'\n'
+    done < <(printf '%s' "$AKTIV" | grep -oE '"[^"]+\.php"' | tr -d '"')
+  fi
+  if [[ -n "$LEICHEN" ]]; then
+    befund_melden wordpress datenbank warn \
+      "${REZ_KURZ}: active_plugins führt Einträge ohne Datei auf der Platte — Leiche oder Tarnung, sichten" "$REZ_PFAD" web
+    code "$LEICHEN"
+    evidence "wp_db_plugin_leichen_$(echo "$REZ_KURZ" | tr '/.' '__')" "$LEICHEN" kunde
+    while IFS= read -r _e; do
+      [[ -n "$_e" ]] && WP_PLUGIN_LEICHEN+="${REZ_PFAD}"$'\t'"${_e}"$'\n'
+    done <<< "$LEICHEN"
+  elif [[ -n "$AKTIV" ]]; then
+    befund_melden wordpress datenbank ok "${REZ_KURZ}: alle Einträge in active_plugins liegen auf der Platte" "$REZ_PFAD"
+  else
+    # Leer heisst hier zweierlei — keine aktiven Plugins ODER Abfrage ohne
+    # Ergebnis. Beides ist keine gepruefte Aussage, also keine gruene Zeile.
+    info "${REZ_KURZ}: active_plugins leer oder nicht lesbar — Abgleich gegen die Platte entfällt"
+  fi
+
+  # e2) PHP in den Optionen. option_name ausserdem gegen die Lader-Muster der
+  # bekannten Kampagnen — der Generator des Anlassfalls versteckte sich hinter
+  # einem unauffaelligen Namen, aber sein Wert begann mit PHP.
+  local OPTCODE
+  OPTCODE=$(_db_sql optionen_php "SELECT option_name, LEFT(option_value,160) FROM ${REZ_PFX:-}options
+             WHERE option_value LIKE '%<?php%'
+                OR option_value LIKE '%auto_prepend_file%'
+                OR option_value LIKE '%base64_decode(%';")
+  if [[ -n "$OPTCODE" ]]; then
+    befund_melden wordpress datenbank crit \
+      "${REZ_KURZ}: PHP-Code in wp_options — Optionen tragen Daten, keinen Code; hier legt ein Generator seinen Lader ab" "$REZ_PFAD" web
+    code "$OPTCODE"
+    evidence "wp_db_optionen_php_$(echo "$REZ_KURZ" | tr '/.' '__')" "$OPTCODE" kunde
+    while IFS= read -r _e; do
+      [[ -n "$_e" ]] && WP_OPT_CODE+="${REZ_PFAD}"$'\t'"${_e}"$'\n'
+    done <<< "$OPTCODE"
+  else
+    befund_melden wordpress datenbank ok "${REZ_KURZ}: kein PHP-Code in wp_options" "$REZ_PFAD"
+  fi
+
+  # e3) Grosse Optionen — Rangfolge fuer die Sichtung, kein Befund.
+  local OPTGROSS
+  OPTGROSS=$(_db_sql optionen_gross "SELECT option_name, LENGTH(option_value) FROM ${REZ_PFX:-}options
+              WHERE LENGTH(option_value) >= ${WP_OPTION_GROSS_BYTES:-262144}
+              ORDER BY LENGTH(option_value) DESC LIMIT 10;")
+  if [[ -n "$OPTGROSS" ]]; then
+    info "${REZ_KURZ}: auffällig grosse Optionen (>= ${WP_OPTION_GROSS_BYTES:-262144} B) — Rangfolge für die Sichtung, kein Befund:"
+    code "$OPTGROSS"
+    evidence "wp_db_optionen_gross_$(echo "$REZ_KURZ" | tr '/.' '__')" "$OPTGROSS" kunde
+  fi
 }
 
 # ── Wordfence: die vorhandene Zweitmeinung (#17) ─────────────

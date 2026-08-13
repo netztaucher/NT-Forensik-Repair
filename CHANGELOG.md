@@ -4,6 +4,36 @@ Alle nennenswerten Änderungen an `wp_plesk_forensik.sh`.
 
 ## [unveröffentlicht]
 
+### Neu — Persistenz in der Datenbank wird erkannt (#47, Erkennungsteil)
+
+Der Doorway-Generator des Anlassfalls sass in der Installation, nicht auf der
+Platte; ein reiner Dateiscan meldete die Kampagne als sauber. `rezept_db` sucht
+jetzt den Generator statt nur seine Ausgabe:
+
+- **e1 `active_plugins` gegen die Platte.** Ein Eintrag ohne Datei ist Leiche
+  oder Tarnung — WordPress räumt solche Einträge beim Aufruf der Plugin-Seite
+  selbst weg; einer, der sich hält, hat einen Grund. ⚠️ mit Beleg.
+- **e2 PHP-Code in `wp_options`.** Optionen tragen Daten, keinen Code; hier
+  legt ein Generator seinen Lader ab. `<?php`, `auto_prepend_file`,
+  `base64_decode(` → 🔴 mit Beleg.
+- **e3 Auffällig grosse Optionen.** Vorlagen und Wortlisten einer Kampagne
+  liegen üblicherweise in `wp_options`. Bewusst nur `info` + Rangfolge: die
+  Schwelle (`WP_OPTION_GROSS_BYTES`, 256 KiB) ist geraten, und legitime
+  Optionen werden gross. Erst messen, dann einstufen — wie bei 7.15.
+
+`findings.json` bekommt `actionable.wp_db_plugin_leichen` und
+`actionable.wp_db_optionen_php` als `{pfad, eintrag}`-Objekte (additiv). **Die
+Bereinigung liest beide Listen nicht** — ob sie die Datenbank anfassen darf,
+ist eine ausdrücklich offene Entscheidung (#47): eine falsch entfernte Option
+macht eine Seite unbrauchbar, und anders als bei einer Datei sieht man es
+nicht sofort.
+
+Prüfstand: neue Naht `NT_DB_ATTRAPPE` nach dem Muster von `NT_WF_ATTRAPPE`,
+mit Gegenprobe `NT_PRUEFSTAND_OHNE_DBPROBE`. Instanzen ausserhalb der Attrappe
+sagen **gar nichts** statt „kein PHP-Code" — eine Entwarnung ohne Messung wäre
+die nächste stille Entwarnung; genau die hätte die erste Fassung erzeugt und
+wurde vom Prüfbaum gefunden.
+
 ### Neu — Abschnitt 13e: Infektions-Ursachensuche (#48)
 
 Beim Befall vom 12.08.2026 wurde der Infektionspfad **von Hand** rekonstruiert;

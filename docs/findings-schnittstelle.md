@@ -134,6 +134,8 @@ stillschweigend wie ein vollständiger Freispruch — der Fehlerfall, der zählt
 | `actionable.signatur_treffer` | Treffer aus `rezepte/*/signaturen.tsv`, alle Anwendungen. Bis v3.11 standen diese Dateien ausschliesslich im Menschentext, und dort nur die erste je Muster — Quarantäne-Kandidaten erster Ordnung, die NT-Repair nie zu sehen bekam. |
 | `actionable.plugin_veraendert` | Plugin-Codedateien, die von den Prüfsummen bei wordpress.org abweichen. |
 | `ursache.*` | Ergebnis der Infektions-Ursachensuche (Abschnitt 13e, Issue #48). Rein additiv, kein Schema-Bump. Siehe die Tabelle unten. |
+| `actionable.wp_db_plugin_leichen` | `[{pfad, eintrag}]` — Einträge in `active_plugins`, zu denen keine Datei auf der Platte liegt. Leiche oder Tarnung (#47). **Die Bereinigung liest diese Liste bewusst nicht** — ob sie die Datenbank anfassen darf, ist eine offene Entscheidung. |
+| `actionable.wp_db_optionen_php` | `[{pfad, eintrag}]` — Optionen, deren Wert PHP-Code trägt (`<?php`, `auto_prepend_file`, `base64_decode(`). Der Ort, an dem ein Doorway-Generator seinen Lader ablegt (#47). Gleiches gilt: nur erkennen und ausweisen. |
 | `run.scope_mode` / `run.abo_user` / `run.scan_paths` | Der Prüfumfang, maschinenlesbar. `werkzeuge/kundenpaket.sh` braucht ihn, um dieselbe Maskierung anzuwenden wie der Lauf: ohne ihn kann `nf_fremdkunden_maskieren` nicht entscheiden, was „eigen" ist, und maskiert dann lieber gar nicht. Ein Lauf ohne diese Felder bekommt kein automatisches Kundenpaket. |
 
 ### `ursache` — die Zeitachse und ihre Reichweite

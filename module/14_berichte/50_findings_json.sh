@@ -54,6 +54,22 @@ json_admin_arr() {
   printf '%s]' "$out"
 }
 
+# stdin: <pfad>\t<eintrag> → JSON-Array von Objekten (Persistenz-Zweig, #47)
+#
+# Objekte statt Strings aus demselben Grund wie bei json_admin_arr: ein
+# Eintrag ohne Installationspfad ist auf einem Server mit 475 vhosts nicht
+# zuzuordnen. Die Bereinigung liest diese Listen bewusst NICHT.
+json_db_arr() {
+  local first=1 out="[" pfad eintrag
+  while IFS=$'\t' read -r pfad eintrag; do
+    [ -z "${pfad}${eintrag}" ] && continue
+    [ "$first" -eq 1 ] && first=0 || out="${out},"
+    out="${out}{\"pfad\":\"$(printf '%s' "${pfad:-}" | json_esc)\""
+    out="${out},\"eintrag\":\"$(printf '%s' "${eintrag:-}" | json_esc)\"}"
+  done
+  printf '%s]' "$out"
+}
+
 # stdin: <ctime>\t<mtime>\t<pfad> → JSON-Array von Objekten (Abschnitt 13e)
 #
 # Rohe Sekunden, keine formatierten Zeitangaben. Wer die Achse
@@ -73,7 +89,9 @@ json_zeitachse_arr() {
 
 emit_findings_json() {
   local ws php suid tmpx immu cron sysd persist procs wpc fkeys aips bips suspadm nchta ncmal ncnest ncint
-  local corei coresne doorw coreinj disg rogue rogued suspadmd uzeit
+  local corei coresne doorw coreinj disg rogue rogued suspadmd uzeit dbleichen dboptcode
+  dbleichen=$(printf '%s\n' "${WP_PLUGIN_LEICHEN:-}" | json_db_arr)
+  dboptcode=$(printf '%s\n' "${WP_OPT_CODE:-}"       | json_db_arr)
   # Zeitachse aus 13e. Leer, wenn 13e nichts belastet fand oder uebersprungen
   # wurde — dann bleibt das Array leer, nicht das Feld weg.
   uzeit=$(printf '%s\n' "${U_TAB:-}" | json_zeitachse_arr)
@@ -310,6 +328,8 @@ print(json.dumps(raus, ensure_ascii=False))' 2>/dev/null || echo '{}')
     "suspect_wp_admins": ${suspadm:-[]},
     "rogue_wp_admins_detail": ${rogued:-[]},
     "suspect_wp_admins_detail": ${suspadmd:-[]},
+    "wp_db_plugin_leichen": ${dbleichen:-[]},
+    "wp_db_optionen_php": ${dboptcode:-[]},
     "nextcloud_htaccess": ${nchta:-[]},
     "nextcloud_malware": ${ncmal:-[]},
     "nextcloud_nested": ${ncnest:-[]},

@@ -285,6 +285,10 @@ jobs:
           # 13e.1. Ohne die festgelegte ctime-Folge liegen alle Funde in
           # derselben Sekunde — es gibt keine Chronologie und keine Welle mehr.
           gegenprobe "13e.1 Zeitachse"             NT_PRUEFSTAND_OHNE_ZEITFOLGE=1
+          # 12r e1–e3. Ohne die Probe traegt die Attrappe eine saubere
+          # active_plugins und keine Optionsauszuege — Leiche, PHP-Option und
+          # Groessenrangfolge verschwinden aus dem Bericht.
+          gegenprobe "12r Persistenz in der Datenbank" NT_PRUEFSTAND_OHNE_DBPROBE=1
           bash werkzeuge/goldmuster.sh vergleichen
 
       - name: Abnahmekriterium 7.15 — injiziert meldet, sauber schweigt

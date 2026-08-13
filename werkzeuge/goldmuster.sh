@@ -324,6 +324,37 @@ wordfence_attrappe_bauen() {   # <zielverzeichnis>
   } > "${Z}/issues.tsv"
 }
 
+db_attrappe_bauen() {   # <zielverzeichnis>
+  local Z="$1"
+  rm -rf "$Z"; mkdir -p "$Z"
+  # Wie die Wordfence-Attrappe: nur EINE Installation, damit der haeufigste
+  # Fall — kein Befund — auf den anderen geuebt bleibt.
+  printf '%s' "kunde-zwei.example/httpdocs" > "${Z}/nur"
+
+  # e1: zwei Eintraege. pruefstand-kev/pruefstand-kev.php LIEGT im Baum —
+  # dieser Eintrag darf keinen Befund erzeugen; er ist die eigentliche Probe.
+  # doorway-gen/loader.php liegt nirgends: der Anlassfall, Leiche oder Tarnung.
+  # NT_PRUEFSTAND_OHNE_DBPROBE=1 liefert stattdessen eine saubere Liste und
+  # eine leere Optionstabelle — der Vergleich MUSS das bemerken.
+  if [[ "${NT_PRUEFSTAND_OHNE_DBPROBE:-0}" != "1" ]]; then
+    printf 'a:2:{i:0;s:31:"pruefstand-kev/pruefstand-kev.php";i:1;s:22:"doorway-gen/loader.php";}\n' \
+      > "${Z}/aktive_plugins.tsv"
+    # e2: eine Option, deren Wert mit PHP beginnt — der Lader des Generators.
+    printf 'widget_custom_html\t<?php add_action("template_redirect", function(){ include ABSPATH."wp-content/uploads/.q"; });\n' \
+      > "${Z}/optionen_php.tsv"
+    # e3: die Wortliste der Kampagne, weit ueber der Schwelle. Dazu eine
+    # legitime grosse Option — die Rangfolge muss beide zeigen, denn sie ist
+    # ausdruecklich KEIN Befund, sondern Material fuer die Sichtung.
+    {
+      printf 'doorway_terms_cache\t1834219\n'
+      printf '_transient_dirsize_cache\t412008\n'
+    } > "${Z}/optionen_gross.tsv"
+  else
+    printf 'a:1:{i:0;s:31:"pruefstand-kev/pruefstand-kev.php";}\n' \
+      > "${Z}/aktive_plugins.tsv"
+  fi
+}
+
 pruefsummen_bauen() {   # <zielverzeichnis> <baum>
   local P="$1" W="$2"
   rm -rf "$P"; mkdir -p "$P"
@@ -1215,6 +1246,7 @@ lauf_ausfuehren() {
   NT_WEBSERVER="${NT_WEBSERVER:-nginx}" \
   NT_PMF_ATTRAPPE="${NT_PMF_ATTRAPPE-$PMFAUS}" \
   NT_WF_ATTRAPPE="${NT_WF_ATTRAPPE-$WFDATEN}" \
+  NT_DB_ATTRAPPE="${NT_DB_ATTRAPPE-$DBDATEN}" \
   PATH="${ATTRAPPE}:$PATH" \
   URSACHE_WELLE_SEK=4 \
   bash "${SELF_DIR}/wp_plesk_forensik.sh" \
@@ -1301,6 +1333,7 @@ WPSUMMEN="${ARBEIT}/wpsummen"     # lokale Plugin-Pruefsummen statt wordpress.or
 ATTRAPPE="${ARBEIT}/bin"          # wp-cli-Attrappe, kommt vor den echten PATH
 PMFAUS="${ARBEIT}/pmf_attrappe.txt"   # vorgefertigte yara-Ausgabe fuer 13c
 WFDATEN="${ARBEIT}/wf_attrappe"       # vorgefertigter Wordfence-Bestand (#17)
+DBDATEN="${ARBEIT}/db_attrappe"       # vorgefertigte wp_options-Auszuege (#47)
 # Zwingend vor jedem Lauf. Bleibt der Ordner eines fehlgeschlagenen Vergleichs
 # stehen, greift ausgabe_einsammeln per 'head -1' den ALTEN Laufordner und
 # vergleicht ihn gegen die Referenz — der naechste Lauf meldet dann eine
@@ -1313,6 +1346,7 @@ attrappe_bauen "$ATTRAPPE"
 pruefsummen_bauen "$WPSUMMEN" "$BAUM"
 pmf_attrappe_bauen "$PMFAUS" "$BAUM"
 wordfence_attrappe_bauen "$WFDATEN"
+db_attrappe_bauen "$DBDATEN"
 info "Baum gebaut: $(find "$BAUM" -type f | wc -l | tr -d ' ') Dateien in $(find "$BAUM" -maxdepth 1 -type d | tail -n +2 | wc -l | tr -d ' ') vhosts"
 
 case "$AKTION" in

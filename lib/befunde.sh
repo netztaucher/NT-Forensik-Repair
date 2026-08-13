@@ -114,6 +114,12 @@ TAMPERED_HTACCESS=""   # manipulierte .htaccess (Malware-Whitelist, bricht Admin
 # es ihre Quelle vorher nicht gab:
 PLUGIN_VERAENDERT=""   # Plugin-Codedateien, die von wordpress.org abweichen
 SIGNATUR_TREFFER=""    # Treffer aus rezepte/*/signaturen.tsv (alle Anwendungen)
+# ── Persistenz in der Datenbank (#47) ────────────────────────
+# Je Zeile: <installationspfad>\t<eintrag>. Die Bereinigung liest beide
+# Listen NICHT — ob sie die Datenbank anfassen darf, ist eine offene
+# Entscheidung. Bis dahin: erkennen und ausweisen.
+WP_PLUGIN_LEICHEN=""   # active_plugins-Eintraege ohne Datei auf der Platte
+WP_OPT_CODE=""         # Optionen mit PHP-Code (Lader eines Generators)
 WP_COUNT=0             # gefundene WordPress-Installationen. Wurde nach dem
                        # Umzug nach rezepte/ nirgends mehr gesetzt und stand
                        # dauerhaft auf 0 — auch in findings.json (#2).
