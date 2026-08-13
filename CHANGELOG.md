@@ -4,6 +4,52 @@ Alle nennenswerten Änderungen an `wp_plesk_forensik.sh`.
 
 ## [unveröffentlicht]
 
+### Neu — der Lauf belegt jetzt, dass er aus einer Fassung stammt (#55)
+
+Am 13.08.2026 wurde `/root/nt-forensik` **zwölf Minuten nach dem Start** eines
+Vorfallslaufs über 475 vhosts von einer anderen Sitzung aktualisiert. Bash liest
+das Hauptskript über einen offenen Deskriptor — die Datei war danach `(deleted)`,
+und der Lauf lief sauber zu Ende. Die Module werden aber nacheinander per
+`source` geholt: 01–07 kamen aus dem alten Stand, 08 bis 14 aus dem neuen.
+
+Der Lauf war eine Mischung aus zwei Fassungen und aus keinem einzigen Commit
+reproduzierbar. Kein Fehler, keine Warnung, nichts im Protokoll. Und
+`tool_version` ist die Angabe, mit der ein Befund später nachvollzogen wird —
+sie steht in Berichten, die an Kunden und über die BSI-/DSGVO-Entwürfe an
+Behörden gehen.
+
+Der Runner hält jetzt **vor dem ersten `source`** Inhalt und Commit fest,
+Abschnitt 14 prüft vor den Berichten erneut. Bei Abweichung ein ⚪:
+
+> Der Programmstand hat sich während des Laufs geändert (`8185ccd` → `23b0343`)
+> — die Fassungsangabe belegt diesen Lauf nicht.
+
+**Geprüft wird der Inhalt, nicht nur der Commit.** Ein Ausrollen mit `cp` oder
+rsync hinterlässt keinen neuen Commit — und trifft den laufenden Interpreter
+härter als git, das Dateien ersetzt statt sie zu überschreiben. Der Commit wird
+zusätzlich geführt, weil er die Änderung benennbar macht; sind beide Commits
+gleich und der Inhalt nicht, wurde ohne git ausgerollt.
+
+**Kein Abbruch.** Ein Vorfallslauf über drei Stunden darf daran nicht scheitern
+— er muss es nur sagen. Und ⚪ statt ⚠️: auffällig ist nicht das geprüfte
+System, sondern die Messung. Die Kundenampel bleibt unberührt, der Befund ist
+Betreibersache.
+
+Ein **leerer Hash gilt ausdrücklich nicht als Übereinstimmung**: fällt `md5sum`
+aus oder sind Dateien nicht lesbar, lieferten beide Seiten dieselbe leere
+Zeichenkette und der Vergleich meldete „unverändert" — ein Ausfall, der aussieht
+wie ein Ergebnis, und die falsche Entwarnung stünde in einem Behördenentwurf.
+
+`findings.json`: `run.programmstand_stabil`, im Fehlerfall zusätzlich
+`run.programmstand_vorher` / `…_nachher`. Die Commits stehen **nur** im
+Fehlerfall in der Datei — sonst müsste der Prüfstand seine Referenz bei jedem
+Commit neu aufnehmen, und ein Vergleich, der immer ausschlägt, ist keiner.
+
+Was das **nicht** löst: es gibt weiterhin keine Sperre gegen ein Ausrollen
+während eines Laufs. Der Nachweis ist billig und sofort richtig, die Sperre
+wäre eine eigene Entscheidung — sie müsste von jeder Stelle beachtet werden,
+die ausrollt.
+
 ### Behoben — Datenordner unter `plugins/` galten als Plugin (#39)
 
 `_wp_bestand` behandelte **jedes** Verzeichnis unter `wp-content/plugins/` als

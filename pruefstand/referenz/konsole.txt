@@ -221,6 +221,7 @@
 [1m[0;34m══════════════════════════════════════════[0m
 [1m[0;34m  14. ZUSAMMENFASSUNG[0m
 [1m[0;34m══════════════════════════════════════════[0m
+  [0;32m✓[0m Programmstand über den ganzen Lauf unverändert — die Fassungsangabe belegt diesen Lauf
 
 [1mDatenschutz[0m
   kunde/kundenbericht.md              1 fremde Kennungen maskiert
@@ -235,7 +236,7 @@
 [1m[0;32m  ANALYSE ABGESCHLOSSEN — Lauf <LAUF-ID>[0m
 [1m[0;32m══════════════════════════════════════════[0m
 
-[1mBefunde:[0m       🔴 18 kritisch, ⚠️ 22 Warnungen, ✅ 24 ok, ⚪ 10 nicht messbar
+[1mBefunde:[0m       🔴 18 kritisch, ⚠️ 22 Warnungen, ✅ 25 ok, ⚪ 10 nicht messbar
 [0;33m               10 Prüfung(en) ohne Ergebnis — das ist keine Entwarnung.[0m
                  Webshell-Mustersuche nicht ausgeführt — grep beherrscht kein -P (PCRE). Auf macOS ist BSD-grep die Vorgabe; GNU grep oder ugrep installieren. Das ist KEINE Entwarnung.
                  kunde-zwei.example/cloud.kunde-zwei.example: Werkzeug antwortet nicht verwertbar — nicht geprüft

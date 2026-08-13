@@ -293,6 +293,10 @@ jobs:
           # die neuen Zeilen verschwinden und sie zählen wieder in der
           # Angreifbarkeitsbilanz mit. Prüft das Kriterium, nicht die Fixture.
           gegenprobe "12r Verzeichnis ohne Plugin-Kopf" NT_PRUEFSTAND_OHNE_NICHTPLUGIN=1
+          # #55. Setzt den beim Start festgehaltenen Programmstand auf eine
+          # Marke, die kein Hash sein kann. Abschnitt 14 MUSS das bemerken und
+          # die Fassungsangabe für ungültig erklären.
+          gegenprobe "14 Programmstand-Wechsel"    NT_PRUEFSTAND_STAND_WECHSEL=1
           bash werkzeuge/goldmuster.sh vergleichen
 
       - name: Abnahmekriterium 7.15 — injiziert meldet, sauber schweigt
