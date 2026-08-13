@@ -427,6 +427,40 @@ Kunde 3 eine völlig normale mit der WordPress-Sitemap (kein Befund, nur der
 Zeitanker). Die Gegenprobe ist hier der eigentliche Test — eine Regel, die auf
 `/wp-sitemap.xml` anspricht, wäre wertlos.
 
+## [unveröffentlicht]
+
+### Behoben — die Entlastung wirkte nur im Bericht, nicht in findings.json
+
+Fehler in meiner Reparatur von #42, gefunden beim ersten vollständigen Lauf
+über 475 vhosts.
+
+Abschnitt 13d entlastet Mustertreffer, die gegen eine amtliche Prüfsumme
+bestätigt sind. Der **Bericht** zeigte das korrekt. Abschnitt 14 baut
+`actionable.webshell_dropper` aber aus `DROPPER_DETAIL` — und das blieb
+ungefiltert.
+
+Im Lauf standen dadurch:
+
+```
+Bericht:        398 Datei(en) … (396 entlastet)
+findings.json:  398 Kandidaten
+```
+
+Aus `actionable.webshell_dropper` holt sich **die Bereinigung ihre
+Quarantäne-Kandidaten.** Sie hätte unveränderte WordPress-Kern-Dateien
+verschoben und damit Installationen zerlegt, die nichts hatten.
+
+**Ein Bericht, der entlastet, und eine Schnittstelle, die es nicht tut, sind
+schlimmer als gar keine Entlastung:** der Betreiber liest die Entwarnung, und
+das Werkzeug handelt trotzdem.
+
+13d schreibt die gefilterte Liste jetzt zurück. Es läuft vor 14, deshalb
+genügt das. Die entlasteten Einträge bleiben im eigenen Beleg erhalten.
+
+Auf Linux verifiziert: `actionable.webshell_dropper` führt 2 Einträge, der
+Bericht sagt „2 Datei(en) (2 entlastet)" — beide Zahlen stimmen überein, und
+die Liste enthält ausschliesslich die Dateien ausserhalb jedes geprüften Kerns.
+
 ## [3.14.0] — 2026-08-12
 
 Eine Fassung mit einem Thema: **der Schwachstellenabgleich läuft nicht mehr
