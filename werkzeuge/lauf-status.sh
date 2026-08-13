@@ -126,16 +126,37 @@ status_zeigen() {
     # Was gezaehlt wird, steht im Text — die Anzeige muss es nicht wissen.
     printf '    %s von %s — %s\n' "$u_i" "$u_n" "$u_txt"
     # Nur hier ist eine Hochrechnung ehrlich: gleichartige Schritte, gezählt.
-    if [[ "${u_i:-0}" -gt 2 && "${u_n:-0}" -gt "${u_i:-0}" ]]; then
-      local je=$(( (jetzt - a_zeit) / u_i ))
-      # Bei sehr schnellen Schritten ist die Sekunde zu grob — dann die Rate.
-      if [[ "$je" -ge 1 ]]; then
+    #
+    # BEZUGSPUNKT IST DER UNTERSCHRITT, NICHT DER ABSCHNITT.
+    #
+    # Bis hierher stand hier (jetzt - a_zeit) / u_i — die Laufzeit des ganzen
+    # Abschnitts gegen einen Zähler, der bei jedem neuen Unterschritt wieder
+    # bei null beginnt. Am 13.08.2026 im laufenden Messlauf beobachtet:
+    # 13b.1 war nach 26 min durch, 13b.2 zählte 2.200 von 12.158 — die Anzeige
+    # rechnete 1958 s / 2200 und meldete "≈ 1 je Sekunde, noch 2 h 49 min".
+    # Der Rohverlauf zeigte 200 Schritte je 32 s, also 6,2/s und knapp 27 min.
+    # Faktor sechs daneben, und zwar in die pessimistische Richtung.
+    #
+    # Eine Restschätzung, der man nicht trauen kann, ist schlimmer als keine:
+    # dieses Werkzeug weist eine fehlende Schätzung ausdrücklich aus, statt zu
+    # raten. Dann darf die vorhandene nicht raten.
+    #
+    # Gerechnet wird aus der ERSTEN Zeile desselben Unterschritts. Und ohne
+    # Zwischenrunden: Rest = offen × verstrichen / erledigt. Eine gerundete
+    # Rate von 0 oder 1 verzerrt sonst genau bei den schnellen Schritten.
+    local b_zeit b_i
+    IFS=$'\t' read -r _ b_zeit b_i _ _ < <(
+      awk -F'\t' -v t="$u_txt" '$1=="unterschritt" && $5==t' "$spur" | head -1)
+    local u_dt=$(( jetzt - ${b_zeit:-$a_zeit} ))
+    local u_di=$(( u_i - ${b_i:-0} ))
+    if [[ "$u_di" -gt 2 && "$u_dt" -gt 0 && "${u_n:-0}" -gt "${u_i:-0}" ]]; then
+      local rest=$(( (u_n - u_i) * u_dt / u_di ))
+      if [[ "$u_dt" -ge "$u_di" ]]; then
         printf '    ≈ %s je Schritt, noch %s für diesen Abschnitt\n' \
-               "$(dauer "$je")" "$(dauer $(( je * (u_n - u_i) )))"
+               "$(dauer $(( u_dt / u_di )))" "$(dauer "$rest")"
       else
-        local proSek=$(( u_i / (jetzt - a_zeit + 1) ))
         printf '    ≈ %s je Sekunde, noch %s für diesen Abschnitt\n' \
-               "$proSek" "$(dauer $(( (u_n - u_i) / (proSek > 0 ? proSek : 1) )))"
+               "$(( u_di / u_dt ))" "$(dauer "$rest")"
       fi
     fi
   fi
