@@ -541,6 +541,66 @@ Aufgefallen bei der Portabilitätsprobe vor dem ersten Lauf.
 Der Zeitstempel ist raus: die mtime der Zustandsdatei ist ohnehin der
 Zeitpunkt der letzten Schreiboperation, und die liest die Anzeige von dort.
 
+## [unveröffentlicht]
+
+### Hinzugefügt — der Name in der .htaccess-Freigabeliste verrät die Shell (#46)
+
+Die Regel, die den Befall vom 12.08.2026 gefunden hätte, ohne dass Größe,
+Endung oder Verschleierung eine Rolle spielen.
+
+**Der Befund, aus dem sie stammt.** §7.3 stufte 29 echte Hintertüren als „oft
+legitim, manuell prüfen" ein: `filefuns.php` ist **5579 Bytes**, die
+Größenschwelle steht auf 3000. Gleichzeitig enthielt die 🔴-Liste 398 Dateien,
+davon echt: **null**.
+
+**Warum die Schwelle anzuheben der falsche Weg ist** — jetzt gemessen, mit
+aktivem 13d:
+
+| Schwelle | zusätzlich in Stufe 1 | Stufe 1 gesamt |
+|---:|---:|---:|
+| 3000 B (heute) | — | 251 |
+| 5000 B | +71 | 322 |
+| **6000 B** (nötig für 5579 B) | **+158** | **409** |
+| 8000 B | +278 | 529 |
+
+Um eine Schadcode-Familie zu fassen, wüchse die kritische Liste um **63 %** —
+mit Dateien derselben Machart wie die 113 Vendor-Treffer, die sie heute schon
+unbrauchbar machen.
+
+**Was stattdessen trennt.** Ein Angreifer, der seine Ablage per `.htaccess`
+absichert, **muss** seinen eigenen Dateinamen freigeben — sonst sperrt ihn
+seine eigene Härtung aus. In der Messung stand er im Klartext zwischen den
+Kerndateien:
+
+```
+58x filefuns.php      ← die Verbreiter-Shell
+47x index.php
+29x xmlrpc.php, wp-login.php, wp-load.php, wp-cron.php, …
+```
+
+Die 29er-Gruppe ist ein vollständiger Satz WordPress-Einstiegspunkte, also
+legitime Härtung. `filefuns.php` passt in kein Schema.
+
+**Zwei Bedingungen, beide nötig:** der Name steht nicht auf der Liste
+bekannter Einstiegspunkte, **und** eine Datei dieses Namens existiert im selben
+Verzeichnis.
+
+Die zweite ist die wichtigere. Im Vorfall nannten die Freigabelisten rund 30
+Shell-Namen (`adminfuns.php`, `connects.php`, `epinyins.php` …) — vorhanden war
+**genau einer**. Ohne die Existenzprüfung meldete die Regel 30 Dateien, von
+denen 29 nicht da sind.
+
+Neu: Abschnitt **7.6b**, `HTACCESS_NAMEN_OK` in `lib/konfig.sh`, und der eigene
+Schlüssel `actionable.htaccess_fremdname` — nicht in `webshell_dropper`
+hineingemischt, damit die Herkunft eines Quarantänekandidaten ablesbar bleibt.
+
+**Prüfbaum, drei Lagen:** `filefuns.php` freigegeben und vorhanden → 🔴;
+`index.php`/`wp-login.php`/`xmlrpc.php` freigegeben und vorhanden → kein
+Befund; `bild.php` freigegeben, liegt aber woanders → kein Befund.
+
+Die mittlere ist die eigentliche Gegenprobe: schlägt die Regel dort an, meldet
+sie jede gehärtete Installation und ist wertlos.
+
 ## [3.14.0] — 2026-08-12
 
 Eine Fassung mit einem Thema: **der Schwachstellenabgleich läuft nicht mehr

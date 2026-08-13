@@ -43,6 +43,11 @@ CORE_INJECTED=""       # veränderte Core-Dateien (verify-checksums "doesn't ver
 CORE_SNE=""            # Core-fremde Dateien (verify-checksums "should not exist")
 DOORWAY_DIRS=""        # Verzeichnisse mit Doorway-.htaccess-Signatur
 CORE_INJECT_HITS=""    # Dateien mit @include base64_decode() (Bootstrap-Injektion)
+# Dateien, die in einer .htaccess NAMENTLICH freigegeben sind, zu keinem
+# bekannten Einstiegspunkt gehoeren — und dort liegen. Fuer dieses Muster gibt
+# es keinen legitimen Fall: wer seine Ablage haertet, muss seinen eigenen
+# Dateinamen eintragen, sonst sperrt er sich selbst aus (Abschnitt 7.6b, #46).
+WEBSHELL_NAMEN=""
 DISGUISED_PAYLOADS=""  # als Nicht-PHP getarnte Payloads (<?php in .ttf/.png/.gif/.css…)
 ROGUE_ADMINS=""        # via wp-cli-Fallback gefundene Angreifer-Admins
 # ── Handlungsfaehige Fassung derselben Konten ────────────────

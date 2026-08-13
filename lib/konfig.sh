@@ -576,6 +576,27 @@ PATTERN_REGEX='\$\{\s*\$[a-zA-Z0-9_]+(\s*\.\s*\$[a-zA-Z0-9_]+)+\s*\}|eval\s*\(\s
 #
 # Der Anlass: eine Filemanager-Shell nutzte shell_exec voellig offen. Die
 # exec-Familie fehlte in PATTERN_REGEX vollstaendig, die Shell blieb unsichtbar.
+# ── Namen, die in einer .htaccess-Freigabeliste stehen DUERFEN ──────────────
+#
+# Gemessen am echten Befall vom 12./13.08.2026: 29 .htaccess gaben je denselben
+# Satz WordPress-Kerndateien frei — das ist legitime Haertung (Zugriff auf
+# alles sperren, die Einstiegspunkte wieder oeffnen). Eine dreissigste Datei
+# stand daneben und passte in kein Schema:
+#
+#   58x filefuns.php      <- die Verbreiter-Shell
+#   47x index.php
+#   29x xmlrpc.php, wp-login.php, wp-load.php, wp-cron.php, …
+#
+# Der Angreifer MUSS seinen Dateinamen dort eintragen, sonst sperrt seine
+# eigene Haertung ihn aus. Genau das macht die Liste zum Verraeter — und zwar
+# unabhaengig von Groesse, Endung und Verschleierung. filefuns.php ist 5579 B
+# und rutschte deshalb an der Groessenschwelle von Abschnitt 7.3 vorbei.
+#
+# Die bekannten Plugin-Endpunkte stammen aus derselben Messung: 68 der 97
+# Freigabelisten waren legitime Haertung fuer webp-realizer.php, matomo.php
+# und gm_dynamic.css.php.
+HTACCESS_NAMEN_OK="${HTACCESS_NAMEN_OK:-^(index|xmlrpc|wp-activate|wp-blog-header|wp-comments-post|wp-config|wp-config-sample|wp-cron|wp-links-opml|wp-load|wp-login|wp-mail|wp-settings|wp-signup|wp-trackback|admin-ajax|admin-post|wp-admin/admin-ajax|webp-realizer|matomo|gm_dynamic\\.css)\\.php$}"
+
 PATTERN_REGEX_MED='\b(shell_exec|passthru|popen|proc_open|pcntl_exec)\s*\(|\bsystem\s*\(|\bgoto\s+[A-Za-z0-9_]{3,}\s*;|chr\s*\(\s*[0-9]+\s*\)\s*\.\s*chr\s*\(|HTTP_USER_AGENT.*\b(Googlebot|bingbot|crawler|curl)\b|(md5|sha1|password_verify)\s*\(\s*\$_(POST|GET|REQUEST|COOKIE)'
 
 # Schwelle: Dropper sind fast reine Obfuskation → klein. Legitime
