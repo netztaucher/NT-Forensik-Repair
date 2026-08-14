@@ -370,6 +370,11 @@ jobs:
           # #46. Dieselbe Datei mit demselben Muster, einmal unter vendor/ und
           # einmal daneben. Geprüft wird die Trennung, nicht die Anwesenheit.
           gegenprobe "13d Fremdbibliotheken"       NT_PRUEFSTAND_OHNE_VENDORFILTER=1
+          # 7.16. Ohne die Zerlegung steht der Funktionsname ausgeschrieben da —
+          # dann darf die Regel NICHT mehr anschlagen. Die Textverkettung
+          # daneben bleibt in beiden Fällen stumm; sie ist die Gegenprobe
+          # gegen eine Regel, die jede Sprachdatei meldet.
+          gegenprobe "7.16 zerlegte Funktionsnamen" NT_PRUEFSTAND_OHNE_ZERLEGT=1
           # #55. Setzt den beim Start festgehaltenen Programmstand auf eine
           # Marke, die kein Hash sein kann. Abschnitt 14 MUSS das bemerken und
           # die Fassungsangabe für ungültig erklären.

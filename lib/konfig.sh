@@ -622,6 +622,26 @@ DROPPER_MAX_BYTES=3000
 ZEITSTEMPEL_ZUSATZ_SEK=2592000     # 30 Tage
 ZEITSTEMPEL_ALLEIN_SEK=7776000     # 90 Tage
 
+# ── Zerlegte Funktionsnamen (7.16) ───────────────────────────
+# Drei oder mehr einzeln gequotete Zeichen, per Punkt verkettet:
+#   $o="f"."o"."p"."e"."n";
+# Zur Laufzeit ein gewoehnlicher Funktionsname, fuer jede Signatur ueber
+# Funktionsnamen unsichtbar. Legitimer Code tut das nicht — gemessen auf
+# 6,4 Mio Pfaden: 5 Treffer, 0 Fehlalarme.
+# Bewusst ERE und nicht PCRE: dieser Abschnitt soll auch dort laufen, wo
+# grep kein -P kann (#67).
+#
+# KEIN ${VAR:-...} HIER. Das Muster enthaelt {3,} — bash liest dessen
+# schliessende Klammer als Ende der Ersetzung, und die Variable bleibt LEER.
+# Ein leeres Muster gibt `grep -lE ""` jede Datei zurueck: aus einem Befund
+# ohne legitimen Fall waeren schlagartig alle PHP-Dateien des Servers
+# geworden. Beim Bauen genau so passiert.
+if [[ -z "${ZERLEGT_REGEX:-}" ]]; then
+  _zq="[\"']"                       # ein Anfuehrungszeichen, beide Sorten
+  ZERLEGT_REGEX="(${_zq}[A-Za-z]${_zq}\\.){3,}"
+  unset _zq
+fi
+
 # ── Fremdbibliotheken (13d, #46) ─────────────────────────────
 # Verzeichnisse, deren Inhalt nicht vom Betreiber stammt, sondern von einem
 # Abhaengigkeitsverwalter. Fuer sie gibt es keinen Pruefsummensatz (#30) —

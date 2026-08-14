@@ -993,6 +993,27 @@ PHP
   printf '<?php\n// Pruefstand: dieselbe Machart, aber ausserhalb jedes Kerns\n$x = "%s"; @eval($_POST[%sc%s]);\n' \
          "$(_hexkette)" "'" "'" > "${k2}/wp-content/uploads/pruefstand/dropper.php"
 
+  # ── Zerlegte Funktionsnamen (7.16) ───────────────────────────────────
+  # Die Machart, die auf kundenserver42 fuenf Verfahren ueberstanden hat:
+  # der Angreifer schreibt nicht `fopen`, sondern "f"."o"."p"."e"."n".
+  #
+  # Daneben die GEGENPROBE, und sie ist der eigentliche Test: eine legitime
+  # Textverkettung. Eine Regel, die dort anschlaegt, meldet jede zweite
+  # Sprachdatei.
+  #
+  # NT_PRUEFSTAND_OHNE_ZERLEGT=1 schreibt den Funktionsnamen aus — dann darf
+  # es keinen Treffer mehr geben.
+  mkdir -p "${k2}/wp-content/uploads/pruefstand"
+  if [[ "${NT_PRUEFSTAND_OHNE_ZERLEGT:-0}" != "1" ]]; then
+    printf '<?php\n$o="f"."o"."p"."e"."n"; $h=$o($_GET["d"],"w");\n' \
+      > "${k2}/wp-content/uploads/pruefstand/zerlegt.php"
+  else
+    printf '<?php\n$o="fopen"; $h=$o($_GET["d"],"w");\n' \
+      > "${k2}/wp-content/uploads/pruefstand/zerlegt.php"
+  fi
+  printf '<?php\n$gruss = "Guten"." "."Tag"." "."allerseits";\n' \
+    > "${k2}/wp-content/uploads/pruefstand/textverkettung.php"
+
   # ── Fremdbibliothek mit Mustertreffer (#46) ──────────────────────────
   # Der Fall, der die Quarantaeneliste unbrauchbar machte: legitimer
   # Bibliothekscode, der ein Muster enthaelt. Auf dem echten Server 156 von

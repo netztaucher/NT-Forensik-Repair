@@ -755,3 +755,71 @@ ${INJ_TREFFER}" kunde
     ok "Keine grosse Datei mit auffälliger Verteilung"
   fi
 fi
+
+# ============================================================
+h2 "7.16 Zerlegte Funktionsnamen"
+# WARUM DIESER ABSCHNITT EXISTIERT
+#
+# Am 14.08.2026 stand auf kundenserver42 eine Webshell, die FUENF Verfahren
+# ueberstanden hat:
+#
+#   /var/www/vhosts/web89…/httpdocs/chica/wp-includes/wp-extended.php
+#   32.985 B, 947 Zeilen, 10x system() mit $_REQUEST, 4x file_put_contents
+#
+#   7.3          Muster greifen nicht — die Namen sind zerlegt
+#   Pruefsummen  Instanz stand nicht in der Whitelist
+#   7.6b         keine .htaccess gibt sie frei
+#   Imunify      dieser vhost hat keins
+#   13e.2        haette INODE gemeldet, aber nur fuer bereits belastete Dateien
+#
+# Gefunden hat sie erst die Suche nach der MACHART. Der Angreifer schreibt
+# nicht `fopen`, sondern:
+#
+#   $o="f"."o"."p"."e"."n";  $sc="s"."c"."a"."n"."d"."i"."r";
+#
+# Zur Laufzeit dasselbe, fuer jede Signatur ueber Funktionsnamen unsichtbar.
+#
+# GEMESSEN, NICHT ANGENOMMEN
+# Auf 6,4 Millionen Pfaden: 5 Treffer. Vier davon belegte Malware
+# (3x wplogbak.php, 1x xmlrpc.php), der fuenfte war die Shell oben. Kein
+# einziger Fehlalarm. Legitimer Code setzt Bezeichner nicht aus Einzelzeichen
+# zusammen — es gibt keinen Grund dafuer ausser Verschleierung.
+#
+# DESHALB KEINE ZUSATZBEDINGUNG. Keine Groessenschwelle, keine Namensliste,
+# keine Ortsbeschraenkung. Die Machart allein traegt, und wer sie mit einer
+# Vorannahme verengt, verliert genau den Fall, fuer den sie gebaut ist.
+if [[ "${NF_ZERLEGT_AUS:-0}" == "1" ]]; then
+  info "Suche nach zerlegten Funktionsnamen abgeschaltet (NF_ZERLEGT_AUS)"
+else
+  # fortschritt_strom ist ein FILTER in der Pipe, kein Kommando-Wrapper. In der
+  # Wrapper-Form bekommt sein awk `find`, `-type`, `f` … als Dateinamen, und die
+  # Pipeline steht: xargs wartet auf ein awk, das auf nichts wartet. Beim Bauen
+  # genau so passiert — der Prüflauf hing 14 Minuten ohne eine Zeile Ausgabe.
+  # Reihenfolge wie in 7.15: erst den eigenen Laufordner heraus, dann zählen,
+  # dann auf NUL umstellen.
+  ZERLEGT=$(find "${SCAN_PATHS[@]}" -type f -name '*.php' 2>/dev/null \
+    | nf_strip_self \
+    | fortschritt_strom "7.16 zerlegte Namen" \
+    | tr '\n' '\0' \
+    | xargs -0 -r grep -lE "${ZERLEGT_REGEX}" 2>/dev/null || true)
+  if [[ -n "$ZERLEGT" ]]; then
+    _z_n=$(printf '%s\n' "$ZERLEGT" | grep -c . || echo 0)
+    crit "${_z_n} Datei(en) setzen Funktionsnamen aus Einzelzeichen zusammen — für dieses Muster gibt es keinen legitimen Fall" web
+    code "$(printf '%s\n' "$ZERLEGT" | awk 'NR<=30')"
+    evidence "zerlegte_funktionsnamen" "$(
+      while IFS= read -r _f; do
+        [[ -n "$_f" ]] || continue
+        printf '=== %s ===\nGroesse: %s B | mtime: %s | ctime: %s\nSHA256: %s\nTreffer: %s\n\n' \
+          "$_f" "$(datei_meta "$_f" groesse 2>/dev/null)" \
+          "$(datei_meta "$_f" mtime 2>/dev/null)" "$(datei_meta "$_f" ctime 2>/dev/null)" \
+          "$(sha256sum "$_f" 2>/dev/null | awk '{print $1}')" \
+          "$(grep -oE "${ZERLEGT_REGEX}" "$_f" 2>/dev/null | head -2 | tr '\n' ' ')"
+      done <<< "$ZERLEGT"
+    )" kunde
+    while IFS= read -r _f; do
+      [[ -n "$_f" ]] && ZERLEGTE_NAMEN+="$_f"$'\n'
+    done <<< "$ZERLEGT"
+  else
+    ok "Keine Datei mit zerlegten Funktionsnamen"
+  fi
+fi

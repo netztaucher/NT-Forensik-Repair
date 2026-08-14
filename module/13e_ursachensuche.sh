@@ -193,7 +193,7 @@ else
           U_MASSEN=$(( U_MASSEN + 1 ))
           _u_n=$(( _u_n + 1 ))
           [[ "$_u_n" -le "${URSACHE_ACHSE_MAX:-60}" ]] && \
-            U_ACHSE+="$(_u_epoche_str "$_b")  ▓ MASSENVORGANG: ${_d} Dateien in $(_u_dauer "$_c"), ${_e} davon mit erhaltener alter mtime — Wiederherstellung oder Migration, kein Schreibvorgang eines Angreifers"$'\n'
+            U_ACHSE+="$(_u_epoche_str "$_b")  ▓ MASSENVORGANG: ${_d} Dateien in $(_u_dauer "$_c"), ${_e} davon mit erhaltener alter mtime — Wiederherstellung oder Migration. Das sagt, WIE geschrieben wurde, nicht WAS: eine Wiederherstellung kann Schadcode mitbringen"$'\n'
         else
           U_WELLEN=$(( U_WELLEN + 1 ))
         fi
