@@ -308,6 +308,10 @@ print(json.dumps(raus, ensure_ascii=False))' 2>/dev/null || echo '{}')
   "metrics": {
     "webshell_count": ${WEBSHELL_COUNT:-0},
     "webshell_review": ${WEBSHELL_REVIEW:-0},
+    "webshell_count_roh": ${WEBSHELL_COUNT_ROH:-0},
+    "webshell_entlastet": ${WEBSHELL_ENTLASTET:-0},
+    "webshell_review_roh": ${WEBSHELL_REVIEW_ROH:-0},
+    "webshell_review_entlastet": ${WEBSHELL_REVIEW_ENTLASTET:-0},
     "uploads_guards_gefiltert": ${GUARD_COUNT:-0},
     "injected_core_files": ${n_corei:-0},
     "doorway_dirs": ${n_doorw:-0},

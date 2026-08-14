@@ -171,8 +171,32 @@ fi
 # verloren.
 DROPPER_DETAIL="$_D_REST"
 
+# ── UND DIE ZAEHLER MUESSEN MIT (#64) ───────────────────────────────────
+#
+# Die Liste zurueckzuschreiben allein genuegt nicht. WEBSHELL_COUNT stammt aus
+# 7.3 und stand damit weiterhin auf dem Stand VOR der Entlastung. Gemessen am
+# Lauf 20260813_150137_global: metrics.webshell_count nannte 398, waehrend
+# actionable.webshell_dropper 292 Eintraege hatte — 36 % Abweichung in
+# derselben Datei.
+#
+# Und der Zaehler bleibt nicht in findings.json. Er steht im KUNDENBERICHT
+# ("398 Schadcode-Dateien im Webverzeichnis gefunden") und in der Tabelle der
+# BSI-Meldung. Dort waren 106 Dateien mitgezaehlt, die gegen amtliche
+# Pruefsummen als unveraendert bestaetigt sind.
+#
+# Der rohe Wert geht nicht verloren, er bekommt einen eigenen Namen. Eine
+# Entlastung, die nur die Zahl kleiner macht, ohne zu sagen wieviel, waere
+# dieselbe Undurchsichtigkeit von der anderen Seite.
+WEBSHELL_COUNT_ROH="${WEBSHELL_COUNT:-0}"
+WEBSHELL_COUNT="${_D_N:-0}"
+WEBSHELL_ENTLASTET="${_D_NW:-0}"
+
 # ── Stufe 2: groessere Dateien, Sichtung ─────────────────────────────────
 _einordnen "${REVIEW_DETAIL:-}"
+REVIEW_DETAIL="$_REST"
+WEBSHELL_REVIEW_ROH="${WEBSHELL_REVIEW:-0}"
+WEBSHELL_REVIEW="${_N_REST:-0}"
+WEBSHELL_REVIEW_ENTLASTET="${_N_WEG:-0}"
 if [[ "${_N_REST:-0}" -gt 0 ]]; then
   warn "Obfuskations-Muster in ${_N_REST} größeren Datei(en) — manuell prüfen (oft legitime Frameworks)$(_entlastet_satz "$_N_WEG")" web
   evidence "webshell_review_gross" "$_REST" kunde
@@ -180,6 +204,10 @@ fi
 
 # ── Gefaehrliche Funktionen in kleinen Dateien ───────────────────────────
 _einordnen "${MED_DETAIL:-}"
+MED_DETAIL="$_REST"
+MED_COUNT_ROH="${MED_COUNT:-0}"
+MED_COUNT="${_N_REST:-0}"
+MED_ENTLASTET="${_N_WEG:-0}"
 if [[ "${_N_REST:-0}" -gt 0 ]]; then
   warn "Gefährliche Funktionen (exec-Familie, Bot-Ausblendung, Login-Gate) in ${_N_REST} kleinen Datei(en) — sichten$(_entlastet_satz "$_N_WEG")" web
   code "$(printf '%s\n' "$_REST" | grep '^=== ' | sed 's|=== ||;s| ===||' | awk 'NR<=20')"

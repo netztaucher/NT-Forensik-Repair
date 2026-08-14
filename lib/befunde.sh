@@ -10,6 +10,17 @@
 # Neuen Befund ergaenzen heisst: hier eine Zeile eintragen.
 # ============================================================
 
+# ── Zaehler vor und nach der Entlastung durch 13d (#64) ──────
+# 7.3 zaehlt, 13d entlastet. Bis v3.15 blieben die Zaehler auf dem Stand VOR
+# der Entlastung stehen, waehrend die Listen danach gefuehrt wurden — die
+# Zahl im Kundenbericht und in der BSI-Meldung war damit zu hoch.
+# Die rohen Werte bleiben erhalten: eine Entlastung, die nur die Zahl kleiner
+# macht, ohne zu sagen wieviel, waere dieselbe Undurchsichtigkeit von der
+# anderen Seite.
+WEBSHELL_COUNT_ROH=0;        WEBSHELL_ENTLASTET=0
+WEBSHELL_REVIEW_ROH=0;       WEBSHELL_REVIEW_ENTLASTET=0
+MED_COUNT_ROH=0;             MED_ENTLASTET=0
+
 # ── Programmstand waehrend des Laufs (#55) ───────────────────
 # Der Runner haelt Inhalt und Commit VOR dem ersten `source` fest; Abschnitt
 # 14 prueft vor den Berichten erneut. Vorgabe ist "stabil" — ein Lauf ohne
