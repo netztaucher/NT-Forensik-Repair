@@ -296,6 +296,21 @@ jobs:
                   fehler.append('Kern von Kunde 3 IST geprüft — die Datei hätte entlastet werden müssen')
               if not k4:
                   fehler.append('Kern von Kunde 4 wurde NICHT geprüft — die Datei darf nicht entlastet werden')
+          # 7.2 — die Abschichtung darf den Ort nicht mit dem Format
+          # verwechseln (#65). Die getarnte Shell LIEGT im WPML-Cache, sieht
+          # aber nicht wie ein Twig-Template aus: sie gehört in die
+          # Quarantäneliste, nicht in die Sichtung.
+          erz = a.get('php_in_uploads_erzeugt', [])
+          upl = a.get('php_in_uploads', [])
+          print(f"php_in_uploads   {len(upl):>5}   erzeugt {len(erz):>5}")
+          if not any('getarnt.php' in e.get('pfad','') for e in erz) \
+             and not any('getarnt.php' in p for p in upl):
+              fehler.append('Prüfbaum erzeugt keine getarnte Datei im Cache-Verzeichnis — die Abschichtung ist ungeprüft')
+          if any('getarnt.php' in e.get('pfad','') for e in erz):
+              fehler.append('getarnt.php wurde abgeschichtet, obwohl sie das Format nicht trägt — Ortsregel statt Formatregel')
+          for _erw in ('WPML', 'TCPDF', '__halt_compiler'):
+              if not any(_erw in e.get('eintrag','') for e in erz):
+                  fehler.append(f'kein abgeschichteter Treffer vom Typ {_erw} — dieser Erzeuger ist ungeprüft')
           if m['webshell_count_roh'] == 0:
               # Kein Abbruch: ob der Prüfbaum auf dieser Plattform überhaupt
               # Mustertreffer erzeugt, ist eine eigene Frage. Aber sie muss
@@ -439,6 +454,11 @@ jobs:
           # daneben bleibt in beiden Fällen stumm; sie ist die Gegenprobe
           # gegen eine Regel, die jede Sprachdatei meldet.
           gegenprobe "7.16 zerlegte Funktionsnamen" NT_PRUEFSTAND_OHNE_ZERLEGT=1
+          # 7.2. Der Schalter gibt der getarnten Shell den Twig-Kopf. Sie
+          # rutscht dann in die Sichtungsstufe — der Vergleich muss das sehen.
+          # Ohne diese Gegenprobe wäre die Abschichtung durch "schichtet immer
+          # ab" zu bestehen, und das ist genau der teure Fehler.
+          gegenprobe "7.2 Erzeuger-Abschichtung"   NT_PRUEFSTAND_OHNE_ERZEUGERFILTER=1
           # #55. Setzt den beim Start festgehaltenen Programmstand auf eine
           # Marke, die kein Hash sein kann. Abschnitt 14 MUSS das bemerken und
           # die Fassungsangabe für ungültig erklären.

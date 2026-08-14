@@ -55,12 +55,12 @@
 | Indikator | Wert |
 |---|---|
 | Kritische Befunde | 18 |
-| Warnungen | 22 |
+| Warnungen | 23 |
 | Fehlgeschlagene SSH-Login-Versuche | 0 |
 | Scanner-Aktivität in Web-Logs (Treffer) | 0 |
 | Verdächtige POST-Requests (Webshell-Muster) | 0 |
 | Webshell-Verdachtsdateien im Dateisystem | 0 |
-| Schadcode-Fundstellen gesamt (alle Quellen) | 27 |
+| Schadcode-Fundstellen gesamt (alle Quellen) | 28 |
 | Davon noch einzuordnen | 1 |
 | Domains auf dem Server (Mitbetroffenheit möglich) | 0 |
 

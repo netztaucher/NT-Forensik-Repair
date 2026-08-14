@@ -30,13 +30,14 @@
 [1m[0;34m══════════════════════════════════════════[0m
 
 [0;36m▶ 7.0 Datei-Inventar (Inode und Zeitstempel sichern)[0m
-  [0m·  Inventar: 656 Datei(en) erfasst, davon 656 mit Anlegezeit (belege/00_dateien.tsv)
+  [0m·  Inventar: 660 Datei(en) erfasst, davon 660 mit Anlegezeit (belege/00_dateien.tsv)
 
 [0;36m▶ 7.1 Kürzlich veränderte PHP-Dateien (letzte 30 Tage)[0m
   [0;33mDurchsuche Webspace (kann dauern...)[0m
   [0m·  Kürzlich veränderte .php-Dateien:
 
 [0;36m▶ 7.2 PHP-Dateien in Upload-Verzeichnissen[0m
+  [0;33m⚠[0m  3 PHP-Datei(en) in Upload-Verzeichnissen sind erzeugter Code bekannten Formats — nicht in Quarantäne, aber zu sichten
   [0;31m✗[0m  [1mPHP-Dateien in Upload-Verzeichnissen (nach Guard-Filter, extrem verdächtig; 6 Guard-/Plugin-Dateien gefiltert)[0m
 
 [0;36m▶ 7.3 Webshell-Muster (Inhalt) — zweistufig[0m
@@ -247,7 +248,7 @@
 [1m[0;32m  ANALYSE ABGESCHLOSSEN — Lauf <LAUF-ID>[0m
 [1m[0;32m══════════════════════════════════════════[0m
 
-[1mBefunde:[0m       🔴 18 kritisch, ⚠️ 22 Warnungen, ✅ 27 ok, ⚪ 12 nicht messbar
+[1mBefunde:[0m       🔴 18 kritisch, ⚠️ 23 Warnungen, ✅ 27 ok, ⚪ 12 nicht messbar
 [0;33m               12 Prüfung(en) ohne Ergebnis — das ist keine Entwarnung.[0m
                  Webshell-Mustersuche nicht ausgeführt — grep beherrscht kein -P (PCRE). Auf macOS ist BSD-grep die Vorgabe; GNU grep oder ugrep installieren. Das ist KEINE Entwarnung.
                  kunde-zwei.example/cloud.kunde-zwei.example: Werkzeug antwortet nicht verwertbar — nicht geprüft

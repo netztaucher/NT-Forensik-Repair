@@ -71,6 +71,7 @@ PHP_IN_UPLOADS_RAW=$(find "${SCAN_PATHS[@]}" \
 # Bekannte Guard-/Plugin-Dateien herausfiltern (Avia, LayerSlider, BackWPup,
 # Borlabs etc. legen legitime index.php/Cache-PHP in uploads/ ab)
 PHP_IN_UPLOADS=""
+PHP_IN_UPLOADS_ERZEUGT=""
 GUARD_COUNT=0
 if [[ -n "$PHP_IN_UPLOADS_RAW" ]]; then
   while IFS= read -r f; do
@@ -127,8 +128,59 @@ if [[ -n "$PHP_IN_UPLOADS_RAW" ]]; then
     if [[ "$fsize" -lt 2000 ]] && head -c 120 "$f" 2>/dev/null | grep -q "ABSPATH"; then
       GUARD_COUNT=$((GUARD_COUNT+1)); continue
     fi
+    # ── Erzeugte Dateien bekannten Formats (Sichtungsstufe) ──────────
+    #
+    # WARUM INHALT UND NICHT PFAD
+    #
+    # Am 14.08.2026 waren 236 von 282 Treffern dieses Abschnitts von genau
+    # drei Erzeugern: WPML-Twig-Cache (162), TCPDF-Schriftmetriken (66) und
+    # die Einstellungsdatei von All-In-One-Security (8). Eine Pfadregel
+    # (*/uploads/cache/wpml/*) haette sie alle beseitigt — und zugleich drei
+    # Verzeichnisse geschaffen, in denen eine Shell unsichtbar liegt. Das
+    # sind beschreibbare Ablagen; das ist der Grund, warum sie hier auffallen,
+    # und derselbe Grund macht sie als Versteck attraktiv.
+    #
+    # Erkannt wird deshalb das FORMAT, nicht der Ort. Wer eine Shell in
+    # uploads/cache/wpml/twig/ legt, muss sie als kompiliertes Twig-Template
+    # mit WPML-Namensraum tarnen — dann faellt sie in die Sichtung, nicht aus
+    # dem Bericht.
+    #
+    # UND SIE VERSCHWINDEN NICHT. Eigener Topf, eigene Zahl, eigene Liste in
+    # findings.json. NT-Repair nimmt sie nicht in Quarantaene, aber sie stehen
+    # da. Das ist der Unterschied zum GUARD_COUNT darueber: dort liegen
+    # Dateien, die nachweislich nichts ausfuehren koennen (leer, ABSPATH-
+    # Waechter). Ein Twig-Cache kann sehr wohl etwas ausfuehren.
+    _kopf=$(head -c 260 "$f" 2>/dev/null | tr -d '\0')
+    _erz=""
+    if   [[ "$_kopf" == *'namespace WPML\Core;'*'WPML\Core\Twig'* ]]; then
+      _erz="WPML-Twig-Cache"
+    elif [[ "$_kopf" == *'TCPDF FONT FILE DESCRIPTION'* ]]; then
+      _erz="TCPDF-Schriftmetrik"
+    elif [[ "$_kopf" =~ $UPLOAD_FONT_REGEX ]]; then
+      # Zwei Schreibweisen im selben Verzeichnis: $type='core' und
+      # $type = 'cidfont0'. Die erste Fassung kannte nur die ohne Leerzeichen
+      # und liess 4 von 66 Dateien stehen — deshalb ein Regex, kein Glob.
+      _erz="TCPDF-Schriftmetrik"
+    elif [[ "$_kopf" =~ $UPLOAD_CID_REGEX ]]; then
+      _erz="TCPDF-CID-Tabelle"
+    elif [[ "$_kopf" == '<?php __halt_compiler();'* ]]; then
+      # __halt_compiler() am DATEIANFANG: alles dahinter ist Nutzlast, kein
+      # Code. Bewusst nur am Anfang geprueft — steht eine Zeile davor, laeuft
+      # sie, und dann ist es kein Datenbehaelter mehr.
+      _erz="Datenablage hinter __halt_compiler()"
+    fi
+    if [[ -n "$_erz" ]]; then
+      PHP_IN_UPLOADS_ERZEUGT+="$f"$'\t'"$_erz"$'\n'; continue
+    fi
     PHP_IN_UPLOADS+="$f"$'\n'
   done <<< "$PHP_IN_UPLOADS_RAW"
+fi
+ERZEUGT_COUNT=0
+[[ -n "$PHP_IN_UPLOADS_ERZEUGT" ]] && ERZEUGT_COUNT=$(printf '%s\n' "$PHP_IN_UPLOADS_ERZEUGT" | grep -c . || echo 0)
+if [[ "$ERZEUGT_COUNT" -gt 0 ]]; then
+  warn "${ERZEUGT_COUNT} PHP-Datei(en) in Upload-Verzeichnissen sind erzeugter Code bekannten Formats — nicht in Quarantäne, aber zu sichten" web
+  code "$(printf '%s\n' "$PHP_IN_UPLOADS_ERZEUGT" | awk -F'\t' '{print $2"  "$1}' | head -20)"
+  evidence "php_in_uploads_erzeugt" "$PHP_IN_UPLOADS_ERZEUGT" kunde
 fi
 
 if [[ -n "$PHP_IN_UPLOADS" ]]; then

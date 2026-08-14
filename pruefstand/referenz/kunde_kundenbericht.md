@@ -8,7 +8,7 @@
 | **Datum** | <ZEIT> |
 | **Geprüfter Server** | imac |
 | **Prüfungs-ID** | <LAUF-ID> |
-| **Befunde** | 🔴 18 kritisch · ⚠️ 19 auffällig · ⚪ 11 nicht messbar |
+| **Befunde** | 🔴 18 kritisch · ⚠️ 20 auffällig · ⚪ 11 nicht messbar |
 
 ---
 
@@ -32,18 +32,18 @@
 
 ## 3. Was wir technisch gefunden haben
 
-- **27 Schadcode-Fundstelle(n)** in Ihrem Webauftritt. Was jede einzelne ist und wozu sie dient, steht in der Einordnung unten und vollständig in `befunde_details.md`.
+- **28 Schadcode-Fundstelle(n)** in Ihrem Webauftritt. Was jede einzelne ist und wozu sie dient, steht in der Einordnung unten und vollständig in `befunde_details.md`.
 - 1 weitere Fundstelle(n) sind noch einzuordnen — sie sind kein belegter Schadcode, aber auch nicht abgehakt. Liste in `befunde_details.md`.
 
-**Schadcode-Einordnung — 27 Fundstelle(n):**
+**Schadcode-Einordnung — 28 Fundstelle(n):**
 
 | Art | Anzahl | Was damit bezweckt wird |
 |---|---|---|
 | Getarnte Payload | 9 | Nachladbarer Schadcode in Nicht-PHP-Datei |
 | Verändertes Plugin | 8 | Fremder Code in einem legitimen Plugin — nachträglich eingebaute Hintertür |
 | Manipulierte .htaccess | 4 | Zugriffsregeln zugunsten des Angreifers — hält seine Dateien erreichbar und sperrt Mitbewerber aus |
+| PHP im Upload-Verzeichnis | 3 | Ausführbarer Code dort, wo nur Dateien liegen sollen — der klassische Weg einer hochgeladenen Shell |
 | Code-Injection | 2 | Schadcode in legitime Dateien eingeschleust |
-| PHP im Upload-Verzeichnis | 2 | Ausführbarer Code dort, wo nur Dateien liegen sollen — der klassische Weg einer hochgeladenen Shell |
 | Bekannte Schaddatei | 1 | Nach Namensmuster erkanntes Angriffswerkzeug (Dateimanager, Uploader, Shell) |
 | Tarnstruktur | 1 | Angelegte Verzeichnisse, die echte nachahmen — Ablage für Nutzlasten |
 
@@ -72,6 +72,7 @@
 - Kein Apache-Prozess, aber nginx läuft — .htaccess-Dateien werden NICHT ausgewertet und schützen nichts
 **Auffälligkeiten (zeitnah beheben):**
 
+- 3 PHP-Datei(en) in Upload-Verzeichnissen sind erzeugter Code bekannten Formats — nicht in Quarantäne, aber zu sichten
 - .htaccess mit externen Weiterleitungen gefunden
 - kunde-zwei.example/joomla.kunde-zwei.example: Joomla-Version nicht bestimmbar (weder joomla.xml noch Version.php lesbar)
 - kunde-zwei.example/joomla.kunde-zwei.example: Standard-Tabellenpräfix jos_ (macht SQL-Injection-Angriffe zielgenau ohne Vorab-Erkundung)
