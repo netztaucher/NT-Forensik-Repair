@@ -66,8 +66,28 @@ for _rz in "${REZEPT_DIR}"/*/; do
   # anhand desselben Werts, ob ein WordPress-Absatz in die Meldung gehoert —
   # die Bedingung war damit dauerhaft falsch. JOOMLA_COUNT setzt Abschnitt 12
   # weiterhin selbst, deshalb hier nur die Rezept-Anwendungen.
+  #
+  # WP_CONFIGS hatte denselben Bruch, blieb aber unentdeckt, weil es keine
+  # Zahl im Bericht ist. Es wurde im ganzen Baum NIRGENDS mehr zugewiesen —
+  # der einzige Produzent war module/11_wordpress.sh:60. Gelesen wird es
+  # weiterhin an zwei Stellen, und beide sind folgenschwer:
+  #
+  #   module/14_berichte/50_findings_json.sh → actionable.wp_configs
+  #   module/14_berichte/40_dsgvo.sh:33      → betroffene Datenbanken
+  #
+  # Und auf der Gegenseite zieht NT-Repair (nt_repair.sh:658) daraus seine
+  # ROTATIONSZIELE. Schritt 6 der vorgeschriebenen Bereinigungsreihenfolge —
+  # "Zugangsdaten erneut rotieren" — haette stillschweigend nichts getan,
+  # und die Meldung an die Aufsichtsbehoerde nannte keine einzige betroffene
+  # Datenbank. Gemessen am Lauf 20260813_150137_global: wp_configs = []
+  # auf einem Server mit 121 WordPress-Installationen.
   case "$_app" in
-    wordpress) WP_COUNT=$(( ${WP_COUNT:-0} + _n )) ;;
+    wordpress)
+      WP_COUNT=$(( ${WP_COUNT:-0} + _n ))
+      while IFS= read -r _wpi; do
+        [[ -n "$_wpi" ]] && WP_CONFIGS+="${_wpi}/wp-config.php"$'\n'
+      done <<< "$_inst"
+      ;;
   esac
   h2 "12r.${_rz_gelaufen} ${_name}"
   info "Installationen: ${_n}"

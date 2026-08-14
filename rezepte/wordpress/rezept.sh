@@ -920,24 +920,49 @@ _wp_db_persistenz() {
     info "${REZ_KURZ}: active_plugins leer oder nicht lesbar — Abgleich gegen die Platte entfällt"
   fi
 
-  # e2) PHP in den Optionen. option_name ausserdem gegen die Lader-Muster der
-  # bekannten Kampagnen — der Generator des Anlassfalls versteckte sich hinter
-  # einem unauffaelligen Namen, aber sein Wert begann mit PHP.
-  local OPTCODE
-  OPTCODE=$(_db_sql optionen_php "SELECT option_name, LEFT(option_value,160) FROM ${REZ_PFX:-}options
+  # e2) PHP in den Optionen — ZURUECKGESTUFT AUF info.
+  #
+  # Die Regel wurde als `crit` ausgeliefert und am 13.08.2026 zum ersten Mal
+  # gegen 121 echte Installationen gehalten: 12 Treffer, davon 0 echte.
+  #
+  #   6x  simplehooks-settings    ein Plugin, dessen ZWECK das Ablegen von
+  #                               PHP-Schnipseln in Hooks ist
+  #   1x  wf_sn_vu_vulns          Wordfence-Schwachstellenbestand; enthaelt
+  #                               base64_decode( als BESCHREIBUNG von Schadmustern
+  #   2x  sm_main_show_1          Slider-Markup
+  #   3x  Theme- und Export-Optionen
+  #
+  # Ein Wert, der PHP enthaelt, ist in wp_options nicht die Ausnahme. Solange
+  # die Regel nicht trennt, darf sie keine Sofortmassnahmen ausloesen — und
+  # eine Bereinigung darf ihre Liste erst recht nicht abarbeiten.
+  #
+  # DER BELEG BELEGTE NICHTS.
+  # Gespeichert wurde LEFT(option_value,160); das Muster steckt bei einem
+  # serialisierten Wert regelmaessig weiter hinten. In KEINEM der 12 Belege
+  # war der Treffer sichtbar — der Befund war aus seinem eigenen Beleg nicht
+  # nachpruefbar, derselbe Fehler wie #40. Deshalb liefert die Abfrage jetzt
+  # das getroffene Muster und ein Fenster DARUM statt eines blinden Anfangs.
+  local OPTCODE _lok
+  _lok="CASE WHEN LOCATE('<?php', option_value) > 0 THEN LOCATE('<?php', option_value)
+             WHEN LOCATE('auto_prepend_file', option_value) > 0 THEN LOCATE('auto_prepend_file', option_value)
+             ELSE LOCATE('base64_decode(', option_value) END"
+  OPTCODE=$(_db_sql optionen_php "SELECT option_name,
+               CASE WHEN LOCATE('<?php', option_value) > 0 THEN '<?php'
+                    WHEN LOCATE('auto_prepend_file', option_value) > 0 THEN 'auto_prepend_file'
+                    ELSE 'base64_decode(' END,
+               LENGTH(option_value),
+               SUBSTRING(option_value, GREATEST(1, ${_lok} - 60), 160)
+             FROM ${REZ_PFX:-}options
              WHERE option_value LIKE '%<?php%'
                 OR option_value LIKE '%auto_prepend_file%'
                 OR option_value LIKE '%base64_decode(%';")
   if [[ -n "$OPTCODE" ]]; then
-    befund_melden wordpress datenbank crit \
-      "${REZ_KURZ}: PHP-Code in wp_options — Optionen tragen Daten, keinen Code; hier legt ein Generator seinen Lader ab" "$REZ_PFAD" web
+    info "${REZ_KURZ}: $(printf '%s\n' "$OPTCODE" | grep -c .) Option(en) mit PHP-Merkmal — KEIN Befund: legitime Plugins legen dort Code ab (gemessen: 12 von 12 Fehlalarmen). Rangfolge für die Sichtung"
     code "$OPTCODE"
     evidence "wp_db_optionen_php_$(echo "$REZ_KURZ" | tr '/.' '__')" "$OPTCODE" kunde
     while IFS= read -r _e; do
       [[ -n "$_e" ]] && WP_OPT_CODE+="${REZ_PFAD}"$'\t'"${_e}"$'\n'
     done <<< "$OPTCODE"
-  else
-    befund_melden wordpress datenbank ok "${REZ_KURZ}: kein PHP-Code in wp_options" "$REZ_PFAD"
   fi
 
   # e3) Grosse Optionen — Rangfolge fuer die Sichtung, kein Befund.

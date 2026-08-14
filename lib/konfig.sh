@@ -622,6 +622,13 @@ DROPPER_MAX_BYTES=3000
 ZEITSTEMPEL_ZUSATZ_SEK=2592000     # 30 Tage
 ZEITSTEMPEL_ALLEIN_SEK=7776000     # 90 Tage
 
+# ── Fremdbibliotheken (13d, #46) ─────────────────────────────
+# Verzeichnisse, deren Inhalt nicht vom Betreiber stammt, sondern von einem
+# Abhaengigkeitsverwalter. Fuer sie gibt es keinen Pruefsummensatz (#30) —
+# gemessen sind 156 von 292 Treffern der kritischen Stufe genau dort.
+# Als ERE, wird in 13d dynamisch an awk gegeben.
+VENDOR_PFADE="${VENDOR_PFADE:-/vendor/|/vendor-prefixed/|/node_modules/}"
+
 # ── Persistenz in der Datenbank (#47) ────────────────────────
 # Ab welcher Groesse eine Option in die Sichtungs-Rangfolge kommt (e3).
 # GERATEN, nicht gemessen — 256 KiB liegt deutlich ueber dem, was Widgets und

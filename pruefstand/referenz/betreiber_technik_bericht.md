@@ -33,7 +33,7 @@
 
 ### 7.0 Datei-Inventar (Inode und Zeitstempel sichern)
 
-  Inventar: 648 Datei(en) erfasst, davon 648 mit Anlegezeit (belege/00_dateien.tsv)
+  Inventar: 649 Datei(en) erfasst, davon 649 mit Anlegezeit (belege/00_dateien.tsv)
 
 ### 7.1 Kürzlich veränderte PHP-Dateien (letzte 30 Tage)
 
@@ -43,6 +43,7 @@
 <INODE> -rw-r--r-- <EIGNER> 0 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/uploads/index.php
 <INODE> -rw-r--r-- <EIGNER> 12 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/uploads/cache/index.php
 <INODE> -rw-r--r-- <EIGNER> 12 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/uploads/forminator/index.php
+<INODE> -rw-r--r-- <EIGNER> 124 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/plugins/pruefstand-kopflos/vendor/setasign/fpdi/Flate.php
 <INODE> -rw-r--r-- <EIGNER> 128 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/uploads/pruefstand/dropper.php
 <INODE> -rw-r--r-- <EIGNER> 17 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/backups/updater-abc123/nextcloud-28.0.1.2-1700000000/filefuns.php
 <INODE> -rw-r--r-- <EIGNER> 17 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/cloud.kunde-zwei.example/filefuns.php
@@ -54,7 +55,6 @@
 <INODE> -rw-r--r-- <EIGNER> 29 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-includes/version.php
 <INODE> -rw-r--r-- <EIGNER> 33477 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/plugins/pruefstand-kopflos/gross-sauber.php
 <INODE> -rw-r--r-- <EIGNER> 33479 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/plugins/pruefstand-ohne-fix/gross-sauber.php
-<INODE> -rw-r--r-- <EIGNER> 33996 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/plugins/pruefstand-kopflos/gross-injiziert.php
 <INODE> -rw-r--r-- <EIGNER> 33998 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/plugins/pruefstand-ohne-fix/gross-injiziert.php
 <INODE> -rw-r--r-- <EIGNER> 34 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/joomla.kunde-zwei.example/libraries/src/Version.php
 <INODE> -rw-r--r-- <EIGNER> 43 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/uploads/2026/03/bild.php
@@ -495,10 +495,11 @@ doorway-gen/loader.php
 ```
 
   Beleg: belege/024_wp_db_plugin_leichen_kunde-zwei_example_httpdocs.txt
-- 🔴 **KRITISCH: kunde-zwei.example/httpdocs: PHP-Code in wp_options — Optionen tragen Daten, keinen Code; hier legt ein Generator seinen Lader ab**
+  kunde-zwei.example/httpdocs: 2 Option(en) mit PHP-Merkmal — KEIN Befund: legitime Plugins legen dort Code ab (gemessen: 12 von 12 Fehlalarmen). Rangfolge für die Sichtung
 
 ```
-widget_custom_html	<?php add_action("template_redirect", function(){ include ABSPATH."wp-content/uploads/.q"; });
+widget_custom_html	<?php	118	…function(){ include ABSPATH."wp-content/uploads/.q"; }
+simplehooks-settings	<?php	9184	a:57:{s:7:"wp_head";…<?php echo do_shortcode("[x]"); ?>…
 ```
 
   Beleg: belege/025_wp_db_optionen_php_kunde-zwei_example_httpdocs.txt
@@ -656,7 +657,7 @@ ZUKUNFT   <ZEIT>  mtime liegt <SPANNE> NACH der ctime — vorwaerts datiert   <P
 
 | Kategorie | Anzahl |
 |---|---|
-| 🔴 Kritische Befunde | 18 |
+| 🔴 Kritische Befunde | 17 |
 | ⚠️ Warnungen | 22 |
 | ✅ Unauffällige Prüfungen | 24 |
 | ⚪ Nicht messbar | 10 |
