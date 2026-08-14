@@ -112,9 +112,23 @@ status_zeigen() {
     local p_was p_n p_pfad p_alter
     IFS=$'\t' read -r p_was p_n p_pfad < "${spur}.aktuell"
     p_alter=$(( jetzt - $(stat -c %Y "${spur}.aktuell" 2>/dev/null || stat -f %m "${spur}.aktuell" 2>/dev/null || echo "$jetzt") ))
-    if [[ "$p_alter" -lt 300 ]]; then
+    # EINE HALB GELESENE ZEILE IST KEINE MESSUNG.
+    #
+    # Die Datei wird vom laufenden Scan fortlaufend ueberschrieben. Wer genau
+    # dazwischen liest, bekommt leere Felder — und die Anzeige druckte dann
+    #
+    #     :  Pfade gelesen
+    #     zuletzt:
+    #
+    # Zwei Zeilen, die eine Messung behaupten und keine tragen. Am 14.08.2026
+    # im laufenden Bestaetigungslauf beobachtet.
+    #
+    # Kein Sperren, kein Warten, kein Wiederholen: der naechste Aufruf in
+    # wenigen Sekunden hat die Zahl ohnehin. Eine Zeile, die nichts weiss,
+    # sagt besser nichts.
+    if [[ "$p_alter" -lt 300 && -n "${p_was:-}" && -n "${p_n:-}" ]]; then
       printf '    %s: %s Pfade gelesen\n' "$p_was" "$p_n"
-      printf '    zuletzt: %s\n' "$(printf '%s' "$p_pfad" | cut -c1-72)"
+      [[ -n "${p_pfad:-}" ]] && printf '    zuletzt: %s\n' "$(printf '%s' "$p_pfad" | cut -c1-72)"
     fi
   fi
 
