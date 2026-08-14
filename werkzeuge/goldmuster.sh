@@ -1004,14 +1004,23 @@ PHP
   # NT_PRUEFSTAND_OHNE_VENDORFILTER=1 legt dieselbe Datei ausserhalb von
   # vendor/ ab. Dann gehoert sie in die kritische Stufe — der Vergleich MUSS
   # das bemerken. Geprueft wird damit die Trennung, nicht die Anwesenheit.
-  local _vd="${k2}/wp-content/plugins/pruefstand-kev/vendor/setasign/fpdi"
+  # UNTER pruefstand-kopflos, nicht unter pruefstand-kev: kopflos hat keine
+  # Fassung und damit keinen Pruefsummensatz. Der erste Entwurf legte die
+  # Datei unter kev ab — dort deckte der Satz des Pruefstands auch das
+  # vendor/-Verzeichnis ab, die Datei wurde ENTLASTET und die Abschichtung
+  # blieb ungeprueft. Die CI-Zusicherung hat genau das gemeldet.
+  #
+  # Das entspricht auch der Wirklichkeit: fuer die vendor/-Baeume
+  # kommerzieller Plugins gibt es keinen Pruefsummensatz — das ist #30, und
+  # genau deshalb braucht es diese Abschichtung ueberhaupt.
+  local _vd="${k2}/wp-content/plugins/pruefstand-kopflos/vendor/setasign/fpdi"
   mkdir -p "$_vd"
   if [[ "${NT_PRUEFSTAND_OHNE_VENDORFILTER:-0}" != "1" ]]; then
     printf '<?php\n// Pruefstand: Bibliothekscode, Muster ohne Schadabsicht\n$x = "%s"; @eval($_POST[%sf%s]);\n' \
            "$(_hexkette)" "'" "'" > "${_vd}/Flate.php"
   else
     printf '<?php\n// Pruefstand: dieselbe Datei, aber NICHT unter vendor/\n$x = "%s"; @eval($_POST[%sf%s]);\n' \
-           "$(_hexkette)" "'" "'" > "${k2}/wp-content/plugins/pruefstand-kev/Flate.php"
+           "$(_hexkette)" "'" "'" > "${k2}/wp-content/plugins/pruefstand-kopflos/Flate.php"
   fi
 
   # ── Der Fall, in dem NICHTS uebrig bleibt ────────────────────────────
