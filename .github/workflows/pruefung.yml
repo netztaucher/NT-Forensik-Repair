@@ -231,6 +231,27 @@ jobs:
               fehler.append('webshell: roh != rest + entlastet')
           if m['webshell_review'] + m['webshell_review_entlastet'] != m['webshell_review_roh']:
               fehler.append('webshell_review: roh != rest + entlastet')
+          # #46 — Fremdbibliotheken gehören NICHT in die Quarantäneliste.
+          # NT-Repair zieht seine Kandidaten aus actionable.webshell_dropper
+          # (nt_repair.sh:373-383). Auf dem echten Server lagen dort 156 von
+          # 292 Einträgen unter vendor/ — eine Bereinigung hätte
+          # PDF-Erzeugung, Nextcloud und Less-Kompilierung verschoben.
+          vend = [p for p in a['webshell_dropper']
+                  if '/vendor/' in p or '/vendor-prefixed/' in p or '/node_modules/' in p]
+          print(f"webshell_vendor  {m['webshell_vendor']:>5}   "
+                f"Liste {len(a['webshell_dropper_vendor']):>5}")
+          if vend:
+              fehler.append(f'{len(vend)} Fremdbibliotheks-Pfade in webshell_dropper: {vend[:3]}')
+          if m['webshell_vendor'] != len(a['webshell_dropper_vendor']):
+              fehler.append('metrics.webshell_vendor weicht von der Liste ab')
+          if m['webshell_count_roh'] > 0 and m['webshell_vendor'] == 0:
+              fehler.append('Prüfbaum erzeugt keinen Fremdbibliotheks-Treffer — die Trennung ist ungeprüft')
+          # #-WP_CONFIGS — Rotationsziele und DSGVO-Datenbanken. War nach dem
+          # Umzug nach rezepte/ dauerhaft leer; NT-Repair rotierte ins Leere.
+          print(f"wp_configs       {len(a['wp_configs']):>5}   "
+                f"wp_installs {m['wp_installs']:>5}")
+          if len(a['wp_configs']) != m['wp_installs']:
+              fehler.append('actionable.wp_configs passt nicht zu metrics.wp_installs')
           if m['webshell_count_roh'] == 0:
               # Kein Abbruch: ob der Prüfbaum auf dieser Plattform überhaupt
               # Mustertreffer erzeugt, ist eine eigene Frage. Aber sie muss
@@ -339,6 +360,9 @@ jobs:
           # frisch geschrieben (Angreifer, fünf Einzelzeilen). Geprüft wird der
           # UNTERSCHEIDER, nicht ob die Dateien da sind.
           gegenprobe "13e.1 Massenvorgang"         NT_PRUEFSTAND_OHNE_MASSENVORGANG=1
+          # #46. Dieselbe Datei mit demselben Muster, einmal unter vendor/ und
+          # einmal daneben. Geprüft wird die Trennung, nicht die Anwesenheit.
+          gegenprobe "13d Fremdbibliotheken"       NT_PRUEFSTAND_OHNE_VENDORFILTER=1
           # #55. Setzt den beim Start festgehaltenen Programmstand auf eine
           # Marke, die kein Hash sein kann. Abschnitt 14 MUSS das bemerken und
           # die Fassungsangabe für ungültig erklären.

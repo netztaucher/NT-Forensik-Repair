@@ -181,6 +181,8 @@ print(json.dumps(raus, ensure_ascii=False))' 2>/dev/null || echo '{}')
   n_rogue=$(printf '%s\n'   "${ROGUE_ADMINS:-}"      | grep -vE '^=== |^$' | grep -c . 2>/dev/null)
   local n_suspp; n_suspp=$(printf '%s\n' "${SUSP_PLUGINS:-}" | grep -c . 2>/dev/null)
   ws=$(echo "${DROPPER_DETAIL:-}"      | grep '^=== ' | sed 's/^=== //; s/ ===$//' | json_arr)
+  # Getrennt, damit die Bereinigung sie NICHT als Quarantaene-Kandidaten liest.
+  local wsv; wsv=$(echo "${WEBSHELL_DROPPER_VENDOR:-}" | grep '^=== ' | sed 's/^=== //; s/ ===$//' | json_arr)
   # Abschnitt 7.6b: namentlich freigegeben, kein bekannter Einstiegspunkt, und
   # vorhanden. Eigener Schluessel statt in webshell_dropper hineingemischt —
   # die Herkunft eines Quarantaenekandidaten muss ablesbar bleiben.
@@ -311,6 +313,7 @@ print(json.dumps(raus, ensure_ascii=False))' 2>/dev/null || echo '{}')
     "webshell_count": ${WEBSHELL_COUNT:-0},
     "webshell_review": ${WEBSHELL_REVIEW:-0},
     "webshell_count_roh": ${WEBSHELL_COUNT_ROH:-0},
+    "webshell_vendor": ${WEBSHELL_VENDOR:-0},
     "webshell_entlastet": ${WEBSHELL_ENTLASTET:-0},
     "webshell_review_roh": ${WEBSHELL_REVIEW_ROH:-0},
     "webshell_review_entlastet": ${WEBSHELL_REVIEW_ENTLASTET:-0},
@@ -332,6 +335,7 @@ print(json.dumps(raus, ensure_ascii=False))' 2>/dev/null || echo '{}')
   },
   "actionable": {
     "webshell_dropper": ${ws:-[]},
+    "webshell_dropper_vendor": ${wsv:-[]},
     "htaccess_fremdname": ${wsn:-[]},
     "injected_core": ${corei:-[]},
     "core_should_not_exist": ${coresne:-[]},

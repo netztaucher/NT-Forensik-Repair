@@ -33,7 +33,7 @@
 
 ### 7.0 Datei-Inventar (Inode und Zeitstempel sichern)
 
-  Inventar: 648 Datei(en) erfasst, davon 648 mit Anlegezeit (belege/00_dateien.tsv)
+  Inventar: 649 Datei(en) erfasst, davon 649 mit Anlegezeit (belege/00_dateien.tsv)
 
 ### 7.1 Kürzlich veränderte PHP-Dateien (letzte 30 Tage)
 
@@ -495,10 +495,11 @@ doorway-gen/loader.php
 ```
 
   Beleg: belege/024_wp_db_plugin_leichen_kunde-zwei_example_httpdocs.txt
-- 🔴 **KRITISCH: kunde-zwei.example/httpdocs: PHP-Code in wp_options — Optionen tragen Daten, keinen Code; hier legt ein Generator seinen Lader ab**
+  kunde-zwei.example/httpdocs: 2 Option(en) mit PHP-Merkmal — KEIN Befund: legitime Plugins legen dort Code ab (gemessen: 12 von 12 Fehlalarmen). Rangfolge für die Sichtung
 
 ```
-widget_custom_html	<?php add_action("template_redirect", function(){ include ABSPATH."wp-content/uploads/.q"; });
+widget_custom_html	<?php	118	…function(){ include ABSPATH."wp-content/uploads/.q"; }
+simplehooks-settings	<?php	9184	a:57:{s:7:"wp_head";…<?php echo do_shortcode("[x]"); ?>…
 ```
 
   Beleg: belege/025_wp_db_optionen_php_kunde-zwei_example_httpdocs.txt
@@ -656,7 +657,7 @@ ZUKUNFT   <ZEIT>  mtime liegt <SPANNE> NACH der ctime — vorwaerts datiert   <P
 
 | Kategorie | Anzahl |
 |---|---|
-| 🔴 Kritische Befunde | 18 |
+| 🔴 Kritische Befunde | 17 |
 | ⚠️ Warnungen | 22 |
 | ✅ Unauffällige Prüfungen | 24 |
 | ⚪ Nicht messbar | 10 |

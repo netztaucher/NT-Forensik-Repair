@@ -127,6 +127,49 @@ PY
   rm -f "$roh" "${roh}.rest" "${roh}.weg"
 }
 
+# ── Fremdbibliotheken aus der kritischen Stufe nehmen (#46) ──────────────
+#
+# Gemessen am Lauf 20260813_150137_global: von 292 Eintraegen in Stufe 1 lagen
+# 156 unter vendor/, vendor-prefixed/ oder node_modules/ — 53 %. Die sechs
+# haeufigsten Namen allein waren 153 Dateien, saemtlich legitimer
+# Bibliothekscode:
+#
+#   Flate.php 61 (setasign/fpdi)   PhpEvaluator.php 32 (dompdf)
+#   Hash.php  21 (Nextcloud)       Gzip.php         14
+#   zip.lib.php 13 (PhpMyAdmin)    DetachedRuleset.php 12 (Less.php)
+#
+# Das ist nicht nur Rauschen. NT-Repair zieht seine Quarantaene-Kandidaten aus
+# genau dieser Liste (nt_repair.sh:373-383) — eine Bereinigung haette
+# PDF-Erzeugung, Nextcloud und Less-Kompilierung serverweit verschoben.
+#
+# WARUM DAS KEINE ENTLASTUNG IST
+# Eine Shell KANN unter vendor/ liegen. Die Regel spricht nicht frei, sie
+# verschiebt die Beweislast: aus "kritisch, sofort handeln" wird "sichten".
+# Wer dort etwas ablegt und es per .htaccess freigibt, wird weiterhin von
+# Abschnitt 7.6b gefasst — der Weg, der die 29 echten Hintertueren fand.
+#
+# Fuer diese Dateien gibt es keinen Pruefsummensatz (#30); bis den jemand
+# beschafft, ist die Herkunft aus einem Abhaengigkeitsverzeichnis das
+# einzige Merkmal, das zur Verfuegung steht.
+_vendor_trennen() {   # <blob>; setzt _V_REST, _V_VENDOR, _N_V_REST, _N_VENDOR
+  _V_REST=""; _V_VENDOR=""; _N_V_REST=0; _N_VENDOR=0
+  [[ -n "${1:-}" ]] || return 0
+  local roh="${BELEGE_DIR}/.vendor_roh"
+  printf '%s' "$1" > "$roh"
+  : > "${roh}.rest"; : > "${roh}.vendor"
+  # Zwei Dateien statt eines Trenners im Datenstrom — derselbe Grund wie oben.
+  awk -v re="${VENDOR_PFADE:-/vendor/|/vendor-prefixed/|/node_modules/}" \
+      -v a="${roh}.rest" -v b="${roh}.vendor" '
+    /^=== .* ===$/ { p = substr($0, 5, length($0) - 8); ziel = (p ~ re) ? b : a }
+    ziel != "" { print > ziel }
+  ' "$roh"
+  _V_REST=$(cat "${roh}.rest"   2>/dev/null || true)
+  _V_VENDOR=$(cat "${roh}.vendor" 2>/dev/null || true)
+  _N_V_REST=$(grep -c '^=== ' "${roh}.rest"   2>/dev/null || true); _N_V_REST="${_N_V_REST:-0}"
+  _N_VENDOR=$(grep -c '^=== ' "${roh}.vendor" 2>/dev/null || true); _N_VENDOR="${_N_VENDOR:-0}"
+  rm -f "$roh" "${roh}.rest" "${roh}.vendor"
+}
+
 # Ein Satz, der die Entlastung benennt — oder gar nichts, wenn keine stattfand.
 _entlastet_satz() {   # _entlastet_satz <anzahl>
   [[ "${1:-0}" -gt 0 ]] && printf ' (%s gegen amtliche Prüfsummen entlastet)' "$1"
@@ -135,6 +178,17 @@ _entlastet_satz() {   # _entlastet_satz <anzahl>
 # ── Stufe 1: kleine Dateien mit Obfuskation ──────────────────────────────
 _einordnen "${DROPPER_DETAIL:-}"
 _D_REST="$_REST"; _D_WEG="$_WEG"; _D_N="$_N_REST"; _D_NW="$_N_WEG"
+# Erst entlasten, dann Fremdbibliotheken abschichten. Die Reihenfolge ist
+# bedeutsam: was eine amtliche Pruefsumme bestaetigt, ist erledigt und muss
+# gar nicht erst nach seiner Herkunft gefragt werden.
+_vendor_trennen "$_D_REST"
+_D_REST="$_V_REST"; _D_N="$_N_V_REST"
+WEBSHELL_DROPPER_VENDOR="$_V_VENDOR"
+WEBSHELL_VENDOR="${_N_VENDOR:-0}"
+if [[ "${_N_VENDOR:-0}" -gt 0 ]]; then
+  warn "${_N_VENDOR} Mustertreffer liegen in Abhängigkeitsverzeichnissen (vendor/, node_modules/) — zur Sichtung, nicht zur Quarantäne. Für sie gibt es keinen Prüfsummensatz" web
+  evidence "webshell_vendor_sichtung" "$_V_VENDOR" kunde
+fi
 if [[ "${_D_N:-0}" -gt 0 ]]; then
   crit "Webshells/Dropper gefunden: ${_D_N} Datei(en) < ${DROPPER_MAX_BYTES} B mit Obfuskation$(_entlastet_satz "$_D_NW")" web
   DROPPER_CLUSTER=$(printf '%s\n' "$_D_REST" | grep "^=== " \

@@ -48,7 +48,10 @@
 | Besondere Kategorien (Art. 9)? | [AUSFÜLLEN — Gesundheit, etc.? i. d. R. nein] |
 
 **Betroffene Datenquellen auf dem Server (aus der Analyse):**
-- Keine WordPress-Datenbank im Scan-Pfad gefunden — Datenquellen manuell bestimmen.
+- kunde-drei.example/httpdocs
+- kunde-eins.example/httpdocs
+- kunde-zwei.example/httpdocs
+- 
 
 ## 4. Wahrscheinliche Folgen (Art. 33 Abs. 3 lit. c)
 
