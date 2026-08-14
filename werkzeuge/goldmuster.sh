@@ -205,9 +205,26 @@ if ($befehl === 'db query') {
     #    Nur bei Kunde 2; Kunde 3 ist die Gegenprobe und muss leer bleiben.
     if (strpos($sql, 'user_registered >') !== false) {
         if (strpos($pfad, 'kunde-zwei') !== false) {
-            echo "wp_backup\tadmin@beispiel.invalid\t2026-08-11 03:14:07\n";
-            echo "svc_updater\tsvc@beispiel.invalid\t2026-08-11 03:14:09\n";
+            # Vierte Spalte `aeltere`: wie viele Benutzer VOR diesem angelegt
+            # wurden. 0 heisst: dieses Konto hat die Installation eroeffnet.
+            #
+            # DREI Zeilen, und nur zusammen pruefen sie etwas. Eine Regel, die
+            # den Gruender verschont, aber auch die beiden Eindringlinge,
+            # waere durch "meldet nie" zu bestehen.
+            #
+            # NT_PRUEFSTAND_OHNE_GRUENDERGUARD=1 gibt dem Gruender einen
+            # aelteren Benutzer — dann MUSS er in die Quarantaeneliste
+            # rutschen, und der Vergleich muss das bemerken.
+            $g = getenv('NT_PRUEFSTAND_OHNE_GRUENDERGUARD') === '1' ? '3' : '0';
+            echo "gruender\tinfo@beispiel.invalid\t2026-08-10 09:58:51\t{$g}\n";
+            echo "wp_backup\tadmin@beispiel.invalid\t2026-08-11 03:14:07\t5\n";
+            echo "svc_updater\tsvc@beispiel.invalid\t2026-08-11 03:14:09\t5\n";
         }
+        exit(0);
+    }
+    # Alter der Installation — Beleg fuer die Gruender-Einordnung.
+    if (strpos($sql, 'MIN(post_date)') !== false) {
+        if (strpos($pfad, 'kunde-zwei') !== false) { echo "2026-08-10 11:58:51\n"; }
         exit(0);
     }
     # b) angreifertypischer Name oder Adresse — Verdacht, kein Beleg.
