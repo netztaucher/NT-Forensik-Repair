@@ -227,8 +227,15 @@ jobs:
           fehler = []
           if m['webshell_count'] != len(a['webshell_dropper']):
               fehler.append('metrics.webshell_count weicht von actionable.webshell_dropper ab')
-          if m['webshell_count'] + m['webshell_entlastet'] != m['webshell_count_roh']:
-              fehler.append('webshell: roh != rest + entlastet')
+          # Die Bilanz muss aufgehen. Seit #46 gibt es DREI Toepfe: was uebrig
+          # bleibt, was gegen amtliche Pruefsummen entlastet wurde, und was aus
+          # einem Abhaengigkeitsverzeichnis stammt. Genau diese Zeile hat
+          # gemeldet, dass der dritte Topf eingefuehrt wurde, ohne die
+          # Buchhaltung nachzuziehen.
+          if m['webshell_count'] + m['webshell_entlastet'] + m['webshell_vendor'] != m['webshell_count_roh']:
+              fehler.append(
+                  f"webshell: roh {m['webshell_count_roh']} != rest {m['webshell_count']} "
+                  f"+ entlastet {m['webshell_entlastet']} + vendor {m['webshell_vendor']}")
           if m['webshell_review'] + m['webshell_review_entlastet'] != m['webshell_review_roh']:
               fehler.append('webshell_review: roh != rest + entlastet')
           # #46 — Fremdbibliotheken gehören NICHT in die Quarantäneliste.
