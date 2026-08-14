@@ -50,6 +50,7 @@
 **Betroffene Datenquellen auf dem Server (aus der Analyse):**
 - kunde-drei.example/httpdocs
 - kunde-eins.example/httpdocs
+- kunde-vier.example/httpdocs
 - kunde-zwei.example/httpdocs
 - 
 

@@ -221,6 +221,14 @@ if ($befehl === 'db query') {
     exit(0);
 }
 if ($befehl === 'core verify-checksums') {
+    // Kunde 4: KEINE Ausgabe, Rueckgabewert 1. Der Fall, der auf
+    // kundenserver42 12 von 121 Instanzen betraf — wp-cli bricht ab, ohne
+    // etwas zu sagen. Weder "Success:" noch "Error:", nur Stille.
+    // Bis zum 14.08.2026 fiel das in den else-Zweig und ergab die Zeile
+    // "WordPress-Core unveraendert". Muss ⚪ sein, nicht ✅.
+    if (strpos($pfad, 'kunde-vier') !== false) {
+        exit(1);
+    }
     if (strpos($pfad, 'kunde-zwei') !== false) {
         echo "Warning: File doesn't verify against checksum: wp-includes/load.php\n";
         echo "Warning: File should not exist: wp-admin/mu.php\n";
@@ -726,6 +734,36 @@ PHP
 
   printf '<?php\n// wp-load\n' > "${k3}/wp-load.php"
 
+  # ── Kunde 4: Kern NICHT pruefbar ────────────────────────────
+  # Die Attrappe antwortet fuer diesen Pfad gar nicht — wie wp-cli, wenn es
+  # abbricht: kein Speicher, kein Netz zum Pruefsummendienst, vom Hoster
+  # abgeschossen.
+  #
+  # Der Fall traegt BEIDE Haelften des Schadens, und nur zusammen zeigen sie
+  # ihn:
+  #
+  #   a) das Urteil ueber den Kern muss ⚪ sein, nicht ✅. Eine Pruefung, die
+  #      nicht geantwortet hat, bestaetigt nichts.
+  #   b) class-pruefstand-sanitize.php liegt hier genauso unter wp-includes/
+  #      wie bei Kunde 3 — aber ohne Whitelist-Eintrag entlastet 13c sie
+  #      NICHT, sie bleibt 🔴.
+  #
+  # Vorher meldete derselbe Lauf "Kern unveraendert" UND fuehrte eine
+  # Kern-Datei als Fund. Beides aus derselben Wurzel, beides plausibel.
+  # Nach der Korrektur widerspricht sich der Bericht nicht mehr: er sagt,
+  # dass er es nicht weiss.
+  local k4="${W}/kunde-vier.example/httpdocs"
+  mkdir -p "${k4}/wp-content/uploads" "${k4}/wp-admin" "${k4}/wp-includes"
+  cat > "${k4}/wp-config.php" <<'PHP'
+<?php
+define('DB_NAME', 'k4_wp');
+define('DB_USER', 'k4_wp');
+define('DB_PASSWORD', 'nicht-echt-nur-pruefstand');
+define('DB_HOST', 'localhost');
+$table_prefix = 'wp_';
+PHP
+  printf '<?php\n// wp-load\n' > "${k4}/wp-load.php"
+
   # ════════════════════════════════════════════════════════════
   # ABGLEICH GEGEN DIE ECHTEN LAGEN — Stand 2026-08-12
   # ════════════════════════════════════════════════════════════
@@ -989,6 +1027,10 @@ PHP
   }
   printf '<?php\n// Pruefstand: sieht aus wie Obfuskation, ist Kern-Code\nif ( preg_match( %s/[^%s]*%s, $d ) ) { return true; }\n' \
          "'" "$(_hexkette)" "'" > "${k3}/wp-includes/class-pruefstand-sanitize.php"
+  # c) unter einem Kern, der NICHT geprueft werden konnte (Kunde 4)
+  #    -> MUSS 🔴 bleiben. Wer nicht gemessen hat, darf nicht freisprechen.
+  printf '<?php\n// Pruefstand: sieht aus wie Obfuskation, Kern ungeprueft\nif ( preg_match( %s/[^%s]*%s, $d ) ) { return true; }\n' \
+         "'" "$(_hexkette)" "'" > "${k4}/wp-includes/class-pruefstand-sanitize.php"
   mkdir -p "${k2}/wp-content/uploads/pruefstand"
   printf '<?php\n// Pruefstand: dieselbe Machart, aber ausserhalb jedes Kerns\n$x = "%s"; @eval($_POST[%sc%s]);\n' \
          "$(_hexkette)" "'" "'" > "${k2}/wp-content/uploads/pruefstand/dropper.php"

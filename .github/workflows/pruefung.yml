@@ -259,6 +259,31 @@ jobs:
                 f"wp_installs {m['wp_installs']:>5}")
           if len(a['wp_configs']) != m['wp_installs']:
               fehler.append('actionable.wp_configs passt nicht zu metrics.wp_installs')
+          # Ein ungeprüfter Kern darf nicht entlasten (#65).
+          #
+          # Dieselbe Datei liegt unter zwei Kernen: Kunde 3, dessen
+          # verify-checksums durchläuft, und Kunde 4, für den wp-cli gar nicht
+          # antwortet. Die Entlastung durch 13c/13d hängt am
+          # Whitelist-Eintrag, und den bekommt nur, wer nachweislich geprüft
+          # WURDE.
+          #
+          # Warum als Soll-Wert und nicht über den Referenzvergleich: §7.3
+          # findet auf macOS null Treffer (BSD-grep kann kein -P). Lokal wäre
+          # die Zusicherung leer — beide Dateien fehlen dort, und ein
+          # Vergleich 0 == 0 sähe genauso grün aus.
+          #
+          # Auf kundenserver42 betraf das 12 von 121 Instanzen: der Bericht
+          # meldete "Kern unverändert" UND führte eine Kern-Datei als Fund.
+          drop = a['webshell_dropper']
+          k3 = [p for p in drop if 'kunde-drei' in p and 'class-pruefstand-sanitize' in p]
+          k4 = [p for p in drop if 'kunde-vier' in p and 'class-pruefstand-sanitize' in p]
+          print(f"ungeprüfter Kern: Kunde 3 (geprüft) {len(k3)} Treffer, "
+                f"Kunde 4 (nicht geprüft) {len(k4)} Treffer")
+          if m['webshell_count_roh'] > 0:
+              if k3:
+                  fehler.append('Kern von Kunde 3 IST geprüft — die Datei hätte entlastet werden müssen')
+              if not k4:
+                  fehler.append('Kern von Kunde 4 wurde NICHT geprüft — die Datei darf nicht entlastet werden')
           if m['webshell_count_roh'] == 0:
               # Kein Abbruch: ob der Prüfbaum auf dieser Plattform überhaupt
               # Mustertreffer erzeugt, ist eine eigene Frage. Aber sie muss

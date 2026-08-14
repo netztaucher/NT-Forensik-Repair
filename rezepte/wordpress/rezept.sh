@@ -570,6 +570,30 @@ rezept_kern() {
     code "$(echo "$LISTE" | head -30)"
     evidence "wp_core_veraendert_$(echo "$REZ_KURZ" | tr '/.' '__')" "$LISTE"
     CORE_INJECTED+="$LISTE"$'\n'
+  elif [[ -z "$CHK_ROH" ]]; then
+    # KEINE AUSGABE HEISST NICHT "SAUBER".
+    #
+    # Ein bestandener Lauf sagt "Success: WordPress installation verifies
+    # against checksums.", ein Fehlschlag sagt "Error: …". Beides steht in
+    # CHK_ROH, weil 2>&1 umgeleitet wird. Kommt GAR NICHTS zurück, hat das
+    # Kommando nicht geantwortet — abgebrochen, ohne Speicher, ohne Netz zum
+    # Prüfsummendienst, vom Hoster abgeschossen.
+    #
+    # Bis hierher fiel dieser Fall in den else-Zweig und ergab die Zeile
+    # "WordPress-Core unverändert (verify-checksums)". Auf kundenserver42
+    # betraf das 12 von 121 Instanzen: gruener Satz im Kundenbericht, obwohl
+    # die Pruefung nie stattgefunden hat.
+    #
+    # Die zweite Haelfte des Schadens steht weiter unten: ohne Ausgabe gibt es
+    # auch keinen Whitelist-Eintrag, und ohne den entlastet 13c die Kern-
+    # Dateien dieser Instanz nicht. Der Lauf meldete also gleichzeitig "Kern
+    # unveraendert" UND fuehrte Kern-Dateien als Fund. Beides aus derselben
+    # Wurzel, und beides sah plausibel aus.
+    #
+    # `unklar` ist genau fuer diesen Zustand da: die Pruefung lief, lieferte
+    # aber keine Aussage. Solange N_UNKNOWN ueber 0 steht, kann die
+    # Kundenampel nicht auf gruen springen.
+    befund_melden wordpress kern unklar "${REZ_KURZ}: wp core verify-checksums hat nicht geantwortet — der Kern ist WEDER bestätigt NOCH beanstandet (Rückgabewert ${CHK_RC})" "$REZ_PFAD" web
   else
     befund_melden wordpress kern ok "${REZ_KURZ}: WordPress-Core unverändert (verify-checksums)" "$REZ_PFAD"
   fi
