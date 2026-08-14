@@ -296,6 +296,8 @@ print(json.dumps(raus, ensure_ascii=False))' 2>/dev/null || echo '{}')
   "ursache": {
     "aeltester_nachweis": ${U_ERST:-0},
     "juengster_nachweis": ${U_LETZT:-0},
+    "aeltester_nachweis_roh": ${U_ERST_ROH:-0},
+    "massenvorgaenge": ${U_MASSEN:-0},
     "dateien": ${U_ZEILEN:-0},
     "vorgaenge": ${U_WELLEN:-0},
     "zeitanker": ${U_ANKER:-0},

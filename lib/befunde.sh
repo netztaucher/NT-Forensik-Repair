@@ -84,6 +84,8 @@ U_ERST=""       # Epoche des aeltesten Schreibvorgangs
 U_LETZT=""      # Epoche des juengsten
 U_ZEILEN=0      # Dateien auf der Achse
 U_WELLEN=0      # getrennte Vorgaenge (Pause >= URSACHE_WELLE_SEK)
+U_MASSEN=0      # davon als Massenvorgang eingeordnet — Wiederherstellung (#65)
+U_ERST_ROH=""   # aeltester Zeitstempel EINSCHLIESSLICH der Massenvorgaenge
 U_ANKER=0       # mtime == ctime → seit dem Schreiben unberuehrt
 U_INODE=0       # Inode spaeter geaendert → mtime stammt nicht von diesem Vorgang
 U_ZUKUNFT=0     # mtime vorwaerts datiert

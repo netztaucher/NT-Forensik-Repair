@@ -30,7 +30,7 @@
 [1m[0;34m══════════════════════════════════════════[0m
 
 [0;36m▶ 7.0 Datei-Inventar (Inode und Zeitstempel sichern)[0m
-  [0m·  Inventar: 643 Datei(en) erfasst, davon 643 mit Anlegezeit (belege/00_dateien.tsv)
+  [0m·  Inventar: 648 Datei(en) erfasst, davon 648 mit Anlegezeit (belege/00_dateien.tsv)
 
 [0;36m▶ 7.1 Kürzlich veränderte PHP-Dateien (letzte 30 Tage)[0m
   [0;33mDurchsuche Webspace (kann dauern...)[0m
@@ -72,7 +72,7 @@
   [0m·  YARA-Scan nicht aktiviert — mit --yara einschalten (auf großen Webspaces langsam)
 
 [0;36m▶ 7.13 PHP-Code in Medien- und Asset-Dateien[0m
-  [0;31m✗[0m  [1mPHP-Code in 4 Mediendatei(en) — in einem echten Bild gehört kein PHP[0m
+  [0;31m✗[0m  [1mPHP-Code in 9 Mediendatei(en) — in einem echten Bild gehört kein PHP[0m
 
 [0;36m▶ 7.14 Massenhaft gleiche Zeitstempel (Spurenverwischung)[0m
   [0;32m✓[0m Keine auffälligen Zeitstempel-Häufungen
@@ -205,11 +205,12 @@
 [0;36m▶ 13e Infektions-Ursachensuche[0m
 
 [0;36m▶ 13e.1 Zeitachse der belasteten Dateien[0m
-  [0m·  Aeltester Schreibvorgang: <ZEIT> — juengster: <ZEIT>
-  [0m·  8 belastete Datei(en), verteilt auf 2 Vorgang/Vorgaenge (Trennung ab 4 s Pause)
+  [0m·  Aeltester einzelner Schreibvorgang: <ZEIT> — juengster: <ZEIT>
+  [0m·  13 belastete Datei(en), verteilt auf 2 Vorgang/Vorgaenge (Trennung ab 6 s Pause)
+  [0m·  1 Massenvorgang/-vorgaenge herausgehalten. Aeltester Zeitstempel insgesamt: <ZEIT> — er gehoert zu einem davon und datiert keinen Angriff.
 
 [0;36m▶ 13e.2 ctime gegen mtime — beide Richtungen[0m
-  [0m·  6 Anker (belastbarer Zeitpunkt), 1 mit spaeter geaenderter Inode, 1 vorwaerts datiert
+  [0m·  6 Anker (belastbarer Zeitpunkt), 6 mit spaeter geaenderter Inode, 1 vorwaerts datiert
   [0;33m⚠[0m  1 belastete Datei(en) tragen eine in die Zukunft gesetzte mtime — jede nach Datum sortierte Sichtung uebersieht sie
 
 [0;36m▶ 13e.3 Reichweite: geteilter Systemnutzer[0m

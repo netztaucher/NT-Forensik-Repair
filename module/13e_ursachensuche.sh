@@ -131,35 +131,100 @@ if [[ -z "$U_TAB" ]]; then
   ok "Keine belasteten Dateien — keine Zeitachse zu bilden"
 else
   U_ZEILEN=$(printf '%s\n' "$U_TAB" | grep -c . || echo 0)
-  _u_vorher=0
+  U_ERST_ROH=$(printf '%s\n' "$U_TAB" | head -1 | cut -f1)
+  U_LETZT=$(printf '%s\n' "$U_TAB" | tail -1 | cut -f1)
+
+  # ── Bloecke bilden und einordnen (#65) ─────────────────────────────────
+  #
+  # Am 13.08.2026 standen ueber 200 Dateien vom 19.02.2026 innerhalb von
+  # 41 Sekunden am Anfang der Achse — eine Wiederherstellung, kein
+  # Angriffsbeginn. `aeltester_nachweis` nannte trotzdem dieses Datum, und
+  # 13e.4 baute darauf sein "173 Tage vor dem Protokollfenster".
+  #
+  # 7.14 erkennt diese Signatur seit Langem, misst dafuer aber die MTIME.
+  # Nach einer Wiederherstellung ist gerade die mtime die alte, verstreute —
+  # gehaeuft ist die CTIME. Fuer 7.14 war der Vorgang deshalb unsichtbar.
+  #
+  # Die Einordnung uebernimmt awk, weil sie zwei Durchgaenge je Block braucht:
+  # die Groesse steht erst fest, wenn der Block zu Ende ist.
+  #
+  # KEIN STILLES WEGFILTERN. Der Block verschwindet nicht, er bekommt EINE
+  # Zeile statt 200 — mit Anzahl, Spanne und dem Anteil, der die Einordnung
+  # traegt. Ein Angreifer, der 59.472 Dateien in einer Sekunde anfasst, erzeugt
+  # dieselbe Haeufung; das war der Anlassfall von 7.14.
+  _u_bloecke=$(printf '%s\n' "$U_TAB" | awk -F'\t' \
+      -v luecke="${URSACHE_WELLE_SEK:-3600}" \
+      -v zusatz="${ZEITSTEMPEL_ZUSATZ_SEK:-2592000}" \
+      -v min="${URSACHE_MASSE_MIN:-50}" \
+      -v fenster="${URSACHE_MASSE_FENSTER_SEK:-1800}" '
+    function schliessen(   i, spanne, art) {
+      if (n == 0) return
+      spanne = letzt - erst
+      # Die Mehrheitsregel ist die eigentliche Bedingung: viele Dateien, die
+      # ihre alte mtime behalten haben, sind kopiert worden. Frisch
+      # geschriebene Dateien (mtime == ctime) sind es nicht — dann bleibt der
+      # Block auf der Achse stehen, Datei fuer Datei.
+      art = (n >= min && spanne <= fenster && inode * 2 > n) ? "MASSE" : "NORMAL"
+      printf "BLOCK\t%s\t%d\t%d\t%d\t%d\n", art, erst, spanne, n, inode
+      if (art != "MASSE") for (i = 1; i <= n; i++) printf "ZEILE\t%s\n", puffer[i]
+      for (i = 1; i <= n; i++) delete puffer[i]
+      n = 0; inode = 0
+    }
+    { if (vorher > 0 && $1 - vorher >= luecke) { schliessen(); printf "PAUSE\t%d\n", $1 - vorher }
+      vorher = $1
+      if (n == 0) erst = $1
+      letzt = $1
+      puffer[++n] = $0
+      if ($2 > 0 && $1 - $2 >= zusatz) inode++ }
+    END { schliessen() }')
+
   _u_n=0
-  U_WELLEN=1
-  U_ERST=""; U_LETZT=""
-  while IFS=$'\t' read -r _c _m _p; do
-    [[ -n "$_p" ]] || continue
-    _u_n=$(( _u_n + 1 ))
-    [[ -z "$U_ERST" ]] && U_ERST="$_c"
-    U_LETZT="$_c"
-    # Wellentrennung: eine Pause oberhalb der Schwelle bekommt eine eigene Zeile
-    # mit der Spanne. Das ist der Unterschied zwischen "23 Dateien" und "zwei
-    # Vorgaengen im Abstand von 14 Tagen".
-    if [[ "$_u_vorher" -gt 0 && $(( _c - _u_vorher )) -ge "${URSACHE_WELLE_SEK:-3600}" ]]; then
-      U_WELLEN=$(( U_WELLEN + 1 ))
-      [[ "$_u_n" -le "${URSACHE_ACHSE_MAX:-60}" ]] && \
-        U_ACHSE+="    ── Pause: $(_u_dauer $(( _c - _u_vorher ))) ──"$'\n'
-    fi
-    _u_vorher="$_c"
-    [[ "$_u_n" -le "${URSACHE_ACHSE_MAX:-60}" ]] || continue
-    U_ACHSE+="$(_u_epoche_str "$_c")  ${_p}"$'\n'
-  done <<< "$U_TAB"
+  U_WELLEN=0; U_MASSEN=0
+  U_ERST=""
+  while IFS=$'\t' read -r _art _a _b _c _d _e; do
+    case "$_art" in
+      PAUSE)
+        [[ "$_u_n" -le "${URSACHE_ACHSE_MAX:-60}" ]] && \
+          U_ACHSE+="    ── Pause: $(_u_dauer "$_a") ──"$'\n'
+        ;;
+      BLOCK)
+        # _a=art _b=erste ctime _c=spanne _d=anzahl _e=davon INODE
+        if [[ "$_a" == "MASSE" ]]; then
+          U_MASSEN=$(( U_MASSEN + 1 ))
+          _u_n=$(( _u_n + 1 ))
+          [[ "$_u_n" -le "${URSACHE_ACHSE_MAX:-60}" ]] && \
+            U_ACHSE+="$(_u_epoche_str "$_b")  ▓ MASSENVORGANG: ${_d} Dateien in $(_u_dauer "$_c"), ${_e} davon mit erhaltener alter mtime — Wiederherstellung oder Migration, kein Schreibvorgang eines Angreifers"$'\n'
+        else
+          U_WELLEN=$(( U_WELLEN + 1 ))
+        fi
+        ;;
+      ZEILE)
+        # _a=ctime _b=mtime _c=pfad
+        _u_n=$(( _u_n + 1 ))
+        [[ -z "$U_ERST" ]] && U_ERST="$_a"
+        [[ "$_u_n" -le "${URSACHE_ACHSE_MAX:-60}" ]] || continue
+        U_ACHSE+="$(_u_epoche_str "$_a")  ${_c}"$'\n'
+        ;;
+    esac
+  done <<< "$_u_bloecke"
+  # Besteht die Achse NUR aus Massenvorgaengen, gibt es keinen einzelnen
+  # Schreibvorgang, auf den man datieren koennte. Dann bleibt der rohe Wert —
+  # aber die Aussage darueber steht unten.
+  [[ -z "$U_ERST" ]] && U_ERST="$U_ERST_ROH"
 
   # Kein stilles Abschneiden. Was ueber die Grenze faellt, wird benannt.
   if [[ "$U_ZEILEN" -gt "${URSACHE_ACHSE_MAX:-60}" ]]; then
     U_ACHSE+="    … $(( U_ZEILEN - ${URSACHE_ACHSE_MAX:-60} )) weitere Eintraege — vollstaendig im Beleg"$'\n'
   fi
 
-  info "Aeltester Schreibvorgang: $(_u_epoche_str "$U_ERST") — juengster: $(_u_epoche_str "$U_LETZT")"
+  info "Aeltester einzelner Schreibvorgang: $(_u_epoche_str "$U_ERST") — juengster: $(_u_epoche_str "$U_LETZT")"
   info "${U_ZEILEN} belastete Datei(en), verteilt auf ${U_WELLEN} Vorgang/Vorgaenge (Trennung ab $(_u_dauer "${URSACHE_WELLE_SEK:-3600}") Pause)"
+  # Der rohe aelteste Wert bleibt sichtbar. Sonst waere die Korrektur selbst
+  # eine stille Aenderung: wer die Zahl mit einem frueheren Lauf vergleicht,
+  # muss sehen, dass sie eine andere Frage beantwortet.
+  if [[ "$U_MASSEN" -gt 0 ]]; then
+    info "${U_MASSEN} Massenvorgang/-vorgaenge herausgehalten. Aeltester Zeitstempel insgesamt: $(_u_epoche_str "$U_ERST_ROH") — er gehoert zu einem davon und datiert keinen Angriff."
+  fi
   code "$U_ACHSE"
   # Der Beleg traegt IMMER alles, unabhaengig von URSACHE_ACHSE_MAX.
   evidence "ursache_zeitachse" "$(

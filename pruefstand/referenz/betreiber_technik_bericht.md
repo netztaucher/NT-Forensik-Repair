@@ -33,7 +33,7 @@
 
 ### 7.0 Datei-Inventar (Inode und Zeitstempel sichern)
 
-  Inventar: 643 Datei(en) erfasst, davon 643 mit Anlegezeit (belege/00_dateien.tsv)
+  Inventar: 648 Datei(en) erfasst, davon 648 mit Anlegezeit (belege/00_dateien.tsv)
 
 ### 7.1 Kürzlich veränderte PHP-Dateien (letzte 30 Tage)
 
@@ -204,7 +204,7 @@ Order allow,deny
 
 ### 7.13 PHP-Code in Medien- und Asset-Dateien
 
-- 🔴 **KRITISCH: PHP-Code in 4 Mediendatei(en) — in einem echten Bild gehört kein PHP**
+- 🔴 **KRITISCH: PHP-Code in 9 Mediendatei(en) — in einem echten Bild gehört kein PHP**
 
 ```
 <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/plugins/beispiel-plugin/assets/banner.png
@@ -226,6 +226,36 @@ Order allow,deny
     Nutzlast: 
 
 <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/uploads/2026/03/logo.png
+    Typ:      data
+    Angelegt: ?
+    SHA256:   <SHA256>
+    Nutzlast: 
+
+<PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/uploads/2026/03/wiederherstellung/bild1.png
+    Typ:      data
+    Angelegt: ?
+    SHA256:   <SHA256>
+    Nutzlast: 
+
+<PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/uploads/2026/03/wiederherstellung/bild2.png
+    Typ:      data
+    Angelegt: ?
+    SHA256:   <SHA256>
+    Nutzlast: 
+
+<PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/uploads/2026/03/wiederherstellung/bild3.png
+    Typ:      data
+    Angelegt: ?
+    SHA256:   <SHA256>
+    Nutzlast: 
+
+<PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/uploads/2026/03/wiederherstellung/bild4.png
+    Typ:      data
+    Angelegt: ?
+    SHA256:   <SHA256>
+    Nutzlast: 
+
+<PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/uploads/2026/03/wiederherstellung/bild5.png
     Typ:      data
     Angelegt: ?
     SHA256:   <SHA256>
@@ -555,17 +585,20 @@ php_value auto_prepend_file /var/www/vhosts/<anderer Kunde 2>  auto_prepend_file
 
 ### 13e.1 Zeitachse der belasteten Dateien
 
-  Aeltester Schreibvorgang: <ZEIT> — juengster: <ZEIT>
-  8 belastete Datei(en), verteilt auf 2 Vorgang/Vorgaenge (Trennung ab 4 s Pause)
+  Aeltester einzelner Schreibvorgang: <ZEIT> — juengster: <ZEIT>
+  13 belastete Datei(en), verteilt auf 2 Vorgang/Vorgaenge (Trennung ab 6 s Pause)
+  1 Massenvorgang/-vorgaenge herausgehalten. Aeltester Zeitstempel insgesamt: <ZEIT> — er gehoert zu einem davon und datiert keinen Angriff.
 
 ```
+<ZEIT>  ▓ MASSENVORGANG: 5 Dateien in 0 s, 5 davon mit erhaltener alter mtime — Wiederherstellung oder Migration, kein Schreibvorgang eines Angreifers
+    ── Pause: <SPANNE> s ──
 <ZEIT>  <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/robots.txt
 <ZEIT>  <PRUEFSTAND>/vhosts/kunde-zwei.example/cloud.kunde-zwei.example/filefuns.php
 <ZEIT>  <PRUEFSTAND>/vhosts/kunde-zwei.example/backups/updater-abc123/nextcloud-28.0.1.2-1700000000/filefuns.php
 <ZEIT>  <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/plugins/beispiel-plugin/assets/banner.png
 <ZEIT>  <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/uploads/2026/03/clip.avi
 <ZEIT>  <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/uploads/2026/03/clip.mov
-    ── Pause: 6 s ──
+    ── Pause: <SPANNE> s ──
 <ZEIT>  <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/mu-plugins/cache.php
 <ZEIT>  <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/uploads/2026/03/logo.png
 
@@ -575,10 +608,15 @@ php_value auto_prepend_file /var/www/vhosts/<anderer Kunde 2>  auto_prepend_file
 
 ### 13e.2 ctime gegen mtime — beide Richtungen
 
-  6 Anker (belastbarer Zeitpunkt), 1 mit spaeter geaenderter Inode, 1 vorwaerts datiert
+  6 Anker (belastbarer Zeitpunkt), 6 mit spaeter geaenderter Inode, 1 vorwaerts datiert
 - ⚠️  **1 belastete Datei(en) tragen eine in die Zukunft gesetzte mtime — jede nach Datum sortierte Sichtung uebersieht sie**
 
 ```
+INODE     <ZEIT>  Inode <SPANNE> spaeter geaendert — mtime stammt nicht von diesem Vorgang   <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/uploads/2026/03/wiederherstellung/bild1.png
+INODE     <ZEIT>  Inode <SPANNE> spaeter geaendert — mtime stammt nicht von diesem Vorgang   <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/uploads/2026/03/wiederherstellung/bild2.png
+INODE     <ZEIT>  Inode <SPANNE> spaeter geaendert — mtime stammt nicht von diesem Vorgang   <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/uploads/2026/03/wiederherstellung/bild3.png
+INODE     <ZEIT>  Inode <SPANNE> spaeter geaendert — mtime stammt nicht von diesem Vorgang   <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/uploads/2026/03/wiederherstellung/bild4.png
+INODE     <ZEIT>  Inode <SPANNE> spaeter geaendert — mtime stammt nicht von diesem Vorgang   <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/uploads/2026/03/wiederherstellung/bild5.png
 ANKER     <ZEIT>  seit dem Schreiben unberuehrt — belastbarer Zeitpunkt              <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/robots.txt
 ANKER     <ZEIT>  seit dem Schreiben unberuehrt — belastbarer Zeitpunkt              <PRUEFSTAND>/vhosts/kunde-zwei.example/cloud.kunde-zwei.example/filefuns.php
 ANKER     <ZEIT>  seit dem Schreiben unberuehrt — belastbarer Zeitpunkt              <PRUEFSTAND>/vhosts/kunde-zwei.example/backups/updater-abc123/nextcloud-28.0.1.2-1700000000/filefuns.php
@@ -612,7 +650,7 @@ ZUKUNFT   <ZEIT>  mtime liegt <SPANNE> NACH der ctime — vorwaerts datiert   <P
 ## 14. ZUSAMMENFASSUNG
 
 - ✅ Programmstand über den ganzen Lauf unverändert — die Fassungsangabe belegt diesen Lauf
-  Fundstellen-Details: <PRUEFSTAND>/ablage/forensik/<LAUF-ID>/kunde/befunde_details.md (22 Fund(e), 7 Familien, 1 zu prüfen)
+  Fundstellen-Details: <PRUEFSTAND>/ablage/forensik/<LAUF-ID>/kunde/befunde_details.md (27 Fund(e), 7 Familien, 1 zu prüfen)
 
 ### 14.1 Befund-Statistik
 

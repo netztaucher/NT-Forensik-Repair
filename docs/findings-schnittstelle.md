@@ -147,7 +147,9 @@ geschah und **wie weit** sich das belegen lässt — bewusst getrennt von
 
 | Feld | Bedeutung |
 |---|---|
-| `aeltester_nachweis` / `juengster_nachweis` | Sekunden seit 1970, ctime. **Nicht** der Infektionsbeginn — der älteste überlebende Beleg. |
+| `aeltester_nachweis` / `juengster_nachweis` | Sekunden seit 1970, ctime. **Nicht** der Infektionsbeginn — der älteste überlebende Beleg. `aeltester_nachweis` überspringt Massenvorgänge (siehe unten). |
+| `aeltester_nachweis_roh` | Ältester Zeitstempel **einschliesslich** der Massenvorgänge. Weicht er ab, gehört der älteste Zeitstempel des Laufs zu einer Wiederherstellung und datiert keinen Angriff. |
+| `massenvorgaenge` | Blöcke, die als Wiederherstellung/Migration eingeordnet wurden: viele Dateien in kurzer Spanne, mehrheitlich mit erhaltener alter mtime. Sie zählen **nicht** als `vorgaenge` und stehen als je eine Zeile auf der Achse — nicht weggefiltert (#65). |
 | `dateien` | Belastete Dateien auf der Achse. Nur die belastenden Listen, nach der Entlastung durch 13d; die Sichtungsstufen bleiben draussen. |
 | `vorgaenge` | Getrennte Schreibvorgänge (Pause ≥ `URSACHE_WELLE_SEK`). Reine Darstellung. |
 | `zeitanker` | Dateien mit mtime == ctime: geschrieben und seither unberührt — ein belastbarer Zeitpunkt. |
