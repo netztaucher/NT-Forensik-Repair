@@ -108,6 +108,9 @@ emit_findings_json() {
   # docs/findings-schnittstelle.md.
   rogued=$(printf '%s\n'   "${ROGUE_ADMINS_DETAIL:-}"   | json_admin_arr)
   suspadmd=$(printf '%s\n' "${SUSPECT_ADMINS_DETAIL:-}" | json_admin_arr)
+  # Gruenderkonten: dieselbe Form wie rogue_wp_admins_detail, aber eine eigene
+  # Liste. Wer sie zusammenlegt, bekommt sie in die Bereinigung zurueck.
+  local grd; grd=$(printf '%s\n' "${GRUENDER_ADMINS:-}" | json_admin_arr)
   # v3.12 (#3): zwei Quellen, die es vorher gar nicht als Liste gab. Die
   # Signaturtreffer standen bis hierher ausschliesslich im Menschentext, und
   # zwar nur der erste je Muster — der Reparaturteil bekam sie nie zu sehen,
@@ -344,6 +347,7 @@ print(json.dumps(raus, ensure_ascii=False))' 2>/dev/null || echo '{}')
     "webshell_dropper_vendor": ${wsv:-[]},
     "zerlegte_funktionsnamen": ${zfn:-[]},
     "php_in_uploads_erzeugt": ${piue:-[]},
+    "wp_gruender_admins": ${grd:-[]},
     "htaccess_fremdname": ${wsn:-[]},
     "injected_core": ${corei:-[]},
     "core_should_not_exist": ${coresne:-[]},

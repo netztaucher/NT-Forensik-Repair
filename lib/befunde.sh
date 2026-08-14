@@ -121,6 +121,13 @@ ROGUE_ADMINS=""        # via wp-cli-Fallback gefundene Angreifer-Admins
 # Diese beiden Sammler fuehren je Zeile den VOLLEN Pfad mit:
 #   <pfad>\t<benutzer>\t<email>\t<angelegt>
 ROGUE_ADMINS_DETAIL=""    # belegt: nach dem Vorfall angelegt
+# Konten, die ihre Installation EROEFFNET haben (kein aelterer Benutzer). Sie
+# sind jung, aber ihre Seite ist genauso jung — ein nachtraeglich
+# hinzugefuegtes Konto koennen sie nicht sein. Bewusst getrennt von
+# ROGUE_ADMINS_DETAIL: die Bereinigung deaktiviert Konten aus jener Liste, und
+# am 14.08.2026 haette das auf zwei laufenden Kundenseiten den einzigen
+# Administrator ausgesperrt.
+GRUENDER_ADMINS=""
 SUSPECT_ADMINS_DETAIL=""  # Verdacht: angreifertypischer Name/Adresse
 NC_HTACCESS_MAL=""     # Nextcloud: .htaccess mit Angreifer-Merkmalen
 NC_MALWARE=""          # Nextcloud: bekannte Schaddateien und aufgeblaehte index.php

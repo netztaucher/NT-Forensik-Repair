@@ -796,11 +796,69 @@ rezept_db() {
 
   # a) Kürzlich angelegte Administratoren. Der eindeutigste Einzelbefund: ein
   # Admin, der erst nach dem Vorfall entstand, ist praktisch nie legitim.
-  local NEU
-  NEU=$(rezept_sql "SELECT u.user_login, u.user_email, u.user_registered FROM ${REZ_PFX}users u
+  #
+  # MIT EINER AUSNAHME, DIE DIE REGEL BIS ZUM 14.08.2026 NICHT KANNTE.
+  #
+  # Sie prüfte nur das Alter des KONTOS, nicht das der INSTALLATION. Eine
+  # Seite, die nach dem Vorfall angelegt wurde, kann aber gar keinen "nach der
+  # Kompromittierung hinzugefügten" Administrator haben — ihr erster Benutzer
+  # IST der Installateur.
+  #
+  # Auf kundenserver42 traf das zweimal zu: `moorth` (info@7-days-web.de) war
+  # auf beiden gemeldeten Installationen der Benutzer mit der niedrigsten
+  # Anlagezeit, auf einer davon entstand der älteste Beitrag zwei Stunden NACH
+  # dem Konto. Eine Agentur, die Kundenseiten aufsetzt.
+  #
+  # Der Schaden wäre nicht der Fehlalarm gewesen, sondern die Bereinigung:
+  # Schritt 4 des Reparaturablaufs deaktiviert Konten aus dieser Liste
+  # (Sitzungen, Rolle, Passwort). Auf zwei laufenden Kundenseiten hätte das
+  # den EINZIGEN Administrator ausgesperrt.
+  #
+  # `aeltere` zählt Benutzer, die vor dem Kandidaten angelegt wurden. Ist die
+  # Zahl 0, hat er die Installation eröffnet. Bewusst KEIN stilles Wegfiltern:
+  # solche Konten kommen in einen eigenen Topf mit eigener Zahl, denn ein
+  # Angreifer, der zuerst alle anderen Benutzer löscht, sähe genauso aus.
+  local NEU ALLE
+  ALLE=$(rezept_sql "SELECT u.user_login, u.user_email, u.user_registered,
+           (SELECT COUNT(*) FROM ${REZ_PFX}users u2
+             WHERE u2.user_registered < u.user_registered
+                OR (u2.user_registered = u.user_registered AND u2.ID < u.ID)) AS aeltere
+         FROM ${REZ_PFX}users u
          JOIN ${REZ_PFX}usermeta m ON u.ID=m.user_id
          WHERE m.meta_key='${REZ_PFX}capabilities' AND m.meta_value LIKE '%administrator%'
          AND u.user_registered > DATE_SUB(NOW(), INTERVAL ${DAYS_BACK} DAY);")
+  NEU=""
+  local GRUENDER="" _z _ae
+  while IFS= read -r _z; do
+    [[ -n "$_z" ]] || continue
+    _ae="${_z##*$'\t'}"                      # letzte Spalte: Anzahl aelterer
+    [[ "$_ae" =~ ^[0-9]+$ ]] || _ae=1        # unlesbar -> wie bisher behandeln
+    if [[ "$_ae" -eq 0 ]]; then
+      GRUENDER+="${_z%$'\t'*}"$'\n'
+    else
+      NEU+="${_z%$'\t'*}"$'\n'
+    fi
+  done <<< "$ALLE"
+  NEU="${NEU%$'\n'}"; GRUENDER="${GRUENDER%$'\n'}"
+
+  if [[ -n "$GRUENDER" ]]; then
+    # Das Alter der Installation gehoert in den Beleg. Ohne es steht da eine
+    # Behauptung; mit ihm kann der Leser die Einordnung nachpruefen.
+    local _alt
+    _alt=$(rezept_sql "SELECT MIN(post_date) FROM ${REZ_PFX}posts;" 2>/dev/null | head -1)
+    befund_melden wordpress datenbank info \
+      "${REZ_KURZ}: Administrator-Konto(en) ohne älteren Benutzer — hat die Installation eröffnet, kein nachträglich hinzugefügtes Konto" "$REZ_PFAD"
+    code "$GRUENDER"
+    evidence "wp_gruender_admins_$(echo "$REZ_KURZ" | tr '/.' '__')" \
+      "Kein Benutzer dieser Installation ist aelter als die genannten Konten.
+Aeltester Beitrag der Installation: ${_alt:-unbekannt}
+
+${GRUENDER}"
+    while IFS= read -r _z; do
+      [[ -n "$_z" ]] && GRUENDER_ADMINS+="${REZ_PFAD}"$'\t'"${_z}"$'\n'
+    done <<< "$GRUENDER"
+  fi
+
   if [[ -n "$NEU" ]]; then
     befund_melden wordpress datenbank crit "${REZ_KURZ}: kürzlich angelegte(s) Administrator-Konto(en) — Angreifer-Verdacht" "$REZ_PFAD" web
     code "$NEU"
@@ -817,7 +875,7 @@ rezept_db() {
       [[ -n "$_z" ]] || continue
       ROGUE_ADMINS_DETAIL+="${REZ_PFAD}"$'\t'"${_z}"$'\n'
     done <<< "$NEU"
-  else
+  elif [[ -z "$GRUENDER" ]]; then
     befund_melden wordpress datenbank ok "${REZ_KURZ}: keine kürzlich angelegten Administratoren" "$REZ_PFAD"
   fi
 

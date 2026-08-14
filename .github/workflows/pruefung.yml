@@ -311,6 +311,35 @@ jobs:
           for _erw in ('WPML', 'TCPDF', '__halt_compiler'):
               if not any(_erw in e.get('eintrag','') for e in erz):
                   fehler.append(f'kein abgeschichteter Treffer vom Typ {_erw} — dieser Erzeuger ist ungeprüft')
+          # Gründerkonten gehören NICHT in die Bereinigung (#65).
+          #
+          # Der Prüfbaum liefert drei kürzlich angelegte Administratoren:
+          # `gruender` ohne älteren Benutzer (hat die Installation eröffnet),
+          # `wp_backup` und `svc_updater` mit älteren Benutzern.
+          #
+          # Warum als Soll-Wert und nicht über den Referenzvergleich: auf
+          # macOS fehlt grep -P, die Zugangsdaten aus wp-config.php sind nicht
+          # lesbar, und der GANZE Datenbankzweig bricht vorher ab (#67). Die
+          # eingecheckte Referenz trägt an dieser Stelle leere Listen — ein
+          # Vergleich liefe gegen [] == [].
+          #
+          # Auf kundenserver42 hätte die Bereinigung sonst auf zwei laufenden
+          # Kundenseiten den EINZIGEN Administrator ausgesperrt: `moorth` war
+          # dort jeweils Benutzer ID 1, und die Seite war genauso jung wie das
+          # Konto.
+          rog = {x['benutzer'] for x in a.get('rogue_wp_admins_detail', [])}
+          gru = {x['benutzer'] for x in a.get('wp_gruender_admins', [])}
+          print(f"Admins: rogue={sorted(rog)}  gruender={sorted(gru)}")
+          if not rog and not gru:
+              fehler.append('Prüfbaum liefert gar keine kürzlich angelegten Admins — der Zweig ist ungeprüft')
+          else:
+              if 'gruender' in rog:
+                  fehler.append('Gründerkonto steht in rogue_wp_admins_detail — die Bereinigung würde es deaktivieren')
+              if 'gruender' not in gru:
+                  fehler.append('Gründerkonto fehlt in wp_gruender_admins — es verschwindet still statt sichtbar zu bleiben')
+              for _n in ('wp_backup', 'svc_updater'):
+                  if _n not in rog:
+                      fehler.append(f'{_n} fehlt in rogue_wp_admins_detail — der Wächter entlastet zu viel')
           if m['webshell_count_roh'] == 0:
               # Kein Abbruch: ob der Prüfbaum auf dieser Plattform überhaupt
               # Mustertreffer erzeugt, ist eine eigene Frage. Aber sie muss
