@@ -243,8 +243,20 @@ jobs:
           # (nt_repair.sh:373-383). Auf dem echten Server lagen dort 156 von
           # 292 Einträgen unter vendor/ — eine Bereinigung hätte
           # PDF-Erzeugung, Nextcloud und Less-Kompilierung verschoben.
-          vend = [p for p in a['webshell_dropper']
-                  if '/vendor/' in p or '/vendor-prefixed/' in p or '/node_modules/' in p]
+          # Die Liste hier muss VENDOR_PFADE in lib/konfig.sh entsprechen.
+          # 3rdparty/ und libraries/ kamen am 14.08.2026 dazu — 16 Dateien
+          # (TCPDF-Schriften, Joomla-Bibliotheken) standen bis dahin in der
+          # Quarantäneliste.
+          VPFADE = ['/vendor/', '/vendor-prefixed/', '/node_modules/',
+                    '/3rdparty/', '/libraries/']
+          vend = [p for p in a['webshell_dropper'] if any(v in p for v in VPFADE)]
+          # Jeder Pfadtyp braucht eine eigene Fixture, sonst hält der Test für
+          # geprüft, was nur mitgelaufen ist: der vendor/-Fall bestünde auch
+          # dann, wenn die beiden neuen Einträge in konfig.sh fehlten.
+          if m['webshell_count_roh'] > 0:
+              for v in ('/vendor/', '/3rdparty/', '/libraries/'):
+                  if not any(v in p for p in a['webshell_dropper_vendor']):
+                      fehler.append(f'Prüfbaum erzeugt keinen Treffer unter {v} — dieser Pfadtyp ist ungeprüft')
           print(f"webshell_vendor  {m['webshell_vendor']:>5}   "
                 f"Liste {len(a['webshell_dropper_vendor']):>5}")
           if vend:

@@ -1086,6 +1086,32 @@ PHP
            "$(_hexkette)" "'" "'" > "${k2}/wp-content/plugins/pruefstand-kopflos/Flate.php"
   fi
 
+  # Dieselbe Abschichtung fuer die beiden Verzeichnisse, die am 14.08.2026
+  # dazukamen. Ohne eigene Fixture waere ihre Aufnahme in VENDOR_PFADE eine
+  # Behauptung: der vendor/-Fall oben bestuende auch dann, wenn 3rdparty/ und
+  # libraries/ in der Liste fehlten.
+  #
+  # Beide Namen sind aelter als composer — Joomla legt Fremdbestandteile unter
+  # libraries/ ab, TCPDF und PHPMailer unter 3rdparty/. Auf kundenserver42
+  # standen 16 solcher Dateien in der Quarantaeneliste.
+  #
+  # Der Gegenprobenschalter gilt fuer alle drei zusammen: ohne Filter liegen
+  # sie ausserhalb, und die kritische Stufe muss um genau drei wachsen.
+  local _td="${k2}/wp-content/plugins/pruefstand-kopflos/3rdparty/tcpdf/fonts"
+  local _ld="${k2}/wp-content/plugins/pruefstand-kopflos/libraries/joomla/filter"
+  mkdir -p "$_td" "$_ld"
+  if [[ "${NT_PRUEFSTAND_OHNE_VENDORFILTER:-0}" != "1" ]]; then
+    printf '<?php\n// Pruefstand: TCPDF-Schriftpfad, Muster ohne Schadabsicht\n$x = "%s"; @eval($_POST[%st%s]);\n' \
+           "$(_hexkette)" "'" "'" > "${_td}/dejavusans.php"
+    printf '<?php\n// Pruefstand: Joomla-Bibliothek, Muster ohne Schadabsicht\n$x = "%s"; @eval($_POST[%sl%s]);\n' \
+           "$(_hexkette)" "'" "'" > "${_ld}/InputFilter.php"
+  else
+    printf '<?php\n// Pruefstand: dieselbe Datei, aber NICHT unter 3rdparty/\n$x = "%s"; @eval($_POST[%st%s]);\n' \
+           "$(_hexkette)" "'" "'" > "${k2}/wp-content/plugins/pruefstand-kopflos/dejavusans.php"
+    printf '<?php\n// Pruefstand: dieselbe Datei, aber NICHT unter libraries/\n$x = "%s"; @eval($_POST[%sl%s]);\n' \
+           "$(_hexkette)" "'" "'" > "${k2}/wp-content/plugins/pruefstand-kopflos/InputFilter.php"
+  fi
+
   # ── Der Fall, in dem NICHTS uebrig bleibt ────────────────────────────
   # Kunde 1 ist die dritte Lage: ein Mustertreffer, und er ist entlastet.
   # Damit ist die Restliste LEER — und genau daran scheiterte der erste

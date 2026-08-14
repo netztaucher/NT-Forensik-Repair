@@ -647,7 +647,18 @@ fi
 # Abhaengigkeitsverwalter. Fuer sie gibt es keinen Pruefsummensatz (#30) —
 # gemessen sind 156 von 292 Treffern der kritischen Stufe genau dort.
 # Als ERE, wird in 13d dynamisch an awk gegeben.
-VENDOR_PFADE="${VENDOR_PFADE:-/vendor/|/vendor-prefixed/|/node_modules/}"
+#
+# 3rdparty/ und libraries/ kamen am 14.08.2026 dazu, nachdem 16 Dateien in der
+# Quarantaeneliste standen, die dort nicht hingehoerten — TCPDF-Schriftpfade
+# und Joomla-Bibliotheken. Beide Namen sind aelter als composer und deshalb
+# genauso wenig Betreibercode wie vendor/; Joomla legt seine Fremdbestandteile
+# unter libraries/ ab, TCPDF und PHPMailer unter 3rdparty/.
+#
+# Die Liste ist nach Messung gewachsen und wird weiter wachsen. Das ist kein
+# Mangel, sondern die Bauart: sie spricht nicht frei, sie verschiebt die
+# Beweislast. Wer unter einem dieser Pfade ablegt und per .htaccess freigibt,
+# wird weiterhin von 7.6b gefasst.
+VENDOR_PFADE="${VENDOR_PFADE:-/vendor/|/vendor-prefixed/|/node_modules/|/3rdparty/|/libraries/}"
 
 # ── Persistenz in der Datenbank (#47) ────────────────────────
 # Ab welcher Groesse eine Option in die Sichtungs-Rangfolge kommt (e3).
