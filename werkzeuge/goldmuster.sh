@@ -1574,6 +1574,26 @@ pruefsummen_bauen "$WPSUMMEN" "$BAUM"
 pmf_attrappe_bauen "$PMFAUS" "$BAUM"
 wordfence_attrappe_bauen "$WFDATEN"
 db_attrappe_bauen "$DBDATEN"
+
+# ── Gegenprobe: umbenanntes plugins-Verzeichnis (#65) ────────
+# Der Schalter benennt plugins/ nach plugins-old um — die uebliche
+# Handbewegung, um eine Seite zur Fehlersuche plugin-frei zu starten.
+#
+# e1 prueft `[[ -f "<plugins>/<eintrag>" ]]`. Ohne das Verzeichnis scheitert
+# der Test fuer JEDEN Eintrag, und die Regel meldet die vollstaendige
+# Plugin-Liste als Leichen: ein maximaler Befund aus einem fehlenden
+# Verzeichnis. Auf kundenserver42 waren 18 der 37 gemeldeten Eintraege genau
+# das.
+#
+# Bewusst ein Schalter und keine zusaetzliche Instanz: die DB-Attrappe deckt
+# genau eine Installation ab (`nur`), und sie auf zwei zu erweitern wuerde
+# auch e2 und e3 verdoppeln — mehr Berichtszeilen, kein zusaetzlicher
+# Nachweis. So bleibt die Referenz unberuehrt, und die CI prueft den Fall
+# als SOLL-WERT: das ⚪ muss dastehen, die Leichen-Zeile nicht.
+if [[ "${NT_PRUEFSTAND_OHNE_PLUGINDIR:-0}" == "1" ]]; then
+  _pd="${BAUM}/kunde-zwei.example/httpdocs/wp-content/plugins"
+  [[ -d "$_pd" ]] && mv "$_pd" "${_pd}-old"
+fi
 info "Baum gebaut: $(find "$BAUM" -type f | wc -l | tr -d ' ') Dateien in $(find "$BAUM" -maxdepth 1 -type d | tail -n +2 | wc -l | tr -d ' ') vhosts"
 
 case "$AKTION" in
