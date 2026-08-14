@@ -183,6 +183,7 @@ print(json.dumps(raus, ensure_ascii=False))' 2>/dev/null || echo '{}')
   ws=$(echo "${DROPPER_DETAIL:-}"      | grep '^=== ' | sed 's/^=== //; s/ ===$//' | json_arr)
   # Getrennt, damit die Bereinigung sie NICHT als Quarantaene-Kandidaten liest.
   local wsv; wsv=$(echo "${WEBSHELL_DROPPER_VENDOR:-}" | grep '^=== ' | sed 's/^=== //; s/ ===$//' | json_arr)
+  local zfn; zfn=$(printf '%s\n' "${ZERLEGTE_NAMEN:-}" | json_arr)
   # Abschnitt 7.6b: namentlich freigegeben, kein bekannter Einstiegspunkt, und
   # vorhanden. Eigener Schluessel statt in webshell_dropper hineingemischt —
   # die Herkunft eines Quarantaenekandidaten muss ablesbar bleiben.
@@ -336,6 +337,7 @@ print(json.dumps(raus, ensure_ascii=False))' 2>/dev/null || echo '{}')
   "actionable": {
     "webshell_dropper": ${ws:-[]},
     "webshell_dropper_vendor": ${wsv:-[]},
+    "zerlegte_funktionsnamen": ${zfn:-[]},
     "htaccess_fremdname": ${wsn:-[]},
     "injected_core": ${corei:-[]},
     "core_should_not_exist": ${coresne:-[]},

@@ -30,14 +30,14 @@
 [1m[0;34m══════════════════════════════════════════[0m
 
 [0;36m▶ 7.0 Datei-Inventar (Inode und Zeitstempel sichern)[0m
-  [0m·  Inventar: 649 Datei(en) erfasst, davon 649 mit Anlegezeit (belege/00_dateien.tsv)
+  [0m·  Inventar: 651 Datei(en) erfasst, davon 651 mit Anlegezeit (belege/00_dateien.tsv)
 
 [0;36m▶ 7.1 Kürzlich veränderte PHP-Dateien (letzte 30 Tage)[0m
   [0;33mDurchsuche Webspace (kann dauern...)[0m
   [0m·  Kürzlich veränderte .php-Dateien:
 
 [0;36m▶ 7.2 PHP-Dateien in Upload-Verzeichnissen[0m
-  [0;31m✗[0m  [1mPHP-Dateien in Upload-Verzeichnissen (nach Guard-Filter, extrem verdächtig; 4 Guard-/Plugin-Dateien gefiltert)[0m
+  [0;31m✗[0m  [1mPHP-Dateien in Upload-Verzeichnissen (nach Guard-Filter, extrem verdächtig; 6 Guard-/Plugin-Dateien gefiltert)[0m
 
 [0;36m▶ 7.3 Webshell-Muster (Inhalt) — zweistufig[0m
   [0;33mScanne auf Webshell-Signaturen (inkl. obfuskierte Cookie-Backdoors)...[0m
@@ -79,6 +79,9 @@
 
 [0;36m▶ 7.15 Injektion in grosse Dateien (ohne Referenz)[0m
   [0m·  8 grosse Datei(en) mit auffälliger Verteilung — nach Punkten sortiert, Einordnung offen
+
+[0;36m▶ 7.16 Zerlegte Funktionsnamen[0m
+  [0;31m✗[0m  [1m1 Datei(en) setzen Funktionsnamen aus Einzelzeichen zusammen — für dieses Muster gibt es keinen legitimen Fall[0m
   [0;36mübersprungen:[0m 8. Netzwerk & Dienste
   [0;36mübersprungen:[0m 9. Sicherheits-Dienste
   [0;36mübersprungen:[0m 10. Andere Domains
@@ -237,7 +240,7 @@
 [1m[0;32m  ANALYSE ABGESCHLOSSEN — Lauf <LAUF-ID>[0m
 [1m[0;32m══════════════════════════════════════════[0m
 
-[1mBefunde:[0m       🔴 17 kritisch, ⚠️ 22 Warnungen, ✅ 25 ok, ⚪ 10 nicht messbar
+[1mBefunde:[0m       🔴 18 kritisch, ⚠️ 22 Warnungen, ✅ 25 ok, ⚪ 10 nicht messbar
 [0;33m               10 Prüfung(en) ohne Ergebnis — das ist keine Entwarnung.[0m
                  Webshell-Mustersuche nicht ausgeführt — grep beherrscht kein -P (PCRE). Auf macOS ist BSD-grep die Vorgabe; GNU grep oder ugrep installieren. Das ist KEINE Entwarnung.
                  kunde-zwei.example/cloud.kunde-zwei.example: Werkzeug antwortet nicht verwertbar — nicht geprüft

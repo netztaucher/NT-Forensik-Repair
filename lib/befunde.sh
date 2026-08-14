@@ -22,6 +22,11 @@ WEBSHELL_COUNT_ROH=0;        WEBSHELL_ENTLASTET=0
 # NICHT in webshell_dropper: NT-Repair zieht seine Quarantaene-Kandidaten aus
 # jener Liste, und Bibliothekscode gehoert nicht in Quarantaene.
 WEBSHELL_DROPPER_VENDOR=""; WEBSHELL_VENDOR=0
+# Dateien, die Funktionsnamen aus Einzelzeichen zusammensetzen (7.16).
+# Kein Verschleierungs-Zusatzmerkmal, sondern ein eigener Befund: auf einem
+# echten Server fand die Regel eine Webshell, die fuenf andere Verfahren
+# ueberstanden hatte.
+ZERLEGTE_NAMEN=""
 WEBSHELL_REVIEW_ROH=0;       WEBSHELL_REVIEW_ENTLASTET=0
 MED_COUNT_ROH=0;             MED_ENTLASTET=0
 
