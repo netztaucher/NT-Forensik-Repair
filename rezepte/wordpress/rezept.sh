@@ -846,8 +846,17 @@ rezept_db() {
     # Behauptung; mit ihm kann der Leser die Einordnung nachpruefen.
     local _alt
     _alt=$(rezept_sql "SELECT MIN(post_date) FROM ${REZ_PFX}posts;" 2>/dev/null | head -1)
-    befund_melden wordpress datenbank info \
-      "${REZ_KURZ}: Administrator-Konto(en) ohne älteren Benutzer — hat die Installation eröffnet, kein nachträglich hinzugefügtes Konto" "$REZ_PFAD"
+    # `warn`, nicht `ok`. befund_melden kennt ohnehin nur crit|warn|unklar|ok —
+    # der erste Entwurf schrieb `info` und erzeugte damit die Zeile
+    #   "Programmfehler: unbekannte Schwere 'info' — als Warnung gemeldet"
+    # in einem echten Lauf. Aufgefallen erst auf dem Server.
+    #
+    # Und `warn` ist auch inhaltlich richtig: das Konto ist ERKLAERT, nicht
+    # freigesprochen. Ein Angreifer, der zuerst alle anderen Benutzer loescht,
+    # saehe genauso aus. Die Einstufung nimmt es aus der Bereinigung, nicht aus
+    # dem Bericht.
+    befund_melden wordpress datenbank warn \
+      "${REZ_KURZ}: Administrator-Konto(en) ohne älteren Benutzer — hat die Installation eröffnet, kein nachträglich hinzugefügtes Konto. Kein Bereinigungsziel, aber zu sichten" "$REZ_PFAD"
     code "$GRUENDER"
     evidence "wp_gruender_admins_$(echo "$REZ_KURZ" | tr '/.' '__')" \
       "Kein Benutzer dieser Installation ist aelter als die genannten Konten.
