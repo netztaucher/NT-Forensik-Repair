@@ -27,6 +27,11 @@ WEBSHELL_DROPPER_VENDOR=""; WEBSHELL_VENDOR=0
 # echten Server fand die Regel eine Webshell, die fuenf andere Verfahren
 # ueberstanden hatte.
 ZERLEGTE_NAMEN=""
+# Erzeugter Code bekannten Formats unter uploads/ (7.2). Eigener Topf statt
+# stillem Filtern: 236 von 282 Treffern stammten am 14.08.2026 von drei
+# Erzeugern, aber ein Twig-Cache KANN Code ausfuehren — anders als ein leerer
+# ABSPATH-Waechter. Zeile: <pfad><TAB><erzeuger>.
+PHP_IN_UPLOADS_ERZEUGT=""
 WEBSHELL_REVIEW_ROH=0;       WEBSHELL_REVIEW_ENTLASTET=0
 MED_COUNT_ROH=0;             MED_ENTLASTET=0
 

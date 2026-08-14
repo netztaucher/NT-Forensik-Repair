@@ -296,6 +296,21 @@ jobs:
                   fehler.append('Kern von Kunde 3 IST geprüft — die Datei hätte entlastet werden müssen')
               if not k4:
                   fehler.append('Kern von Kunde 4 wurde NICHT geprüft — die Datei darf nicht entlastet werden')
+          # 7.2 — die Abschichtung darf den Ort nicht mit dem Format
+          # verwechseln (#65). Die getarnte Shell LIEGT im WPML-Cache, sieht
+          # aber nicht wie ein Twig-Template aus: sie gehört in die
+          # Quarantäneliste, nicht in die Sichtung.
+          erz = a.get('php_in_uploads_erzeugt', [])
+          upl = a.get('php_in_uploads', [])
+          print(f"php_in_uploads   {len(upl):>5}   erzeugt {len(erz):>5}")
+          if not any('getarnt.php' in e.get('pfad','') for e in erz) \
+             and not any('getarnt.php' in p for p in upl):
+              fehler.append('Prüfbaum erzeugt keine getarnte Datei im Cache-Verzeichnis — die Abschichtung ist ungeprüft')
+          if any('getarnt.php' in e.get('pfad','') for e in erz):
+              fehler.append('getarnt.php wurde abgeschichtet, obwohl sie das Format nicht trägt — Ortsregel statt Formatregel')
+          for _erw in ('WPML', 'TCPDF', '__halt_compiler'):
+              if not any(_erw in e.get('eintrag','') for e in erz):
+                  fehler.append(f'kein abgeschichteter Treffer vom Typ {_erw} — dieser Erzeuger ist ungeprüft')
           if m['webshell_count_roh'] == 0:
               # Kein Abbruch: ob der Prüfbaum auf dieser Plattform überhaupt
               # Mustertreffer erzeugt, ist eine eigene Frage. Aber sie muss
@@ -345,6 +360,33 @@ jobs:
             echo "  ok — $1 wird erreicht"
           }
           gegenprobe "den Schwachstellenabgleich"  WP_DATEN_MAX_TAGE=-1
+
+      - name: Umbenanntes plugins-Verzeichnis erzeugt keine Leichen (#65)
+        run: |
+          # Soll-Wert statt Referenzvergleich. Ein blosses "der Vergleich
+          # schlägt aus" wäre hier wertlos: das Umbenennen ändert den Bericht
+          # ohnehin an einem Dutzend Stellen. Geprüft wird, WAS dasteht.
+          #
+          # Auf kundenserver42 stammten 18 der 37 gemeldeten Plugin-Leichen
+          # daher, dass jemand plugins/ nach plugins-old umbenannt hatte —
+          # ein maximaler Befund aus einem fehlenden Verzeichnis.
+          env NT_PRUEFSTAND_OHNE_PLUGINDIR=1 \
+            bash werkzeuge/goldmuster.sh vergleichen >/dev/null 2>&1 || true
+          B="${HOME}/.nt-goldmuster/lauf/neu/betreiber_technik_bericht.md"
+          [[ -f "$B" ]] || { echo "::error::Gegenprobe hat keinen Bericht hinterlassen: $B"; exit 1; }
+          fehler=0
+          grep -q "wp-content/plugins fehlt" "$B" || {
+            echo "::error::Kein ⚪ für das fehlende plugins-Verzeichnis — e1 hält den Ausfall für ein Ergebnis."
+            fehler=1; }
+          grep -q "plugins-old" "$B" || {
+            echo "::error::Der Hinweis auf das umbenannte Verzeichnis fehlt."
+            fehler=1; }
+          if grep -q "active_plugins führt Einträge ohne Datei" "$B"; then
+            echo "::error::e1 meldet Leichen, obwohl das plugins-Verzeichnis fehlt — genau der Fehlalarm von kundenserver42."
+            fehler=1
+          fi
+          [[ $fehler -eq 0 ]] && echo "  ok — fehlendes plugins-Verzeichnis wird als ⚪ geführt, nicht als Befund"
+          exit $fehler
           gegenprobe "den Datenbestand"            WP_DATEN_DIR=/nicht/vorhanden
           gegenprobe "die Plugin-Prüfsummen"       WP_PRUEFSUMMEN_BASIS=/nicht/vorhanden
           # 7.13 trägt einen Befund, den KEINE andere Prüfung erhebt: ein
@@ -412,6 +454,11 @@ jobs:
           # daneben bleibt in beiden Fällen stumm; sie ist die Gegenprobe
           # gegen eine Regel, die jede Sprachdatei meldet.
           gegenprobe "7.16 zerlegte Funktionsnamen" NT_PRUEFSTAND_OHNE_ZERLEGT=1
+          # 7.2. Der Schalter gibt der getarnten Shell den Twig-Kopf. Sie
+          # rutscht dann in die Sichtungsstufe — der Vergleich muss das sehen.
+          # Ohne diese Gegenprobe wäre die Abschichtung durch "schichtet immer
+          # ab" zu bestehen, und das ist genau der teure Fehler.
+          gegenprobe "7.2 Erzeuger-Abschichtung"   NT_PRUEFSTAND_OHNE_ERZEUGERFILTER=1
           # #55. Setzt den beim Start festgehaltenen Programmstand auf eine
           # Marke, die kein Hash sein kann. Abschnitt 14 MUSS das bemerken und
           # die Fassungsangabe für ungültig erklären.

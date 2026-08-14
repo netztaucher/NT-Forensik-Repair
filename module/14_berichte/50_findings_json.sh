@@ -184,6 +184,11 @@ print(json.dumps(raus, ensure_ascii=False))' 2>/dev/null || echo '{}')
   # Getrennt, damit die Bereinigung sie NICHT als Quarantaene-Kandidaten liest.
   local wsv; wsv=$(echo "${WEBSHELL_DROPPER_VENDOR:-}" | grep '^=== ' | sed 's/^=== //; s/ ===$//' | json_arr)
   local zfn; zfn=$(printf '%s\n' "${ZERLEGTE_NAMEN:-}" | json_arr)
+  # Pfad UND Erzeuger. Nur der Pfad waere hier zu wenig: wer die Liste sichtet,
+  # muss sehen, WARUM eine Datei abgeschichtet wurde — sonst ist die
+  # Abschichtung von aussen nicht nachpruefbar, und genau das war die Kritik
+  # an der stillen Guard-Filterung.
+  local piue; piue=$(printf '%s\n' "${PHP_IN_UPLOADS_ERZEUGT:-}" | json_db_arr)
   # Abschnitt 7.6b: namentlich freigegeben, kein bekannter Einstiegspunkt, und
   # vorhanden. Eigener Schluessel statt in webshell_dropper hineingemischt —
   # die Herkunft eines Quarantaenekandidaten muss ablesbar bleiben.
@@ -338,6 +343,7 @@ print(json.dumps(raus, ensure_ascii=False))' 2>/dev/null || echo '{}')
     "webshell_dropper": ${ws:-[]},
     "webshell_dropper_vendor": ${wsv:-[]},
     "zerlegte_funktionsnamen": ${zfn:-[]},
+    "php_in_uploads_erzeugt": ${piue:-[]},
     "htaccess_fremdname": ${wsn:-[]},
     "injected_core": ${corei:-[]},
     "core_should_not_exist": ${coresne:-[]},

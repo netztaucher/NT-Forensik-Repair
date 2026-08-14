@@ -917,9 +917,35 @@ _wp_db_persistenz() {
   fi
 
   # e1) active_plugins gegen die Platte.
-  local AKTIV LEICHEN=""
+  local AKTIV LEICHEN="" PLUGDIR="${REZ_PFAD}/wp-content/plugins"
   AKTIV=$(_db_sql aktive_plugins "SELECT option_value FROM ${REZ_PFX:-}options WHERE option_name='active_plugins';")
-  if [[ -n "$AKTIV" ]]; then
+  # OHNE plugins-VERZEICHNIS GIBT ES KEINEN ABGLEICH.
+  #
+  # Der Test lautet `[[ -f "${PLUGDIR}/${_e}" ]]`. Fehlt PLUGDIR, scheitert er
+  # fuer JEDEN Eintrag — und die Regel meldet die vollstaendige Plugin-Liste
+  # als Leichen. Ein maximaler Befund aus einem fehlenden Verzeichnis, und er
+  # sieht aus wie das schlimmste denkbare Ergebnis statt wie ein Ausfall.
+  #
+  # Auf kundenserver42 waren 18 der 37 gemeldeten Eintraege genau das: jemand
+  # hatte plugins/ nach plugins-old bzw. plugins_old umbenannt — die uebliche
+  # Handbewegung, um eine Seite zur Fehlersuche plugin-frei zu starten.
+  #
+  # Wie bei verify-checksums (#65) ist der richtige Zustand `unklar`, nicht
+  # `warn` und nicht `ok`: die Frage ist offen, nicht beantwortet. Der Hinweis
+  # nennt den wahrscheinlichen Grund, damit niemand das Verzeichnis sucht, das
+  # unter anderem Namen daneben liegt.
+  local E1_MOEGLICH=1
+  if [[ -n "$AKTIV" ]] && [[ ! -d "$PLUGDIR" ]]; then
+    local _umbenannt="" _k
+    for _k in "${PLUGDIR}-old" "${PLUGDIR}_old" "${PLUGDIR}.bak" "${PLUGDIR}-alt"; do
+      [[ -d "$_k" ]] && _umbenannt="${_umbenannt}${_umbenannt:+, }$(basename "$_k")"
+    done
+    befund_melden wordpress datenbank unklar \
+      "${REZ_KURZ}: wp-content/plugins fehlt — der Abgleich von active_plugins gegen die Platte ist nicht möglich${_umbenannt:+ (daneben liegt: ${_umbenannt})}" \
+      "$REZ_PFAD" web
+    E1_MOEGLICH=0
+  fi
+  if [[ -n "$AKTIV" && "$E1_MOEGLICH" -eq 1 ]]; then
     # PHP-serialisiert: a:2:{i:0;s:19:"akismet/akismet.php";…}. Gebraucht
     # werden nur die Pfadliterale; die Laengenangaben interessieren nicht.
     local _e
@@ -936,8 +962,10 @@ _wp_db_persistenz() {
     while IFS= read -r _e; do
       [[ -n "$_e" ]] && WP_PLUGIN_LEICHEN+="${REZ_PFAD}"$'\t'"${_e}"$'\n'
     done <<< "$LEICHEN"
-  elif [[ -n "$AKTIV" ]]; then
+  elif [[ -n "$AKTIV" && "$E1_MOEGLICH" -eq 1 ]]; then
     befund_melden wordpress datenbank ok "${REZ_KURZ}: alle Einträge in active_plugins liegen auf der Platte" "$REZ_PFAD"
+  elif [[ "$E1_MOEGLICH" -eq 0 ]]; then
+    : # das ⚪ oben ist die Aussage; eine zweite Zeile wäre nur Rauschen
   else
     # Leer heisst hier zweierlei — keine aktiven Plugins ODER Abfrage ohne
     # Ergebnis. Beides ist keine gepruefte Aussage, also keine gruene Zeile.

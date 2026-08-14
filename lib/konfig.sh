@@ -642,6 +642,27 @@ if [[ -z "${ZERLEGT_REGEX:-}" ]]; then
   unset _zq
 fi
 
+# ── Erzeugter Code unter uploads/ (7.2) ──────────────────────
+# Am 14.08.2026 stammten 236 von 282 Treffern des Abschnitts von drei
+# Erzeugern: WPML-Twig-Cache (162), TCPDF-Schriftmetriken (66) und der
+# Einstellungsdatei von All-In-One-Security (8).
+#
+# Erkannt wird das FORMAT, nicht der Ort. Eine Pfadregel haette dieselben
+# Dateien beseitigt und drei beschreibbare Verzeichnisse geschaffen, in denen
+# eine Shell unsichtbar liegt.
+#
+# ALS VARIABLE UND NICHT DIREKT IM [[ =~ ]]: bash 3.2 (macOS) und bash 5
+# (Server) behandeln ein maskiertes Anfuehrungszeichen im Regex-Literal
+# unterschiedlich. Direkt geschrieben griff das Muster auf dem Server und
+# schwieg auf dem Arbeitsplatz — ein Prüfstand, der lokal gruen ist und die
+# Regel nie erreicht.
+_uq="'"
+# Zwei Schreibweisen im selben Verzeichnis: $type='core' und $type = 'cidfont0'
+UPLOAD_FONT_REGEX="[\$]type[[:space:]]*=[[:space:]]*${_uq}(TrueType[A-Za-z]*|Type1|core|cidfont0)${_uq}"
+# Unicode-nach-CID-Umsetzungstabelle: reine Array-Zuweisung, kein Aufruf.
+UPLOAD_CID_REGEX="[\$]cidinfo\[.uni2cid.\][[:space:]]*=[[:space:]]*array\("
+unset _uq
+
 # ── Fremdbibliotheken (13d, #46) ─────────────────────────────
 # Verzeichnisse, deren Inhalt nicht vom Betreiber stammt, sondern von einem
 # Abhaengigkeitsverwalter. Fuer sie gibt es keinen Pruefsummensatz (#30) —
