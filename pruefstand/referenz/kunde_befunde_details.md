@@ -1,17 +1,29 @@
 # Fundstellen-Details
 
 > Pfade **relativ zum Kundenverzeichnis** (nicht der absolute Serverpfad).
-> Erzeugt: <ZEIT> · Prüfung `<LAUF-ID>` · 22 Fundstelle(n), 1 zu prüfen.
+> Erzeugt: <ZEIT> · Prüfung `<LAUF-ID>` · 27 Fundstelle(n), 1 zu prüfen.
 
 | Familie | Anzahl | Geschäftsmodell |
 |---|---|---|
+| Getarnte Payload | 9 | Nachladbarer Schadcode in Nicht-PHP-Datei |
 | Verändertes Plugin | 8 | Fremder Code in einem legitimen Plugin — nachträglich eingebaute Hintertür |
-| Getarnte Payload | 4 | Nachladbarer Schadcode in Nicht-PHP-Datei |
 | Manipulierte .htaccess | 4 | Zugriffsregeln zugunsten des Angreifers — hält seine Dateien erreichbar und sperrt Mitbewerber aus |
 | Code-Injection | 2 | Schadcode in legitime Dateien eingeschleust |
 | PHP im Upload-Verzeichnis | 2 | Ausführbarer Code dort, wo nur Dateien liegen sollen — der klassische Weg einer hochgeladenen Shell |
 | Bekannte Schaddatei | 1 | Nach Namensmuster erkanntes Angriffswerkzeug (Dateimanager, Uploader, Shell) |
 | Tarnstruktur | 1 | Angelegte Verzeichnisse, die echte nachahmen — Ablage für Nutzlasten |
+
+## Getarnte Payload (9) — Nachladbarer Schadcode in Nicht-PHP-Datei
+
+- `kunde-zwei.example/httpdocs/wp-content/plugins/beispiel-plugin/assets/banner.png`
+- `kunde-zwei.example/httpdocs/wp-content/uploads/2026/03/clip.avi`
+- `kunde-zwei.example/httpdocs/wp-content/uploads/2026/03/clip.mov`
+- `kunde-zwei.example/httpdocs/wp-content/uploads/2026/03/logo.png`
+- `kunde-zwei.example/httpdocs/wp-content/uploads/2026/03/wiederherstellung/bild1.png`
+- `kunde-zwei.example/httpdocs/wp-content/uploads/2026/03/wiederherstellung/bild2.png`
+- `kunde-zwei.example/httpdocs/wp-content/uploads/2026/03/wiederherstellung/bild3.png`
+- `kunde-zwei.example/httpdocs/wp-content/uploads/2026/03/wiederherstellung/bild4.png`
+- `kunde-zwei.example/httpdocs/wp-content/uploads/2026/03/wiederherstellung/bild5.png`
 
 ## Verändertes Plugin (8) — Fremder Code in einem legitimen Plugin — nachträglich eingebaute Hintertür
 
@@ -23,13 +35,6 @@
 - `kunde-zwei.example/httpdocs/wp-content/plugins/pruefstand-aktuell/lib/a.php`
 - `kunde-zwei.example/httpdocs/wp-content/plugins/pruefstand-aktuell/lib/d.php`
 - `kunde-zwei.example/httpdocs/wp-content/plugins/pruefstand-aktuell/lib/e.php`
-
-## Getarnte Payload (4) — Nachladbarer Schadcode in Nicht-PHP-Datei
-
-- `kunde-zwei.example/httpdocs/wp-content/plugins/beispiel-plugin/assets/banner.png`
-- `kunde-zwei.example/httpdocs/wp-content/uploads/2026/03/clip.avi`
-- `kunde-zwei.example/httpdocs/wp-content/uploads/2026/03/clip.mov`
-- `kunde-zwei.example/httpdocs/wp-content/uploads/2026/03/logo.png`
 
 ## Manipulierte .htaccess (4) — Zugriffsregeln zugunsten des Angreifers — hält seine Dateien erreichbar und sperrt Mitbewerber aus
 

@@ -35,12 +35,14 @@
   "ursache": {
     "aeltester_nachweis": "<EPOCHE>",
     "juengster_nachweis": "<EPOCHE>",
-    "dateien": 8,
+    "aeltester_nachweis_roh": "<EPOCHE>",
+    "massenvorgaenge": 1,
+    "dateien": 13,
     "vorgaenge": 2,
     "zeitanker": 6,
-    "inode_spaeter_geaendert": 1,
+    "inode_spaeter_geaendert": 6,
     "vorwaerts_datiert": 1,
-    "zeitachse": [{"pfad":"<PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/robots.txt","ctime":"<EPOCHE>","mtime":"<EPOCHE>"},{"pfad":"<PRUEFSTAND>/vhosts/kunde-zwei.example/cloud.kunde-zwei.example/filefuns.php","ctime":"<EPOCHE>","mtime":"<EPOCHE>"},{"pfad":"<PRUEFSTAND>/vhosts/kunde-zwei.example/backups/updater-abc123/nextcloud-28.0.1.2-1700000000/filefuns.php","ctime":"<EPOCHE>","mtime":"<EPOCHE>"},{"pfad":"<PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/plugins/beispiel-plugin/assets/banner.png","ctime":"<EPOCHE>","mtime":"<EPOCHE>"},{"pfad":"<PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/uploads/2026/03/clip.avi","ctime":"<EPOCHE>","mtime":"<EPOCHE>"},{"pfad":"<PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/uploads/2026/03/clip.mov","ctime":"<EPOCHE>","mtime":"<EPOCHE>"},{"pfad":"<PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/mu-plugins/cache.php","ctime":"<EPOCHE>","mtime":"<EPOCHE>"},{"pfad":"<PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/uploads/2026/03/logo.png","ctime":"<EPOCHE>","mtime":"<EPOCHE>"}],
+    "zeitachse": [{"pfad":"<PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/uploads/2026/03/wiederherstellung/bild1.png","ctime":"<EPOCHE>","mtime":"<EPOCHE>"},{"pfad":"<PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/uploads/2026/03/wiederherstellung/bild2.png","ctime":"<EPOCHE>","mtime":"<EPOCHE>"},{"pfad":"<PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/uploads/2026/03/wiederherstellung/bild3.png","ctime":"<EPOCHE>","mtime":"<EPOCHE>"},{"pfad":"<PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/uploads/2026/03/wiederherstellung/bild4.png","ctime":"<EPOCHE>","mtime":"<EPOCHE>"},{"pfad":"<PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/uploads/2026/03/wiederherstellung/bild5.png","ctime":"<EPOCHE>","mtime":"<EPOCHE>"},{"pfad":"<PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/robots.txt","ctime":"<EPOCHE>","mtime":"<EPOCHE>"},{"pfad":"<PRUEFSTAND>/vhosts/kunde-zwei.example/cloud.kunde-zwei.example/filefuns.php","ctime":"<EPOCHE>","mtime":"<EPOCHE>"},{"pfad":"<PRUEFSTAND>/vhosts/kunde-zwei.example/backups/updater-abc123/nextcloud-28.0.1.2-1700000000/filefuns.php","ctime":"<EPOCHE>","mtime":"<EPOCHE>"},{"pfad":"<PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/plugins/beispiel-plugin/assets/banner.png","ctime":"<EPOCHE>","mtime":"<EPOCHE>"},{"pfad":"<PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/uploads/2026/03/clip.avi","ctime":"<EPOCHE>","mtime":"<EPOCHE>"},{"pfad":"<PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/uploads/2026/03/clip.mov","ctime":"<EPOCHE>","mtime":"<EPOCHE>"},{"pfad":"<PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/mu-plugins/cache.php","ctime":"<EPOCHE>","mtime":"<EPOCHE>"},{"pfad":"<PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/uploads/2026/03/logo.png","ctime":"<EPOCHE>","mtime":"<EPOCHE>"}],
     "reichweite_systemnutzer": "",
     "quellenlage": "<PRUEFSTAND>/vhosts/kunde-zwei.example     Zugriffsprotokoll reicht zurueck bis <ZEIT>     1 aeltere(s) Protokoll(e) liegen komprimiert vor — nicht ausgewertet "
   },
@@ -57,7 +59,7 @@
     "core_include_injections": 1,
     "rogue_wp_admins": 0,
     "suspicious_plugins": 0,
-    "schadcode_gesamt": 22,
+    "schadcode_gesamt": 27,
     "zu_pruefen_gesamt": 1,
     "ssh_failed": 0,
     "wp_installs": 3,
@@ -74,7 +76,7 @@
     "core_should_not_exist": ["<PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-admin/mu.php"],
     "doorway_dirs": [],
     "core_include_injection": ["<PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/mu-plugins/cache.php"],
-    "disguised_payloads": ["<PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/plugins/beispiel-plugin/assets/banner.png","<PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/uploads/2026/03/clip.avi","<PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/uploads/2026/03/clip.mov","<PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/uploads/2026/03/logo.png"],
+    "disguised_payloads": ["<PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/plugins/beispiel-plugin/assets/banner.png","<PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/uploads/2026/03/clip.avi","<PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/uploads/2026/03/clip.mov","<PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/uploads/2026/03/logo.png","<PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/uploads/2026/03/wiederherstellung/bild1.png","<PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/uploads/2026/03/wiederherstellung/bild2.png","<PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/uploads/2026/03/wiederherstellung/bild3.png","<PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/uploads/2026/03/wiederherstellung/bild4.png","<PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/uploads/2026/03/wiederherstellung/bild5.png"],
     "rogue_wp_admins": [],
     "suspect_wp_admins": [],
     "rogue_wp_admins_detail": [],
@@ -130,5 +132,5 @@
     "joomla_vulnerable_extensions": [],
     "joomla_malware": []
   },
-  "malware_summary": { "total": 22, "affected_area": "WordPress-Bereich", "finding_summary": "mehrere Schaddateien", "timeframe": "in den letzten Monaten", "newest": "", "families": {"Verändertes Plugin":8,"Getarnte Payload":4,"Manipulierte .htaccess":4,"Code-Injection":2,"PHP im Upload-Verzeichnis":2,"Bekannte Schaddatei":1,"Tarnstruktur":1} }
+  "malware_summary": { "total": 27, "affected_area": "WordPress-Bereich", "finding_summary": "mehrere Schaddateien", "timeframe": "in den letzten Monaten", "newest": "", "families": {"Getarnte Payload":9,"Verändertes Plugin":8,"Manipulierte .htaccess":4,"Code-Injection":2,"PHP im Upload-Verzeichnis":2,"Bekannte Schaddatei":1,"Tarnstruktur":1} }
 }

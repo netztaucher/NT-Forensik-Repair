@@ -4,6 +4,47 @@ Alle nennenswerten Änderungen an `wp_plesk_forensik.sh`.
 
 ## [unveröffentlicht]
 
+### Behoben — 13e.1 hielt eine Wiederherstellung für den Infektionsbeginn (#65)
+
+Der erste Lauf mit Abschnitt 13e (`20260813_150137_global`) begann seine
+Zeitachse so:
+
+```
+2026-02-19 08:38:41  …/complianz-gdpr/assets/vendor/setasign/fpdi/…/Flate.php
+2026-02-19 08:38:42  …/wp-includes/class-wp-simplepie-sanitize-kses.php
+2026-02-19 08:38:46  …/ameliabooking/vendor/dompdf/dompdf/src/PhpEvaluator.php
+```
+
+Über 200 Dateien in 41 Sekunden. `ursache.aeltester_nachweis` nannte dieses
+Datum, und 13e.4 baute darauf sein „173 Tage vor dem Protokollfenster". Es war
+kein Angriff, sondern eine Wiederherstellung — `ursache.inode_spaeter_geaendert`
+stand auf 188: `cp -p` hatte die alte mtime mitgenommen.
+
+§7.14 erkennt diese Signatur seit Langem, misst dafür aber die **mtime**. Nach
+einer Wiederherstellung ist gerade die mtime die alte, verstreute — gehäuft ist
+die **ctime**. Für §7.14 war der Vorgang deshalb unsichtbar.
+
+**Das unterscheidende Merkmal ist nicht die Menge, sondern das
+Zeitstempelverhältnis.** Ein Angreifer, der hundert Shells in einer Minute
+ablegt, erzeugt dieselbe Häufung — seine Dateien sind aber Anker
+(`mtime == ctime`, frisch geschrieben). Eine Wiederherstellung erzeugt INODE.
+13e.2 rechnet das bereits aus; 13e.1 liest es jetzt.
+
+Ein erkannter Massenvorgang wird **nicht weggefiltert**, sondern zu einer Zeile
+zusammengefasst — mit Anzahl, Spanne und dem Anteil, der die Einordnung trägt:
+
+> ▓ MASSENVORGANG: 214 Dateien in 41 s, 188 davon mit erhaltener alter mtime —
+> Wiederherstellung oder Migration, kein Schreibvorgang eines Angreifers
+
+`ursache.aeltester_nachweis` überspringt solche Blöcke; der rohe Wert bleibt als
+`ursache.aeltester_nachweis_roh` erhalten, dazu `ursache.massenvorgaenge`. Eine
+Korrektur, die eine Zahl still ändert, wäre sonst derselbe Fehler wie #64 von der
+anderen Seite.
+
+Gegenprobe `NT_PRUEFSTAND_OHNE_MASSENVORGANG` gibt denselben fünf Dateien in
+derselben Sekunde eine frische mtime: aus einer Sammelzeile werden fünf
+Einzelzeilen und eine Welle mehr. Geprüft wird damit der **Unterscheider**.
+
 ### Behoben — Kundenbericht und BSI-Meldung nannten eine zu hohe Zahl (#64)
 
 Abschnitt 13d entlastet Mustertreffer gegen amtliche Prüfsummen und schrieb das

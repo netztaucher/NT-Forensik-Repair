@@ -32,15 +32,15 @@
 
 ## 3. Was wir technisch gefunden haben
 
-- **22 Schadcode-Fundstelle(n)** in Ihrem Webauftritt. Was jede einzelne ist und wozu sie dient, steht in der Einordnung unten und vollständig in `befunde_details.md`.
+- **27 Schadcode-Fundstelle(n)** in Ihrem Webauftritt. Was jede einzelne ist und wozu sie dient, steht in der Einordnung unten und vollständig in `befunde_details.md`.
 - 1 weitere Fundstelle(n) sind noch einzuordnen — sie sind kein belegter Schadcode, aber auch nicht abgehakt. Liste in `befunde_details.md`.
 
-**Schadcode-Einordnung — 22 Fundstelle(n):**
+**Schadcode-Einordnung — 27 Fundstelle(n):**
 
 | Art | Anzahl | Was damit bezweckt wird |
 |---|---|---|
+| Getarnte Payload | 9 | Nachladbarer Schadcode in Nicht-PHP-Datei |
 | Verändertes Plugin | 8 | Fremder Code in einem legitimen Plugin — nachträglich eingebaute Hintertür |
-| Getarnte Payload | 4 | Nachladbarer Schadcode in Nicht-PHP-Datei |
 | Manipulierte .htaccess | 4 | Zugriffsregeln zugunsten des Angreifers — hält seine Dateien erreichbar und sperrt Mitbewerber aus |
 | Code-Injection | 2 | Schadcode in legitime Dateien eingeschleust |
 | PHP im Upload-Verzeichnis | 2 | Ausführbarer Code dort, wo nur Dateien liegen sollen — der klassische Weg einer hochgeladenen Shell |
@@ -55,7 +55,7 @@
 - PHP-Dateien in Upload-Verzeichnissen (nach Guard-Filter, extrem verdächtig; 4 Guard-/Plugin-Dateien gefiltert)
 - .htaccess gibt gezielt einzelne PHP-Datei(en) frei — typisch für abgesicherte Webshells (4)
 - 2 Datei(en) sind in einer .htaccess namentlich freigegeben, gehören aber zu keinem bekannten Einstiegspunkt — und liegen dort. Für dieses Muster gibt es keinen legitimen Fall
-- PHP-Code in 4 Mediendatei(en) — in einem echten Bild gehört kein PHP
+- PHP-Code in 9 Mediendatei(en) — in einem echten Bild gehört kein PHP
 - kunde-zwei.example/cloud.kunde-zwei.example: bekannte Schaddatei der Nextcloud-Kampagne (filefuns.php)
 - kunde-zwei.example/cloud.kunde-zwei.example: Root-.htaccess trägt Angreifer-Merkmale (Freigabeliste mit fremden Dateinamen)
 - kunde-zwei.example/cloud.kunde-zwei.example: verschachtelte Verzeichnisse (z. B. config/config) — typisch für diese Kampagne

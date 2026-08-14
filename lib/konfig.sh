@@ -650,6 +650,21 @@ URSACHE_WELLE_SEK="${URSACHE_WELLE_SEK:-3600}"
 # ohnehin alles. Ein stilles Abschneiden waere dieselbe Luege wie eine stille
 # Entlastung.
 URSACHE_ACHSE_MAX="${URSACHE_ACHSE_MAX:-60}"
+# ── Massenvorgang gegen Angreiferschreibvorgang (13e.1, #65) ─
+#
+# Am 13.08.2026 stand am Anfang der Zeitachse ein Block von ueber 200 Dateien
+# innerhalb von 41 Sekunden, alle vom 19.02.2026 — eine Wiederherstellung oder
+# Migration. `ursache.aeltester_nachweis` nannte deshalb dieses Datum, und
+# 13e.4 baute darauf sein "173 Tage vor dem Protokollfenster".
+#
+# DAS UNTERSCHEIDENDE MERKMAL IST NICHT DIE MENGE, SONDERN DAS
+# ZEITSTEMPELVERHAELTNIS. Ein Angreifer, der hundert Shells in einer Minute
+# ablegt, erzeugt dieselbe Haeufung — aber seine Dateien sind ANKER
+# (mtime == ctime, frisch geschrieben). Eine Wiederherstellung mit `cp -p`
+# erzeugt INODE (alte mtime, neue ctime). Deshalb ist die Mehrheitsregel unten
+# die eigentliche Bedingung; Menge und Zeitfenster grenzen nur ein.
+URSACHE_MASSE_MIN="${URSACHE_MASSE_MIN:-50}"          # ab wievielen Dateien
+URSACHE_MASSE_FENSTER_SEK="${URSACHE_MASSE_FENSTER_SEK:-1800}"  # in welcher Spanne
 # Wie viele vhosts 13e.4 auf ihr Protokollfenster ansieht. Der Test ist ein
 # `head -1` je Logdatei; auf allen 475 vhosts waere er sinnlos teuer, und
 # Aussagekraft hat er nur dort, wo tatsaechlich etwas liegt.

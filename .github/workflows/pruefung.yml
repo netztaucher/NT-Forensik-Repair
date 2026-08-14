@@ -334,6 +334,11 @@ jobs:
           # die neuen Zeilen verschwinden und sie zählen wieder in der
           # Angreifbarkeitsbilanz mit. Prüft das Kriterium, nicht die Fixture.
           gegenprobe "12r Verzeichnis ohne Plugin-Kopf" NT_PRUEFSTAND_OHNE_NICHTPLUGIN=1
+          # #65. Dieselben fünf Dateien in derselben Sekunde — einmal mit
+          # erhaltener alter mtime (Wiederherstellung, eine Sammelzeile), einmal
+          # frisch geschrieben (Angreifer, fünf Einzelzeilen). Geprüft wird der
+          # UNTERSCHEIDER, nicht ob die Dateien da sind.
+          gegenprobe "13e.1 Massenvorgang"         NT_PRUEFSTAND_OHNE_MASSENVORGANG=1
           # #55. Setzt den beim Start festgehaltenen Programmstand auf eine
           # Marke, die kein Hash sein kann. Abschnitt 14 MUSS das bemerken und
           # die Fassungsangabe für ungültig erklären.
