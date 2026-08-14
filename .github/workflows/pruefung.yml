@@ -243,8 +243,20 @@ jobs:
           # (nt_repair.sh:373-383). Auf dem echten Server lagen dort 156 von
           # 292 Einträgen unter vendor/ — eine Bereinigung hätte
           # PDF-Erzeugung, Nextcloud und Less-Kompilierung verschoben.
-          vend = [p for p in a['webshell_dropper']
-                  if '/vendor/' in p or '/vendor-prefixed/' in p or '/node_modules/' in p]
+          # Die Liste hier muss VENDOR_PFADE in lib/konfig.sh entsprechen.
+          # 3rdparty/ und libraries/ kamen am 14.08.2026 dazu — 16 Dateien
+          # (TCPDF-Schriften, Joomla-Bibliotheken) standen bis dahin in der
+          # Quarantäneliste.
+          VPFADE = ['/vendor/', '/vendor-prefixed/', '/node_modules/',
+                    '/3rdparty/', '/libraries/']
+          vend = [p for p in a['webshell_dropper'] if any(v in p for v in VPFADE)]
+          # Jeder Pfadtyp braucht eine eigene Fixture, sonst hält der Test für
+          # geprüft, was nur mitgelaufen ist: der vendor/-Fall bestünde auch
+          # dann, wenn die beiden neuen Einträge in konfig.sh fehlten.
+          if m['webshell_count_roh'] > 0:
+              for v in ('/vendor/', '/3rdparty/', '/libraries/'):
+                  if not any(v in p for p in a['webshell_dropper_vendor']):
+                      fehler.append(f'Prüfbaum erzeugt keinen Treffer unter {v} — dieser Pfadtyp ist ungeprüft')
           print(f"webshell_vendor  {m['webshell_vendor']:>5}   "
                 f"Liste {len(a['webshell_dropper_vendor']):>5}")
           if vend:
@@ -259,6 +271,31 @@ jobs:
                 f"wp_installs {m['wp_installs']:>5}")
           if len(a['wp_configs']) != m['wp_installs']:
               fehler.append('actionable.wp_configs passt nicht zu metrics.wp_installs')
+          # Ein ungeprüfter Kern darf nicht entlasten (#65).
+          #
+          # Dieselbe Datei liegt unter zwei Kernen: Kunde 3, dessen
+          # verify-checksums durchläuft, und Kunde 4, für den wp-cli gar nicht
+          # antwortet. Die Entlastung durch 13c/13d hängt am
+          # Whitelist-Eintrag, und den bekommt nur, wer nachweislich geprüft
+          # WURDE.
+          #
+          # Warum als Soll-Wert und nicht über den Referenzvergleich: §7.3
+          # findet auf macOS null Treffer (BSD-grep kann kein -P). Lokal wäre
+          # die Zusicherung leer — beide Dateien fehlen dort, und ein
+          # Vergleich 0 == 0 sähe genauso grün aus.
+          #
+          # Auf kundenserver42 betraf das 12 von 121 Instanzen: der Bericht
+          # meldete "Kern unverändert" UND führte eine Kern-Datei als Fund.
+          drop = a['webshell_dropper']
+          k3 = [p for p in drop if 'kunde-drei' in p and 'class-pruefstand-sanitize' in p]
+          k4 = [p for p in drop if 'kunde-vier' in p and 'class-pruefstand-sanitize' in p]
+          print(f"ungeprüfter Kern: Kunde 3 (geprüft) {len(k3)} Treffer, "
+                f"Kunde 4 (nicht geprüft) {len(k4)} Treffer")
+          if m['webshell_count_roh'] > 0:
+              if k3:
+                  fehler.append('Kern von Kunde 3 IST geprüft — die Datei hätte entlastet werden müssen')
+              if not k4:
+                  fehler.append('Kern von Kunde 4 wurde NICHT geprüft — die Datei darf nicht entlastet werden')
           if m['webshell_count_roh'] == 0:
               # Kein Abbruch: ob der Prüfbaum auf dieser Plattform überhaupt
               # Mustertreffer erzeugt, ist eine eigene Frage. Aber sie muss

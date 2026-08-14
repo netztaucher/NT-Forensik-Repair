@@ -33,7 +33,7 @@
 
 ### 7.0 Datei-Inventar (Inode und Zeitstempel sichern)
 
-  Inventar: 651 Datei(en) erfasst, davon 651 mit Anlegezeit (belege/00_dateien.tsv)
+  Inventar: 656 Datei(en) erfasst, davon 656 mit Anlegezeit (belege/00_dateien.tsv)
 
 ### 7.1 Kürzlich veränderte PHP-Dateien (letzte 30 Tage)
 
@@ -44,6 +44,7 @@
 <INODE> -rw-r--r-- <EIGNER> 12 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/uploads/cache/index.php
 <INODE> -rw-r--r-- <EIGNER> 12 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/uploads/forminator/index.php
 <INODE> -rw-r--r-- <EIGNER> 124 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/plugins/pruefstand-kopflos/vendor/setasign/fpdi/Flate.php
+<INODE> -rw-r--r-- <EIGNER> 126 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/plugins/pruefstand-kopflos/libraries/joomla/filter/InputFilter.php
 <INODE> -rw-r--r-- <EIGNER> 128 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/uploads/pruefstand/dropper.php
 <INODE> -rw-r--r-- <EIGNER> 17 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/backups/updater-abc123/nextcloud-28.0.1.2-1700000000/filefuns.php
 <INODE> -rw-r--r-- <EIGNER> 17 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/cloud.kunde-zwei.example/filefuns.php
@@ -59,7 +60,6 @@
 <INODE> -rw-r--r-- <EIGNER> 43 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/uploads/2026/03/bild.php
 <INODE> -rw-r--r-- <EIGNER> 51 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/uploads/pruefstand/textverkettung.php
 <INODE> -rw-r--r-- <EIGNER> 53 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/uploads/pruefstand/zerlegt.php
-<INODE> -rw-r--r-- <EIGNER> 57 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/plugins/pruefstand-kopflos/lib/b.php
 <INODE> -rw-r--r-- <EIGNER> 57 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/plugins/pruefstand-kopflos/lib/c.php
 <INODE> -rw-r--r-- <EIGNER> 57 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/plugins/pruefstand-kopflos/lib/d.php
 <INODE> -rw-r--r-- <EIGNER> 57 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/plugins/pruefstand-kopflos/lib/e.php
@@ -371,11 +371,12 @@ Order allow,deny
 
 ### 12r.2 WordPress
 
-  Installationen: 3
+  Installationen: 4
 
 ```
 <PRUEFSTAND>/vhosts/kunde-drei.example/httpdocs
 <PRUEFSTAND>/vhosts/kunde-eins.example/httpdocs
+<PRUEFSTAND>/vhosts/kunde-vier.example/httpdocs
 <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs
 ```
 
@@ -403,6 +404,14 @@ Order allow,deny
 - ✅ kunde-eins.example/httpdocs: WordPress-Core unverändert (verify-checksums)
   kunde-eins.example/httpdocs: kein Wordfence in dieser Installation — keine Zweitmeinung verfügbar
 - ⚪ **Nicht messbar: kunde-eins.example/httpdocs: Datenbank nicht geprüft (grep beherrscht kein -P (PCRE) — die Werte aus wp-config.php sind damit nicht lesbar). Das ist KEINE Entwarnung.**
+
+### 12r.2.x kunde-vier.example/httpdocs
+
+- ✅ kunde-vier.example/httpdocs: keine Doorway-.htaccess-Signatur
+- ✅ kunde-vier.example/httpdocs: keine @include base64_decode()-Injektion
+- ⚪ **Nicht messbar: kunde-vier.example/httpdocs: wp core verify-checksums hat nicht geantwortet — der Kern ist WEDER bestätigt NOCH beanstandet (Rückgabewert 1)**
+  kunde-vier.example/httpdocs: kein Wordfence in dieser Installation — keine Zweitmeinung verfügbar
+- ⚪ **Nicht messbar: kunde-vier.example/httpdocs: Datenbank nicht geprüft (grep beherrscht kein -P (PCRE) — die Werte aus wp-config.php sind damit nicht lesbar). Das ist KEINE Entwarnung.**
 
 ### 12r.2.x kunde-zwei.example/httpdocs
 
@@ -669,10 +678,10 @@ ZUKUNFT   <ZEIT>  mtime liegt <SPANNE> NACH der ctime — vorwaerts datiert   <P
 |---|---|
 | 🔴 Kritische Befunde | 18 |
 | ⚠️ Warnungen | 22 |
-| ✅ Unauffällige Prüfungen | 24 |
-| ⚪ Nicht messbar | 10 |
+| ✅ Unauffällige Prüfungen | 26 |
+| ⚪ Nicht messbar | 12 |
 
-> **10 Prüfung(en) haben keine Aussage geliefert.** Ihr Ergebnis ist weder
+> **12 Prüfung(en) haben keine Aussage geliefert.** Ihr Ergebnis ist weder
 > ein Befund noch eine Entwarnung — der jeweilige Bereich ist ungeprüft:
 >
 > - Webshell-Mustersuche nicht ausgeführt — grep beherrscht kein -P (PCRE). Auf macOS ist BSD-grep die Vorgabe; GNU grep oder ugrep installieren. Das ist KEINE Entwarnung.
@@ -681,6 +690,8 @@ ZUKUNFT   <ZEIT>  mtime liegt <SPANNE> NACH der ctime — vorwaerts datiert   <P
 > - kunde-drei.example/httpdocs: 1 Plugin(s) ohne Prüfsummensatz und alle Themes — Unversehrtheit nicht feststellbar (Premium, Fork, Eigenbau; für Themes veröffentlicht wordpress.org keine Prüfsummen)
 > - kunde-drei.example/httpdocs: Datenbank nicht geprüft (grep beherrscht kein -P (PCRE) — die Werte aus wp-config.php sind damit nicht lesbar). Das ist KEINE Entwarnung.
 > - kunde-eins.example/httpdocs: Datenbank nicht geprüft (grep beherrscht kein -P (PCRE) — die Werte aus wp-config.php sind damit nicht lesbar). Das ist KEINE Entwarnung.
+> - kunde-vier.example/httpdocs: wp core verify-checksums hat nicht geantwortet — der Kern ist WEDER bestätigt NOCH beanstandet (Rückgabewert 1)
+> - kunde-vier.example/httpdocs: Datenbank nicht geprüft (grep beherrscht kein -P (PCRE) — die Werte aus wp-config.php sind damit nicht lesbar). Das ist KEINE Entwarnung.
 > - kunde-zwei.example/httpdocs: 2 Bestandteil(e) ohne lesbare Fassung — für sie ist keine Aussage zur Angreifbarkeit möglich
 > - kunde-zwei.example/httpdocs: 1 Plugin(s) ohne Prüfsummensatz und alle Themes — Unversehrtheit nicht feststellbar (Premium, Fork, Eigenbau; für Themes veröffentlicht wordpress.org keine Prüfsummen)
 > - kunde-zwei.example/httpdocs: Datenbank nicht geprüft (grep beherrscht kein -P (PCRE) — die Werte aus wp-config.php sind damit nicht lesbar). Das ist KEINE Entwarnung.
