@@ -1,10 +1,10 @@
-2026-08-12 | erzeugt von werkzeuge/wordpress-daten-update.sh
-wp-core.tsv                    3003 Zeile(n)
-wp-plugins.tsv                38870 Zeile(n)
-wp-themes.tsv                  3055 Zeile(n)
+2026-08-31 | erzeugt von werkzeuge/wordpress-daten-update.sh
+wp-core.tsv                    3027 Zeile(n)
+wp-plugins.tsv                39837 Zeile(n)
+wp-themes.tsv                  3095 Zeile(n)
 kev-wordpress.tsv                 6 Zeile(n)
 
 Abdeckung
-wp-core.tsv                         3003 Zeile(n),     1 verschiedene Slugs
-wp-plugins.tsv                     38870 Zeile(n), 15904 verschiedene Slugs
-wp-themes.tsv                       3055 Zeile(n),  2108 verschiedene Slugs
+wp-core.tsv                         3027 Zeile(n),     1 verschiedene Slugs
+wp-plugins.tsv                     39837 Zeile(n), 16036 verschiedene Slugs
+wp-themes.tsv                       3095 Zeile(n),  2122 verschiedene Slugs
