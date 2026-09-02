@@ -603,6 +603,17 @@ YARA_RULES_FILE="${SELF_DIR}/signaturen/alle.yar"
 if [[ "$WANT_YARA" != "1" ]]; then
     info "YARA-Scan nicht aktiviert — mit --yara einschalten (auf großen Webspaces langsam)"
 elif command -v yara &>/dev/null && [[ -f "$YARA_RULES_FILE" ]]; then
+    # Systemordner nur im echten Serverlauf. Im TESTLAUF (Pruefstand, ohne
+    # Root) und bei --nur-website sind sie ohne Aussage -- und sie koennen
+    # riesig sein: auf einem Entwickler-Mac liegt unter /opt Homebrew, gemessen
+    # 200 732 Dateien im Raster -size -30M. yara startet hier PRO Datei
+    # (die Regel ELF_Masquerading_As_KeyFile braucht -d filename=), ~0,03 s
+    # je Start -> ~100 Minuten ohne eine Zeile Ausgabe. Das sah aus wie ein
+    # Haenger (#89). 8.7 nutzt dieselbe Liste, aber gebuendelt per xargs grep.
+    YARA_ROOTS=("${SCAN_PATHS[@]}")
+    if [[ "${TESTLAUF:-0}" != "1" && "${MODUL_NUR:-}" != "ebene:website" ]]; then
+        YARA_ROOTS=(/tmp /var/tmp /dev/shm /root /home /usr/local/bin /usr/local/sbin /opt "${SCAN_PATHS[@]}")
+    fi
     YARA_DETAIL=""
     while IFS= read -r f; do
         [[ -f "$f" ]] || continue
@@ -613,8 +624,8 @@ elif command -v yara &>/dev/null && [[ -f "$YARA_RULES_FILE" ]]; then
             YARA_DETAIL+="$f — Regeln: $rules"$'\n'
             YARA_HITS+="$f"$'\n'
         fi
-    done < <(find /tmp /var/tmp /dev/shm /root /home /usr/local/bin /usr/local/sbin /opt "${SCAN_PATHS[@]}" \
-                -xdev -type f -size -30M 2>/dev/null | nf_strip_self)
+    done < <(find "${YARA_ROOTS[@]}" -xdev -type f -size -30M 2>/dev/null \
+                | nf_strip_self | fortschritt_strom "7.11 YARA-Signaturscan")
     if [[ -n "$YARA_DETAIL" ]]; then
         crit "YARA-Signaturtreffer im Dateisystem"
         code "$YARA_DETAIL"

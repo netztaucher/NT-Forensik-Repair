@@ -268,7 +268,7 @@
 [1m[0;32m  kunde/[0m  — weitergabefähig
     Kundenbericht:   <PRUEFSTAND>/ablage/forensik/<LAUF-ID>/kunde/kundenbericht.md
     Befund-Details:  <PRUEFSTAND>/ablage/forensik/<LAUF-ID>/kunde/befunde_details.md
-    Archiv:          <PRUEFSTAND>/ablage/forensik/<LAUF-ID>.tar.gz
+    Archiv:          <PRUEFSTAND>/ablage/forensik/<LAUF-ID>
 
 [1m[0;33m  betreiber/[0m — NICHT weitergeben
     Technik-Bericht: <PRUEFSTAND>/ablage/forensik/<LAUF-ID>/betreiber/technik_bericht.md
@@ -276,13 +276,13 @@
     DSGVO-Meldung:   <PRUEFSTAND>/ablage/forensik/<LAUF-ID>/betreiber/dsgvo_meldung.md
     findings.json:   <PRUEFSTAND>/ablage/forensik/<LAUF-ID>/betreiber/findings.json (Eingabe für die Bereinigung)
     Belege:          <PRUEFSTAND>/ablage/forensik/<LAUF-ID>/betreiber/belege (SHA256-versiegelt, unmaskiert)
-    Archiv:          <PRUEFSTAND>/ablage/forensik/<LAUF-ID>.tar.gz
+    Archiv:          <PRUEFSTAND>/ablage/forensik/<LAUF-ID>
 
 [0;33mNächste Schritte:[0m
   1. Kundenbericht prüfen:   cat <PRUEFSTAND>/ablage/forensik/<LAUF-ID>/kunde/kundenbericht.md
   2. BSI-Meldung ergänzen:   [AUSFÜLLEN]-Felder in <PRUEFSTAND>/ablage/forensik/<LAUF-ID>/betreiber/bsi_meldung.md
   3. DSGVO-Meldung prüfen:   [AUSFÜLLEN]-Felder in <PRUEFSTAND>/ablage/forensik/<LAUF-ID>/betreiber/dsgvo_meldung.md (eigener Meldeweg!)
   4. Kundenunterlagen holen (Befehl auf der naechsten Zeile, ganz markieren):
-     [1mscp <PRUEFSTAND>/ablage/forensik/<LAUF-ID>.tar.gz ~/Downloads/[0m
+     [1mscp <PRUEFSTAND>/ablage/forensik/<LAUF-ID> ~/Downloads/[0m
   5. Alle 🔴-Maßnahmen sofort umsetzen
 
