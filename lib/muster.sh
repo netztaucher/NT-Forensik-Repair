@@ -48,8 +48,12 @@ WP_ADMIN_MAIL_WARN='@wordpress\.com$'
 # ${BASE_DIR} (/root/wartungsscripte) ab. Da /root mitgescannt wird und die
 # Berichte die Suchbegriffe im Klartext enthalten, würde sich das Skript ab dem
 # zweiten Lauf selbst als Backdoor melden. Alle Scans dieses Abschnitts filtern
-# daher konsequent gegen ${BASE_DIR}.
-nf_strip_self() { grep -vF "${BASE_DIR}/" || true; }
+# daher konsequent gegen BEIDE eigenen Orte: ${BASE_DIR} (Laufdaten, Berichte,
+# Quarantäne) und ${SELF_DIR} (Code, signaturen/*.yar). Seit der Code nicht
+# mehr nach BASE_DIR kopiert wird, reicht BASE_DIR allein nicht — von einem
+# Checkout außerhalb von BASE_DIR meldete das Werkzeug sonst seine eigenen
+# YARA-Regeln als Treffer.
+nf_strip_self() { grep -vF -e "${BASE_DIR}/" -e "${SELF_DIR}/" || true; }
 
 # Eigene Prozesskette (Skript + Eltern), damit der Lauf sich nicht selbst meldet
 NF_SELF_PIDS=" $$ ${PPID:-0} "

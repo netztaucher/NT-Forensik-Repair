@@ -594,8 +594,12 @@ h2 "7.11 YARA-Signaturscan (optional)"
 # Sammel-Regeldatei bevorzugen (bindet gsocket + Joomla + künftige ein).
 # Rückfall auf die einzelne Datei hält Hosts lauffähig, die noch einen alten
 # signaturen/-Stand tragen.
-YARA_RULES_FILE="${BASE_DIR}/signaturen/alle.yar"
-[[ -f "$YARA_RULES_FILE" ]] || YARA_RULES_FILE="${BASE_DIR}/signaturen/gsocket-backdoors.yar"
+# Ueber SELF_DIR, nicht BASE_DIR: signaturen/ ist Code und liegt beim Runner
+# (wie die Module, Zeile 245 im Runner). BASE_DIR ist reine Datenablage. Bis
+# hierher hing die Code-Suche an BASE_DIR, weshalb der Wrapper BASE_DIR auf
+# den git-Klon zeigen musste -- und die Laeufe im Code landeten.
+YARA_RULES_FILE="${SELF_DIR}/signaturen/alle.yar"
+[[ -f "$YARA_RULES_FILE" ]] || YARA_RULES_FILE="${SELF_DIR}/signaturen/gsocket-backdoors.yar"
 if [[ "$WANT_YARA" != "1" ]]; then
     info "YARA-Scan nicht aktiviert — mit --yara einschalten (auf großen Webspaces langsam)"
 elif command -v yara &>/dev/null && [[ -f "$YARA_RULES_FILE" ]]; then
@@ -776,7 +780,7 @@ h2 "7.15 Injektion in grosse Dateien (ohne Referenz)"
 # Grenze des Verfahrens und steht so in docs/erkennung.md.
 if ! werkzeug_da python3; then
   info "python3 fehlt — Injektionsmass übersprungen"
-elif [[ ! -r "${BASE_DIR}/lib/injektion_pruefen.py" ]]; then
+elif [[ ! -r "${SELF_DIR}/lib/injektion_pruefen.py" ]]; then
   info "lib/injektion_pruefen.py fehlt — Injektionsmass übersprungen"
 else
   # Gebündelt über xargs, nicht je Datei: ein Python-Start pro Datei wären bei
@@ -787,7 +791,7 @@ else
                 | nf_strip_self \
                 | fortschritt_strom "7.15 Injektionsmass" \
                 | tr '\n' '\0' \
-                | xargs -0 -r -n200 python3 "${BASE_DIR}/lib/injektion_pruefen.py" 2>/dev/null \
+                | xargs -0 -r -n200 python3 "${SELF_DIR}/lib/injektion_pruefen.py" 2>/dev/null \
                 | LC_ALL=C sort -k2,2nr -k1,1 || true)
   INJ_ANZ=$(printf '%s\n' "$INJ_TREFFER" | grep -c . || true)
   if [[ "${INJ_ANZ:-0}" -gt 0 ]]; then
