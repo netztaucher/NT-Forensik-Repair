@@ -35,3 +35,6 @@ __pycache__/
 
 # Fremde Regelsaetze (LGPL) — vor Ort geholt, nicht mitgeliefert
 signaturen/fremd/
+
+# Backlog-Ablage (Historien-Rewrite-Vorbereitung, unbereinigte Kundenpfade, Bundles) — lokal, nie ins oeffentliche Repo
+backlog/
