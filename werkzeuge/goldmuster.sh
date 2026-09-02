@@ -1393,7 +1393,7 @@ import os, re, sys
 REGELN = [
     # Lauf-ID <datum>_<host>_<scope>, z.B. 2026-09-01_12-50-23_k42_server.
     # Traegt die Uhrzeit -> je Lauf anders, muss weg. [\w.-]+ deckt host+scope
-    # inkl. Domains (curaschirm.de) und Abo (abo-web178) ab.
+    # inkl. Domains (kunde.example) und Abo (abo-web178) ab.
     (r'\b\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}_[\w.-]+', '<LAUF-ID>'),  # neues Format
     (r'\b\d{8}_\d{6}_\w+',                         '<LAUF-ID>'),   # altes Format (Altbestand)
     (r'\b\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z',    '<UTC>'),

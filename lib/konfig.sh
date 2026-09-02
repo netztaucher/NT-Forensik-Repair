@@ -422,7 +422,7 @@ ablage_einrichten() {
     abo)    SCOPE_LABEL="abo-${ABO_USER}" ;;
     path)
       # Pfad-Scan: heisst die letzte Pfadkomponente wie eine Domain
-      # (captrix.de, tdl.therapeut.digital), ist sie der Scope -- nur dann sagt
+      # (kunde.example, sub.kunde.example), ist sie der Scope -- nur dann sagt
       # der Ordnername, WAS geprueft wurde. Sonst bleibt 'path' (httpdocs, tmp).
       _pb="$(basename "${SCAN_PATH_ARG:-}")"
       if [[ -n "$DOMAIN" ]]; then SCOPE_LABEL="$DOMAIN"
