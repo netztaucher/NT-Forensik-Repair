@@ -79,7 +79,7 @@ BELEG_STUFE=kunde
 # Regeldatei. Ein Bündelaufruf per xargs meldete deshalb im Test 25.860
 # Dateien in einer Sekunde ohne einen einzigen Treffer — er hatte gar nicht
 # gescannt, sondern nur Übersetzungsfehler erzeugt, die in /dev/null liefen.
-FREMD_YAR="${BASE_DIR}/signaturen/fremd/php.yar"
+FREMD_YAR="${SELF_DIR}/signaturen/fremd/php.yar"   # Code liegt beim Runner, nicht in BASE_DIR
 
 # Prüfstand-Naht: NT_PMF_ATTRAPPE nennt eine Datei mit vorgefertigter
 # yara-Ausgabe ("<regel> <pfad>" je Zeile). Ohne sie wäre dieser Abschnitt vom
@@ -137,7 +137,7 @@ if [[ -n "$PMF_OUT" ]]; then
     # gebraucht. Zwei Kopien waeren die naechste Gelegenheit zum
     # Auseinanderlaufen; genau daran entstand der Fehlalarm vom 12.08.2026.
     PMF_GEFILTERT=$(
-      NT_LIB="${BASE_DIR}/lib" \
+      NT_LIB="${SELF_DIR}/lib" \
       PMF_WL="$PMF_WL" PMF_WL_KERN="$PMF_WL_KERN" PMF_AUSNAHMEN="$PMF_AUSNAHMEN" \
       python3 - "$PMF_ROH" <<'PY'
 import os, sys

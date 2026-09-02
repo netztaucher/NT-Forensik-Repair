@@ -9,6 +9,10 @@
 # Ablage (fest):
 #   /root/wartungsscripte/                     ← Skript-Basis (wird angelegt)
 #   /root/wartungsscripte/forensik/<LAUF>/     ← ein Ordner pro Lauf
+#     <LAUF> = <datum>_<host>_<scope>, z.B. 2026-09-01_12-50-23_k42_server
+#       datum: %Y-%m-%d_%H-%M-%S (lesbar, sortierbar) · host: NT_HOST|hostname -s
+#       scope: server (global) · <domain> · abo-<webNN> · path
+#       Volle Konvention: Toolset docs/ablage-konvention.md
 #     ├── kunde/                               ← WEITERGABEFÄHIG
 #     │   ├── kundenbericht.md                 ← lesbar für den Kunden
 #     │   ├── befunde_details.md               ← Anlage, relative Pfade

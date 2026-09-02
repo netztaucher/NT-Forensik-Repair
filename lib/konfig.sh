@@ -404,11 +404,27 @@ abo_pfade_bestimmen() {
 }
 
 # ── Ablage einrichten ────────────────────────────────────────
-# Ebenfalls als Funktion: der Laufordner trägt die geprüfte Domain im
-# Namen, und die steht erst nach dem Menü fest.
+# Ebenfalls als Funktion: der Laufordner trägt Host und geprüfte Domain im
+# Namen, und die stehen erst nach dem Menü fest.
+#
+# Namensschema: <datum>_<host>_<scope>, z.B. 2026-09-01_12-50-23_k42_server.
+# Datum deutsch lesbar (Jahr-Monat-Tag_Std-Min-Sek), bleibt ISO-sortierbar.
+# host: NT_HOST (im Wrapper gesetzt, z.B. k42) sonst der kurze Hostname —
+#       damit ein zentral gesammelter Lauf bei mehreren Servern zuzuordnen ist.
+# scope: server (kompletter Serverlauf), die Domain (einzel-vhost),
+#        abo-<webNN> (Plesk-Abo) oder path (Pfad-Scan ohne ableitbare Domain).
 ablage_einrichten() {
-  TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-  RUN_LABEL="${TIMESTAMP}_${DOMAIN:-${SCOPE_MODE}}"
+  TIMESTAMP=$(date +%Y-%m-%d_%H-%M-%S)
+  HOST_SLUG="$(printf '%s' "${NT_HOST:-$(hostname -s)}" | tr -c 'A-Za-z0-9._-' '-')"
+  case "$SCOPE_MODE" in
+    global) SCOPE_LABEL="server" ;;
+    domain) SCOPE_LABEL="$DOMAIN" ;;
+    abo)    SCOPE_LABEL="abo-${ABO_USER}" ;;
+    path)   SCOPE_LABEL="${DOMAIN:-path}" ;;
+    *)      SCOPE_LABEL="${DOMAIN:-${SCOPE_MODE}}" ;;
+  esac
+  SCOPE_LABEL="$(printf '%s' "$SCOPE_LABEL" | tr -c 'A-Za-z0-9._-' '-')"
+  RUN_LABEL="${TIMESTAMP}_${HOST_SLUG}_${SCOPE_LABEL}"
   RUN_DIR="${FORENSIK_BASE}/${RUN_LABEL}"
 
   # ── Zwei Spuren (v3.11) ──────────────────────────────────────
@@ -487,43 +503,19 @@ Kennungen anderer Kunden stehen. Weitergabe an den Auftraggeber waere ein
 Datenschutzverstoss. Was an ihn geht, liegt in kunde/.
 BETREIBER_HINWEIS
 
-  # ── Selbst-Installation nach /root/wartungsscripte ──────────
-  # SELF_PATH und SELF_DIR setzt der Runner, bevor er diese Datei einbindet —
-  # er braucht sie schon, um sie überhaupt zu finden.
-  INSTALLED_PATH="${BASE_DIR}/wp_plesk_forensik.sh"
-  if [[ "$SELF_PATH" != "$INSTALLED_PATH" ]]; then
-    cp -f "$SELF_PATH" "$INSTALLED_PATH"
-    chmod 700 "$INSTALLED_PATH"
-  fi
-  # Beigelegte Hilfsdateien (YARA-Signaturen, PDF-Generator, Joomla-Datenbestand)
-  # neben das Skript mitziehen — so findet der Lauf sie unter ${BASE_DIR}, egal
-  # von wo gestartet wurde.
+  # ── Keine Selbst-Installation mehr (Ablage-Konvention) ──────
+  # Bis hierher kopierte sich der Runner bei jedem Lauf samt signaturen/,
+  # reportgen/, daten/, lib/, module/, rezepte/ nach ${BASE_DIR} und suchte den
+  # Code anschließend DORT. Folge: BASE_DIR trug Code und Laufdaten zugleich,
+  # der Wrapper musste BASE_DIR auf den git-Klon zeigen, und ein Symlink
+  # flickte den Rest — "das war Glück, kein Entwurf".
   #
-  # Auffrischen bei JEDEM Lauf, nicht nur beim ersten (v3.8): der frühere
-  # '! -e'-Guard hat einen einmal installierten Host dauerhaft auf dem Erststand
-  # eingefroren. Bei Signaturen war das ärgerlich; beim versionierten Joomla-
-  # Datenbestand (Prüfsummen, Schwachstellenliste) wäre es ein Fehler — der Lauf
-  # würde stumm gegen einen jahrealten Stand prüfen und "unauffällig" melden.
-  #
-  # lib/ und module/ gehören zwingend dazu: ohne sie ist die installierte Kopie
-  # unter ${BASE_DIR} nicht lauffähig, weil der Runner nur noch einbindet.
-  #
-  # rezepte/ ebenso, seit die anwendungsspezifische Prüfung dort liegt (v3.13).
-  # Fehlte es, war der Ausfall lautlos: der Rahmen findet kein Rezept, meldet
-  # das als Hinweis und läuft mit Rückgabewert 0 weiter. Im Prüfbaum gemessen
-  # sind das 4 kritische Befunde und 2 Warnungen weniger — und, schlimmer, die
-  # Zahl der nicht messbaren Prüfungen fällt von 4 auf 0. Der Bericht liest
-  # sich dadurch VOLLSTÄNDIGER als der Lauf war.
-  _srcdir="$SELF_DIR"
-  if [[ "$_srcdir" != "$BASE_DIR" ]]; then   # sonst kopiert sich die installierte Kopie selbst
-    for _aux in signaturen reportgen daten lib module rezepte; do
-      if [[ -d "$_srcdir/$_aux" ]]; then
-        mkdir -p "${BASE_DIR}/$_aux"
-        # '/.' kopiert den INHALT — ohne den entsteht ${BASE_DIR}/daten/daten
-        cp -rf "$_srcdir/$_aux/." "${BASE_DIR}/$_aux/" 2>/dev/null || true
-      fi
-    done
-  fi
+  # Jetzt: Code wird ausschließlich über SELF_DIR gefunden (Module Zeile 245
+  # im Runner, signaturen/ lib/ daten/ reportgen/ in den Modulen ebenso). Der
+  # git-Checkout IST die installierte Kopie; Rollout = git pull. BASE_DIR ist
+  # damit reine Datenablage (forensik/, repair/, quarantaene/) und darf auf
+  # /root/wartungsscripte stehen, ohne dass Code hineinwandert.
+  # Volle Konvention: Toolset docs/ablage-konvention.md.
 
   # Alles zusätzlich in lauf.log protokollieren
   exec > >(tee -a "$RUN_LOG") 2>&1

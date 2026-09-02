@@ -87,7 +87,7 @@ _einordnen() {   # _einordnen <blob>; setzt _REST, _WEG, _N_REST, _N_WEG
   # zugleich unter "kritisch" und unter "entlastet".
   #
   # Der Pruefbaum sah es nicht, weil dort immer etwas uebrig blieb.
-  NT_LIB="${BASE_DIR}/lib" PMF_WL="$_WL" PMF_WL_KERN="$_WL_KERN" \
+  NT_LIB="${SELF_DIR}/lib" PMF_WL="$_WL" PMF_WL_KERN="$_WL_KERN" \
   PMF_AUSNAHMEN="$_AUSN" \
   python3 - "$roh" "${roh}.rest" "${roh}.weg" <<'PY'
 import os, sys

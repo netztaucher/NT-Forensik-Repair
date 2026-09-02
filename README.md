@@ -214,6 +214,7 @@ Im Ordner [`examples/`](examples/) liegen vollständige Beispielberichte eines *
 - **[`docs/incident-response.md`](docs/incident-response.md)** — Incident-Response-Playbook: 7 Phasen von der Beweissicherung bis zur Härtung.
 - **[`docs/runbook.md`](docs/runbook.md)** — Runbook für die manuelle Ad-hoc-Analyse einzelner Prüfpunkte.
 - **[`docs/findings-schnittstelle.md`](docs/findings-schnittstelle.md)** — `findings.json` als Vertrag: welche Feldpfade NT-Repair liest und was bei Schema-Änderungen zu tun ist.
+- **[`../docs/ablage-konvention.md`](../docs/ablage-konvention.md)** — übergreifende Ablage-/Namenskonvention für Läufe und Quarantäne (`<datum>_<host>_<scope>`), gemeinsam mit NT-Repair.
 - **[`docs/lizenz.md`](docs/lizenz.md)** — Lizenz für den Bereinigungsteil: für wen, welcher Umfang, Einrichtung, Ausfallreserve, Nutzungsbedingungen.
 - **[`docs/lizenzierung-technik.md`](docs/lizenzierung-technik.md)** — das Schutzmodell dahinter: wie die Bindung funktioniert, wo ihre Grenzen liegen, wie eine Fassung ausgeliefert wird.
 
