@@ -1732,6 +1732,11 @@ case "$AKTION" in
     fi
     warn "Abweichungen gefunden. Beabsichtigt? Dann Referenz neu aufnehmen."
     info "Vollstaendiger Vergleich: diff -ru ${REF_DIR} ${NEU}"
+    # Den Diff gleich zeigen, begrenzt. In der CI ist die Arbeitsablage nach
+    # dem Job weg -- ohne Ausgabe hier bleibt von "Abweichung" nur der Befehl,
+    # den niemand mehr ausfuehren kann (Lauf 33604567236: rot, Ursache unsichtbar).
+    echo
+    diff -ru "$REF_DIR" "$NEU" 2>/dev/null | head -150
     exit 1 ;;
 
   *) fail "Unbekannte Aktion: ${AKTION} (aufnehmen | vergleichen | baum)" ;;
