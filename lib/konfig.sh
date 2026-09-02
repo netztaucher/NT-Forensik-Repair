@@ -404,11 +404,27 @@ abo_pfade_bestimmen() {
 }
 
 # ── Ablage einrichten ────────────────────────────────────────
-# Ebenfalls als Funktion: der Laufordner trägt die geprüfte Domain im
-# Namen, und die steht erst nach dem Menü fest.
+# Ebenfalls als Funktion: der Laufordner trägt Host und geprüfte Domain im
+# Namen, und die stehen erst nach dem Menü fest.
+#
+# Namensschema: <datum>_<host>_<scope>, z.B. 2026-09-01_12-50-23_k42_server.
+# Datum deutsch lesbar (Jahr-Monat-Tag_Std-Min-Sek), bleibt ISO-sortierbar.
+# host: NT_HOST (im Wrapper gesetzt, z.B. k42) sonst der kurze Hostname —
+#       damit ein zentral gesammelter Lauf bei mehreren Servern zuzuordnen ist.
+# scope: server (kompletter Serverlauf), die Domain (einzel-vhost),
+#        abo-<webNN> (Plesk-Abo) oder path (Pfad-Scan ohne ableitbare Domain).
 ablage_einrichten() {
-  TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-  RUN_LABEL="${TIMESTAMP}_${DOMAIN:-${SCOPE_MODE}}"
+  TIMESTAMP=$(date +%Y-%m-%d_%H-%M-%S)
+  HOST_SLUG="$(printf '%s' "${NT_HOST:-$(hostname -s)}" | tr -c 'A-Za-z0-9._-' '-')"
+  case "$SCOPE_MODE" in
+    global) SCOPE_LABEL="server" ;;
+    domain) SCOPE_LABEL="$DOMAIN" ;;
+    abo)    SCOPE_LABEL="abo-${ABO_USER}" ;;
+    path)   SCOPE_LABEL="${DOMAIN:-path}" ;;
+    *)      SCOPE_LABEL="${DOMAIN:-${SCOPE_MODE}}" ;;
+  esac
+  SCOPE_LABEL="$(printf '%s' "$SCOPE_LABEL" | tr -c 'A-Za-z0-9._-' '-')"
+  RUN_LABEL="${TIMESTAMP}_${HOST_SLUG}_${SCOPE_LABEL}"
   RUN_DIR="${FORENSIK_BASE}/${RUN_LABEL}"
 
   # ── Zwei Spuren (v3.11) ──────────────────────────────────────
