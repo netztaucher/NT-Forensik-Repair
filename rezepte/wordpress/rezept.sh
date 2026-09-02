@@ -804,7 +804,7 @@ rezept_db() {
   # Kompromittierung hinzugefügten" Administrator haben — ihr erster Benutzer
   # IST der Installateur.
   #
-  # Auf kundenserver42 traf das zweimal zu: `moorth` (info@7-days-web.de) war
+  # Auf einem Plesk-Host traf das zweimal zu: `moorth` (info@agentur.example) war
   # auf beiden gemeldeten Installationen der Benutzer mit der niedrigsten
   # Anlagezeit, auf einer davon entstand der älteste Beitrag zwei Stunden NACH
   # dem Konto. Eine Agentur, die Kundenseiten aufsetzt.
