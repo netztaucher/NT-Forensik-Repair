@@ -420,7 +420,17 @@ ablage_einrichten() {
     global) SCOPE_LABEL="server" ;;
     domain) SCOPE_LABEL="$DOMAIN" ;;
     abo)    SCOPE_LABEL="abo-${ABO_USER}" ;;
-    path)   SCOPE_LABEL="${DOMAIN:-path}" ;;
+    path)
+      # Pfad-Scan: heisst die letzte Pfadkomponente wie eine Domain
+      # (captrix.de, tdl.therapeut.digital), ist sie der Scope -- nur dann sagt
+      # der Ordnername, WAS geprueft wurde. Sonst bleibt 'path' (httpdocs, tmp).
+      _pb="$(basename "${SCAN_PATH_ARG:-}")"
+      if [[ -n "$DOMAIN" ]]; then SCOPE_LABEL="$DOMAIN"
+      # Gross-/Kleinschreibung zulassen: Plesk-Subdomains wie
+      # praxen/Rq1PoseC7K8wGA.therapeut.digital sind gemischt geschrieben.
+      elif [[ "$_pb" =~ ^[A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?(\.[A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?)+$ ]]; then SCOPE_LABEL="$_pb"
+      else SCOPE_LABEL="path"; fi
+      unset _pb ;;
     *)      SCOPE_LABEL="${DOMAIN:-${SCOPE_MODE}}" ;;
   esac
   SCOPE_LABEL="$(printf '%s' "$SCOPE_LABEL" | tr -c 'A-Za-z0-9._-' '-')"
