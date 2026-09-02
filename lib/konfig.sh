@@ -426,7 +426,9 @@ ablage_einrichten() {
       # der Ordnername, WAS geprueft wurde. Sonst bleibt 'path' (httpdocs, tmp).
       _pb="$(basename "${SCAN_PATH_ARG:-}")"
       if [[ -n "$DOMAIN" ]]; then SCOPE_LABEL="$DOMAIN"
-      elif [[ "$_pb" =~ ^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$ ]]; then SCOPE_LABEL="$_pb"
+      # Gross-/Kleinschreibung zulassen: Plesk-Subdomains wie
+      # praxen/Rq1PoseC7K8wGA.therapeut.digital sind gemischt geschrieben.
+      elif [[ "$_pb" =~ ^[A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?(\.[A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?)+$ ]]; then SCOPE_LABEL="$_pb"
       else SCOPE_LABEL="path"; fi
       unset _pb ;;
     *)      SCOPE_LABEL="${DOMAIN:-${SCOPE_MODE}}" ;;
