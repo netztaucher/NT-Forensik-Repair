@@ -1391,7 +1391,11 @@ import os, re, sys
 # Jede Regel einzeln, jede mit Grund. Wer hier etwas ergaenzt, muss sagen
 # koennen, warum der Wert sich zwangslaeufig aendert.
 REGELN = [
-    (r'\b\d{8}_\d{6}_\w+',                         '<LAUF-ID>'),   # traegt die Uhrzeit
+    # Lauf-ID <datum>_<host>_<scope>, z.B. 2026-09-01_12-50-23_k42_server.
+    # Traegt die Uhrzeit -> je Lauf anders, muss weg. [\w.-]+ deckt host+scope
+    # inkl. Domains (curaschirm.de) und Abo (abo-web178) ab.
+    (r'\b\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}_[\w.-]+', '<LAUF-ID>'),  # neues Format
+    (r'\b\d{8}_\d{6}_\w+',                         '<LAUF-ID>'),   # altes Format (Altbestand)
     (r'\b\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z',    '<UTC>'),
     # GNU-`stat` haengt Nanosekunden und Zeitzonenversatz an
     # ("2026-08-07 08:34:27.761970961 +0000"), BSD-`stat` nicht. Ohne den
