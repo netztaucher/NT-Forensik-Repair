@@ -600,8 +600,24 @@ h2 "7.11 YARA-Signaturscan (optional)"
 # den git-Klon zeigen musste -- und die Laeufe im Code landeten.
 YARA_RULES_FILE="${SELF_DIR}/signaturen/alle.yar"
 [[ -f "$YARA_RULES_FILE" ]] || YARA_RULES_FILE="${SELF_DIR}/signaturen/gsocket-backdoors.yar"
+# WARUM 'unklar' UND NICHT 'info'
+#
+# Faellt dieser Abschnitt aus, fehlt eine ganze Erkennungsebene — und der
+# Bericht sah bis dahin genauso aus wie einer, in dem sie nichts gefunden hat.
+# Im Serverlauf vom 03.09.2026 stand die Zeile als 'info' zwischen 300 anderen;
+# im Verdikt und in den Zaehlungen kam sie nicht vor. Wer den Bericht las, hielt
+# das Dateisystem fuer signaturgeprueft.
+#
+# 'unklar' ist die Kategorie fuer genau das: nicht gemessen, also auch nicht
+# entlastet. Sie erscheint als ⚪ im Bericht und in der Zaehlung.
+#
+# Der Schalter bleibt bewusst AUS als Vorgabe. yara startet hier PRO Datei
+# (die Regel braucht -d filename=), gemessen ~0,03 s je Start — auf einem
+# Webspace mit 1,6 Mio Dateien waeren das ueber 13 Stunden. Ein Vorgabewert,
+# der einen Lauf ueber Nacht zieht, wird abgeschaltet und nie wieder
+# eingeschaltet. Sichtbar fehlen ist besser als still lange laufen.
 if [[ "$WANT_YARA" != "1" ]]; then
-    info "YARA-Scan nicht aktiviert — mit --yara einschalten (auf großen Webspaces langsam)"
+    unklar "YARA-Signaturscan nicht gelaufen (Schalter --yara nicht gesetzt) — diese Erkennungsebene fehlt in diesem Bericht"
 elif command -v yara &>/dev/null && [[ -f "$YARA_RULES_FILE" ]]; then
     # Systemordner nur im echten Serverlauf. Im TESTLAUF (Pruefstand, ohne
     # Root) und bei --nur-website sind sie ohne Aussage -- und sie koennen
@@ -634,9 +650,9 @@ elif command -v yara &>/dev/null && [[ -f "$YARA_RULES_FILE" ]]; then
         ok "Keine YARA-Signaturtreffer"
     fi
 elif ! command -v yara &>/dev/null; then
-    info "yara nicht installiert — Signaturscan übersprungen (apt install yara)"
+    unklar "YARA-Signaturscan nicht gelaufen: yara ist auf diesem Host nicht installiert (apt install yara) — diese Erkennungsebene fehlt in diesem Bericht"
 else
-    info "Keine Regeldatei unter $YARA_RULES_FILE — Signaturscan übersprungen"
+    unklar "YARA-Signaturscan nicht gelaufen: keine Regeldatei unter $YARA_RULES_FILE — diese Erkennungsebene fehlt in diesem Bericht"
 fi
 
 # Der fremde Regelsatz (php-malware-finder) stand bis v3.12 hier als 7.12.
@@ -802,7 +818,7 @@ else
                 | nf_strip_self \
                 | fortschritt_strom "7.15 Injektionsmass" \
                 | tr '\n' '\0' \
-                | xargs -0 -r -n200 python3 "${SELF_DIR}/lib/injektion_pruefen.py" 2>/dev/null \
+                | xargs -0 -r -P4 -n200 python3 "${SELF_DIR}/lib/injektion_pruefen.py" 2>/dev/null \
                 | LC_ALL=C sort -k2,2nr -k1,1 || true)
   INJ_ANZ=$(printf '%s\n' "$INJ_TREFFER" | grep -c . || true)
   if [[ "${INJ_ANZ:-0}" -gt 0 ]]; then
