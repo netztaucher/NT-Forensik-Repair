@@ -132,6 +132,12 @@ jobs:
           sudo apt-get update -qq && sudo apt-get install -y -qq php-cli
           bash werkzeuge/version_compare_gegentest.sh 30000
 
+      - name: Selbsttest der Zeilenenden-Gegenprobe (#84)
+        # Beide Richtungen und die Gegenprobe. Ein Filter, der nur "meldet
+        # nicht mehr" prüft, wäre durch "meldet nie" zu bestehen — und eine
+        # echt veränderte Codedatei muss weiterhin MOD ergeben.
+        run: bash werkzeuge/zeilenenden_selbsttest.sh
+
       - name: Selbsttest der Hub-SSO-Befundklasse (rezept_konfig)
         # Die Klasse entscheidet aus Fassung, SSO-Schalter und Schlüssel-Zustand
         # über crit/warn/ok. Jede Verzweigung für sich ist plausibel, falsch
