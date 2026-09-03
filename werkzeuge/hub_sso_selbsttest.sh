@@ -34,7 +34,7 @@ SELF_DIR="$(cd "$(dirname "$REZEPT")/../.." && pwd)"   # fuer lib/wp_schwachstel
 
 # Nur die zu testenden Funktionen laden (kein voller Rezept-Lauf).
 eval "$(sed -n '/^_ver_kleiner()/,/^}/p'   "$REZEPT")"
-eval "$(sed -n '/^rezept_konfig()/,/^}$/p' "$REZEPT")"
+eval "$(sed -n '/^_wp_haertung_hub_sso()/,/^}$/p' "$REZEPT")"
 
 baue_instanz() {   # <version|-> <konstante 0|1>
   local ver="$1" konst="$2"
@@ -65,14 +65,14 @@ pruefe() {   # <name> <erwartete-schwere> <erwartetes-textmuster>
 lauf() {   # <sso-option> <keylen>
   T_SSO="$1"; T_KEYLEN="$2"
   _db_sql() { case "$1" in wpmudev_sso) printf '%s\n' "$T_SSO";; wpmudev_key) printf '%s\n' "$T_KEYLEN";; esac; }
-  LETZTE=""; rezept_konfig
+  LETZTE=""; _wp_haertung_hub_sso
 }
 
 SSO_AN='a:4:{s:7:"enabled";b:1;s:6:"userid";i:1;}'
 SSO_AUS='a:4:{s:7:"enabled";b:0;s:6:"userid";i:1;}'
 SSO_ALT='a:3:{s:6:"userid";i:1;}'          # 4.11.x: userid ohne enabled
 
-echo "=== rezept_konfig — Fallmatrix"
+echo "=== _wp_haertung_hub_sso — Fallmatrix"
 baue_instanz 5.0.0 1; lauf "$SSO_AN" 64;  pruefe "Konstante gesetzt sticht alles"        ok    "hart abgeschaltet"
 baue_instanz 5.0.0 0; lauf "$SSO_AN" 64;  pruefe "5.0.0 + SSO scharf"                    crit  "CVE-2026-76581"
 baue_instanz 5.0.1 0; lauf "$SSO_AN" 64;  pruefe "5.0.1 + SSO scharf"                    crit  "CVE-2026-76581"

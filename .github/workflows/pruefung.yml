@@ -132,6 +132,12 @@ jobs:
           sudo apt-get update -qq && sudo apt-get install -y -qq php-cli
           bash werkzeuge/version_compare_gegentest.sh 30000
 
+      - name: Selbsttest der WordPress-Härtungsprüfungen (#85)
+        # Beide Richtungen: der offene Zustand muss melden, der gehärtete
+        # darf nicht. Eine Härtungsprüfung, die immer warnt, wird ignoriert
+        # und ist damit wertlos.
+        run: bash werkzeuge/haertung_selbsttest.sh
+
       - name: Selbsttest der Doorway-Einstufung (#86)
         # Beide Richtungen: die Core-Sitemap entlastet, ein echter Doorway
         # (viele URLs oder Spam-Muster) bleibt crit. Und ohne Abruf darf nie
