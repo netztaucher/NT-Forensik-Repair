@@ -476,6 +476,35 @@ for zeile in open(sys.argv[1], encoding="utf-8", errors="replace").read().splitl
                 continue
             if not passt(soll, hashlib.md5(roh).hexdigest(),
                                hashlib.sha256(roh).hexdigest()):
+                # ZEILENENDEN-GEGENPROBE (#84)
+                #
+                # Gemessen am 31.08.2026: von 47 abweichenden Dateien eines
+                # Plugins waren 46 nach `tr -d '\r'` byteweise identisch. Die
+                # Richtung war ueberraschend — nicht der Server hatte CRLF,
+                # sondern das AMTLICHE Archiv; die Installation war beim
+                # Einspielen auf LF normalisiert worden (FTP im ASCII-Modus,
+                # Windows-Editor, Deploy-Werkzeug). Gemeldet wurden sie als
+                # "veraenderte Plugin-Codedatei" — kritisch, mit der vollen
+                # Sofortmassnahmen-Liste, fuer Dateien, die inhaltlich das
+                # Original sind.
+                #
+                # Geprueft werden beide Richtungen gegen DIESELBE amtliche
+                # Pruefsumme. Trifft eine, ist die Datei inhaltlich das
+                # Original und kann keinen untergeschobenen Schadcode tragen —
+                # dafuer waere eine Hash-Kollision noetig. Erst danach faellt
+                # das Urteil MOD/SOFT.
+                lf   = roh.replace(b"\r\n", b"\n")
+                crlf = lf.replace(b"\n", b"\r\n")
+                nur_zeilenenden = any(
+                    v != roh and passt(soll, hashlib.md5(v).hexdigest(),
+                                             hashlib.sha256(v).hexdigest())
+                    for v in (lf, crlf)
+                )
+                if nur_zeilenenden:
+                    # Absoluter Pfad wie bei UNVERAENDERT: die Zeile speist
+                    # auch die Pruefsummen-Whitelist.
+                    print("\t".join(["ZEILENENDEN", slug, ver, voll]))
+                    continue
                 art = "MOD" if os.path.splitext(name)[1].lower() in CODE else "SOFT"
                 print("\t".join([art, slug, ver, rel]))
             else:
@@ -505,13 +534,16 @@ PY
   # Shell-Variable dieser Größe wird bei jeder Zuweisung kopiert.
   # Der Ablageort liegt im Laufordner, aber weder in kunde/ noch in betreiber/
   # — er ist Arbeitsmaterial, kein Beleg, und wandert in kein Archiv.
-  printf '%s\n' "$ergebnis" | awk -F'\t' '$1=="UNVERAENDERT"{print $4}' \
+  # ZEILENENDEN zaehlt wie UNVERAENDERT: die Datei ist nach Normalisierung
+  # byteweise das Original und kann damit 13c/13d entlasten (#84, #18).
+  printf '%s\n' "$ergebnis" | awk -F'\t' '$1=="UNVERAENDERT" || $1=="ZEILENENDEN"{print $4}' \
     >> "${PRUEFSUMMEN_WHITELIST:-${RUN_DIR}/.pruefsummen_bestaetigt.txt}"
 
   n_geprueft=$(printf '%s\n' "$ergebnis" | grep -c '^GEPRUEFT' || true)
   n_mod=$(printf   '%s\n' "$ergebnis" | grep -c '^MOD'   || true)
   n_soft=$(printf  '%s\n' "$ergebnis" | grep -c '^SOFT'  || true)
   n_extra=$(printf '%s\n' "$ergebnis" | grep -c '^EXTRA' || true)
+  local n_ze; n_ze=$(printf '%s\n' "$ergebnis" | grep -c '^ZEILENENDEN' || true)
   n_fehlt=$(printf '%s\n' "$ergebnis" | grep -c '^FEHLT' || true)
   n_ohne=$((n_ohne + $(printf '%s\n' "$ergebnis" | grep -c '^OHNE' || true)))
 
@@ -541,6 +573,14 @@ PY
              "$(printf '%s\n' "$ergebnis" | awk -F'\t' -v p="$basis" '$1=="SOFT"{print p $2 "/" $4}')"
   fi
 
+  # Kein stilles Wegfiltern: die Zeilenenden-Faelle verschwinden nicht, sie
+  # bekommen ihre eigene, niedrigere Stufe. Sie sagen etwas ueber den
+  # EINSPIELWEG (FTP im ASCII-Modus o.ae.), nicht ueber Schadcode.
+  if [[ "${n_ze:-0}" -gt 0 ]]; then
+    info "${REZ_KURZ}: ${n_ze} Plugin-Datei(en) weichen nur in den Zeilenenden vom amtlichen Satz ab — inhaltlich identisch, als unverändert gewertet"
+    evidence "wp_plugin_zeilenenden_$(echo "$REZ_KURZ" | tr '/.' '__')" \
+             "$(printf '%s\n' "$ergebnis" | awk -F'\t' '$1=="ZEILENENDEN"{print $4}')"
+  fi
   if [[ "${n_fehlt:-0}" -gt 0 ]]; then
     befund_melden wordpress kern warn \
       "${REZ_KURZ}: ${n_fehlt} im Prüfsummensatz geführte Plugin-Datei(en) fehlen auf der Platte" "$REZ_PFAD"
