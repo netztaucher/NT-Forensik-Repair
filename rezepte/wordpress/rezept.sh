@@ -950,11 +950,11 @@ _wp_haertung_hub_sso() {
   # ── Optionen: SSO-Zustand und ob die Site verbunden ist ────
   # Vom Schluessel wird ausschliesslich die LAENGE gelesen. Der Wert ist ein
   # Zugangsgeheimnis und hat in Befund, Beleg und Logzeile nichts zu suchen.
-  local sso keylen
+  local sso keylen p="${REZ_PFX:-}"
   sso=$(_db_sql wpmudev_sso \
-        "SELECT option_value FROM ${REZ_PFX}options WHERE option_name='wdp_un_sso';" 2>/dev/null | head -1)
+        "SELECT option_value FROM ${p}options WHERE option_name='wdp_un_sso';" 2>/dev/null | head -1)
   keylen=$(_db_sql wpmudev_key \
-        "SELECT LENGTH(option_value) FROM ${REZ_PFX}options WHERE option_name='wpmudev_apikey';" 2>/dev/null | head -1)
+        "SELECT LENGTH(option_value) FROM ${p}options WHERE option_name='wpmudev_apikey';" 2>/dev/null | head -1)
   keylen="${keylen//[^0-9]/}"; keylen="${keylen:-0}"
 
   # enabled";b:1 = an, b:0 = aus. Fehlt der Schluessel ganz (Dashboard 4.11.x),
@@ -1032,9 +1032,14 @@ Schlüssel: $([[ ${keylen:-0} -gt 0 ]] && echo "gesetzt (${keylen} Zeichen, Wert
 # Rein aus der Datenbank, ohne Netz. Der Wert selbst wird nie gelesen: die
 # Abfrage zaehlt nur, wie viele Eintraege je Konto stehen.
 _wp_haertung_app_passwords() {
-  local zeilen n konten
+  local zeilen n konten p="${REZ_PFX:-}"
+  if ! _db_da; then
+    befund_melden wordpress haertung unklar \
+      "${REZ_KURZ}: Application Passwords nicht geprüft (kein Datenbankzugang) — das ist KEINE Entwarnung" "$REZ_PFAD"
+    return 0
+  fi
   zeilen=$(_db_sql wp_app_passwords \
-    "SELECT u.user_login, LENGTH(m.meta_value) - LENGTH(REPLACE(m.meta_value, 'uuid', '')) FROM ${REZ_PFX}usermeta m JOIN ${REZ_PFX}users u ON u.ID = m.user_id WHERE m.meta_key = '${REZ_PFX}application_passwords';" 2>/dev/null || true)
+    "SELECT u.user_login, LENGTH(m.meta_value) - LENGTH(REPLACE(m.meta_value, 'uuid', '')) FROM ${p}usermeta m JOIN ${p}users u ON u.ID = m.user_id WHERE m.meta_key = '${p}application_passwords';" 2>/dev/null || true)
   [[ -n "$zeilen" ]] || { befund_melden wordpress haertung ok "${REZ_KURZ}: keine Application Passwords vergeben" "$REZ_PFAD"; return 0; }
   konten=$(printf '%s\n' "$zeilen" | grep -c . || true)
   n=$(printf '%s\n' "$zeilen" | awk -F'\t' '{s+=int($2/4)} END{print s+0}')
@@ -1059,9 +1064,11 @@ $(printf '%s\n' "$zeilen" | awk -F'\t' '{printf "%s\t%d\n", $1, int($2/4)}')"
 # Geprueft wird mit --online (eine DNS-Abfrage je Domain, keine Verbindung
 # zum Ziel). Ohne Netz bleibt es bei 'unklar'.
 _wp_haertung_admin_domains() {
-  local domains d ohne=0 geprueft=0 liste=""
+  local domains d ohne=0 geprueft=0 liste="" p="${REZ_PFX:-}"
+  _db_da || { befund_melden wordpress haertung unklar \
+    "${REZ_KURZ}: Adressdomains der Administratoren nicht geprüft (kein Datenbankzugang)" "$REZ_PFAD"; return 0; }
   domains=$(_db_sql wp_admin_mail_domains \
-    "SELECT DISTINCT SUBSTRING_INDEX(u.user_email, '@', -1) FROM ${REZ_PFX}users u JOIN ${REZ_PFX}usermeta m ON m.user_id = u.ID WHERE m.meta_key = '${REZ_PFX}capabilities' AND m.meta_value LIKE '%administrator%';" 2>/dev/null || true)
+    "SELECT DISTINCT SUBSTRING_INDEX(u.user_email, '@', -1) FROM ${p}users u JOIN ${p}usermeta m ON m.user_id = u.ID WHERE m.meta_key = '${p}capabilities' AND m.meta_value LIKE '%administrator%';" 2>/dev/null || true)
   [[ -n "$domains" ]] || return 0
   if [[ "${WANT_ONLINE:-0}" != "1" ]] || ! werkzeug_da dig; then
     befund_melden wordpress haertung unklar \
@@ -1099,12 +1106,13 @@ _wp_haertung_admin_domains() {
 # Parameter unvollstaendig sind und nichts angelegt wird. Der GET-Befund
 # genuegt als Handlungsgrund; der Sperrfilter deckt beide Richtungen ab.
 _wp_haertung_rest_enum() {
-  local home code datei n
-  home=$(_db_sql wp_home "SELECT option_value FROM ${REZ_PFX}options WHERE option_name='home';" 2>/dev/null | head -1)
+  local home code datei n grund
+  home=$(_db_sql wp_home "SELECT option_value FROM ${REZ_PFX:-}options WHERE option_name='home';" 2>/dev/null | head -1)
   home="${home%/}"
   if [[ "${WANT_ONLINE:-0}" != "1" || -z "$home" ]]; then
+    [[ "${WANT_ONLINE:-0}" == "1" ]] && grund="Adresse der Installation nicht lesbar" || grund="ohne --online"
     befund_melden wordpress haertung unklar \
-      "${REZ_KURZ}: REST-Benutzerliste nicht geprüft (ohne --online) — /wp-json/wp/v2/users liefert unangemeldet oft alle Benutzernamen" "$REZ_PFAD"
+      "${REZ_KURZ}: REST-Benutzerliste nicht geprüft (${grund}) — /wp-json/wp/v2/users liefert unangemeldet oft alle Benutzernamen" "$REZ_PFAD"
     return 0
   fi
   datei=$(mktemp "${RUN_DIR}/.restusers.XXXXXX")
@@ -1147,9 +1155,26 @@ _wp_haertung_wpconfig() {
   fi
 }
 
+# Steht eine Datenbank zur Verfuegung? Die Antwort entscheidet, ob eine leere
+# Abfrage 'nichts vorhanden' heisst oder 'nicht gemessen'. Ohne diese
+# Unterscheidung meldet eine Instanz ohne Datenbankzugang "keine Application
+# Passwords vergeben" — eine Entwarnung, die niemand gemessen hat.
+_db_da() { [[ -n "${NT_DB_ATTRAPPE:-}" || "${REZ_DB_OK:-0}" == "1" ]]; }
+
 # Der Haken, den der Rahmen aufruft (12r_rezepte.sh). Er buendelt die
 # Haertungspruefungen; jede einzelne meldet selbst und ist fuer sich testbar.
 rezept_konfig() {
+  # Datenbank-Kontext. rezept_db_zugang setzt $REZ_PFX und rezept_sql, laeuft
+  # von sich aus aber erst in rezept_db — also NACH dieser Funktion
+  # (12r_rezepte.sh:190/191). Ohne diesen Aufruf war $REZ_PFX hier auf der
+  # ersten Instanz unbelegt (unter `set -u` Abbruch des ganzen Laufs, gemessen
+  # in der CI zu #101) und ab der zweiten das Praefix der VORIGEN Instanz.
+  # Der Aufruf ist idempotent: er liest die wp-config.php dieser Instanz neu.
+  REZ_DB_OK=0
+  if [[ -r "${REZ_PFAD}/wp-config.php" ]] \
+     && rezept_db_zugang "${REZEPT_DIR}/wordpress" "${REZ_PFAD}/wp-config.php"; then
+    REZ_DB_OK=1
+  fi
   _wp_haertung_hub_sso
   _wp_haertung_app_passwords
   _wp_haertung_admin_domains

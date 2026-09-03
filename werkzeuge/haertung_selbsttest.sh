@@ -30,11 +30,11 @@ befund_melden() { MELDUNGEN+="$2|$3|$4"$'\n'; }   # <kat>|<schwere>|<text>
 evidence() { :; }
 code() { :; }
 werkzeug_da() { return 1; }        # kein dig -> Domain-Prüfung bleibt unklar
-REZ_PFX="wp_"; REZ_KURZ="test.example"; WANT_ONLINE=0
+REZ_PFX="wp_"; REZ_KURZ="test.example"; WANT_ONLINE=0; REZ_DB_OK=1
 eval "$(sed -n '/^datei_meta()/,/^}$/p' "$(dirname "$REZEPT")/../../lib/kern.sh" 2>/dev/null)" 2>/dev/null || \
   datei_meta() { case "$2" in rechte) stat -c %a "$1" 2>/dev/null || stat -f '%OLp' "$1";; esac; }
 
-for f in _wp_haertung_app_passwords _wp_haertung_admin_domains _wp_haertung_rest_enum _wp_haertung_wpconfig; do
+for f in _db_da _wp_haertung_app_passwords _wp_haertung_admin_domains _wp_haertung_rest_enum _wp_haertung_wpconfig; do
   eval "$(sed -n "/^${f}()/,/^}\$/p" "$REZEPT")"
 done
 
@@ -74,6 +74,33 @@ erwarte "gehärtet" ok "Editor gesperrt + Rechte eng -> ok"
 printf '<?php\ndefine( '"'"'DISALLOW_FILE_EDIT'"'"', true );\ndefine( '"'"'WP_DEBUG'"'"', true );\n' > "$REZ_PFAD/wp-config.php"; chmod 640 "$REZ_PFAD/wp-config.php"
 MELDUNGEN=""; _wp_haertung_wpconfig
 erwarte "Härtungspunkt" warn "WP_DEBUG an -> warn"
+
+echo "=== Ohne Datenbankzugang darf nichts entwarnt werden"
+# Gemessen am 03.09.2026 in der CI (#101): rezept_konfig laeuft VOR rezept_db,
+# also vor rezept_db_zugang. Ohne eigenen Zugangsaufbau lieferte jede Abfrage
+# leer — und eine leere Abfrage las sich als "keine Application Passwords
+# vergeben". Eine Entwarnung, die niemand gemessen hat.
+REZ_DB_OK=0; _db_sql() { :; }
+MELDUNGEN=""; _wp_haertung_app_passwords
+erwarte "KEINE Entwarnung" unklar "kein DB-Zugang -> unklar statt ok"
+MELDUNGEN=""; _wp_haertung_admin_domains
+erwarte "kein Datenbankzugang" unklar "Adressdomains ohne DB -> unklar"
+REZ_DB_OK=1
+
+echo "=== Kein Abbruch ohne gesetztes Tabellen-Praefix"
+# Der zweite Teil desselben Befunds: $REZ_PFX ist auf der ersten Instanz noch
+# unbelegt. Unter `set -u` brach damit der GANZE Lauf ab, nicht nur die
+# Pruefung. Der Test laeuft die Funktionen deshalb mit -u und ohne Praefix.
+unbound=$(
+  set -u
+  unset REZ_PFX
+  _db_sql() { :; }
+  for f in _wp_haertung_app_passwords _wp_haertung_admin_domains _wp_haertung_rest_enum; do
+    "$f" 2>&1 >/dev/null
+  done
+)
+if [[ -z "$unbound" ]]; then echo "  OK     ohne \$REZ_PFX kein Abbruch unter set -u"
+else echo "  FEHLER unter set -u: $unbound"; fail=1; fi
 
 [[ $fail -eq 0 ]] && echo "=> ALLE BESTANDEN" || echo "=> FEHLGESCHLAGEN"
 exit $fail
