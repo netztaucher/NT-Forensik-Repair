@@ -132,6 +132,14 @@ jobs:
           sudo apt-get update -qq && sudo apt-get install -y -qq php-cli
           bash werkzeuge/version_compare_gegentest.sh 30000
 
+      - name: Selbsttest der Hub-SSO-Befundklasse (rezept_konfig)
+        # Die Klasse entscheidet aus Fassung, SSO-Schalter und Schlüssel-Zustand
+        # über crit/warn/ok. Jede Verzweigung für sich ist plausibel, falsch
+        # wird erst die Kombination — und die Altfassung 4.11.x führt 'userid'
+        # ohne 'enabled', was als "aus" gelesen genau die Instanz freispricht,
+        # die ein zweites Mal übernommen wurde.
+        run: bash werkzeuge/hub_sso_selbsttest.sh
+
       - name: Zeitstempel in Belegen (lib/kern.sh)
         # Eigener Prüfstand, weil die Referenz unter pruefstand/referenz/ von
         # den Belegen nur die DATEINAMEN festhält, nicht deren Inhalt. Der

@@ -41,6 +41,31 @@ _wp_err() {
 }
 REZ_CLI_SQL="_wp db query --skip-column-names"
 
+# Versionsordnung — ausschliesslich ueber den geprueften Vergleicher in
+# lib/wp_schwachstellen.py (version_vergleich, gegen PHPs version_compare mit
+# 30000 Faellen gegengetestet, werkzeuge/version_compare_gegentest.sh).
+#
+# KEINE zweite Umsetzung in Bash. Eine Ordnung, die an einer Stelle abweicht,
+# meldet entweder eine Luecke, die geschlossen ist, oder schweigt zu einer, die
+# offen ist — beides sieht im Bericht plausibel aus. Dieselbe Ueberlegung steht
+# in lib/pruefsummen_filter.py: eine zweite Kopie ist die naechste Gelegenheit
+# zum Auseinanderlaufen.
+#
+#   0 = $1 ist kleiner als $2
+#   1 = nicht kleiner
+#   2 = nicht entscheidbar (python3 oder die Bibliothek fehlt)
+_ver_kleiner() {   # _ver_kleiner <a> <b>
+  [[ "$1" == "$2" ]] && return 1
+  command -v python3 >/dev/null 2>&1 || return 2
+  [[ -r "${SELF_DIR:-.}/lib/wp_schwachstellen.py" ]] || return 2
+  python3 - "${SELF_DIR:-.}/lib" "$1" "$2" <<'PY'
+import sys
+sys.path.insert(0, sys.argv[1])
+from wp_schwachstellen import version_vergleich
+sys.exit(0 if version_vergleich(sys.argv[2], sys.argv[3]) < 0 else 1)
+PY
+}
+
 # ── Abgleich gegen bekannte Schwachstellen ───────────────────
 # Der Bestand liegt offline unter daten/ dieses Rezepts, der Vergleich in
 # lib/wp_schwachstellen.py. Kein Netzzugriff, kein --online: was hier geprueft
@@ -763,6 +788,119 @@ rezept_sonder() {
   else
     _wp_plugin_integritaet
   fi
+}
+
+# ── Konfiguration: exponierter Fernzugang ────────────────────
+#
+# WARUM DAS NICHT DER SCHWACHSTELLEN-ABGLEICH ERLEDIGT
+#
+# Der Abgleich in rezept_version kennt nur, was im Datenbestand steht. Beim
+# Einbruch vom 28.08.2026 (fortbildungszentrum-halfmann.de) war der Weg hinein
+# CVE-2026-76581 im WPMU DEV Dashboard: veroeffentlicht am 27.08., der Bestand
+# stammte vom 12.08. Eine Instanz auf 5.0.1 galt dem Abgleich deshalb als
+# sauber — betroffen war sie trotzdem.
+#
+# Die Konfiguration dagegen ist ohne Bestand messbar: ist der Hub-Fernzugang
+# ueberhaupt scharf? Erst SSO + Admin-Mapping machen aus der Luecke eine offene
+# Tuer. Das gilt fuer die naechste Luecke derselben Familie genauso, ohne dass
+# jemand einen Datenbestand nachziehen muss.
+#
+# Der Angriff im Log: admin-ajax.php?action=wdpsso_step1 (302) gefolgt von
+# wdpsso_step2&outgoing_hmac=… (302), danach Plugin-Upload als Administrator.
+# Der SSO-Login erzeugt KEIN wp_login-Ereignis — Anmeldeprotokolle zeigen ihn
+# nicht.
+rezept_konfig() {
+  local PLUG="${REZ_PFAD}/wp-content/plugins/wpmudev-updates"
+  local HAUPT="${PLUG}/update-notifications.php"
+  [[ -d "$PLUG" ]] || return 0            # Dashboard nicht installiert
+  local kurz="${REZ_KURZ}"
+
+  # ── Version aus dem Plugin-Kopf ────────────────────────────
+  local ver=""
+  [[ -r "$HAUPT" ]] && ver=$(grep -m1 -E '^\s*\*?\s*Version:' "$HAUPT" 2>/dev/null \
+                             | grep -oE '[0-9]+(\.[0-9]+)*' | head -1)
+
+  # ── Ist SSO hart abgeschaltet? ─────────────────────────────
+  # Die Konstante wirkt in beiden Schritten vor jeder Pruefung; sie sticht die
+  # Option. Ohne diese Abfrage meldete die Pruefung eine gehaertete Instanz als
+  # offen.
+  local konstante=0
+  grep -qE "define\(\s*['\"]WPMUDEV_DISABLE_SSO['\"]\s*,\s*true" \
+       "${REZ_PFAD}/wp-config.php" 2>/dev/null && konstante=1
+
+  # ── Optionen: SSO-Zustand und ob die Site verbunden ist ────
+  # Vom Schluessel wird ausschliesslich die LAENGE gelesen. Der Wert ist ein
+  # Zugangsgeheimnis und hat in Befund, Beleg und Logzeile nichts zu suchen.
+  local sso keylen
+  sso=$(_db_sql wpmudev_sso \
+        "SELECT option_value FROM ${REZ_PFX}options WHERE option_name='wdp_un_sso';" 2>/dev/null | head -1)
+  keylen=$(_db_sql wpmudev_key \
+        "SELECT LENGTH(option_value) FROM ${REZ_PFX}options WHERE option_name='wpmudev_apikey';" 2>/dev/null | head -1)
+  keylen="${keylen//[^0-9]/}"; keylen="${keylen:-0}"
+
+  # enabled";b:1 = an, b:0 = aus. Fehlt der Schluessel ganz (Dashboard 4.11.x),
+  # heisst das NICHT 'aus': die am 01.09. erneut uebernommene Instanz trug
+  # userid ohne enabled. Ein fehlender Schalter wird deshalb als scharf
+  # gewertet, sobald ein Benutzer gemappt ist.
+  local sso_an=0 sso_user=""
+  if [[ -n "$sso" ]]; then
+    sso_user=$(printf '%s' "$sso" | grep -oE '"userid";i:[0-9]+' | grep -oE '[0-9]+$')
+    if printf '%s' "$sso" | grep -q '"enabled";b:1'; then sso_an=1
+    elif printf '%s' "$sso" | grep -q '"enabled";b:0'; then sso_an=0
+    elif [[ -n "$sso_user" ]]; then sso_an=1
+    fi
+  fi
+
+  # ── Urteil ────────────────────────────────────────────────
+  local lage="Dashboard ${ver:-unbekannt}, SSO $([[ $sso_an -eq 1 ]] && echo scharf || echo aus)${sso_user:+ (Benutzer ${sso_user})}, Site $([[ ${keylen:-0} -gt 0 ]] && echo verbunden || echo unverbunden)"
+  local haertung="Härtung: define('WPMUDEV_DISABLE_SSO', true) in wp-config.php und Dashboard ≥ 5.0.2"
+
+  if [[ "$konstante" -eq 1 ]]; then
+    befund_melden wordpress konfig ok \
+      "${kurz}: Hub-SSO per WPMUDEV_DISABLE_SSO hart abgeschaltet (${lage})" "$REZ_PFAD"
+    return 0
+  fi
+
+  if [[ -z "$ver" ]]; then
+    befund_melden wordpress konfig unklar \
+      "${kurz}: WPMU DEV Dashboard vorhanden, Version nicht lesbar — Hub-SSO nicht bewertbar. ${haertung}" "$REZ_PFAD" web
+    return 0
+  fi
+
+  # Einmal ordnen, dann entscheiden — und den dritten Zustand ehrlich
+  # behandeln: ohne python3 ist die Reihenfolge nicht bestimmbar, und geraten
+  # wird hier nicht.
+  local vor502 ueber500
+  _ver_kleiner "$ver" "5.0.2"; vor502=$?
+  if [[ "$vor502" -eq 2 ]]; then
+    befund_melden wordpress konfig unklar \
+      "${kurz}: Versionsordnung nicht verfügbar (python3 oder lib/wp_schwachstellen.py fehlt) — Hub-SSO nicht bewertbar. ${lage}. ${haertung}" "$REZ_PFAD" web
+    return 0
+  fi
+  _ver_kleiner "5.0.0" "$ver"; ueber500=$?
+
+  if [[ "$vor502" -eq 0 ]] && [[ "$sso_an" -eq 1 ]]; then
+    befund_melden wordpress konfig crit \
+      "${kurz}: Hub-SSO scharf bei Dashboard ${ver} — unangemeldete Übernahme als Administrator möglich (CVE-2026-76581, behoben in 5.0.2). ${lage}. ${haertung}" "$REZ_PFAD" web
+  elif [[ "$ueber500" -ne 0 ]] && [[ "${keylen:-0}" -eq 0 ]]; then
+    befund_melden wordpress konfig crit \
+      "${kurz}: Dashboard ${ver} unverbunden mit leerem Schlüssel — WDP-AUTH-Signaturen fälschbar (CVE-2026-15459, behoben in 5.0.1). ${lage}. ${haertung}" "$REZ_PFAD" web
+  elif [[ "$vor502" -eq 0 ]]; then
+    befund_melden wordpress konfig warn \
+      "${kurz}: Dashboard ${ver} veraltet (CVE-2026-76581 bis 5.0.1) — SSO derzeit aus, die Tür geht mit einem Optionsschalter wieder auf. ${lage}" "$REZ_PFAD" web
+  elif [[ "$sso_an" -eq 1 ]]; then
+    befund_melden wordpress haertung warn \
+      "${kurz}: Hub-SSO scharf (Dashboard ${ver}) — ein Fernzugang, der einen Administrator ohne Anmeldung einloggt und kein wp_login-Ereignis hinterlässt. ${haertung}" "$REZ_PFAD" web
+  else
+    befund_melden wordpress konfig ok "${kurz}: Hub-SSO nicht scharf (${lage})" "$REZ_PFAD"
+  fi
+
+  evidence "wp_hub_sso_$(echo "$kurz" | tr '/.' '__')" \
+    "Instanz:   ${REZ_PFAD}
+Dashboard: ${ver:-unbekannt}
+SSO:       $([[ $sso_an -eq 1 ]] && echo scharf || echo aus)${sso_user:+ , Benutzer ${sso_user}}
+Konstante: $([[ $konstante -eq 1 ]] && echo 'WPMUDEV_DISABLE_SSO gesetzt' || echo 'nicht gesetzt')
+Schlüssel: $([[ ${keylen:-0} -gt 0 ]] && echo "gesetzt (${keylen} Zeichen, Wert nicht protokolliert)" || echo 'leer')"
 }
 
 # ── Datenbank ────────────────────────────────────────────────
