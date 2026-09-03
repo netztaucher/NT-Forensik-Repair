@@ -132,6 +132,12 @@ jobs:
           sudo apt-get update -qq && sudo apt-get install -y -qq php-cli
           bash werkzeuge/version_compare_gegentest.sh 30000
 
+      - name: Selbsttest der Doorway-Einstufung (#86)
+        # Beide Richtungen: die Core-Sitemap entlastet, ein echter Doorway
+        # (viele URLs oder Spam-Muster) bleibt crit. Und ohne Abruf darf nie
+        # crit stehen — die Signatur allein ist kein Beweis.
+        run: bash werkzeuge/doorway_selbsttest.sh
+
       - name: Selbsttest der Zeilenenden-Gegenprobe (#84)
         # Beide Richtungen und die Gegenprobe. Ein Filter, der nur "meldet
         # nicht mehr" prüft, wäre durch "meldet nie" zu bestehen — und eine
