@@ -24,6 +24,21 @@ _wp() {
   als_eigentuemer "$owner" "$REZ_PHP" "$REZ_WERKZEUG" "$@" \
        --path="$REZ_PFAD" --skip-plugins --skip-themes 2>/dev/null
 }
+# Wie _wp, aber OHNE das stderr-Verschlucken. `wp core verify-checksums` schreibt
+# seine Abweichungen (Warning:/Error:) auf stderr, nicht auf stdout — mit dem
+# 2>/dev/null aus _wp kam bei jeder Installation mit Abweichungen eine LEERE
+# Ausgabe zurück. rezept_kern hielt den Kern dann fälschlich für 'nicht geprüft'
+# (der äußere 2>&1 lief ins Leere), die Kern-Whitelist blieb leer, und 13c/13d
+# meldeten die UNVERÄNDERTE wp-includes/class-wp-simplepie-sanitize-kses.php als
+# KRITISCH. Gemessen im k42-Serverlauf 03.09.2026: 19 von 23 Instanzen, deren
+# einzige Abweichung ein verändertes wp-config-sample.php (Zeilenenden, #84) oder
+# eine echte Core-Abweichung war — beides landete lautlos in /dev/null. #94.
+_wp_err() {
+  local owner; owner=$(datei_meta "${REZ_PFAD}/wp-config.php" eigner)
+  owner="${owner%%:*}"; owner="${owner:-root}"
+  als_eigentuemer "$owner" "$REZ_PHP" "$REZ_WERKZEUG" "$@" \
+       --path="$REZ_PFAD" --skip-plugins --skip-themes
+}
 REZ_CLI_SQL="_wp db query --skip-column-names"
 
 # ── Abgleich gegen bekannte Schwachstellen ───────────────────
@@ -543,8 +558,10 @@ PY
 # getarnte Nutzlasten und @include-Injektionen. verify-checksums plus
 # Doorway-Signatur decken die Familie auf.
 #
-# Die Werkzeug-Probe hat der Rahmen gezogen; eine leere Ausgabe heißt hier
-# wirklich 'keine Abweichung' und nicht 'wp-cli ist gescheitert'.
+# Der Aufruf läuft über _wp_err (nicht _wp): verify-checksums schreibt seine
+# Abweichungen auf stderr, das _wp verschluckt hätte. Damit heißt eine LEERE
+# Ausgabe hier jetzt wirklich 'wp-cli ist gescheitert' — bei Abweichungen steht
+# der Grund in CHK_ROH, bei sauberem Kern die Success-Zeile (#94).
 rezept_kern() {
   local CHK cmod csne LISTE CHK_ROH CHK_RC
   # Rückgabewert getrennt festhalten. Bis v3.12 stand hier nur die gefilterte
@@ -554,7 +571,7 @@ rezept_kern() {
   # was hier bewusst als "keine Abweichung" gilt), für die Whitelist in
   # Abschnitt 13c aber sehr wohl: sie darf einen Kern nur dann freigeben, wenn
   # er nachweislich geprüft WURDE.
-  CHK_ROH=$(_wp core verify-checksums 2>&1); CHK_RC=$?
+  CHK_ROH=$(_wp_err core verify-checksums 2>&1); CHK_RC=$?
   CHK=$(printf '%s\n' "$CHK_ROH" | grep "Warning:" || true)
   # KEIN '|| echo 0': grep -c gibt bei null Treffern bereits eine 0 aus UND
   # endet ungleich 0. Der Rueckfall haengte damit eine zweite Null an, cmod
