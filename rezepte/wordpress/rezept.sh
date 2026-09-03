@@ -829,12 +829,43 @@ ${_sm}" kunde
   # mu-Plugins laufen IMMER, ohne Aktivierung und ohne in der Pluginliste zu
   # erscheinen. Bösartige Plugins deaktivieren oder verstecken sich selbst und
   # tauchen deshalb nicht in active_plugins auf — geprüft wird das Dateisystem.
-  local MU
+  # HÄRTUNG IST KEIN BEFUND (#85)
+  #
+  # mu-plugins ist der einzige Ort, den ein Angreifer mit Adminrechten nicht
+  # wegklicken kann — und deshalb genau der Ort, an dem eine Sperre gegen die
+  # REST-Kontoanlage sitzen sollte. Bis hierher meldete diese Prüfung sie als
+  # Warnung: wer sich an die eigene Empfehlung hält, bekam dafür einen Befund.
+  #
+  # Als Härtung gilt eine Datei, die den Marker 'NT-Haertung' im Kopf trägt
+  # oder mit 'nt-' beginnt (die Sperrdateien dieses Projekts). Sie wird
+  # gezählt und benannt, aber nicht beanstandet — kein stilles Wegfiltern.
+  local MU MU_HAERT MU_REST
   MU=$(find "${REZ_PFAD}/wp-content/mu-plugins" -maxdepth 1 -name '*.php' 2>/dev/null | head -20 || true)
+  MU_HAERT=""; MU_REST=""
   if [[ -n "$MU" ]]; then
-    befund_melden wordpress schadcode warn "${REZ_KURZ}: $(echo "$MU" | grep -c .) mu-Plugin(s) — laufen ohne Aktivierung und erscheinen in keiner Pluginliste" "$(echo "$MU" | head -1)" web
-    code "$MU"
-    MU_PLUGINS+="$MU"$'\n'
+    while IFS= read -r _mu; do
+      [[ -n "$_mu" ]] || continue
+      if [[ "$(basename "$_mu")" == nt-* ]] \
+         || head -c 600 "$_mu" 2>/dev/null | grep -qiE 'NT-H(ae|ä)rtung'; then
+        MU_HAERT+="$_mu"$'\n'
+      else
+        MU_REST+="$_mu"$'\n'
+      fi
+    done <<< "$MU"
+  fi
+  if [[ -n "$MU_REST" ]]; then
+    befund_melden wordpress schadcode warn "${REZ_KURZ}: $(printf '%s' "$MU_REST" | grep -c .) mu-Plugin(s) — laufen ohne Aktivierung und erscheinen in keiner Pluginliste" "$(printf '%s\n' "$MU_REST" | head -1)" web
+    code "$MU_REST"
+    MU_PLUGINS+="$MU_REST"
+  fi
+  if [[ -n "$MU_HAERT" ]]; then
+    # Der Hinweis auf die Priorität stammt aus dem Vorfall: der Sperrfilter
+    # hing auf 10 — dort, wo auch ACF_Rest_Api::initialize hängt. Bei
+    # gleicher Priorität entscheidet die Registrierungsreihenfolge; das
+    # mu-Plugin lief zuerst, ACF danach und verwarf den WP_Error. Über HTTP
+    # kam weiter die volle Benutzerliste. Zwei Rollouts lang unbemerkt.
+    info "${REZ_KURZ}: $(printf '%s' "$MU_HAERT" | grep -c .) mu-Plugin(s) als Härtung erkannt — Wirkung prüfen, nicht nur Vorhandensein (Filter mit Priorität über 10 registrieren, sonst verwerfen spätere Plugins den WP_Error)"
+    code "$MU_HAERT"
   fi
 
   # Manipulierte .htaccess mit Freigabeliste. Abschnitt 13b prüft das
@@ -897,7 +928,7 @@ ${_sm}" kunde
 # wdpsso_step2&outgoing_hmac=… (302), danach Plugin-Upload als Administrator.
 # Der SSO-Login erzeugt KEIN wp_login-Ereignis — Anmeldeprotokolle zeigen ihn
 # nicht.
-rezept_konfig() {
+_wp_haertung_hub_sso() {
   local PLUG="${REZ_PFAD}/wp-content/plugins/wpmudev-updates"
   local HAUPT="${PLUG}/update-notifications.php"
   [[ -d "$PLUG" ]] || return 0            # Dashboard nicht installiert
@@ -919,11 +950,11 @@ rezept_konfig() {
   # ── Optionen: SSO-Zustand und ob die Site verbunden ist ────
   # Vom Schluessel wird ausschliesslich die LAENGE gelesen. Der Wert ist ein
   # Zugangsgeheimnis und hat in Befund, Beleg und Logzeile nichts zu suchen.
-  local sso keylen
+  local sso keylen p="${REZ_PFX:-}"
   sso=$(_db_sql wpmudev_sso \
-        "SELECT option_value FROM ${REZ_PFX}options WHERE option_name='wdp_un_sso';" 2>/dev/null | head -1)
+        "SELECT option_value FROM ${p}options WHERE option_name='wdp_un_sso';" 2>/dev/null | head -1)
   keylen=$(_db_sql wpmudev_key \
-        "SELECT LENGTH(option_value) FROM ${REZ_PFX}options WHERE option_name='wpmudev_apikey';" 2>/dev/null | head -1)
+        "SELECT LENGTH(option_value) FROM ${p}options WHERE option_name='wpmudev_apikey';" 2>/dev/null | head -1)
   keylen="${keylen//[^0-9]/}"; keylen="${keylen:-0}"
 
   # enabled";b:1 = an, b:0 = aus. Fehlt der Schluessel ganz (Dashboard 4.11.x),
@@ -989,6 +1020,166 @@ Dashboard: ${ver:-unbekannt}
 SSO:       $([[ $sso_an -eq 1 ]] && echo scharf || echo aus)${sso_user:+ , Benutzer ${sso_user}}
 Konstante: $([[ $konstante -eq 1 ]] && echo 'WPMUDEV_DISABLE_SSO gesetzt' || echo 'nicht gesetzt')
 Schlüssel: $([[ ${keylen:-0} -gt 0 ]] && echo "gesetzt (${keylen} Zeichen, Wert nicht protokolliert)" || echo 'leer')"
+}
+
+# ── Application Passwords ────────────────────────────────────
+#
+# Sie ueberleben JEDE Passwortrotation. Nach einem Vorfall wird das Kennwort
+# geaendert, die Sitzungen werden beendet — und ein Anwendungspasswort haengt
+# unveraendert weiter am Konto. Auf dem Server des Vorfalls: 27 Stueck auf 10
+# Instanzen, und niemand hat daran gedacht (#85).
+#
+# Rein aus der Datenbank, ohne Netz. Der Wert selbst wird nie gelesen: die
+# Abfrage zaehlt nur, wie viele Eintraege je Konto stehen.
+_wp_haertung_app_passwords() {
+  local zeilen n konten p="${REZ_PFX:-}"
+  if ! _db_da; then
+    befund_melden wordpress haertung unklar \
+      "${REZ_KURZ}: Application Passwords nicht geprüft (kein Datenbankzugang) — das ist KEINE Entwarnung" "$REZ_PFAD"
+    return 0
+  fi
+  zeilen=$(_db_sql wp_app_passwords \
+    "SELECT u.user_login, LENGTH(m.meta_value) - LENGTH(REPLACE(m.meta_value, 'uuid', '')) FROM ${p}usermeta m JOIN ${p}users u ON u.ID = m.user_id WHERE m.meta_key = '${p}application_passwords';" 2>/dev/null || true)
+  [[ -n "$zeilen" ]] || { befund_melden wordpress haertung ok "${REZ_KURZ}: keine Application Passwords vergeben" "$REZ_PFAD"; return 0; }
+  konten=$(printf '%s\n' "$zeilen" | grep -c . || true)
+  n=$(printf '%s\n' "$zeilen" | awk -F'\t' '{s+=int($2/4)} END{print s+0}')
+  befund_melden wordpress haertung warn \
+    "${REZ_KURZ}: ${n:-?} Application Password(s) auf ${konten} Konto(en) — sie überleben jede Passwortrotation und müssen nach einem Vorfall einzeln entzogen werden" "$REZ_PFAD" web
+  evidence "wp_app_passwords_$(echo "$REZ_KURZ" | tr '/.' '__')" \
+    "# Konto <TAB> Anzahl Anwendungspasswoerter (Werte werden nicht gelesen)
+$(printf '%s\n' "$zeilen" | awk -F'\t' '{printf "%s\t%d\n", $1, int($2/4)}')"
+}
+
+# ── Adressdomains der Administratoren ────────────────────────
+#
+# Der billigste Befund des ganzen Rezepts, und der, an den sonst niemand
+# denkt: existiert die Domain der Administrator-Adresse ueberhaupt noch?
+#
+# Auf dem Server des Vorfalls hatten sechs Administrator-Konten Adressen auf
+# 'joeghalfmann.de' und 'joerghlafmann.de' — Tippfehler von
+# 'joerghalfmann.de', beide bei der DENIC FREI registrierbar. Wer sie
+# registriert, loest 'Passwort vergessen' aus und uebernimmt sechs Konten,
+# ohne eine einzige Luecke zu brauchen.
+#
+# Geprueft wird mit --online (eine DNS-Abfrage je Domain, keine Verbindung
+# zum Ziel). Ohne Netz bleibt es bei 'unklar'.
+_wp_haertung_admin_domains() {
+  local domains d ohne=0 geprueft=0 liste="" p="${REZ_PFX:-}"
+  _db_da || { befund_melden wordpress haertung unklar \
+    "${REZ_KURZ}: Adressdomains der Administratoren nicht geprüft (kein Datenbankzugang)" "$REZ_PFAD"; return 0; }
+  domains=$(_db_sql wp_admin_mail_domains \
+    "SELECT DISTINCT SUBSTRING_INDEX(u.user_email, '@', -1) FROM ${p}users u JOIN ${p}usermeta m ON m.user_id = u.ID WHERE m.meta_key = '${p}capabilities' AND m.meta_value LIKE '%administrator%';" 2>/dev/null || true)
+  [[ -n "$domains" ]] || return 0
+  if [[ "${WANT_ONLINE:-0}" != "1" ]] || ! werkzeug_da dig; then
+    befund_melden wordpress haertung unklar \
+      "${REZ_KURZ}: Adressdomains der Administratoren nicht geprüft (ohne --online oder ohne dig) — eine freie Tippfehler-Domain erlaubt Kontoübernahme per Passwort-vergessen" "$REZ_PFAD"
+    return 0
+  fi
+  while IFS= read -r d; do
+    [[ -n "$d" ]] || continue
+    geprueft=$((geprueft+1))
+    # NS reicht: eine registrierte Domain hat Nameserver, auch ohne Mailserver.
+    if [[ -z "$(dig +short +time=3 +tries=1 NS "$d" 2>/dev/null)" ]] \
+       && [[ -z "$(dig +short +time=3 +tries=1 MX "$d" 2>/dev/null)" ]]; then
+      ohne=$((ohne+1)); liste+="$d"$'\n'
+    fi
+  done <<< "$domains"
+  if [[ "$ohne" -gt 0 ]]; then
+    befund_melden wordpress haertung crit \
+      "${REZ_KURZ}: ${ohne} Adressdomain(s) von Administrator-Konten sind nicht registriert — wer sie registriert, übernimmt die Konten per Passwort-vergessen" "$REZ_PFAD" web
+    code "$liste"
+    evidence "wp_admin_domain_frei_$(echo "$REZ_KURZ" | tr '/.' '__')" "$liste" kunde
+  else
+    befund_melden wordpress haertung ok "${REZ_KURZ}: alle ${geprueft} Adressdomain(s) der Administratoren sind registriert" "$REZ_PFAD"
+  fi
+}
+
+# ── Benutzer-Enumeration über die REST-Schnittstelle ─────────
+#
+# Der Vorfall lief in zwei Schritten: erst lieferte GET /wp-json/wp/v2/users
+# unangemeldet die Benutzernamen, dann legte ein POST auf denselben Endpunkt
+# das Administrator-Konto an. Auf 20 von 23 Instanzen stand die Tuer offen.
+#
+# BEWUSST NUR GET. Ein POST waere die ehrlichere Probe — er wuerde zeigen, ob
+# der Endpunkt Konten annimmt — aber dieses Werkzeug ist read-only, und eine
+# schreibende Methode gegen ein Kundensystem bleibt es auch dann, wenn die
+# Parameter unvollstaendig sind und nichts angelegt wird. Der GET-Befund
+# genuegt als Handlungsgrund; der Sperrfilter deckt beide Richtungen ab.
+_wp_haertung_rest_enum() {
+  local home code datei n grund
+  home=$(_db_sql wp_home "SELECT option_value FROM ${REZ_PFX:-}options WHERE option_name='home';" 2>/dev/null | head -1)
+  home="${home%/}"
+  if [[ "${WANT_ONLINE:-0}" != "1" || -z "$home" ]]; then
+    [[ "${WANT_ONLINE:-0}" == "1" ]] && grund="Adresse der Installation nicht lesbar" || grund="ohne --online"
+    befund_melden wordpress haertung unklar \
+      "${REZ_KURZ}: REST-Benutzerliste nicht geprüft (${grund}) — /wp-json/wp/v2/users liefert unangemeldet oft alle Benutzernamen" "$REZ_PFAD"
+    return 0
+  fi
+  datei=$(mktemp "${RUN_DIR}/.restusers.XXXXXX")
+  code=$(curl -sk -o "$datei" -w '%{http_code}' --max-time 15 "${home}/wp-json/wp/v2/users" 2>/dev/null || echo "000")
+  n=$(grep -o '"slug"' "$datei" 2>/dev/null | grep -c . || true)
+  if [[ "$code" == "200" && "${n:-0}" -gt 0 ]]; then
+    befund_melden wordpress haertung crit \
+      "${REZ_KURZ}: /wp-json/wp/v2/users liefert unangemeldet ${n} Benutzernamen — die Vorstufe zu Brute-Force und Kontoanlage" "$REZ_PFAD" web
+    evidence "wp_rest_benutzerliste_$(echo "$REZ_KURZ" | tr '/.' '__')" \
+      "${home}/wp-json/wp/v2/users  HTTP ${code}, ${n} Einträge" kunde
+  elif [[ "$code" == "000" ]]; then
+    befund_melden wordpress haertung unklar \
+      "${REZ_KURZ}: /wp-json/wp/v2/users nicht abrufbar (Zeitüberschreitung oder Netzsperre) — nicht bewertbar" "$REZ_PFAD"
+  else
+    befund_melden wordpress haertung ok \
+      "${REZ_KURZ}: /wp-json/wp/v2/users gibt keine Benutzerliste heraus (HTTP ${code})" "$REZ_PFAD"
+  fi
+  rm -f "$datei"
+}
+
+# ── wp-config.php: die vier billigen Schalter ────────────────
+_wp_haertung_wpconfig() {
+  local cfg="${REZ_PFAD}/wp-config.php" rechte offen=""
+  [[ -r "$cfg" ]] || return 0
+  grep -qE "define\(\s*['\"]DISALLOW_FILE_EDIT['\"]\s*,\s*true" "$cfg" \
+    || offen+="Datei-Editor im Backend aktiv (DISALLOW_FILE_EDIT nicht gesetzt) — wer ein Adminkonto hat, schreibt PHP ohne Dateizugriff"$'\n'
+  grep -qE "define\(\s*['\"]WP_DEBUG['\"]\s*,\s*true" "$cfg" \
+    && offen+="WP_DEBUG ist an — Pfade und Fehlertexte gehen an Besucher"$'\n'
+  # Weltlesbare wp-config.php: auf geteilten Servern liest sie jeder andere
+  # Kunde. Die Datei traegt die Datenbank-Zugangsdaten.
+  rechte=$(datei_meta "$cfg" rechte 2>/dev/null || stat -c %a "$cfg" 2>/dev/null || true)
+  [[ "$rechte" =~ [0-9][0-9][4-7]$ ]] && offen+="wp-config.php ist weltlesbar (${rechte}) — sie enthält die Datenbank-Zugangsdaten"$'\n'
+  if [[ -n "$offen" ]]; then
+    befund_melden wordpress haertung warn \
+      "${REZ_KURZ}: $(printf '%s' "$offen" | grep -c .) Härtungspunkt(e) in wp-config.php offen" "$cfg" web
+    code "$offen"
+    evidence "wp_haertung_wpconfig_$(echo "$REZ_KURZ" | tr '/.' '__')" "$offen"
+  else
+    befund_melden wordpress haertung ok "${REZ_KURZ}: wp-config.php gehärtet (Editor gesperrt, kein Debug, Rechte eng)" "$cfg"
+  fi
+}
+
+# Steht eine Datenbank zur Verfuegung? Die Antwort entscheidet, ob eine leere
+# Abfrage 'nichts vorhanden' heisst oder 'nicht gemessen'. Ohne diese
+# Unterscheidung meldet eine Instanz ohne Datenbankzugang "keine Application
+# Passwords vergeben" — eine Entwarnung, die niemand gemessen hat.
+_db_da() { [[ -n "${NT_DB_ATTRAPPE:-}" || "${REZ_DB_OK:-0}" == "1" ]]; }
+
+# Der Haken, den der Rahmen aufruft (12r_rezepte.sh). Er buendelt die
+# Haertungspruefungen; jede einzelne meldet selbst und ist fuer sich testbar.
+rezept_konfig() {
+  # Datenbank-Kontext. rezept_db_zugang setzt $REZ_PFX und rezept_sql, laeuft
+  # von sich aus aber erst in rezept_db — also NACH dieser Funktion
+  # (12r_rezepte.sh:190/191). Ohne diesen Aufruf war $REZ_PFX hier auf der
+  # ersten Instanz unbelegt (unter `set -u` Abbruch des ganzen Laufs, gemessen
+  # in der CI zu #101) und ab der zweiten das Praefix der VORIGEN Instanz.
+  # Der Aufruf ist idempotent: er liest die wp-config.php dieser Instanz neu.
+  REZ_DB_OK=0
+  if [[ -r "${REZ_PFAD}/wp-config.php" ]] \
+     && rezept_db_zugang "${REZEPT_DIR}/wordpress" "${REZ_PFAD}/wp-config.php"; then
+    REZ_DB_OK=1
+  fi
+  _wp_haertung_hub_sso
+  _wp_haertung_app_passwords
+  _wp_haertung_admin_domains
+  _wp_haertung_rest_enum
+  _wp_haertung_wpconfig
 }
 
 # ── Datenbank ────────────────────────────────────────────────
