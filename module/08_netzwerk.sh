@@ -211,8 +211,16 @@ h2 "8.7 Relay-Backdoors (THC gsocket / gs-netcat)"
 GS_FILE_HITS=$(find /tmp /var/tmp /dev/shm /root /home /usr/local/bin /usr/local/sbin /opt "${SCAN_PATHS[@]}" \
     -xdev -type f -size -30M 2>/dev/null | nf_strip_self \
     | fortschritt_strom "8.7 gsocket-Inhaltsscan" \
-    | xargs -r -d '\n' grep -la -E "$GS_SIG_REGEX" 2>/dev/null \
-    | grep -vF "$SELF_PATH" || true)   # eigenes Skript (traegt die Signatur selbst) ausnehmen; INSTALLED_PATH gibt es nicht mehr
+    | xargs -r -d '\n' -P4 grep -la -E "$GS_SIG_REGEX" 2>/dev/null \
+    | grep -vF "$SELF_PATH" | LC_ALL=C sort -u || true)   # eigenes Skript (traegt die Signatur selbst) ausnehmen; INSTALLED_PATH gibt es nicht mehr
+# -P4 und das nachgestellte sort -u gehoeren zusammen. Der Abschnitt liest den
+# INHALT jeder Datei unter 30M auf dem ganzen Host; auf 865 GB waren das im
+# Serverlauf vom 03.09.2026 dreissig Minuten — der teuerste Einzelschritt,
+# und er lief als einziger der Inhaltsscans seriell (7.13 nutzt -P4 seit je).
+# Mit vier Straengen ordnet xargs die Treffer nicht mehr vorhersagbar; ohne
+# das sort waere die Ausgabe von Lauf zu Lauf verschieden, und der
+# Determinismus-Pruefstand ('Zwei Laeufe, dieselbe Ausgabe') haette recht damit,
+# das als Fehler zu melden.
 if [[ -n "$GS_FILE_HITS" ]]; then
     # Differenzierung nach Dateityp — ohne sie erzeugt jede Dokumentation und
     # jede Signaturdatei, die die Begriffe nennt, einen Fehlalarm:
