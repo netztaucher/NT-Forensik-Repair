@@ -138,6 +138,14 @@ jobs:
         # und ist damit wertlos.
         run: bash werkzeuge/haertung_selbsttest.sh
 
+      - name: Selbsttest der Einordnung der 7.15-Rangfolge (#42)
+        # 7.15 meldet keinen Befund — sie bestimmt, wohin ein Mensch zuerst
+        # sieht. Auf einem Serverlauf lagen 15,8 % ihrer Einträge unter einem
+        # Kern, den derselbe Lauf als unverändert bestätigt hatte. Geprüft
+        # wird in beide Richtungen: unter geprüftem Kern muss entlastet
+        # werden, unter ungeprüftem darf nicht.
+        run: bash werkzeuge/injektion_einordnung_selbsttest.sh
+
       - name: Selbsttest der Doorway-Einstufung (#86)
         # Beide Richtungen: die Core-Sitemap entlastet, ein echter Doorway
         # (viele URLs oder Spam-Muster) bleibt crit. Und ohne Abruf darf nie
@@ -530,8 +538,14 @@ jobs:
           # Beide Dateien sind gleich gross und gleich gebaut und
           # unterscheiden sich nur um die angehängte Nutzlast. Damit ist das
           # hier eine Aussage über das Mass und nicht über den Prüfbaum.
+          #
+          # Die Rangfolge steht seit #42 in 13d, nicht mehr in 7.15: 7.15
+          # laeuft vor 12r und kann die Pruefsummen-Whitelist nicht kennen.
+          # Der Abschnitt hier folgt der Ausgabe dorthin — sonst prueft er
+          # eine Ueberschrift, unter der nur noch die Uebergabezeile steht,
+          # und faellt still durch.
           B=pruefstand/referenz/betreiber_technik_bericht.md
-          A=$(awk '/^### 7\.15/{s=1} /^### 12\.|^## /{if(s)exit} s' "$B")
+          A=$(awk '/^### 13d /{s=1} /^### 13e|^## /{if(s)exit} s' "$B")
           if ! grep -q 'gross-injiziert\.php' <<<"$A"; then
             echo "::error::7.15 meldet die injizierte Datei nicht."
             printf '%s\n' "$A" | head -20; exit 1

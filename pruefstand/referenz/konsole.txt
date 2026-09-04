@@ -30,7 +30,7 @@
 [1m[0;34m══════════════════════════════════════════[0m
 
 [0;36m▶ 7.0 Datei-Inventar (Inode und Zeitstempel sichern)[0m
-  [0m·  Inventar: 660 Datei(en) erfasst, davon 660 mit Anlegezeit (belege/00_dateien.tsv)
+  [0m·  Inventar: 662 Datei(en) erfasst, davon 662 mit Anlegezeit (belege/00_dateien.tsv)
 
 [0;36m▶ 7.1 Kürzlich veränderte PHP-Dateien (letzte 30 Tage)[0m
   [0;33mDurchsuche Webspace (kann dauern...)[0m
@@ -70,7 +70,7 @@
   [0;32m✓[0m Keine als Schlüssel-/Konfigdatei getarnten Binaries
 
 [0;36m▶ 7.11 YARA-Signaturscan (optional)[0m
-  [0m·  YARA-Scan nicht aktiviert — mit --yara einschalten (auf großen Webspaces langsam)
+  [0;36m⚪[0m YARA-Signaturscan nicht gelaufen (Schalter --yara nicht gesetzt) — diese Erkennungsebene fehlt in diesem Bericht
 
 [0;36m▶ 7.13 PHP-Code in Medien- und Asset-Dateien[0m
   [0;31m✗[0m  [1mPHP-Code in 9 Mediendatei(en) — in einem echten Bild gehört kein PHP[0m
@@ -79,7 +79,7 @@
   [0;32m✓[0m Keine auffälligen Zeitstempel-Häufungen
 
 [0;36m▶ 7.15 Injektion in grosse Dateien (ohne Referenz)[0m
-  [0m·  8 grosse Datei(en) mit auffälliger Verteilung — nach Punkten sortiert, Einordnung offen
+  [0m·  10 Datei(en) mit auffälliger Verteilung — Einordnung in Abschnitt 13d
 
 [0;36m▶ 7.16 Zerlegte Funktionsnamen[0m
   [0;31m✗[0m  [1m1 Datei(en) setzen Funktionsnamen aus Einzelzeichen zusammen — für dieses Muster gibt es keinen legitimen Fall[0m
@@ -135,6 +135,9 @@
   [0;32m✓[0m kunde-drei.example/httpdocs: 2 Plugin(s) gegen wordpress.org geprüft — keine veränderte Codedatei
   [0;36m⚪[0m kunde-drei.example/httpdocs: 1 Plugin(s) ohne Prüfsummensatz und alle Themes — Unversehrtheit nicht feststellbar (Premium, Fork, Eigenbau; für Themes veröffentlicht wordpress.org keine Prüfsummen)
   [0;32m✓[0m kunde-drei.example/httpdocs: WordPress-Core unverändert (verify-checksums)
+  [0;32m✓[0m kunde-drei.example/httpdocs: keine Application Passwords vergeben
+  [0;36m⚪[0m kunde-drei.example/httpdocs: REST-Benutzerliste nicht geprüft (ohne --online) — /wp-json/wp/v2/users liefert unangemeldet oft alle Benutzernamen
+  [0;33m⚠[0m  kunde-drei.example/httpdocs: 2 Härtungspunkt(e) in wp-config.php offen
   [0m·  kunde-drei.example/httpdocs: kein Wordfence in dieser Installation — keine Zweitmeinung verfügbar
   [0;36m⚪[0m kunde-drei.example/httpdocs: Datenbank nicht geprüft (grep beherrscht kein -P (PCRE) — die Werte aus wp-config.php sind damit nicht lesbar). Das ist KEINE Entwarnung.
 
@@ -143,6 +146,9 @@
   [0;32m✓[0m kunde-eins.example/httpdocs: keine Doorway-.htaccess-Signatur
   [0;32m✓[0m kunde-eins.example/httpdocs: keine @include base64_decode()-Injektion
   [0;32m✓[0m kunde-eins.example/httpdocs: WordPress-Core unverändert (verify-checksums)
+  [0;32m✓[0m kunde-eins.example/httpdocs: keine Application Passwords vergeben
+  [0;36m⚪[0m kunde-eins.example/httpdocs: REST-Benutzerliste nicht geprüft (ohne --online) — /wp-json/wp/v2/users liefert unangemeldet oft alle Benutzernamen
+  [0;33m⚠[0m  kunde-eins.example/httpdocs: 2 Härtungspunkt(e) in wp-config.php offen
   [0m·  kunde-eins.example/httpdocs: kein Wordfence in dieser Installation — keine Zweitmeinung verfügbar
   [0;36m⚪[0m kunde-eins.example/httpdocs: Datenbank nicht geprüft (grep beherrscht kein -P (PCRE) — die Werte aus wp-config.php sind damit nicht lesbar). Das ist KEINE Entwarnung.
 
@@ -150,6 +156,9 @@
   [0;32m✓[0m kunde-vier.example/httpdocs: keine Doorway-.htaccess-Signatur
   [0;32m✓[0m kunde-vier.example/httpdocs: keine @include base64_decode()-Injektion
   [0;36m⚪[0m kunde-vier.example/httpdocs: wp core verify-checksums hat nicht geantwortet — der Kern ist WEDER bestätigt NOCH beanstandet (Rückgabewert 1)
+  [0;32m✓[0m kunde-vier.example/httpdocs: keine Application Passwords vergeben
+  [0;36m⚪[0m kunde-vier.example/httpdocs: REST-Benutzerliste nicht geprüft (ohne --online) — /wp-json/wp/v2/users liefert unangemeldet oft alle Benutzernamen
+  [0;33m⚠[0m  kunde-vier.example/httpdocs: 2 Härtungspunkt(e) in wp-config.php offen
   [0m·  kunde-vier.example/httpdocs: kein Wordfence in dieser Installation — keine Zweitmeinung verfügbar
   [0;36m⚪[0m kunde-vier.example/httpdocs: Datenbank nicht geprüft (grep beherrscht kein -P (PCRE) — die Werte aus wp-config.php sind damit nicht lesbar). Das ist KEINE Entwarnung.
 
@@ -163,7 +172,7 @@
   [0;33m⚠[0m  kunde-zwei.example/httpdocs: theme pruefstand-thema 0.9 ist von einer bekannten Schwachstelle betroffen ((* … 1.0)) CVE-2026-90005 — behoben in 1.0.
   [0;33m⚠[0m  kunde-zwei.example/httpdocs: Bibliothek (in einem Plugin) pruefstand/bibliothek 1.2.0 ist von einer bekannten Schwachstelle betroffen ([1.0.0 … 1.4.0)) CVE-2026-90006 — behoben in 1.4.0.
   [0;36m⚪[0m kunde-zwei.example/httpdocs: 2 Bestandteil(e) ohne lesbare Fassung — für sie ist keine Aussage zur Angreifbarkeit möglich
-  [0;31m✗[0m  [1mkunde-zwei.example/httpdocs: robots.txt verweist auf eine Sitemap über index.php/ — Kennzeichen eines Doorway-Generators IN der Datenbank; ein Dateiscan findet ihn nicht (robots.txt vom <ZEIT>)[0m
+  [0;36m⚪[0m kunde-zwei.example/httpdocs: robots.txt verweist auf eine Sitemap über index.php/ — Doorway-Muster, aber nicht belegt: Sitemap-Route und Datenbank prüfen (robots.txt vom <ZEIT>)
   [0;32m✓[0m kunde-zwei.example/httpdocs: keine Doorway-.htaccess-Signatur
   [0;31m✗[0m  [1mkunde-zwei.example/httpdocs: 1 Datei(en) mit @include base64_decode() — getarnte Payload-Nachladung[0m
   [0;33m⚠[0m  kunde-zwei.example/httpdocs: 1 mu-Plugin(s) — laufen ohne Aktivierung und erscheinen in keiner Pluginliste
@@ -173,6 +182,9 @@
   [0;36m⚪[0m kunde-zwei.example/httpdocs: 1 Plugin(s) ohne Prüfsummensatz und alle Themes — Unversehrtheit nicht feststellbar (Premium, Fork, Eigenbau; für Themes veröffentlicht wordpress.org keine Prüfsummen)
   [0;31m✗[0m  [1mkunde-zwei.example/httpdocs: 1 veränderte Core-Datei(en) — Injektion oder Manipulation[0m
   [0;33m⚠[0m  kunde-zwei.example/httpdocs: 1 Core-fremde Datei(en) in wp-admin/wp-includes — prüfen
+  [0;32m✓[0m kunde-zwei.example/httpdocs: keine Application Passwords vergeben
+  [0;36m⚪[0m kunde-zwei.example/httpdocs: REST-Benutzerliste nicht geprüft (ohne --online) — /wp-json/wp/v2/users liefert unangemeldet oft alle Benutzernamen
+  [0;33m⚠[0m  kunde-zwei.example/httpdocs: 2 Härtungspunkt(e) in wp-config.php offen
   [0;33m⚠[0m  kunde-zwei.example/httpdocs: Wordfence-Scan ist <TAGE> Tage alt — was danach abgelegt wurde, steht in diesem Bestand nicht
   [0m·  kunde-zwei.example/httpdocs: Wordfence mit freiem Schlüssel — der Signaturbestand ist kleiner und läuft dem kostenpflichtigen um 30 Tage hinterher
   [0;33m⚠[0m  kunde-zwei.example/httpdocs: Wordfence führt 1 Plugin(s) als verwundbar
@@ -210,8 +222,9 @@
   [0;33m⚠[0m  php-malware-finder: 4 Datei(en) mit Treffern — nach Regelanzahl sortiert, jeder Treffer gehört gesichtet (9 als unverändert bestätigte Datei(en) herausgefiltert)
   [0m·  Quelle: Prüfstand-Attrappe, Regelstand 0 Tage alt — der Regelsatz wird vom Projekt kaum noch gepflegt
 
-[0;36m▶ 13d Einordnung der Mustertreffer aus 7.3[0m
-  [0m·  Keine Einordnung möglich — die Mustersuche in 7.3 ist nicht gelaufen
+[0;36m▶ 13d Einordnung der Mustertreffer aus 7.3 und der Rangfolge aus 7.15[0m
+  [0m·  Keine Einordnung der Mustertreffer möglich — die Mustersuche in 7.3 ist nicht gelaufen
+  [0m·  4 grosse Datei(en) mit auffälliger Verteilung — nach Punkten sortiert, Einordnung offen (6 gegen amtliche Prüfsummen entlastet)
 
 [0;36m▶ 13e Infektions-Ursachensuche[0m
 
@@ -248,18 +261,24 @@
 [1m[0;32m  ANALYSE ABGESCHLOSSEN — Lauf <LAUF-ID>[0m
 [1m[0;32m══════════════════════════════════════════[0m
 
-[1mBefunde:[0m       🔴 18 kritisch, ⚠️ 23 Warnungen, ✅ 27 ok, ⚪ 12 nicht messbar
-[0;33m               12 Prüfung(en) ohne Ergebnis — das ist keine Entwarnung.[0m
+[1mBefunde:[0m       🔴 17 kritisch, ⚠️ 27 Warnungen, ✅ 31 ok, ⚪ 18 nicht messbar
+[0;33m               18 Prüfung(en) ohne Ergebnis — das ist keine Entwarnung.[0m
                  Webshell-Mustersuche nicht ausgeführt — grep beherrscht kein -P (PCRE). Auf macOS ist BSD-grep die Vorgabe; GNU grep oder ugrep installieren. Das ist KEINE Entwarnung.
+                 YARA-Signaturscan nicht gelaufen (Schalter --yara nicht gesetzt) — diese Erkennungsebene fehlt in diesem Bericht
                  kunde-zwei.example/cloud.kunde-zwei.example: Werkzeug antwortet nicht verwertbar — nicht geprüft
                  kunde-drei.example/httpdocs: 1 Bestandteil(e) ohne lesbare Fassung — für sie ist keine Aussage zur Angreifbarkeit möglich
                  kunde-drei.example/httpdocs: 1 Plugin(s) ohne Prüfsummensatz und alle Themes — Unversehrtheit nicht feststellbar (Premium, Fork, Eigenbau; für Themes veröffentlicht wordpress.org keine Prüfsummen)
+                 kunde-drei.example/httpdocs: REST-Benutzerliste nicht geprüft (ohne --online) — /wp-json/wp/v2/users liefert unangemeldet oft alle Benutzernamen
                  kunde-drei.example/httpdocs: Datenbank nicht geprüft (grep beherrscht kein -P (PCRE) — die Werte aus wp-config.php sind damit nicht lesbar). Das ist KEINE Entwarnung.
+                 kunde-eins.example/httpdocs: REST-Benutzerliste nicht geprüft (ohne --online) — /wp-json/wp/v2/users liefert unangemeldet oft alle Benutzernamen
                  kunde-eins.example/httpdocs: Datenbank nicht geprüft (grep beherrscht kein -P (PCRE) — die Werte aus wp-config.php sind damit nicht lesbar). Das ist KEINE Entwarnung.
                  kunde-vier.example/httpdocs: wp core verify-checksums hat nicht geantwortet — der Kern ist WEDER bestätigt NOCH beanstandet (Rückgabewert 1)
+                 kunde-vier.example/httpdocs: REST-Benutzerliste nicht geprüft (ohne --online) — /wp-json/wp/v2/users liefert unangemeldet oft alle Benutzernamen
                  kunde-vier.example/httpdocs: Datenbank nicht geprüft (grep beherrscht kein -P (PCRE) — die Werte aus wp-config.php sind damit nicht lesbar). Das ist KEINE Entwarnung.
                  kunde-zwei.example/httpdocs: 2 Bestandteil(e) ohne lesbare Fassung — für sie ist keine Aussage zur Angreifbarkeit möglich
+                 kunde-zwei.example/httpdocs: robots.txt verweist auf eine Sitemap über index.php/ — Doorway-Muster, aber nicht belegt: Sitemap-Route und Datenbank prüfen (robots.txt vom <ZEIT>)
                  kunde-zwei.example/httpdocs: 1 Plugin(s) ohne Prüfsummensatz und alle Themes — Unversehrtheit nicht feststellbar (Premium, Fork, Eigenbau; für Themes veröffentlicht wordpress.org keine Prüfsummen)
+                 kunde-zwei.example/httpdocs: REST-Benutzerliste nicht geprüft (ohne --online) — /wp-json/wp/v2/users liefert unangemeldet oft alle Benutzernamen
                  kunde-zwei.example/httpdocs: Datenbank nicht geprüft (grep beherrscht kein -P (PCRE) — die Werte aus wp-config.php sind damit nicht lesbar). Das ist KEINE Entwarnung.
                  Dieser Lauf sieht nur 1 vhost-Verzeichnis(se) — ob der Systemnutzer weitere besitzt, ist hier nicht feststellbar. Mit --global messbar
 

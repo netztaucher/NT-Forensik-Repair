@@ -42,17 +42,29 @@
 # Werkzeug aus, bleiben sie leer, und dann entlastet hier nichts.
 # ------------------------------------------------------------
 
-h2 "13d Einordnung der Mustertreffer aus 7.3"
+h2 "13d Einordnung der Mustertreffer aus 7.3 und der Rangfolge aus 7.15"
 
 BELEG_STUFE=kunde
 
-# Lief die Suche gar nicht, gibt es nichts einzuordnen — und vor allem nichts
-# zu entwarnen. Abschnitt 7.3 hat den Ausfall bereits als ⚪ gemeldet; ein
-# "keine Dropper gefunden" daneben waere ein Bericht, der sich selbst
+# Lief die Mustersuche gar nicht, gibt es nichts einzuordnen — und vor allem
+# nichts zu entwarnen. Abschnitt 7.3 hat den Ausfall bereits als ⚪ gemeldet;
+# ein "keine Dropper gefunden" daneben waere ein Bericht, der sich selbst
 # widerspricht.
+#
+# ABER KEIN `return` MEHR. Bis #42 stieg der Abschnitt hier ganz aus. Seit die
+# Rangfolge aus 7.15 ebenfalls hier eingeordnet wird, nahm dieser Ausstieg sie
+# mit: auf einem Arbeitsplatz ohne PCRE meldete 7.15 "10 Datei(en) …
+# Einordnung in Abschnitt 13d", und im Bericht stand danach nichts mehr davon.
+# Zehn Dateien, spurlos. Genau beim ersten Lauf gegen den Prüfbaum aufgefallen,
+# auf Linux wäre es nie sichtbar geworden.
+#
+# Der Ausstieg war trotzdem richtig gemeint: ohne gelaufene Mustersuche darf
+# hier kein "keine Dropper gefunden" stehen. Also wird nicht mehr der
+# Abschnitt abgebrochen, sondern nur die Entwarnung unterdrückt.
+_OHNE_MUSTER=0
 if [[ "${NF_OHNE_PCRE:-0}" == "1" ]]; then
-  info "Keine Einordnung möglich — die Mustersuche in 7.3 ist nicht gelaufen"
-  return 0 2>/dev/null || true
+  info "Keine Einordnung der Mustertreffer möglich — die Mustersuche in 7.3 ist nicht gelaufen"
+  _OHNE_MUSTER=1
 fi
 
 _WL="${PRUEFSUMMEN_WHITELIST:-${RUN_DIR}/.pruefsummen_bestaetigt.txt}"
@@ -200,7 +212,9 @@ if [[ "${_D_N:-0}" -gt 0 ]]; then
 elif [[ "${_D_NW:-0}" -gt 0 ]]; then
   ok "Keine kleinen Obfuskations-Dropper — ${_D_NW} Mustertreffer waren gegen amtliche Prüfsummen bestätigte Dateien"
 else
-  ok "Keine kleinen Obfuskations-Dropper gefunden"
+  # Ohne gelaufene Mustersuche ist "keine gefunden" keine Aussage, sondern
+  # eine Entwarnung aus einer Suche, die nie stattgefunden hat.
+  [[ "$_OHNE_MUSTER" == "1" ]] || ok "Keine kleinen Obfuskations-Dropper gefunden"
 fi
 # Was entlastet wurde, bleibt belegt. Sonst liesse sich spaeter nicht
 # nachvollziehen, WAS der Filter herausgenommen hat.
@@ -267,5 +281,75 @@ if [[ "${_N_REST:-0}" -gt 0 ]]; then
   code "$(printf '%s\n' "$_REST" | grep '^=== ' | sed 's|=== ||;s| ===||' | awk 'NR<=20')"
   evidence "gefaehrliche_funktionen_klein" "$_REST" kunde
 else
-  ok "Keine gefährlichen Funktionen in kleinen PHP-Dateien"
+  [[ "$_OHNE_MUSTER" == "1" ]] || ok "Keine gefährlichen Funktionen in kleinen PHP-Dateien"
+fi
+
+# ── Rangfolge aus 7.15 einordnen (#42) ──────────────────────────────────
+#
+# Anderes Format, gleiche Ueberlegung: 7.15 liefert je Datei EINE Zeile
+# "<pfad><TAB><punkte><TAB><merkmale>", nicht den "=== pfad ==="-Block der
+# Musterstufen. Deshalb ein eigener Aufteiler und nicht _einordnen.
+#
+# Gemessen am Serverlauf 2026-09-03_07-47-39: von 48.290 Eintraegen lagen
+# 7.619 (15,8 %) unter einem Kern, den derselbe Lauf als unveraendert
+# bestaetigt hatte. Das Mass selbst kann eine Datei belasten, nie entlasten —
+# eine amtliche Pruefsumme kann es sehr wohl. Wer beides in einer Liste
+# stehen laesst, schickt die Sichtung durch jeden sechsten Eintrag umsonst.
+_inj_einordnen() {   # <blob>; setzt _I_REST, _I_WEG, _I_N, _I_NW
+  _I_REST=""; _I_WEG=""; _I_N=0; _I_NW=0
+  [[ -n "${1:-}" ]] || return 0
+  local roh="${BELEGE_DIR}/.injektion_roh"
+  printf '%s' "$1" > "$roh"
+  NT_LIB="${SELF_DIR}/lib" PMF_WL="$_WL" PMF_WL_KERN="$_WL_KERN" \
+  PMF_AUSNAHMEN="$_AUSN" \
+  python3 - "$roh" "${roh}.rest" "${roh}.weg" <<'PY'
+import os, sys
+sys.path.insert(0, os.environ["NT_LIB"])
+from pruefsummen_filter import freigabe_bauen
+
+frei = freigabe_bauen(os.environ.get("PMF_WL", ""),
+                      os.environ.get("PMF_WL_KERN", ""),
+                      os.environ.get("PMF_AUSNAHMEN", ""))
+rest, weg = [], []
+for zeile in open(sys.argv[1], encoding="utf-8", errors="replace"):
+    if not zeile.strip():
+        continue
+    (weg if frei(zeile.split("\t", 1)[0]) else rest).append(zeile)
+open(sys.argv[2], "w", encoding="utf-8").write("".join(rest))
+open(sys.argv[3], "w", encoding="utf-8").write("".join(weg))
+PY
+  _I_REST=$(cat "${roh}.rest" 2>/dev/null || true)
+  _I_WEG=$(cat  "${roh}.weg"  2>/dev/null || true)
+  _I_N=$(grep -c . "${roh}.rest" 2>/dev/null || true);  _I_N="${_I_N:-0}"
+  _I_NW=$(grep -c . "${roh}.weg" 2>/dev/null || true);  _I_NW="${_I_NW:-0}"
+  rm -f "$roh" "${roh}.rest" "${roh}.weg"
+}
+
+# Lief das Mass gar nicht, gibt es nichts einzuordnen — und vor allem nichts
+# zu entwarnen. 7.15 hat den Ausfall dort bereits gemeldet.
+if [[ "${NF_OHNE_INJEKTIONSMASS:-0}" != "1" ]]; then
+  _inj_einordnen "${INJ_TREFFER:-}"
+  INJ_TREFFER="$_I_REST"
+  INJ_ANZ_ROH="${INJ_ANZ:-0}"
+  INJ_ANZ="${_I_N:-0}"
+  INJ_ENTLASTET="${_I_NW:-0}"
+  if [[ "${_I_N:-0}" -gt 0 ]]; then
+    info "${_I_N} grosse Datei(en) mit auffälliger Verteilung — nach Punkten sortiert, Einordnung offen$(_entlastet_satz "$_I_NW")"
+    code "$(printf '%s\n' "$_I_REST" | head -20)"
+    evidence "injektion_grosse_dateien" "# Punkte und Merkmale je Datei, absteigend.
+# ANHANG    Code hinter dem letzten schliessenden Tag
+# LANGZEILE längste Zeile in Bytes
+# DICHTE    kodierte Zeichen im dichtesten 512-Byte-Fenster
+# BASE64    Länge des längsten Base64-Tokens
+# RANDLAGE  der Fund liegt im äussersten Rand der Datei
+#
+# KEIN BEFUND. Die Schwellen sind bis zu einer Messung an einem echten
+# Server geraten (#9). Diese Liste ist eine Rangfolge für die Sichtung.
+${_I_REST}" kunde
+  elif [[ "${_I_NW:-0}" -gt 0 ]]; then
+    ok "Keine grosse Datei mit auffälliger Verteilung — ${_I_NW} Treffer waren gegen amtliche Prüfsummen bestätigte Dateien"
+  else
+    ok "Keine grosse Datei mit auffälliger Verteilung"
+  fi
+  [[ "${_I_NW:-0}" -gt 0 ]] && evidence "injektion_entlastet" "$_I_WEG"
 fi
