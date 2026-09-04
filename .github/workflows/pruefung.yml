@@ -146,6 +146,15 @@ jobs:
         # werden, unter ungeprüftem darf nicht.
         run: bash werkzeuge/injektion_einordnung_selbsttest.sh
 
+      - name: Selbsttest der zweiten Schwachstellenquelle (#12)
+        # Geprüft wird die Abbildung der fremden Intervall-Semantik auf das
+        # eigene Modell — ohne Netz. Ein falsch ausgelegtes Intervall meldet
+        # entweder eine geschlossene Lücke oder schweigt zu einer offenen;
+        # beides sieht im Bericht plausibel aus. Beide Richtungen, dazu die
+        # Zusicherungen, dass ein unbekannter Operator NICHT ausgelegt und
+        # KEV nicht geraten wird.
+        run: bash werkzeuge/zweitquelle_selbsttest.sh
+
       - name: Selbsttest der Lizenzschlüssel-Formprüfung (#83)
         # Beide Richtungen: die hineinkopierte Befehlszeile muss abgefangen
         # werden, ein gültiger Schlüssel darf NICHT hängenbleiben. Eine

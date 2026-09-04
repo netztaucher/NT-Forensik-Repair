@@ -269,8 +269,34 @@ rezept_version() {
   fi
   [[ -n "$bestand" ]] || return 0
 
-  ergebnis=$(printf '%s\n' "$bestand" | python3 "$vergleicher" --daten "$basis" 2>/dev/null || true)
+  # Zweite Quelle (#12). Nur mit --online, und nur als Abfrage: es wird
+  # nichts gespiegelt und nichts mitgeliefert -- die Lizenzlage erlaubt das
+  # Fragen, nicht das Weitergeben. Gemessen am 04.09.2026 ueber 1.319 Paare
+  # aus 124 Installationen: 44 verwundbare Fassungen, die der lokale Bestand
+  # nicht kennt, gegen 3 in der Gegenrichtung.
+  local _online_schalter=""
+  [[ "${WANT_ONLINE:-0}" == "1" ]] && _online_schalter="--online"
+  ergebnis=$(printf '%s\n' "$bestand" | python3 "$vergleicher" --daten "$basis" $_online_schalter 2>/dev/null || true)
   [[ -n "$ergebnis" ]] || return 0
+
+  # Die Kopfzeile der Zweitquelle aus dem Ergebnis nehmen und als Herkunft
+  # ausweisen -- der Bericht soll sagen, WOMIT gemessen wurde. Ohne --online
+  # steht sie nicht da, und dann sagt die Zeile das auch.
+  local _zq _zq_n _zq_f _zq_d
+  _zq=$(printf '%s\n' "$ergebnis" | grep '^ZWEITQUELLE' | head -1 || true)
+  if [[ -n "$_zq" ]]; then
+    IFS=$'\t' read -r _ _zq_url _zq_n _zq_f _zq_d <<< "$_zq"
+    if [[ "${_zq_f:-0}" -gt 0 ]]; then
+      befund_melden wordpress version unklar \
+        "${REZ_KURZ}: zweite Schwachstellenquelle bei ${_zq_f} von ${_zq_n} Abfragen ohne Antwort — für diese Bestandteile liegt nur der lokale Bestand vor" "$REZ_PFAD"
+    else
+      info "${REZ_KURZ}: zweite Quelle befragt (${_zq_url}): ${_zq_n} Bestandteil(e), ${_zq_d:-0} Doppelmeldung(en) entfernt"
+    fi
+    ergebnis=$(printf '%s\n' "$ergebnis" | grep -v '^ZWEITQUELLE' || true)
+  elif [[ "${WANT_ONLINE:-0}" == "1" ]]; then
+    befund_melden wordpress version unklar \
+      "${REZ_KURZ}: zweite Schwachstellenquelle nicht befragt (Abruf fehlgeschlagen) — nur der lokale Bestand ist eingeflossen" "$REZ_PFAD"
+  fi
 
   # Betroffene einzeln melden — anders als beim ⚪ unten ist hier jeder Fall
   # eine eigene Handlung: dieses Plugin auf diese Fassung bringen.
@@ -294,9 +320,17 @@ rezept_version() {
     # Werkzeugname. Gemeint ist eine Programmbibliothek, die ein Plugin
     # mitbringt — das gehoert so dazustehen.
     local _art="$typ"; [[ "$typ" == "composer" ]] && _art="Bibliothek (in einem Plugin)"
+    # Herkunft je Befund (#12): wer den Bericht liest, soll sehen, aus
+    # welcher Quelle die Aussage stammt -- der lokale Bestand ist Wordfence,
+    # alles andere kam ueber die Laufzeit-Abfrage.
+    local _herkunft="Wordfence"
+    case "$_quelle" in
+      *wpvulnerability.net*|*cve.org*|*nvd.nist.gov*) _herkunft="zweite Quelle" ;;
+    esac
     local satz="${REZ_KURZ}: ${_art} ${slug} ${version} ist von einer bekannten Schwachstelle betroffen (${bereich})"
     [[ -n "$cve" ]]     && satz+=" ${cve}"
     [[ -n "$behoben" ]] && satz+=" — behoben in ${behoben}"
+    satz+=" [${_herkunft}]"
     if [[ "$kev" == "ja" ]]; then
       befund_melden wordpress version crit \
         "${satz}. Diese Lücke wird nachweislich aktiv ausgenutzt — sofort handeln." "$REZ_PFAD" web
