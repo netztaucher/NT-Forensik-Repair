@@ -109,7 +109,7 @@ rezept_konf_wert() {   # rezept_konf_wert <datei> <ausdruck-mit-%s> <schluessel>
   # Wert — etwa eine Migrations-Altlast — und die Pruefung laeuft auf der
   # falschen Datenbank.
   grep -vE '^[[:space:]]*(//|#|\*|/\*)' "$datei" 2>/dev/null \
-    | grep -oP "$(printf "$muster" "$schluessel")" 2>/dev/null | head -1
+    | "$NF_GREP" -oP "$(printf "$muster" "$schluessel")" 2>/dev/null | head -1
 }
 
 # ── Werkzeug-Probe ───────────────────────────────────────────
@@ -212,7 +212,7 @@ rezept_db_zugang() {   # rezept_db_zugang <rezeptverzeichnis> <konfigdatei>
   local pm; pm="$(rezept_feld "$rz" praefix_muster)"
   REZ_PFX=""
   if [[ -n "$pm" ]]; then
-    REZ_PFX=$(grep -oP "$pm" "$cfg" 2>/dev/null | head -1)
+    REZ_PFX=$("$NF_GREP" -oP "$pm" "$cfg" 2>/dev/null | head -1)
   fi
   REZ_PFX="${REZ_PFX:-$(rezept_feld "$rz" praefix_vorgabe)}"
   if [[ -n "$REZ_PFX" && ! "$REZ_PFX" =~ ^[A-Za-z0-9_]+$ ]]; then

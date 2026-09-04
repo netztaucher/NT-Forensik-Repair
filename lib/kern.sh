@@ -57,6 +57,35 @@ unklar(){ echo -e "  ${CYN}⚪${NC} $1"; echo "- ⚪ **Nicht messbar: $1**" >> "
 # ein fehlendes Werkzeug ein eigener Zustand ist und kein Nullergebnis.
 werkzeug_da(){ command -v "$1" >/dev/null 2>&1; }
 
+# ── Welches grep beherrscht PCRE? (#67) ──────────────────────
+#
+# Ein guter Teil der Erkennung haengt an `grep -P`: die Webshell-Mustersuche
+# in 7.3 (beide Stufen), der PHP-Marker in Mediendateien (7.13), die
+# Joomla-Versionserkennung und -Mustersuche in 12, und -- am folgenreichsten
+# -- rezept_konf_wert, das die Datenbank-Zugangsdaten aus wp-config.php
+# liest. Faellt PCRE aus, faellt das alles aus.
+#
+# Auf macOS ist /usr/bin/grep BSD-grep und kennt kein -P. Gemessen am
+# 04.09.2026 auf dem Arbeitsplatz: 5 der 19 "nicht messbar"-Eintraege der
+# eingecheckten Referenz sind reine Plattform-Artefakte (#67).
+#
+# Bis hierher probierte das Werkzeug nur `grep`. Dabei liegt die Loesung oft
+# schon auf der Platte: `brew install grep` legt ggrep ab, `brew install
+# ugrep` legt ugrep ab -- beide koennen -P. Also erst suchen, dann aufgeben.
+# Der Name des benutzten Werkzeugs steht im Bericht; wer eine Referenz
+# liest, soll sehen, WOMIT gemessen wurde.
+NF_GREP="${NF_GREP:-}"
+if [[ -z "$NF_GREP" ]]; then
+  for _g in grep ggrep ugrep; do
+    if command -v "$_g" >/dev/null 2>&1 && echo x | "$_g" -qP x 2>/dev/null; then
+      NF_GREP="$_g"; break
+    fi
+  done
+  # Keines kann PCRE. NF_GREP bleibt `grep`, damit die Aufrufe nicht ins
+  # Leere laufen -- die Probe in 7.3 stellt den Ausfall fest und meldet ihn.
+  NF_GREP="${NF_GREP:-grep}"
+fi
+
 # Einen Befehl als Eigentuemer einer Installation ausfuehren.
 #
 #   als_eigentuemer <benutzer> <befehl…>

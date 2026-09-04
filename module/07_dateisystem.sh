@@ -222,13 +222,13 @@ echo -e "  ${YLW}Scanne auf Webshell-Signaturen (inkl. obfuskierte Cookie-Backdo
 #
 # Genau derselbe Fehler wie bei der Werkzeug-Probe in 12r: ein Ausfall, der
 # aussieht wie ein Ergebnis. Deshalb hier eine Probe davor.
-if ! echo 'x' | grep -qP 'x' 2>/dev/null; then
+if ! echo 'x' | "$NF_GREP" -qP 'x' 2>/dev/null; then
   befund_melden dateisystem erkennung unklar \
     "Webshell-Mustersuche nicht ausgeführt — grep beherrscht kein -P (PCRE). Auf macOS ist BSD-grep die Vorgabe; GNU grep oder ugrep installieren. Das ist KEINE Entwarnung." "-" web
   WEBSHELL_HITS=""
   NF_OHNE_PCRE=1
 else
-  WEBSHELL_HITS=$(grep -rlPi "$PATTERN_REGEX" "${SCAN_PATHS[@]}" --include="*.php" \
+  WEBSHELL_HITS=$("$NF_GREP" -rlPi "$PATTERN_REGEX" "${SCAN_PATHS[@]}" --include="*.php" \
     --exclude-dir=phpunit --exclude-dir=sebastian --exclude-dir=mockery 2>/dev/null || true)
 fi
 
@@ -259,7 +259,7 @@ if [[ -n "$WEBSHELL_HITS" ]]; then
     if [[ "$_ct" -gt 0 && $(( _ct - _mt )) -gt "${ZEITSTEMPEL_ZUSATZ_SEK:-2592000}" ]]; then
       fzeit="ZEITSTEMPEL: mtime ist $(( (_ct - _mt) / 86400 )) Tage älter als die letzte Metadatenänderung — Rückdatierung möglich"$'\n'
     fi
-    preview=$(grep -noPi "$PATTERN_REGEX" "$f" 2>/dev/null | head -2 | cut -c1-160 || true)
+    preview=$("$NF_GREP" -noPi "$PATTERN_REGEX" "$f" 2>/dev/null | head -2 | cut -c1-160 || true)
     entry="=== $f ===
 Größe: ${fsize} B | mtime: ${fmtime} | SHA256: ${fhash}
 Angelegt (crtime): ${fcrtime}
@@ -311,10 +311,10 @@ while IFS= read -r f; do
   MED_DETAIL+="=== $f ===
 Größe: ${fsize} B | mtime: $(stat -c %y "$f" 2>/dev/null) | SHA256: $(sha256sum "$f" 2>/dev/null | awk '{print $1}')
 Angelegt (crtime): $(stat -c %w "$f" 2>/dev/null)
-Treffer: $(grep -noPi "$PATTERN_REGEX_MED" "$f" 2>/dev/null | head -2 | cut -c1-160)
+Treffer: $("$NF_GREP" -noPi "$PATTERN_REGEX_MED" "$f" 2>/dev/null | head -2 | cut -c1-160)
 "$'\n'
 done < <(if [[ "${NF_OHNE_PCRE:-0}" == "1" ]]; then :; else
-           grep -rlPi "$PATTERN_REGEX_MED" "${SCAN_PATHS[@]}" --include="*.php" \
+           "$NF_GREP" -rlPi "$PATTERN_REGEX_MED" "${SCAN_PATHS[@]}" --include="*.php" \
              --exclude-dir=phpunit --exclude-dir=sebastian --exclude-dir=mockery 2>/dev/null | sort || true
          fi)
 
@@ -715,7 +715,7 @@ if [[ -n "$MEDIA_HITS" ]]; then
         MEDIA_DETAIL+="    Typ:      $(file -b "$mf" 2>/dev/null | cut -c1-70)"$'\n'
         MEDIA_DETAIL+="    Angelegt: $(stat -c %w "$mf" 2>/dev/null || echo '?')"$'\n'
         MEDIA_DETAIL+="    SHA256:   $(sha256sum "$mf" 2>/dev/null | cut -d' ' -f1)"$'\n'
-        MEDIA_DETAIL+="    Nutzlast: $(grep -aoP '<\?php.{0,120}' "$mf" 2>/dev/null | head -1 | tr -d '\000')"$'\n\n'
+        MEDIA_DETAIL+="    Nutzlast: $("$NF_GREP" -aoP '<\?php.{0,120}' "$mf" 2>/dev/null | head -1 | tr -d '\000')"$'\n\n'
         DISGUISED_PAYLOADS+="$mf"$'\n'
     done <<< "$MEDIA_HITS"
     code "$MEDIA_DETAIL"

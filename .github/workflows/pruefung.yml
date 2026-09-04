@@ -235,6 +235,20 @@ jobs:
       - name: Referenz auf dieser Plattform aufnehmen
         run: bash werkzeuge/goldmuster.sh aufnehmen
 
+      - name: Referenz als Artefakt ablegen (#67)
+        # Der Weg aus der blinden Referenz. Sie entsteht sonst auf einem
+        # macOS-Arbeitsplatz, wo BSD-grep kein -P kennt: 7.3, 7.13, die
+        # Joomla-Erkennung und die Datenbank-Zugangsdaten fallen dort aus,
+        # und die eingecheckte Referenz trägt an diesen Stellen Nullen.
+        # Hier läuft GNU grep — diese Referenz ist vollständig. Wer
+        # pruefstand/referenz/ erneuert, holt sie von hier statt sie lokal
+        # blind aufzunehmen.
+        uses: actions/upload-artifact@v4
+        with:
+          name: referenz-linux
+          path: pruefstand/referenz/
+          retention-days: 14
+
       - name: Zähler und Listen stimmen überein (#64)
         run: |
           # Diese Zusicherung steht in der CI und nicht im lokalen Prüflauf,
