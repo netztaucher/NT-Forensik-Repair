@@ -484,7 +484,15 @@ import os, re, sys, time, datetime
 
 log = os.environ["U_LOG"]
 von = int(os.environ["U_VON"]); bis = int(os.environ["U_BIS"])
-muster = re.compile(r"Accepted (password|publickey|keyboard-interactive)|session opened for user")
+# NUR ECHTE FERNANMELDUNGEN.
+#
+# Der erste Entwurf nahm auch "session opened for user" mit. Das ist eine
+# PAM-Sitzung -- jeder Cronjob oeffnet eine. Gemessen am 04.09.2026 auf einer
+# echten Instanz: 50 Treffer im Fenster, davon 47 genau solche Sitzungen und
+# nur 3 tatsaechliche Anmeldungen, alle von EINER Adresse. Ein Befund, der
+# auf jedem gewarteten Server 50 Zeilen wirft, wird nach dem zweiten Mal
+# ueberblaettert -- und dann ist auch die eine echte Zeile weg.
+muster = re.compile(r"Accepted (password|publickey|keyboard-interactive)")
 stempel = re.compile(r"^([A-Z][a-z]{2})\s+(\d{1,2})\s+(\d{2}):(\d{2}):(\d{2})")
 monate = {m: i + 1 for i, m in enumerate(
     ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"])}
@@ -546,7 +554,11 @@ PY
   U_AUTH+=$'\n'"${_treffer:-(keine erfolgreiche Anmeldung im Fenster)}"
 
   if [[ "$_n_treffer" -gt 0 ]]; then
-    warn "${_n_treffer} erfolgreiche Anmeldung(en) im Zeitfenster der belasteten Dateien — als Einstiegsweg zu prüfen"
+    # Die Zahl der ADRESSEN entscheidet, ob sich das Hinsehen lohnt: 3
+    # Anmeldungen von einer Adresse sind Wartung, 3 von drei Adressen sind
+    # eine Frage.
+    _n_adr=$(printf '%s\n' "$_treffer" | grep -oE 'from [0-9a-fA-F.:]+' | LC_ALL=C sort -u | grep -c . || true)
+    warn "${_n_treffer} erfolgreiche Anmeldung(en) von ${_n_adr:-?} Adresse(n) im Zeitfenster der belasteten Dateien — als Einstiegsweg zu prüfen"
     code "$(printf '%s\n' "$_treffer" | head -20)"
     evidence "ursache_anmeldungen" "$U_AUTH" kunde
   elif [[ -n "$_reicht_e" && "$_reicht_e" -gt "$_fenster_von" ]]; then
