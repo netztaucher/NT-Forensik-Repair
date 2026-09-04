@@ -1269,6 +1269,34 @@ PHP
            "$(_hexkette)" "'" "'" > "${k2}/wp-content/plugins/pruefstand-kopflos/InputFilter.php"
   fi
 
+  # ── Buendelpfade ohne vendor/ (#105) ──────────────────────────────────
+  #
+  # Gemessen am Serverlauf 2026-09-03_07-47-39: 68 von 109 verbliebenen
+  # Eintraegen der kritischen Stufe lagen unter Verzeichnissen, die die
+  # Bibliothek beim Namen nennen, nur nicht unter vendor/ — Germanized
+  # buendelt unter lib/packages/setasign/, Gambio unter includes/classes/
+  # Smarty_2.6.10/, Joomla unter administrator/includes/pcl/.
+  #
+  # Zwei Dateien, gleiche Machart:
+  #   h) lib/packages/setasign/fpdi/…/Flate.php -> Sichtung (die Bibliothek
+  #      steht im Pfad)
+  #   i) lib/class-pruefstand-eigencode.php      -> MUSS kritisch bleiben.
+  #      lib/ allein ist kein Bibliotheksname; darunter liegt Eigencode.
+  #
+  # (i) ist der Test gegen die naheliegende Abkuerzung, lib/ pauschal
+  # aufzunehmen. Er steht IMMER, unabhaengig vom Gegenprobenschalter.
+  local _lp="${k2}/wp-content/plugins/pruefstand-kopflos/lib/packages/setasign/fpdi/src/PdfParser/Filter"
+  mkdir -p "$_lp"
+  if [[ "${NT_PRUEFSTAND_OHNE_VENDORFILTER:-0}" != "1" ]]; then
+    printf '<?php\n// Pruefstand: fpdi unter lib/packages/, Muster ohne Schadabsicht\n$x = "%s"; @eval($_POST[%sp%s]);\n' \
+           "$(_hexkette)" "'" "'" > "${_lp}/Flate.php"
+  else
+    printf '<?php\n// Pruefstand: dieselbe Datei, aber NICHT unter einem Bibliothekspfad\n$x = "%s"; @eval($_POST[%sp%s]);\n' \
+           "$(_hexkette)" "'" "'" > "${k2}/wp-content/plugins/pruefstand-kopflos/Flate-packages.php"
+  fi
+  printf '<?php\n// Pruefstand: Eigencode unter lib/ — kein Bibliotheksname im Pfad\n$x = "%s"; @eval($_POST[%se%s]);\n' \
+         "$(_hexkette)" "'" "'" > "${k2}/wp-content/plugins/pruefstand-kopflos/lib/class-pruefstand-eigencode.php"
+
   # ── Der Fall, in dem NICHTS uebrig bleibt ────────────────────────────
   # Kunde 1 ist die dritte Lage: ein Mustertreffer, und er ist entlastet.
   # Damit ist die Restliste LEER — und genau daran scheiterte der erste
