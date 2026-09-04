@@ -1118,6 +1118,18 @@ PHP
   # ausliefert. Schlaegt die Regel hier an, meldet sie jede gepflegte Seite.
   printf 'User-agent: *\nDisallow: /wp-admin/\nSitemap: https://kunde-drei.example/wp-sitemap.xml\n' \
     > "${k3}/robots.txt"
+  # Zweite Gegenprobe (#47): der Yoast-Satz, wie er auf dem echten Server
+  # steht -- sechs Zeilen, alle ohne Datei auf der Platte. Genau die Lage,
+  # fuer die der Vorschlag "keine Datei -> Generator" gedacht war und an der
+  # er scheitert: 47 von 48 Sitemap-Zeilen auf 124 Installationen zeigen ins
+  # Virtuelle. Schlaegt die Regel hier an, meldet sie jede gepflegte Seite.
+  printf 'User-agent: *\nSitemap: https://kunde-eins.example/sitemap_index.xml\nSitemap: https://kunde-eins.example/post-sitemap.xml\nSitemap: https://kunde-eins.example/page-sitemap.xml\nSitemap: https://kunde-eins.example/product-sitemap.xml\nSitemap: https://kunde-eins.example/category-sitemap.xml\nSitemap: https://kunde-eins.example/product_cat-sitemap.xml\n' \
+    > "${W}/kunde-eins.example/httpdocs/robots.txt"
+  # Die gemessene Doorway-Machart (#47): Abfragezeichenfolge als
+  # Sitemap-Adresse, dazu eine fremde .php-Route. Auf 124 Installationen
+  # genau einmal vorgekommen, kein bekanntes Plugin erzeugt so etwas.
+  printf 'User-agent: *\nAllow: /\nSitemap: https://kunde-vier.example/?sitemapindex.xml\nSitemap: https://kunde-vier.example/?sitemap878.xml\nSitemap: https://kunde-vier.example/search.php?sitemap74.xml\n' \
+    > "${k4}/robots.txt"
 
   # ── Das Abnahmekriterium fuer Abschnitt 13d ──────────────────────────
   #

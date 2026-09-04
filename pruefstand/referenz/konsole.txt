@@ -30,7 +30,7 @@
 [1m[0;34m══════════════════════════════════════════[0m
 
 [0;36m▶ 7.0 Datei-Inventar (Inode und Zeitstempel sichern)[0m
-  [0m·  Inventar: 673 Datei(en) erfasst, davon 673 mit Anlegezeit (belege/00_dateien.tsv)
+  [0m·  Inventar: 675 Datei(en) erfasst, davon 675 mit Anlegezeit (belege/00_dateien.tsv)
 
 [0;36m▶ 7.1 Kürzlich veränderte PHP-Dateien (letzte 30 Tage)[0m
   [0;33mDurchsuche Webspace (kann dauern...)[0m
@@ -145,6 +145,7 @@
 
 [0;36m▶ 12r.2.x kunde-eins.example/httpdocs[0m
   [0;32m✓[0m kunde-eins.example/httpdocs: keine bekannte Schwachstelle im vorliegenden Datenbestand (Stand <STAND>)
+  [0m·  kunde-eins.example/httpdocs: robots.txt vorhanden, zuletzt geändert <ZEIT> — als Zeitanker vermerkt
   [0;32m✓[0m kunde-eins.example/httpdocs: keine Doorway-.htaccess-Signatur
   [0;32m✓[0m kunde-eins.example/httpdocs: keine @include base64_decode()-Injektion
   [0;32m✓[0m kunde-eins.example/httpdocs: WordPress-Core unverändert (verify-checksums)
@@ -155,6 +156,7 @@
   [0;36m⚪[0m kunde-eins.example/httpdocs: Datenbank nicht geprüft (grep beherrscht kein -P (PCRE) — die Werte aus wp-config.php sind damit nicht lesbar). Das ist KEINE Entwarnung.
 
 [0;36m▶ 12r.2.x kunde-vier.example/httpdocs[0m
+  [0;36m⚪[0m kunde-vier.example/httpdocs: robots.txt verweist auf eine Sitemap der Form ABFRAGE — Doorway-Muster, aber nicht belegt: Sitemap-Route und Datenbank prüfen (robots.txt vom <ZEIT>)
   [0;32m✓[0m kunde-vier.example/httpdocs: keine Doorway-.htaccess-Signatur
   [0;32m✓[0m kunde-vier.example/httpdocs: keine @include base64_decode()-Injektion
   [0;36m⚪[0m kunde-vier.example/httpdocs: wp core verify-checksums hat nicht geantwortet — der Kern ist WEDER bestätigt NOCH beanstandet (Rückgabewert 1)
@@ -174,7 +176,7 @@
   [0;33m⚠[0m  kunde-zwei.example/httpdocs: theme pruefstand-thema 0.9 ist von einer bekannten Schwachstelle betroffen ((* … 1.0)) CVE-2026-90005 — behoben in 1.0.
   [0;33m⚠[0m  kunde-zwei.example/httpdocs: Bibliothek (in einem Plugin) pruefstand/bibliothek 1.2.0 ist von einer bekannten Schwachstelle betroffen ([1.0.0 … 1.4.0)) CVE-2026-90006 — behoben in 1.4.0.
   [0;36m⚪[0m kunde-zwei.example/httpdocs: 2 Bestandteil(e) ohne lesbare Fassung — für sie ist keine Aussage zur Angreifbarkeit möglich
-  [0;36m⚪[0m kunde-zwei.example/httpdocs: robots.txt verweist auf eine Sitemap über index.php/ — Doorway-Muster, aber nicht belegt: Sitemap-Route und Datenbank prüfen (robots.txt vom <ZEIT>)
+  [0;36m⚪[0m kunde-zwei.example/httpdocs: robots.txt verweist auf eine Sitemap der Form PATHINFO — Doorway-Muster, aber nicht belegt: Sitemap-Route und Datenbank prüfen (robots.txt vom <ZEIT>)
   [0;32m✓[0m kunde-zwei.example/httpdocs: keine Doorway-.htaccess-Signatur
   [0;31m✗[0m  [1mkunde-zwei.example/httpdocs: 1 Datei(en) mit @include base64_decode() — getarnte Payload-Nachladung[0m
   [0;33m⚠[0m  kunde-zwei.example/httpdocs: 1 mu-Plugin(s) — laufen ohne Aktivierung und erscheinen in keiner Pluginliste
@@ -234,7 +236,7 @@
 
 [0;36m▶ 13e.1 Zeitachse der belasteten Dateien[0m
   [0m·  Aeltester einzelner Schreibvorgang: <ZEIT> — juengster: <ZEIT>
-  [0m·  13 belastete Datei(en), verteilt auf 2 Vorgang/Vorgaenge (Trennung ab 6 s Pause)
+  [0m·  14 belastete Datei(en), verteilt auf 2 Vorgang/Vorgaenge (Trennung ab 6 s Pause)
   [0m·  1 Massenvorgang/-vorgaenge herausgehalten. Aeltester Zeitstempel insgesamt: <ZEIT> — er gehoert zu einem davon und datiert keinen Angriff.
 
 [0;36m▶ 13e.2 ctime gegen mtime — beide Richtungen[0m
@@ -265,8 +267,8 @@
 [1m[0;32m  ANALYSE ABGESCHLOSSEN — Lauf <LAUF-ID>[0m
 [1m[0;32m══════════════════════════════════════════[0m
 
-[1mBefunde:[0m       🔴 18 kritisch, ⚠️ 29 Warnungen, ✅ 31 ok, ⚪ 18 nicht messbar
-[0;33m               18 Prüfung(en) ohne Ergebnis — das ist keine Entwarnung.[0m
+[1mBefunde:[0m       🔴 18 kritisch, ⚠️ 29 Warnungen, ✅ 31 ok, ⚪ 19 nicht messbar
+[0;33m               19 Prüfung(en) ohne Ergebnis — das ist keine Entwarnung.[0m
                  Webshell-Mustersuche nicht ausgeführt — grep beherrscht kein -P (PCRE). Auf macOS ist BSD-grep die Vorgabe; GNU grep oder ugrep installieren. Das ist KEINE Entwarnung.
                  YARA-Signaturscan nicht gelaufen (Schalter --yara nicht gesetzt) — diese Erkennungsebene fehlt in diesem Bericht
                  kunde-zwei.example/cloud.kunde-zwei.example: Werkzeug antwortet nicht verwertbar — nicht geprüft
@@ -276,11 +278,12 @@
                  kunde-drei.example/httpdocs: Datenbank nicht geprüft (grep beherrscht kein -P (PCRE) — die Werte aus wp-config.php sind damit nicht lesbar). Das ist KEINE Entwarnung.
                  kunde-eins.example/httpdocs: REST-Benutzerliste nicht geprüft (ohne --online) — /wp-json/wp/v2/users liefert unangemeldet oft alle Benutzernamen
                  kunde-eins.example/httpdocs: Datenbank nicht geprüft (grep beherrscht kein -P (PCRE) — die Werte aus wp-config.php sind damit nicht lesbar). Das ist KEINE Entwarnung.
+                 kunde-vier.example/httpdocs: robots.txt verweist auf eine Sitemap der Form ABFRAGE — Doorway-Muster, aber nicht belegt: Sitemap-Route und Datenbank prüfen (robots.txt vom <ZEIT>)
                  kunde-vier.example/httpdocs: wp core verify-checksums hat nicht geantwortet — der Kern ist WEDER bestätigt NOCH beanstandet (Rückgabewert 1)
                  kunde-vier.example/httpdocs: REST-Benutzerliste nicht geprüft (ohne --online) — /wp-json/wp/v2/users liefert unangemeldet oft alle Benutzernamen
                  kunde-vier.example/httpdocs: Datenbank nicht geprüft (grep beherrscht kein -P (PCRE) — die Werte aus wp-config.php sind damit nicht lesbar). Das ist KEINE Entwarnung.
                  kunde-zwei.example/httpdocs: 2 Bestandteil(e) ohne lesbare Fassung — für sie ist keine Aussage zur Angreifbarkeit möglich
-                 kunde-zwei.example/httpdocs: robots.txt verweist auf eine Sitemap über index.php/ — Doorway-Muster, aber nicht belegt: Sitemap-Route und Datenbank prüfen (robots.txt vom <ZEIT>)
+                 kunde-zwei.example/httpdocs: robots.txt verweist auf eine Sitemap der Form PATHINFO — Doorway-Muster, aber nicht belegt: Sitemap-Route und Datenbank prüfen (robots.txt vom <ZEIT>)
                  kunde-zwei.example/httpdocs: 1 Plugin(s) ohne Prüfsummensatz und alle Themes — Unversehrtheit nicht feststellbar (Premium, Fork, Eigenbau; für Themes veröffentlicht wordpress.org keine Prüfsummen)
                  kunde-zwei.example/httpdocs: REST-Benutzerliste nicht geprüft (ohne --online) — /wp-json/wp/v2/users liefert unangemeldet oft alle Benutzernamen
                  kunde-zwei.example/httpdocs: Datenbank nicht geprüft (grep beherrscht kein -P (PCRE) — die Werte aus wp-config.php sind damit nicht lesbar). Das ist KEINE Entwarnung.
