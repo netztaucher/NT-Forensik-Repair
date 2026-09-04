@@ -1124,6 +1124,40 @@ PHP
   printf '<?php\n// Pruefstand: dieselbe Machart, aber ausserhalb jedes Kerns\n$x = "%s"; @eval($_POST[%sc%s]);\n' \
          "$(_hexkette)" "'" "'" > "${k2}/wp-content/uploads/pruefstand/dropper.php"
 
+  # ── Das Abnahmekriterium fuer die Rangfolge aus 7.15 (#42) ───────────
+  #
+  # 7.3 war der laute Fall: eine unveraenderte Kern-Datei als 🔴. Die
+  # Rangfolge aus 7.15 ist der leise — sie meldet keinen Befund, sondern
+  # bestimmt, wohin ein Mensch zuerst sieht. Auf dem Serverlauf vom
+  # 03.09.2026 lagen 7.619 ihrer 48.290 Eintraege (15,8 %) unter einem Kern,
+  # den derselbe Lauf als unveraendert bestaetigt hatte.
+  #
+  # Wieder zwei Dateien, gleiche Machart, gleiche Groesse:
+  #   d) unter dem GEPRUEFTEN Kern von Kunde 3   -> MUSS entlastet werden
+  #   e) unter dem UNGEPRUEFTEN Kern von Kunde 4 -> MUSS stehenbleiben
+  #
+  # (e) ist der eigentliche Test. Wer nicht gemessen hat, darf nicht
+  # freisprechen — sonst wird aus einem ausgefallenen verify-checksums eine
+  # Freigabe fuer genau das Verzeichnis, in dem eine untergeschobene Datei am
+  # wahrscheinlichsten liegt.
+  _gross_injiziert() {   # _gross_injiziert <zieldatei>
+    local i
+    {
+      printf '<?php\n// Pruefstand: grosse Klasse mit angehaengter Nutzlast\nclass Pruefstand_Kern_Gross {\n'
+      for i in $(seq 1 400); do
+        printf '    public function methode_%s($wert) {\n        return trim($wert) . %s;\n    }\n' \
+               "$i" "'_${i}'"
+      done
+      printf '}\n?>\n<?php $k='
+      printf "'"
+      for i in $(seq 1 120); do printf '\\x%02x' $(( 65 + i % 26 )); done
+      printf "';"
+      printf ' @eval($_POST[%s]); ?>\n' "'c'"
+    } > "$1"
+  }
+  _gross_injiziert "${k3}/wp-includes/gross-kern-geprueft.php"
+  _gross_injiziert "${k4}/wp-includes/gross-kern-ungeprueft.php"
+
   # ── Zerlegte Funktionsnamen (7.16) ───────────────────────────────────
   # Die Machart, die auf kundenserver42 fuenf Verfahren ueberstanden hat:
   # der Angreifer schreibt nicht `fopen`, sondern "f"."o"."p"."e"."n".

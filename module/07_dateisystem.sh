@@ -805,9 +805,22 @@ h2 "7.15 Injektion in grosse Dateien (ohne Referenz)"
 # Das Mass kann eine Datei belasten, nie entlasten. Wer sauberen, umbrochenen
 # Code mitten in eine grosse Datei schreibt, bleibt unsichtbar — das ist die
 # Grenze des Verfahrens und steht so in docs/erkennung.md.
+#
+# DIE AUSGABE STEHT IN 13d. Gesucht wird hier, geurteilt dort — derselbe
+# Grund wie bei 7.3: die Listen der gegen amtliche Pruefsummen bestaetigten
+# Dateien entstehen erst in 12r, und dieser Abschnitt laeuft davor. Auf einem
+# Serverlauf vom 03.09.2026 lagen 7.619 der 48.290 Eintraege dieser Rangfolge
+# (15,8 %) unter einem Kern, den derselbe Lauf als unveraendert bestaetigt
+# hatte. Eine Rangfolge fuer die Sichtung, in der jeder sechste Eintrag
+# bereits geprueft ist, kostet genau die Aufmerksamkeit, fuer die sie gebaut
+# wurde (#42).
+INJ_TREFFER=""
+INJ_ANZ=0
 if ! werkzeug_da python3; then
+  NF_OHNE_INJEKTIONSMASS=1
   info "python3 fehlt — Injektionsmass übersprungen"
 elif [[ ! -r "${SELF_DIR}/lib/injektion_pruefen.py" ]]; then
+  NF_OHNE_INJEKTIONSMASS=1
   info "lib/injektion_pruefen.py fehlt — Injektionsmass übersprungen"
 else
   # Gebündelt über xargs, nicht je Datei: ein Python-Start pro Datei wären bei
@@ -821,22 +834,7 @@ else
                 | xargs -0 -r -P4 -n200 python3 "${SELF_DIR}/lib/injektion_pruefen.py" 2>/dev/null \
                 | LC_ALL=C sort -k2,2nr -k1,1 || true)
   INJ_ANZ=$(printf '%s\n' "$INJ_TREFFER" | grep -c . || true)
-  if [[ "${INJ_ANZ:-0}" -gt 0 ]]; then
-    info "${INJ_ANZ} grosse Datei(en) mit auffälliger Verteilung — nach Punkten sortiert, Einordnung offen"
-    code "$(printf '%s\n' "$INJ_TREFFER" | head -20)"
-    evidence "injektion_grosse_dateien" "# Punkte und Merkmale je Datei, absteigend.
-# ANHANG    Code hinter dem letzten schliessenden Tag
-# LANGZEILE längste Zeile in Bytes
-# DICHTE    kodierte Zeichen im dichtesten 512-Byte-Fenster
-# BASE64    Länge des längsten Base64-Tokens
-# RANDLAGE  der Fund liegt im äussersten Rand der Datei
-#
-# KEIN BEFUND. Die Schwellen sind bis zu einer Messung an einem echten
-# Server geraten (#9). Diese Liste ist eine Rangfolge für die Sichtung.
-${INJ_TREFFER}" kunde
-  else
-    ok "Keine grosse Datei mit auffälliger Verteilung"
-  fi
+  info "${INJ_ANZ} Datei(en) mit auffälliger Verteilung — Einordnung in Abschnitt 13d"
 fi
 
 # ============================================================

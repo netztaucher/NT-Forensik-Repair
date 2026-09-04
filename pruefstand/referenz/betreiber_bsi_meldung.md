@@ -54,8 +54,8 @@
 
 | Indikator | Wert |
 |---|---|
-| Kritische Befunde | 18 |
-| Warnungen | 23 |
+| Kritische Befunde | 17 |
+| Warnungen | 27 |
 | Fehlgeschlagene SSH-Login-Versuche | 0 |
 | Scanner-Aktivität in Web-Logs (Treffer) | 0 |
 | Verdächtige POST-Requests (Webshell-Muster) | 0 |
@@ -75,7 +75,6 @@
 - kunde-zwei.example/cloud.kunde-zwei.example: Root-.htaccess trägt Angreifer-Merkmale (Freigabeliste mit fremden Dateinamen)
 - kunde-zwei.example/cloud.kunde-zwei.example: verschachtelte Verzeichnisse (z. B. config/config) — typisch für diese Kampagne
 - kunde-zwei.example/httpdocs: plugin pruefstand-kev 1.2 ist von einer bekannten Schwachstelle betroffen ((* … 2.0)) CVE-2026-90001 — behoben in 2.0. Diese Lücke wird nachweislich aktiv ausgenutzt — sofort handeln.
-- kunde-zwei.example/httpdocs: robots.txt verweist auf eine Sitemap über index.php/ — Kennzeichen eines Doorway-Generators IN der Datenbank; ein Dateiscan findet ihn nicht (robots.txt vom <ZEIT>)
 - kunde-zwei.example/httpdocs: 1 Datei(en) mit @include base64_decode() — getarnte Payload-Nachladung
 - kunde-zwei.example/httpdocs: 8 veränderte Plugin-Codedatei(en) gegenüber wordpress.org — Plugin neu installieren, Dateien vorher sichern
 - kunde-zwei.example/httpdocs: 1 veränderte Core-Datei(en) — Injektion oder Manipulation
