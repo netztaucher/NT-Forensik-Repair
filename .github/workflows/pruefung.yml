@@ -330,6 +330,20 @@ jobs:
                   fehler.append('Kern von Kunde 3 IST geprüft — die Datei hätte entlastet werden müssen')
               if not k4:
                   fehler.append('Kern von Kunde 4 wurde NICHT geprüft — die Datei darf nicht entlastet werden')
+          # Core-Update-Staging (#103): dieselbe Datei in zwei Stagings.
+          # Kunde 3: verify-checksums bestätigt das Staging — muss entlastet
+          # werden. Kunde 2: die Datei weicht ab — muss stehenbleiben. Das
+          # zweite ist der Test gegen das pauschale Freisprechen von
+          # upgrade/: ein Verzeichnisname ist keine Prüfsumme.
+          s3 = [p for p in drop if 'kunde-drei' in p and 'class-pruefstand-staging' in p]
+          s2 = [p for p in drop if 'kunde-zwei' in p and 'class-pruefstand-staging' in p]
+          print(f"Update-Staging: Kunde 3 (bestätigt) {len(s3)} Treffer, "
+                f"Kunde 2 (Abweichung) {len(s2)} Treffer")
+          if m['webshell_count_roh'] > 0:
+              if s3:
+                  fehler.append('Staging von Kunde 3 IST bestätigt — die Datei hätte entlastet werden müssen (#103)')
+              if not s2:
+                  fehler.append('Staging von Kunde 2 weicht ab — die Datei darf nicht entlastet werden (#103)')
           # 7.2 — die Abschichtung darf den Ort nicht mit dem Format
           # verwechseln (#65). Die getarnte Shell LIEGT im WPML-Cache, sieht
           # aber nicht wie ein Twig-Template aus: sie gehört in die

@@ -703,6 +703,67 @@ rezept_kern() {
     printf '%s\n' "${REZ_PFAD}" \
       >> "${PRUEFSUMMEN_KERN_WHITELIST:-${RUN_DIR}/.pruefsummen_kern.txt}"
   fi
+  _wp_staging_pruefen
+}
+
+# ── Core-Update-Staging (#103) ────────────────────────────────
+#
+# WordPress entpackt ein Core-Update nach wp-content/upgrade/wp_<hex>/wordpress/
+# und raeumt das Verzeichnis bei Erfolg weg. Bleibt es liegen, liegt dort ein
+# vollstaendiger zweiter Kern: 4.010 Dateien je Staging, gemessen am 04.09.2026
+# auf neun Instanzen eines vhosts, alle zwischen 02:27 und 02:36 angelegt,
+# keines abgeschlossen. Die Kern-Whitelist gibt nur wp-admin/ und wp-includes/
+# der INSTANZ frei. 13d meldete deshalb dieselbe Kern-Datei, die es unter der
+# Instanz gerade entlastet hatte, im Staging als KRITISCH -- Zeile 42 von
+# class-wp-simplepie-sanitize-kses.php, bytegleich mit dem amtlichen 7.1.
+#
+# KEIN pauschales Freisprechen von upgrade/: ein Angreifer legt dort genauso ab
+# wie unter uploads/. Jedes Staging wird wie ein Kern geprueft -- mit demselben
+# verify-checksums, gegen den Pruefsummensatz SEINER Fassung. wp-cli liest die
+# aus wp-includes/version.php des Stagings und braucht dafuer weder wp-config
+# noch Datenbank (gemessen 04.09.2026: 1 s je Staging, Rueckgabewert 0). Was
+# dort abweicht, ist ein staerkerer Befund als unter der Instanz: im Staging
+# hat niemand etwas zu suchen ausser dem Updater.
+#
+# Die Freigabe laeuft ueber denselben Praefix-Mechanismus wie beim Kern der
+# Instanz (lib/pruefsummen_filter.py: nur wp-admin/ und wp-includes/ unter dem
+# Praefix, Abweichungen ausgenommen). verify-checksums nennt ausschliesslich
+# die Abweichungen; die bestaetigten Dateien einzeln aufzuzaehlen hiesse, den
+# Kern selbst zu durchlaufen.
+_wp_staging_pruefen() {
+  local st ver alter roh rc chk n_mod n_sne liste owner
+  [[ -d "${REZ_PFAD}/wp-content/upgrade" ]] || return 0
+  owner=$(datei_meta "${REZ_PFAD}/wp-config.php" eigner)
+  owner="${owner%%:*}"; owner="${owner:-root}"
+  while IFS= read -r st; do
+    [[ -n "$st" && -r "${st}/wp-includes/version.php" ]] || continue
+    ver=$(grep -oE "wp_version = '[^']+'" "${st}/wp-includes/version.php" 2>/dev/null \
+            | grep -oE "'[^']+'" | tr -d "'" | head -1)
+    alter=$(datei_meta "$st" mtime 2>/dev/null || true)
+    roh=$(als_eigentuemer "$owner" "$REZ_PHP" "$REZ_WERKZEUG" core verify-checksums \
+            --path="$st" --skip-plugins --skip-themes 2>&1); rc=$?
+    chk=$(printf '%s\n' "$roh" | grep "Warning:" || true)
+    n_mod=$(printf '%s\n' "$chk" | grep -c "doesn.t verify" || true); n_mod="${n_mod:-0}"
+    n_sne=$(printf '%s\n' "$chk" | grep -c "should not exist" || true); n_sne="${n_sne:-0}"
+    if [[ "$n_mod" -gt 0 || "$n_sne" -gt 0 ]]; then
+      liste=$(printf '%s\n' "$chk" | sed -E "s#.*(checksum|exist): #${st}/#")
+      befund_melden wordpress kern crit \
+        "${REZ_KURZ}: $((n_mod + n_sne)) abweichende Datei(en) im Core-Update-Staging (Fassung ${ver:-?}) — dort hat niemand etwas zu suchen außer dem Updater" "$st" web
+      code "$(printf '%s\n' "$liste" | head -30)"
+      evidence "wp_staging_veraendert_$(echo "$REZ_KURZ" | tr '/.' '__')" "$liste"
+      CORE_INJECTED+="$liste"$'\n'
+      # Die Abweichungen stehen jetzt in CORE_INJECTED; der Rest des Stagings
+      # ist damit genau die Menge, die verify-checksums bestaetigt hat.
+      printf '%s\n' "$st" >> "${PRUEFSUMMEN_KERN_WHITELIST:-${RUN_DIR}/.pruefsummen_kern.txt}"
+    elif [[ "$rc" -eq 0 && -n "$roh" ]]; then
+      info "${REZ_KURZ}: Core-Update-Staging Fassung ${ver:-?} (${alter:-Zeit unbekannt}) unverändert gegen amtliche Prüfsummen — WordPress räumt es bei Erfolg weg; das Update ist vermutlich nicht abgeschlossen: ${st}"
+      printf '%s\n' "$st" >> "${PRUEFSUMMEN_KERN_WHITELIST:-${RUN_DIR}/.pruefsummen_kern.txt}"
+    else
+      befund_melden wordpress kern unklar \
+        "${REZ_KURZ}: Core-Update-Staging Fassung ${ver:-?} NICHT geprüft (verify-checksums hat nicht geantwortet, Rückgabewert ${rc}) — keine Entwarnung für dieses Verzeichnis" "$st"
+    fi
+  done < <(find "${REZ_PFAD}/wp-content/upgrade" -mindepth 2 -maxdepth 2 -type d \
+                -name wordpress -path '*/wp_*/wordpress' 2>/dev/null | LC_ALL=C sort)
 }
 
 # ── Dateibasierte Merkmale ───────────────────────────────────
