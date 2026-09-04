@@ -80,8 +80,55 @@ FINGER="$(fingerabdruck)" || abbruch "Rechner-Kennung nicht ermittelbar — Lize
 
 # ── Lizenzschluessel ─────────────────────────────────────────
 LIZENZ="${NT_REPAIR_LIZENZ:-}"
+LIZENZ_QUELLE="Umgebungsvariable NT_REPAIR_LIZENZ"
 if [[ -z "$LIZENZ" && -r "${STATE_DIR}/lizenz.key" ]]; then
   LIZENZ="$(head -1 "${STATE_DIR}/lizenz.key" | tr -d '[:space:]')"
+  LIZENZ_QUELLE="${STATE_DIR}/lizenz.key"
+fi
+
+# ── Form pruefen, bevor irgendetwas das Netz erreicht (#83) ──
+#
+# Bis hierher galt der Dateiinhalt ungeprueft als Schluessel. Am 31.08.2026
+# stand in lizenz.key eine versehentlich hineinkopierte Befehlszeile mit
+# einem Anfuehrungszeichen darin. Der Koerper der Anfrage wurde durch
+# Zeichenkettenverkettung gebaut, das Anfuehrungszeichen zerlegte das JSON,
+# und der Lizenzserver antwortete "Invalid JSON body."
+#
+# Die Meldung nannte den SERVER, die Ursache lag in einer LOKALEN DATEI. Das
+# hat zwei Messungen am falschen Ende gekostet: config.php auf dem
+# Lizenzserver auf Syntaxfehler geprueft, Fassungsliste ausgelesen,
+# Zeitstempel verglichen.
+#
+# Die Falle entsteht leicht: wer den Schluessel ueber `read -rs` hinterlegt,
+# sieht seine Eingabe nicht.
+#
+# DER INHALT WIRD NIE AUSGEGEBEN. Gemeldet werden Laenge und Herkunft, nicht
+# der Wert -- eine Fehlermeldung, die einen Schluessel in ein Protokoll oder
+# einen Screenshot schreibt, ist ein eigener Fehler.
+# Das Praefix case-unempfindlich: die Form stammt aus dem Hilfetext dieses
+# Laders (NT-XXXX-XXXX-XXXX), nicht aus einer gemessenen Serverregel. Wer
+# seinen Schluessel klein schreibt, soll hier nicht haengenbleiben --
+# ueber Gross- und Kleinschreibung entscheidet der Lizenzserver, nicht
+# diese Probe. Sie soll offensichtlich falschen INHALT abfangen (die
+# hineinkopierte Befehlszeile), keine Serverregel durchsetzen.
+if [[ -n "$LIZENZ" && ! "$LIZENZ" =~ ^[Nn][Tt]-[A-Za-z0-9]{4}-[A-Za-z0-9]{4}-[A-Za-z0-9]{4}$ ]]; then
+  cat >&2 <<HILFE
+
+  FEHLER: ${LIZENZ_QUELLE} enthaelt keinen Lizenzschluessel
+     (${#LIZENZ} Zeichen, erwartet NT-XXXX-XXXX-XXXX).
+
+  Der Inhalt wird hier bewusst nicht angezeigt. Nachsehen mit:
+      cat ${STATE_DIR}/lizenz.key
+
+  Neu hinterlegen:
+      printf 'NT-XXXX-XXXX-XXXX\\n' > ${STATE_DIR}/lizenz.key
+      chmod 600 ${STATE_DIR}/lizenz.key
+
+  Die Analyse braucht keine Lizenz:
+      bash wp_plesk_forensik.sh --domain kunde.tld
+
+HILFE
+  exit 1
 fi
 if [[ -z "$LIZENZ" ]]; then
   cat >&2 <<HILFE
@@ -111,12 +158,27 @@ fi
 # Lizenz sofort, sobald der Rechner am Netz ist — der Zwischenspeicher ist
 # Ausfallreserve, nicht Abkuerzung.
 schluessel_vom_server() {
-  local nonce antwort
+  local nonce antwort koerper fehler
   nonce="$(openssl rand -hex 16)"
+  # KEINE ZEICHENKETTENVERKETTUNG FUER JSON (#83). Der Koerper entsteht in
+  # demselben python3, das die Antwort auswertet -- es maskiert korrekt. Die
+  # Formpruefung oben faengt den Anlassfall schon ab; diese Stelle sorgt
+  # dafuer, dass derselbe Bau nicht an anderer Stelle wieder zuschlaegt.
+  koerper="$(python3 -c 'import json,sys; print(json.dumps({"key":sys.argv[1],"domain":sys.argv[2],"product":"nt-repair","nonce":sys.argv[3],"version":sys.argv[4]}))' \
+              "$LIZENZ" "$FINGER" "$nonce" "$PAKET_VERSION")" || return 2
+  # Transportfehler NICHT nach /dev/null (#83). Solange die Ursache offen
+  # ist, ist eine verworfene Fehlerausgabe ein selbstgestellter Hinterhalt --
+  # das steht als eigene Regel in CLAUDE.md. curl schreibt seinen Grund nach
+  # stderr; der wandert in eine Datei und wird im Fehlerfall gezeigt.
+  fehler="$(mktemp)"
   antwort="$(curl -sS --max-time 20 -X POST "${LIZENZ_SERVER}/validate" \
       -H 'Content-Type: application/json' \
-      -d "{\"key\":\"${LIZENZ}\",\"domain\":\"${FINGER}\",\"product\":\"nt-repair\",\"nonce\":\"${nonce}\",\"version\":\"${PAKET_VERSION}\"}" \
-      2>/dev/null)" || return 2   # 2 = Server nicht erreichbar
+      --data-binary "$koerper" \
+      2>"$fehler")" || {
+        [[ -s "$fehler" ]] && printf '  Lizenzserver nicht erreichbar: %s\n' \
+          "$(head -2 "$fehler" | tr '\n' ' ')" >&2
+        rm -f "$fehler"; return 2; }
+  rm -f "$fehler"
   [[ -n "$antwort" ]] || return 2
 
   python3 - "$antwort" <<'PY'

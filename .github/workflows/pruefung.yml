@@ -146,6 +146,13 @@ jobs:
         # werden, unter ungeprüftem darf nicht.
         run: bash werkzeuge/injektion_einordnung_selbsttest.sh
 
+      - name: Selbsttest der Lizenzschlüssel-Formprüfung (#83)
+        # Beide Richtungen: die hineinkopierte Befehlszeile muss abgefangen
+        # werden, ein gültiger Schlüssel darf NICHT hängenbleiben. Eine
+        # Formprüfung, die alles abweist, macht das Werkzeug unbrauchbar.
+        # Dazu: der Schlüssel darf nie in der Fehlerausgabe stehen.
+        run: bash werkzeuge/lizenzschluessel_selbsttest.sh
+
       - name: Selbsttest der Doorway-Einstufung (#86)
         # Beide Richtungen: die Core-Sitemap entlastet, ein echter Doorway
         # (viele URLs oder Spam-Muster) bleibt crit. Und ohne Abruf darf nie
