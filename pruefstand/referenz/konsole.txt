@@ -249,6 +249,9 @@
 [0;36m▶ 13e.4 Reichweite der Quellen[0m
   [0m·  Aeltester Nachweis ist nicht Infektionsbeginn: er ist die aelteste ueberlebende Spur. Aeltere Vorgaenge koennen ueberschrieben, rotiert oder nie protokolliert worden sein.
 
+[0;36m▶ 13e.5 Einstieg über Anmeldedaten[0m
+  [0;32m✓[0m Keine erfolgreiche Anmeldung im Zeitfenster der belasteten Dateien <PRUEFSTAND>/auth.log, ab <ZEIT>) — der Einstieg lag damit nicht bei Anmeldedaten, soweit dieses Protokoll reicht
+
 [1m[0;34m══════════════════════════════════════════[0m
 [1m[0;34m  14. ZUSAMMENFASSUNG[0m
 [1m[0;34m══════════════════════════════════════════[0m
@@ -267,7 +270,7 @@
 [1m[0;32m  ANALYSE ABGESCHLOSSEN — Lauf <LAUF-ID>[0m
 [1m[0;32m══════════════════════════════════════════[0m
 
-[1mBefunde:[0m       🔴 18 kritisch, ⚠️ 29 Warnungen, ✅ 31 ok, ⚪ 19 nicht messbar
+[1mBefunde:[0m       🔴 18 kritisch, ⚠️ 29 Warnungen, ✅ 32 ok, ⚪ 19 nicht messbar
 [0;33m               19 Prüfung(en) ohne Ergebnis — das ist keine Entwarnung.[0m
                  Webshell-Mustersuche nicht ausgeführt — grep beherrscht kein -P (PCRE). Auf macOS ist BSD-grep die Vorgabe; GNU grep oder ugrep installieren. Das ist KEINE Entwarnung.
                  YARA-Signaturscan nicht gelaufen (Schalter --yara nicht gesetzt) — diese Erkennungsebene fehlt in diesem Bericht

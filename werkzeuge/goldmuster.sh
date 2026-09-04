@@ -1231,6 +1231,26 @@ PHP
   cp "${k2}/wp-includes/pruefstand-gemischt.php" \
      "${k2}/wp-content/upgrade/wp_pruefstand2/wordpress/wp-includes/pruefstand-gemischt.php"
 
+  # ── Anmeldeprotokoll fuer 13e.5 (#48) ────────────────────────────────
+  #
+  # Der Abschnitt beantwortet: gab es im Zeitfenster der belasteten Dateien
+  # eine ERFOLGREICHE Anmeldung? Sein Wert liegt im Negativbefund -- laesst
+  # sie sich ausschliessen, engt das den Einstieg auf die Anwendungsebene ein.
+  #
+  # Zwei Zeilen, beide Richtungen in einer Datei:
+  #   a) eine erfolgreiche Anmeldung LANGE VOR dem Fenster  -> darf nicht zaehlen
+  #   b) mit NT_PRUEFSTAND_ANMELDUNG=1 eine IM Fenster      -> muss zaehlen
+  # Der Vorlauf des Fensters betraegt einen Tag; (a) liegt 30 Tage davor.
+  local _auth="${W}/../auth.log"
+  {
+    printf '%s pruefstand sshd[101]: Accepted publickey for wartung from 10.0.0.1 port 2222 ssh2\n' \
+           "$(date -d '30 days ago' '+%b %e %H:%M:%S' 2>/dev/null || date -v-30d '+%b %e %H:%M:%S')"
+    if [[ "${NT_PRUEFSTAND_ANMELDUNG:-0}" == "1" ]]; then
+      printf '%s pruefstand sshd[102]: Accepted password for web42 from 203.0.113.7 port 51234 ssh2\n' \
+             "$(date '+%b %e %H:%M:%S')"
+    fi
+  } > "$_auth"
+
   # ── Leser fuer die e2-Herkunftspruefung (#70) ─────────────────────────
   #
   # Ohne eine Datei, die den Optionsnamen liest, ist die Herkunftspruefung
@@ -1738,6 +1758,7 @@ lauf_ausfuehren() {
   NT_PMF_ATTRAPPE="${NT_PMF_ATTRAPPE-$PMFAUS}" \
   NT_WF_ATTRAPPE="${NT_WF_ATTRAPPE-$WFDATEN}" \
   NT_DB_ATTRAPPE="${NT_DB_ATTRAPPE-$DBDATEN}" \
+  NT_AUTHLOG_ATTRAPPE="${NT_AUTHLOG_ATTRAPPE-$(dirname "$W")/auth.log}" \
   PATH="${ATTRAPPE}:$PATH" \
   URSACHE_WELLE_SEK=6 \
   URSACHE_MASSE_MIN=4 \

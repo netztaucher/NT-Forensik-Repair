@@ -756,6 +756,11 @@ ZUKUNFT   <ZEIT>  mtime liegt <SPANNE> NACH der ctime — vorwaerts datiert   <P
 
   Beleg: belege/046_ursache_quellenlage.txt
 
+### 13e.5 Einstieg über Anmeldedaten
+
+- ✅ Keine erfolgreiche Anmeldung im Zeitfenster der belasteten Dateien <PRUEFSTAND>/auth.log, ab <ZEIT>) — der Einstieg lag damit nicht bei Anmeldedaten, soweit dieses Protokoll reicht
+  Beleg: belege/047_ursache_anmeldungen.txt
+
 ## 14. ZUSAMMENFASSUNG
 
 - ✅ Programmstand über den ganzen Lauf unverändert — die Fassungsangabe belegt diesen Lauf
@@ -767,7 +772,7 @@ ZUKUNFT   <ZEIT>  mtime liegt <SPANNE> NACH der ctime — vorwaerts datiert   <P
 |---|---|
 | 🔴 Kritische Befunde | 18 |
 | ⚠️ Warnungen | 29 |
-| ✅ Unauffällige Prüfungen | 30 |
+| ✅ Unauffällige Prüfungen | 31 |
 | ⚪ Nicht messbar | 19 |
 
 > **19 Prüfung(en) haben keine Aussage geliefert.** Ihr Ergebnis ist weder

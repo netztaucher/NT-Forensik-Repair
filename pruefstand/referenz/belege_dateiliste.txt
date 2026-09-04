@@ -47,5 +47,6 @@
 044_ursache_zeitachse.txt
 045_ursache_zeitstempel_deutung.txt
 046_ursache_quellenlage.txt
+047_ursache_anmeldungen.txt
 SHA256SUMS
 htaccess

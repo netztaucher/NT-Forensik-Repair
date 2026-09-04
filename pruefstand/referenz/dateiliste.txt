@@ -58,6 +58,7 @@
 ./betreiber/belege/044_ursache_zeitachse.txt
 ./betreiber/belege/045_ursache_zeitstempel_deutung.txt
 ./betreiber/belege/046_ursache_quellenlage.txt
+./betreiber/belege/047_ursache_anmeldungen.txt
 ./betreiber/belege/SHA256SUMS
 ./betreiber/belege/htaccess/00_index.txt
 ./betreiber/belege/htaccess/kunde-drei.example_httpdocs_.htaccess
