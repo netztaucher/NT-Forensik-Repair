@@ -169,12 +169,12 @@
 [0;36m▶ 12r.2.x kunde-zwei.example/httpdocs[0m
   [0;33m⚠[0m  kunde-zwei.example/httpdocs: 2 Verzeichnis(se) unter plugins/ mit PHP-Dateien, aber ohne Plugin-Kopf — kein Plugin; kann eine Angreifer-Ablage sein, sichten
   [0m·  kunde-zwei.example/httpdocs: 2 Verzeichnis(se) unter plugins/ ohne jede PHP-Datei — Datenordner, kein Plugin, nicht in der Angreifbarkeitsbilanz
-  [0;33m⚠[0m  kunde-zwei.example/httpdocs: core wordpress 6.4.1 ist von einer bekannten Schwachstelle betroffen ([6.0 … 6.4.1]) CVE-2026-90004 — behoben in 6.4.2.
-  [0;33m⚠[0m  kunde-zwei.example/httpdocs: plugin pruefstand-alt 2.0.3 ist von einer bekannten Schwachstelle betroffen ([2.0 … 2.4.1]) CVE-2026-90002 — behoben in 2.5.
-  [0;31m✗[0m  [1mkunde-zwei.example/httpdocs: plugin pruefstand-kev 1.2 ist von einer bekannten Schwachstelle betroffen ((* … 2.0)) CVE-2026-90001 — behoben in 2.0. Diese Lücke wird nachweislich aktiv ausgenutzt — sofort handeln.[0m
-  [0;33m⚠[0m  kunde-zwei.example/httpdocs: plugin pruefstand-ohne-fix 1.0 ist von einer bekannten Schwachstelle betroffen ([* … *]) CVE-2026-90007.
-  [0;33m⚠[0m  kunde-zwei.example/httpdocs: theme pruefstand-thema 0.9 ist von einer bekannten Schwachstelle betroffen ((* … 1.0)) CVE-2026-90005 — behoben in 1.0.
-  [0;33m⚠[0m  kunde-zwei.example/httpdocs: Bibliothek (in einem Plugin) pruefstand/bibliothek 1.2.0 ist von einer bekannten Schwachstelle betroffen ([1.0.0 … 1.4.0)) CVE-2026-90006 — behoben in 1.4.0.
+  [0;33m⚠[0m  kunde-zwei.example/httpdocs: core wordpress 6.4.1 ist von einer bekannten Schwachstelle betroffen ([6.0 … 6.4.1]) CVE-2026-90004 — behoben in 6.4.2 [Wordfence].
+  [0;33m⚠[0m  kunde-zwei.example/httpdocs: plugin pruefstand-alt 2.0.3 ist von einer bekannten Schwachstelle betroffen ([2.0 … 2.4.1]) CVE-2026-90002 — behoben in 2.5 [Wordfence].
+  [0;31m✗[0m  [1mkunde-zwei.example/httpdocs: plugin pruefstand-kev 1.2 ist von einer bekannten Schwachstelle betroffen ((* … 2.0)) CVE-2026-90001 — behoben in 2.0 [Wordfence]. Diese Lücke wird nachweislich aktiv ausgenutzt — sofort handeln.[0m
+  [0;33m⚠[0m  kunde-zwei.example/httpdocs: plugin pruefstand-ohne-fix 1.0 ist von einer bekannten Schwachstelle betroffen ([* … *]) CVE-2026-90007 [Wordfence].
+  [0;33m⚠[0m  kunde-zwei.example/httpdocs: theme pruefstand-thema 0.9 ist von einer bekannten Schwachstelle betroffen ((* … 1.0)) CVE-2026-90005 — behoben in 1.0 [Wordfence].
+  [0;33m⚠[0m  kunde-zwei.example/httpdocs: Bibliothek (in einem Plugin) pruefstand/bibliothek 1.2.0 ist von einer bekannten Schwachstelle betroffen ([1.0.0 … 1.4.0)) CVE-2026-90006 — behoben in 1.4.0 [Wordfence].
   [0;36m⚪[0m kunde-zwei.example/httpdocs: 2 Bestandteil(e) ohne lesbare Fassung — für sie ist keine Aussage zur Angreifbarkeit möglich
   [0;36m⚪[0m kunde-zwei.example/httpdocs: robots.txt verweist auf eine Sitemap der Form PATHINFO — Doorway-Muster, aber nicht belegt: Sitemap-Route und Datenbank prüfen (robots.txt vom <ZEIT>)
   [0;32m✓[0m kunde-zwei.example/httpdocs: keine Doorway-.htaccess-Signatur

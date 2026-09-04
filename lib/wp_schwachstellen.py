@@ -333,6 +333,158 @@ def _osv_eintrag(slug, von, bis, bis_inkl, behoben, cve, cvss, quelle):
     }
 
 
+# ── Zweite Quelle: wpvulnerability.net (#12) ────────────────────────────────
+#
+# WARUM ES SIE GIBT
+#
+# Wordfence ist heute die einzige Quelle, die eine WEITERGABE der Daten
+# erlaubt. Das Bezugsrecht ist laut ihren Bedingungen jederzeit widerrufbar;
+# faellt es weg, gibt es keinen Ersatz. Das ist ein Klumpenrisiko.
+#
+# WAS HIER NICHT PASSIERT
+#
+# wpvulnerability.net wird NICHT mitgeliefert und NICHT gespiegelt. Die
+# Lizenzseite sagt nur, man arbeite "usually … with EUPL v1.2" -- das ist
+# keine Gewaehrung fuer die Daten, der Bestand ist aus fremden Quellen
+# aggregiert, und einen Bulk-Endpunkt gibt es nicht. Abfragen war nie das
+# Problem, Spiegeln und Mitliefern war es. Deshalb: reine Laufzeit-Abfrage,
+# nur mit --online, nichts wird abgelegt ausser einem Zwischenspeicher fuer
+# die Dauer des Laufs.
+#
+# GEMESSEN AM 04.09.2026 gegen den echten Bestand von 124 Installationen
+# (1.319 Paare aus Slug und Fassung, 659 verschiedene Slugs):
+#
+#   beide Quellen melden        192
+#   nur Wordfence                 3
+#   nur wpvulnerability          44      <- davon 39 auf Slugs, die Wordfence
+#   keine von beiden          1.080         durchaus fuehrt, nur aelter
+#
+# Die zweite Quelle ist also kein Feigenblatt: sie findet auf diesem Bestand
+# mehr als die erste. Beispiel ameliabooking 8.0.2 -- Wordfence kennt
+# Bereiche bis 1.0.46, wpvulnerability fuehrt vier Bereiche bis < 9.8.
+#
+# DESHALB WIRD SIE NICHT NUR ALS AUSFALLRESERVE BEFRAGT. Der Entwurf im
+# Issue sah vor, sie nur zu fragen, "wenn kein lokaler Bestand vorliegt".
+# Nach dieser Messung faende das 5 der 44 zusaetzlichen Faelle. Sie wird
+# deshalb mit --online IMMER befragt und ihre Eintraege werden dazugelegt;
+# die Herkunft steht je Befund im Bericht.
+#
+# TEMPO: gemessen 82 ms je Abfrage (BunnyCDN, cache-control 3600), 10
+# Abfragen in 825 ms, keine Rate-Limit-Kopfzeilen. Eine Abfrage je Slug ist
+# dieselbe Groessenordnung wie die Pruefsummen. Der Zwischenspeicher sorgt
+# dafuer, dass ein Slug je Lauf nur einmal geholt wird -- auf dem Messserver
+# 659 Abfragen statt 1.319.
+WPV_BASIS = "https://www.wpvulnerability.net"
+WPV_ZEIT = 15
+WPV_TYP_PFAD = {"plugin": "plugin", "theme": "theme", "core": "core"}
+
+
+def _wpv_abrufen(typ, kennung):
+    """Eine Abfrage. Rueckgabe: Liste der Roh-Eintraege, oder None bei Fehler.
+
+    None und [] sind NICHT dasselbe: [] heisst "gefuehrt, nichts bekannt",
+    None heisst "nicht gefragt oder nicht geantwortet". Wer das verwechselt,
+    macht aus einem Ausfall eine Entwarnung.
+    """
+    import urllib.parse
+    import urllib.request
+    pfad = WPV_TYP_PFAD.get(typ)
+    if not pfad or not kennung:
+        return None
+    adresse = "%s/%s/%s/" % (WPV_BASIS, pfad, urllib.parse.quote(kennung, safe=""))
+    try:
+        with urllib.request.urlopen(adresse, timeout=WPV_ZEIT) as antwort:
+            roh = json.loads(antwort.read().decode("utf-8", "replace"))
+    except Exception:
+        return None
+    daten = roh.get("data") or {}
+    eintraege = daten.get("vulnerability")
+    return [] if eintraege is None else eintraege
+
+
+def _wpv_umsetzen(slug, eintraege):
+    """Roh-Eintraege auf das Spaltenmodell abbilden.
+
+    Gemessene Operatoren ueber 656 Antworten:
+      min_operator  None (3660) | ge (25)
+      max_operator  lt (3564) | le (118) | eq (3)
+      unfixed       0 (3600) | 1 (85)
+    Andere Werte kommen nicht vor; taucht einer auf, wird der Eintrag
+    uebersprungen statt geraten -- ein falsch ausgelegtes Intervall meldet
+    entweder eine geschlossene Luecke oder schweigt zu einer offenen.
+    """
+    aus = []
+    for e in eintraege:
+        o = e.get("operator") or {}
+        mx, mxo = o.get("max_version"), o.get("max_operator")
+        mn, mno = o.get("min_version"), o.get("min_operator")
+        if mno not in (None, "ge") or mxo not in ("lt", "le", "eq"):
+            continue
+        if mxo == "eq":
+            von, von_i, bis, bis_i = mx, True, mx, True
+        else:
+            von, von_i = (mn or "*"), (mno == "ge")
+            bis, bis_i = (mx or "*"), (mxo == "le")
+        cve = ""
+        verweis = ""
+        for q in (e.get("source") or []):
+            if not verweis:
+                verweis = q.get("link") or ""
+            if str(q.get("id", "")).startswith("CVE"):
+                cve = q["id"]
+                verweis = q.get("link") or verweis
+                break
+        aus.append({
+            "slug": slug, "von": von or "*", "von_inkl": "1" if von_i else "0",
+            "bis": bis or "*", "bis_inkl": "1" if bis_i else "0",
+            # unfixed=1 heisst: es gibt keine behobene Fassung. Dann bleibt das
+            # Feld leer, statt die obere Grenze als "behoben in" auszugeben.
+            "behoben": "" if str(o.get("unfixed")) == "1" else (mx or ""),
+            "cve": cve,
+            "cvss": str(((e.get("impact") or {}).get("cvss") or {}).get("score", "")),
+            # KEV fuehrt diese Quelle nicht. Leer lassen, nicht raten -- das
+            # Feld entscheidet ueber crit statt warn.
+            "kev": "",
+            "quelle": verweis or "%s/%s/%s/" % (WPV_BASIS, WPV_TYP_PFAD.get("plugin"), slug),
+        })
+    return aus
+
+
+def zweitquelle_dazu(daten, anfragen, protokoll=None):
+    """Eintraege der zweiten Quelle zum Bestand legen. anfragen: [(typ, kennung)]."""
+    geholt = {}
+    fehler = 0
+    doppelt = [0]
+    for typ, kennung in anfragen:
+        if typ not in WPV_TYP_PFAD or not kennung:
+            continue
+        if (typ, kennung) in geholt:
+            continue
+        roh = _wpv_abrufen(typ, kennung)
+        geholt[(typ, kennung)] = roh
+        if roh is None:
+            fehler += 1
+            continue
+        # Entdoppeln ueber die CVE-Kennung. Beide Quellen fuehren dieselben
+        # Luecken; ohne diesen Schritt stuende jede zweimal im Bericht --
+        # einmal mit dem Wordfence-Verweis, einmal mit dem CVE-Verweis.
+        # Gemessen an contact-form-7 5.9: drei Luecken, sechs Zeilen.
+        # Der lokale Eintrag behaelt den Vorrang: nur er fuehrt das
+        # KEV-Kennzeichen, und das entscheidet ueber crit statt warn.
+        vorhanden = {e.get("cve") for e in daten.get(typ, {}).get(kennung, [])
+                     if e.get("cve")}
+        for eintrag in _wpv_umsetzen(kennung, roh):
+            if eintrag["cve"] and eintrag["cve"] in vorhanden:
+                doppelt[0] += 1
+                continue
+            daten.setdefault(typ, {}).setdefault(kennung, []).append(eintrag)
+    if protokoll is not None:
+        protokoll["abgefragt"] = len(geholt)
+        protokoll["fehler"] = fehler
+        protokoll["doppelt"] = doppelt[0]
+    return daten
+
+
 def pruefen(daten, typ, slug, version):
     """Einen installierten Bestandteil bewerten. Liefert Ergebniszeilen."""
     if typ not in daten:
@@ -511,6 +663,8 @@ def main():
     p = argparse.ArgumentParser(add_help=True, description=__doc__)
     p.add_argument("--daten", help="Verzeichnis rezepte/wordpress/daten")
     p.add_argument("--selbsttest", action="store_true")
+    p.add_argument("--online", action="store_true",
+                   help="zusaetzlich wpvulnerability.net abfragen (#12)")
     args = p.parse_args()
 
     if args.selbsttest:
@@ -519,7 +673,24 @@ def main():
         p.error("--daten oder --selbsttest angeben")
 
     daten = bestand_laden(args.daten)
-    for zeile in sys.stdin.read().splitlines():
+    zeilen = sys.stdin.read().splitlines()
+
+    # Die zweite Quelle wird VOR der Bewertung befragt, damit ihre Eintraege
+    # denselben Weg nehmen wie die des lokalen Bestands: derselbe
+    # Intervall-Vergleich, dieselbe Ausgabe, dieselbe Spalte `quelle`.
+    if args.online:
+        anfragen = []
+        for zeile in zeilen:
+            f = zeile.split("\t")
+            if len(f) >= 2 and f[0] in WPV_TYP_PFAD:
+                anfragen.append((f[0], f[1]))
+        protokoll = {}
+        zweitquelle_dazu(daten, anfragen, protokoll)
+        print("ZWEITQUELLE\t%s\t%d\t%d\t%d" % (
+            WPV_BASIS, protokoll.get("abgefragt", 0),
+            protokoll.get("fehler", 0), protokoll.get("doppelt", 0)))
+
+    for zeile in zeilen:
         if not zeile.strip():
             continue
         felder = zeile.split("\t")
