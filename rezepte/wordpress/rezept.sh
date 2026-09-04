@@ -399,6 +399,45 @@ _wp_pruefsummen_holen() {   # <slug> <fassung> <zieldatei>
   fi
 }
 
+# ── Steht das Plugin ueberhaupt noch im Verzeichnis? (#78) ───
+#
+# Die Pruefsummen bleiben, die Archive verschwinden. Fuer easy-testimonials
+# 3.9.2 antwortet plugin-checksums/… mit 200 und 191 Dateien, waehrend
+# api.wordpress.org/plugins/info/… und das Archiv 404 liefern. Der Befund
+# sagt dann DASS eine Datei abweicht, aber es gibt keine Originaldatei mehr,
+# gegen die sich ein Diff bilden liesse -- geaenderter Fremdcode und
+# untergeschobener Schadcode sehen in der Liste gleich aus.
+#
+# Und genau dort ist die Frage am dringendsten: entfernt werden Plugins oft
+# WEGEN einer Schwachstelle, und wer sie ausgenutzt hat, hinterlaesst seine
+# Aenderung da, wo niemand mehr nachsehen kann.
+#
+# GEMESSEN AM 04.09.2026 ueber den echten Bestand von 124 Installationen
+# (1.319 Paare aus Slug und Fassung):
+#   481  im Verzeichnis, Pruefsummen vorhanden
+#   467  im Verzeichnis, diese Fassung ohne Pruefsummensatz
+#   331  nie im Verzeichnis (kommerziell, 212 Slugs)   -> #30
+#    40  AUS DEM VERZEICHNIS ENTFERNT (36 Slugs)       -> dieser Zweig
+#
+# Der Befund wird nicht hochgestuft und nicht entlastet. Er bekommt eine
+# Eigenschaft: nicht aufloesbar. Ohne sie steht er neben jedem anderen
+# plugin_veraendert und wird fuer gleichwertig ueberpruefbar gehalten.
+WP_VERZEICHNIS_BASIS="${WP_VERZEICHNIS_BASIS:-https://api.wordpress.org/plugins/info/1.0}"
+_wp_im_verzeichnis() {   # <slug>; 0 = ja, 1 = nein, 2 = nicht gefragt
+  [[ "${WANT_ONLINE:-0}" == "1" ]] || return 2
+  [[ "$WP_VERZEICHNIS_BASIS" == http*://* ]] || return 2
+  local ziel; ziel=$(mktemp "${RUN_DIR}/.verz.XXXXXX")
+  if nf_fetch "${WP_VERZEICHNIS_BASIS}/${1}.json" "$ziel"; then
+    # 404 liefert nf_fetch nicht als Erfolg; ein leerer Koerper oder ein
+    # "error"-Feld aber schon. Beides heisst: nicht mehr gefuehrt.
+    if [[ -s "$ziel" ]] && ! grep -q '"error"' "$ziel" 2>/dev/null; then
+      rm -f "$ziel"; return 0
+    fi
+    rm -f "$ziel"; return 1
+  fi
+  rm -f "$ziel"; return 1
+}
+
 _wp_plugin_integritaet() {
   local cache liste ergebnis slug ver ziel pdir
   local n_mod n_soft n_extra n_fehlt n_geprueft n_ohne
@@ -590,6 +629,28 @@ PY
     code "$(printf '%s\n' "$mods" | head -30)"
     evidence "wp_plugin_veraendert_$(echo "$REZ_KURZ" | tr '/.' '__')" "$mods"
     PLUGIN_VERAENDERT+="$mods"$'\n'
+    # Welche der betroffenen Plugins gibt es auf wordpress.org nicht mehr?
+    # Fuer sie ist der Befund NICHT AUFLOESBAR -- die Pruefsumme sagt dass,
+    # das fehlende Archiv verhindert das worin.
+    local _weg="" _slug _rc
+    while IFS= read -r _slug; do
+      [[ -n "$_slug" ]] || continue
+      _wp_im_verzeichnis "$_slug"; _rc=$?
+      [[ "$_rc" -eq 1 ]] && _weg+="${_slug}"$'\n'
+      [[ "$_rc" -eq 2 ]] && { _weg=""; break; }
+    done < <(printf '%s\n' "$ergebnis" | awk -F'\t' '$1=="MOD"{print $2}' | LC_ALL=C sort -u)
+    if [[ -n "$_weg" ]]; then
+      local _n_weg; _n_weg=$(printf '%s' "$_weg" | grep -c . || true)
+      befund_melden wordpress kern unklar \
+        "${REZ_KURZ}: ${_n_weg} der betroffenen Plugin(s) gibt es auf wordpress.org nicht mehr — der Befund ist NICHT AUFLÖSBAR: ohne Originalarchiv kein Vergleich, geänderter Fremdcode und untergeschobener Schadcode sehen gleich aus" "$REZ_PFAD" web
+      code "$_weg"
+      evidence "wp_plugin_entfernt_$(echo "$REZ_KURZ" | tr '/.' '__')" \
+        "# Plugins mit Pruefsummensatz, aber ohne Eintrag im Verzeichnis.
+# Entfernt werden Plugins oft WEGEN einer Schwachstelle. Ein Angreifer, der
+# sie ausgenutzt hat, hinterlaesst seine Aenderung dort, wo kein Archiv mehr
+# zum Vergleich bereitsteht.
+${_weg}"
+    fi
   elif [[ "${n_geprueft:-0}" -gt 0 ]]; then
     befund_melden wordpress kern ok \
       "${REZ_KURZ}: ${n_geprueft} Plugin(s) gegen wordpress.org geprüft — keine veränderte Codedatei" "$REZ_PFAD"
