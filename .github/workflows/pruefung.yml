@@ -374,6 +374,19 @@ jobs:
               fehler.append('echte Core-Abweichung ohne Staging-Kopie ist nicht mehr crit (#107)')
           if not any('1 veränderte' in v.get('text', '') for v in ver):
               fehler.append('die Zahl der echten Abweichungen muss 1 sein — die gemischte Datei darf nicht mitgezählt werden (#107)')
+          # Schreibgeschützte Core-Dateien (#108): Kunde 3 trägt drei auf
+          # 0444 (warn, Zahl 3, wp-config.php auf 0440 zählt NICHT mit);
+          # keine andere Instanz darf den Befund tragen.
+          ss = [b for b in kern if 'schreibgeschützt' in b.get('text', '')]
+          ss3 = [b for b in ss if 'kunde-drei' in b.get('text', '')]
+          print(f"Schreibschutz: Befunde {len(ss)}, davon Kunde 3 {len(ss3)} "
+                f"(schwere {[b['schwere'] for b in ss3]}, Text {[b['text'][:60] for b in ss3]})")
+          if not ss3 or ss3[0]['schwere'] != 'warn':
+              fehler.append('0444 auf der Bootstrap-Kette von Kunde 3 wurde nicht als warn gemeldet (#108)')
+          if ss3 and '3 Core-Datei' not in ss3[0]['text']:
+              fehler.append('Schreibschutz-Zahl bei Kunde 3 muss 3 sein — wp-config.php (0440) darf nicht mitzählen (#108)')
+          if len(ss) != len(ss3):
+              fehler.append('Schreibschutz-Befund auf einer Instanz ohne 0444-Dateien (#108)')
           # 7.2 — die Abschichtung darf den Ort nicht mit dem Format
           # verwechseln (#65). Die getarnte Shell LIEGT im WPML-Cache, sieht
           # aber nicht wie ein Twig-Template aus: sie gehört in die
@@ -556,6 +569,10 @@ jobs:
           # #46. Dieselbe Datei mit demselben Muster, einmal unter vendor/ und
           # einmal daneben. Geprüft wird die Trennung, nicht die Anwesenheit.
           gegenprobe "13d Fremdbibliotheken"       NT_PRUEFSTAND_OHNE_VENDORFILTER=1
+          # #108. Ohne die 0444-Bits auf der Bootstrap-Kette von Kunde 3
+          # faellt der Schreibschutz-Befund weg -- der Vergleich MUSS das
+          # bemerken.
+          gegenprobe "12r Schreibschutz auf Core-Dateien" NT_PRUEFSTAND_OHNE_SCHREIBSCHUTZ=1
           # 7.16. Ohne die Zerlegung steht der Funktionsname ausgeschrieben da —
           # dann darf die Regel NICHT mehr anschlagen. Die Textverkettung
           # daneben bleibt in beiden Fällen stumm; sie ist die Gegenprobe

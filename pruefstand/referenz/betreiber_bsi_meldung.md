@@ -55,7 +55,7 @@
 | Indikator | Wert |
 |---|---|
 | Kritische Befunde | 18 |
-| Warnungen | 28 |
+| Warnungen | 29 |
 | Fehlgeschlagene SSH-Login-Versuche | 0 |
 | Scanner-Aktivität in Web-Logs (Treffer) | 0 |
 | Verdächtige POST-Requests (Webshell-Muster) | 0 |

@@ -8,7 +8,7 @@
 | **Datum** | <ZEIT> |
 | **Geprüfter Server** | imac |
 | **Prüfungs-ID** | <LAUF-ID> |
-| **Befunde** | 🔴 18 kritisch · ⚠️ 25 auffällig · ⚪ 12 nicht messbar |
+| **Befunde** | 🔴 18 kritisch · ⚠️ 26 auffällig · ⚪ 12 nicht messbar |
 
 ---
 
@@ -76,7 +76,8 @@
 - .htaccess mit externen Weiterleitungen gefunden
 - kunde-zwei.example/joomla.kunde-zwei.example: Joomla-Version nicht bestimmbar (weder joomla.xml noch Version.php lesbar)
 - kunde-zwei.example/joomla.kunde-zwei.example: Standard-Tabellenpräfix jos_ (macht SQL-Injection-Angriffe zielgenau ohne Vorab-Erkundung)
-- kunde-drei.example/httpdocs: 2 Härtungspunkt(e) in wp-config.php offen
+- kunde-drei.example/httpdocs: 3 Core-Datei(en) für den Eigentümer schreibgeschützt (in einem Vorgang gesetzt am <ZEIT>) — Core-Updates scheitern daran; das Muster schützt eingeschleusten Code vor dem nächsten Update
+- kunde-drei.example/httpdocs: 1 Härtungspunkt(e) in wp-config.php offen
 - kunde-eins.example/httpdocs: 2 Härtungspunkt(e) in wp-config.php offen
 - kunde-vier.example/httpdocs: 2 Härtungspunkt(e) in wp-config.php offen
 - kunde-zwei.example/httpdocs: 1 Verzeichnis(se) unter plugins/ mit PHP-Dateien, aber ohne Plugin-Kopf — kein Plugin; kann eine Angreifer-Ablage sein, sichten

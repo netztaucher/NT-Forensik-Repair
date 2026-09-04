@@ -30,7 +30,7 @@
 [1m[0;34m══════════════════════════════════════════[0m
 
 [0;36m▶ 7.0 Datei-Inventar (Inode und Zeitstempel sichern)[0m
-  [0m·  Inventar: 670 Datei(en) erfasst, davon 670 mit Anlegezeit (belege/00_dateien.tsv)
+  [0m·  Inventar: 672 Datei(en) erfasst, davon 672 mit Anlegezeit (belege/00_dateien.tsv)
 
 [0;36m▶ 7.1 Kürzlich veränderte PHP-Dateien (letzte 30 Tage)[0m
   [0;33mDurchsuche Webspace (kann dauern...)[0m
@@ -136,9 +136,10 @@
   [0;36m⚪[0m kunde-drei.example/httpdocs: 1 Plugin(s) ohne Prüfsummensatz und alle Themes — Unversehrtheit nicht feststellbar (Premium, Fork, Eigenbau; für Themes veröffentlicht wordpress.org keine Prüfsummen)
   [0m·  kunde-drei.example/httpdocs: Core-Update-Staging Fassung 7.1 (<ZEIT>) unverändert gegen amtliche Prüfsummen — WordPress räumt es bei Erfolg weg; das Update ist vermutlich nicht abgeschlossen: <PRUEFSTAND>/vhosts/kunde-drei.example/httpdocs/wp-content/upgrade/wp_pruefstand3/wordpress
   [0;32m✓[0m kunde-drei.example/httpdocs: WordPress-Core unverändert (verify-checksums)
+  [0;33m⚠[0m  kunde-drei.example/httpdocs: 3 Core-Datei(en) für den Eigentümer schreibgeschützt (in einem Vorgang gesetzt am <ZEIT>) — Core-Updates scheitern daran; das Muster schützt eingeschleusten Code vor dem nächsten Update
   [0;32m✓[0m kunde-drei.example/httpdocs: keine Application Passwords vergeben
   [0;36m⚪[0m kunde-drei.example/httpdocs: REST-Benutzerliste nicht geprüft (ohne --online) — /wp-json/wp/v2/users liefert unangemeldet oft alle Benutzernamen
-  [0;33m⚠[0m  kunde-drei.example/httpdocs: 2 Härtungspunkt(e) in wp-config.php offen
+  [0;33m⚠[0m  kunde-drei.example/httpdocs: 1 Härtungspunkt(e) in wp-config.php offen
   [0m·  kunde-drei.example/httpdocs: kein Wordfence in dieser Installation — keine Zweitmeinung verfügbar
   [0;36m⚪[0m kunde-drei.example/httpdocs: Datenbank nicht geprüft (grep beherrscht kein -P (PCRE) — die Werte aus wp-config.php sind damit nicht lesbar). Das ist KEINE Entwarnung.
 
@@ -264,7 +265,7 @@
 [1m[0;32m  ANALYSE ABGESCHLOSSEN — Lauf <LAUF-ID>[0m
 [1m[0;32m══════════════════════════════════════════[0m
 
-[1mBefunde:[0m       🔴 18 kritisch, ⚠️ 28 Warnungen, ✅ 31 ok, ⚪ 18 nicht messbar
+[1mBefunde:[0m       🔴 18 kritisch, ⚠️ 29 Warnungen, ✅ 31 ok, ⚪ 18 nicht messbar
 [0;33m               18 Prüfung(en) ohne Ergebnis — das ist keine Entwarnung.[0m
                  Webshell-Mustersuche nicht ausgeführt — grep beherrscht kein -P (PCRE). Auf macOS ist BSD-grep die Vorgabe; GNU grep oder ugrep installieren. Das ist KEINE Entwarnung.
                  YARA-Signaturscan nicht gelaufen (Schalter --yara nicht gesetzt) — diese Erkennungsebene fehlt in diesem Bericht
