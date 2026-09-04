@@ -30,7 +30,7 @@
 [1m[0;34m══════════════════════════════════════════[0m
 
 [0;36m▶ 7.0 Datei-Inventar (Inode und Zeitstempel sichern)[0m
-  [0m·  Inventar: 672 Datei(en) erfasst, davon 672 mit Anlegezeit (belege/00_dateien.tsv)
+  [0m·  Inventar: 673 Datei(en) erfasst, davon 673 mit Anlegezeit (belege/00_dateien.tsv)
 
 [0;36m▶ 7.1 Kürzlich veränderte PHP-Dateien (letzte 30 Tage)[0m
   [0;33mDurchsuche Webspace (kann dauern...)[0m
@@ -165,7 +165,7 @@
   [0;36m⚪[0m kunde-vier.example/httpdocs: Datenbank nicht geprüft (grep beherrscht kein -P (PCRE) — die Werte aus wp-config.php sind damit nicht lesbar). Das ist KEINE Entwarnung.
 
 [0;36m▶ 12r.2.x kunde-zwei.example/httpdocs[0m
-  [0;33m⚠[0m  kunde-zwei.example/httpdocs: 1 Verzeichnis(se) unter plugins/ mit PHP-Dateien, aber ohne Plugin-Kopf — kein Plugin; kann eine Angreifer-Ablage sein, sichten
+  [0;33m⚠[0m  kunde-zwei.example/httpdocs: 2 Verzeichnis(se) unter plugins/ mit PHP-Dateien, aber ohne Plugin-Kopf — kein Plugin; kann eine Angreifer-Ablage sein, sichten
   [0m·  kunde-zwei.example/httpdocs: 2 Verzeichnis(se) unter plugins/ ohne jede PHP-Datei — Datenordner, kein Plugin, nicht in der Angreifbarkeitsbilanz
   [0;33m⚠[0m  kunde-zwei.example/httpdocs: core wordpress 6.4.1 ist von einer bekannten Schwachstelle betroffen ([6.0 … 6.4.1]) CVE-2026-90004 — behoben in 6.4.2.
   [0;33m⚠[0m  kunde-zwei.example/httpdocs: plugin pruefstand-alt 2.0.3 ist von einer bekannten Schwachstelle betroffen ([2.0 … 2.4.1]) CVE-2026-90002 — behoben in 2.5.
@@ -197,7 +197,7 @@
   [0;33m⚠[0m  kunde-zwei.example/httpdocs: Wordfence meldet 1 Datei(en) als verändert gegenüber dem Original — Integritätsabweichung, kein Signaturtreffer
   [0m·  kunde-zwei.example/httpdocs: Wordfence führt 1 Plugin(s) als aufgegeben (kein Hersteller-Support mehr)
   [0;33m⚠[0m  kunde-zwei.example/httpdocs: active_plugins führt Einträge ohne Datei auf der Platte — Leiche oder Tarnung, sichten
-  [0m·  kunde-zwei.example/httpdocs: 2 Option(en) mit PHP-Merkmal — KEIN Befund: legitime Plugins legen dort Code ab (gemessen: 12 von 12 Fehlalarmen). Rangfolge für die Sichtung
+  [0m·  kunde-zwei.example/httpdocs: 4 Option(en) mit PHP-Merkmal, davon 2 ohne erkennbare Herkunft — KEIN Befund: legitime Plugins legen dort Code ab und führen ihn aus (gemessen: 12 von 12 Fehlalarmen, alle erklärbar). Rangfolge für die Sichtung, ungeklärte zuerst
   [0m·  kunde-zwei.example/httpdocs: auffällig grosse Optionen (>= 262144 B) — Rangfolge für die Sichtung, kein Befund:
   [0;36m⚪[0m kunde-zwei.example/httpdocs: Datenbank nicht geprüft (grep beherrscht kein -P (PCRE) — die Werte aus wp-config.php sind damit nicht lesbar). Das ist KEINE Entwarnung.
   [0;36mübersprungen:[0m 13. Root- & Eskalations-Prüfung

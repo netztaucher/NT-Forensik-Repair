@@ -1661,6 +1661,40 @@ _wp_db_persistenz() {
   # die Regel nicht trennt, darf sie keine Sofortmassnahmen ausloesen — und
   # eine Bereinigung darf ihre Liste erst recht nicht abarbeiten.
   #
+  # WAS TRENNT -- GEMESSEN AM 04.09.2026 (#70)
+  #
+  # Die vier Ansaetze aus dem Issue, gegen alle Treffer von 101 erreichbaren
+  # Installationen gehalten:
+  #
+  #   autoload=yes UND Hook-Bezug im Wert   kein Treffer erfuellt beides
+  #   eval-Familie IM Wert                  kein Treffer
+  #   eval-Familie NAHE dem Optionszugriff  untauglich -- Genesis Simple Hooks
+  #                                         fuehrt seinen Wert mit
+  #                                         eval("?>$v") wirklich aus
+  #                                         (class-genesis-simple-hooks.php:199)
+  #   Herkunft des Lesers                   TRENNT: 12 Treffer -> 2 ungeklaerte
+  #
+  # Der dritte Punkt ist der wichtige: "wird der Wert ausgefuehrt?" trennt
+  # NICHT. Ein legitimes Plugin, dessen Zweck das Ablegen von PHP-Schnipseln
+  # ist, fuehrt sie selbstverstaendlich aus. Die trennende Frage ist die nach
+  # der HERKUNFT: liest eine Datei diesen Optionsnamen, und gehoert sie zu
+  # einem Bestandteil, der auf der Platte liegt?
+  #
+  #   simplehooks-settings  -> genesis-simple-hooks/includes/…  erklaert
+  #   wf_sn_vu_vulns        -> Wordfence liegt auf der Platte   erklaert
+  #   avada_500_backup_…    -> themes/Avada/includes/…          erklaert
+  #   _transient_feed_…     -> Zwischenspeicher, per Name       erklaert
+  #   sm_main_show_1        -> KEIN Leser, KEIN Plugin          ungeklaert
+  #
+  # Die zwei ungeklaerten sind eine Option, die ein entferntes Plugin
+  # hinterlassen hat -- und genau so sieht auch eine Nutzlast aus, die in der
+  # Datenbank wohnt. Deshalb: Rangfolge, ungeklaerte zuerst.
+  #
+  # KEINE HOEHERSTUFUNG. Die Trennung ist gegen 0 echte Faelle geprueft --
+  # auf diesem Server gab es keinen. Belegt ist die Trennschaerfe nach unten
+  # (12 von 12 Fehlalarmen werden erklaert), nicht die Empfindlichkeit nach
+  # oben. Wer sie hochstuft, braucht zuerst einen echten Fall.
+  #
   # DER BELEG BELEGTE NICHTS.
   # Gespeichert wurde LEFT(option_value,160); das Muster steckt bei einem
   # serialisierten Wert regelmaessig weiter hinten. In KEINEM der 12 Belege
@@ -1682,12 +1716,65 @@ _wp_db_persistenz() {
                 OR option_value LIKE '%auto_prepend_file%'
                 OR option_value LIKE '%base64_decode(%';")
   if [[ -n "$OPTCODE" ]]; then
-    info "${REZ_KURZ}: $(printf '%s\n' "$OPTCODE" | grep -c .) Option(en) mit PHP-Merkmal — KEIN Befund: legitime Plugins legen dort Code ab (gemessen: 12 von 12 Fehlalarmen). Rangfolge für die Sichtung"
-    code "$OPTCODE"
-    evidence "wp_db_optionen_php_$(echo "$REZ_KURZ" | tr '/.' '__')" "$OPTCODE" kunde
+    local _rang _ungeklaert=0 _n_opt _name _herkunft _leser _stamm
+    _rang=""
+    while IFS=$'\t' read -r _name _muster _len _fenster; do
+      [[ -n "$_name" ]] || continue
+      _herkunft=""
+      case "$_name" in
+        _transient_*|_site_transient_*)
+          _herkunft="Zwischenspeicher (Name beginnt mit _transient_)" ;;
+      esac
+      if [[ -z "$_herkunft" ]]; then
+        # Wer liest diesen Namen? Nur unter wp-content, nur PHP, mit Deckel:
+        # der Zweig laeuft je Treffer, und Treffer sind selten (12 auf 121
+        # Installationen). Ohne Deckel waere er auf einem grossen Webspace
+        # ein zweiter Baumdurchlauf.
+        # KEIN nacktes `timeout`: das Kommando gibt es auf macOS nicht (dort
+        # heisst es gtimeout, wenn coreutils installiert sind). Ohne diese
+        # Weiche schlug der Aufruf auf dem Arbeitsplatz still fehl, _leser
+        # blieb leer, und JEDE Option wurde "ungeklaert" gemeldet -- eine
+        # Rangfolge, die alles nach oben sortiert, ist keine. Im Pruefbaum
+        # sofort aufgefallen, auf Linux waere es nie sichtbar geworden.
+        if werkzeug_da timeout; then
+          _leser=$(timeout "${OPT_LESER_ZEIT:-30}" grep -rlF --include='*.php' "$_name" \
+                     "${REZ_PFAD}/wp-content" 2>/dev/null | head -1 || true)
+        else
+          _leser=$(grep -rlF --include='*.php' "$_name" \
+                     "${REZ_PFAD}/wp-content" 2>/dev/null | head -1 || true)
+        fi
+        if [[ -n "$_leser" ]]; then
+          _herkunft="gelesen von ${_leser#"${REZ_PFAD}"/}"
+        else
+          # Kein Leser: gibt es wenigstens einen Bestandteil, dessen Name im
+          # Optionsnamen steckt? Wordfence baut 'wf_sn_vu_vulns' zur Laufzeit
+          # zusammen und ist deshalb ueber den Namen nicht zu finden.
+          _stamm=$(printf '%s' "$_name" | sed -E 's/[_-].*$//' | cut -c1-12)
+          if [[ ${#_stamm} -ge 3 ]] \
+             && compgen -G "${REZ_PFAD}/wp-content/plugins/*${_stamm}*" >/dev/null 2>&1; then
+            _herkunft="kein Leser gefunden, aber ein Plugin trägt den Namensstamm ${_stamm}"
+          else
+            _herkunft="UNGEKLÄRT — keine Datei liest sie, kein Plugin trägt den Namen"
+            _ungeklaert=$((_ungeklaert+1))
+          fi
+        fi
+      fi
+      # Ungeklaerte zuerst: das Sortierfeld ist 0 fuer ungeklaert, sonst 1.
+      _rang+="$([[ "$_herkunft" == UNGEKL* ]] && echo 0 || echo 1)"$'\t'"${_name}"$'\t'"${_muster}"$'\t'"${_len}"$'\t'"${_herkunft}"$'\t'"${_fenster}"$'\n'
+    done <<< "$OPTCODE"
+    _rang=$(printf '%s' "$_rang" | LC_ALL=C sort -t$'\t' -k1,1 -k2,2 | cut -f2-)
+    _n_opt=$(printf '%s' "$_rang" | grep -c . || true)
+    info "${REZ_KURZ}: ${_n_opt} Option(en) mit PHP-Merkmal, davon ${_ungeklaert} ohne erkennbare Herkunft — KEIN Befund: legitime Plugins legen dort Code ab und führen ihn aus (gemessen: 12 von 12 Fehlalarmen, alle erklärbar). Rangfolge für die Sichtung, ungeklärte zuerst"
+    code "$_rang"
+    evidence "wp_db_optionen_php_$(echo "$REZ_KURZ" | tr '/.' '__')" \
+      "# Name <TAB> Muster <TAB> Länge <TAB> Herkunft <TAB> Fenster um den Treffer
+# Ungeklärt heisst: keine Datei unter wp-content liest diesen Namen, und kein
+# Plugin trägt ihn. Das ist die Klasse, die eine Sichtung wert ist — so sieht
+# auch eine Option aus, die ein entferntes Plugin hinterlassen hat.
+${_rang}" kunde
     while IFS= read -r _e; do
       [[ -n "$_e" ]] && WP_OPT_CODE+="${REZ_PFAD}"$'\t'"${_e}"$'\n'
-    done <<< "$OPTCODE"
+    done <<< "$_rang"
   fi
 
   # e3) Grosse Optionen — Rangfolge fuer die Sichtung, kein Befund.

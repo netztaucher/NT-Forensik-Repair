@@ -33,7 +33,7 @@
 
 ### 7.0 Datei-Inventar (Inode und Zeitstempel sichern)
 
-  Inventar: 672 Datei(en) erfasst, davon 672 mit Anlegezeit (belege/00_dateien.tsv)
+  Inventar: 673 Datei(en) erfasst, davon 673 mit Anlegezeit (belege/00_dateien.tsv)
 
 ### 7.1 Kürzlich veränderte PHP-Dateien (letzte 30 Tage)
 
@@ -455,7 +455,7 @@ wp-config.php ist weltlesbar (644) — sie enthält die Datenbank-Zugangsdaten
 
 ### 12r.2.x kunde-zwei.example/httpdocs
 
-- ⚠️  **kunde-zwei.example/httpdocs: 1 Verzeichnis(se) unter plugins/ mit PHP-Dateien, aber ohne Plugin-Kopf — kein Plugin; kann eine Angreifer-Ablage sein, sichten**
+- ⚠️  **kunde-zwei.example/httpdocs: 2 Verzeichnis(se) unter plugins/ mit PHP-Dateien, aber ohne Plugin-Kopf — kein Plugin; kann eine Angreifer-Ablage sein, sichten**
   Beleg: belege/016_wp_plugins_ohne_kopf_mit_php_kunde-zwei_example_httpdocs.txt
   kunde-zwei.example/httpdocs: 2 Verzeichnis(se) unter plugins/ ohne jede PHP-Datei — Datenordner, kein Plugin, nicht in der Angreifbarkeitsbilanz
   Beleg: belege/017_wp_plugins_datenordner_kunde-zwei_example_httpdocs.txt
@@ -580,11 +580,13 @@ doorway-gen/loader.php
 ```
 
   Beleg: belege/032_wp_db_plugin_leichen_kunde-zwei_example_httpdocs.txt
-  kunde-zwei.example/httpdocs: 2 Option(en) mit PHP-Merkmal — KEIN Befund: legitime Plugins legen dort Code ab (gemessen: 12 von 12 Fehlalarmen). Rangfolge für die Sichtung
+  kunde-zwei.example/httpdocs: 4 Option(en) mit PHP-Merkmal, davon 2 ohne erkennbare Herkunft — KEIN Befund: legitime Plugins legen dort Code ab und führen ihn aus (gemessen: 12 von 12 Fehlalarmen, alle erklärbar). Rangfolge für die Sichtung, ungeklärte zuerst
 
 ```
-widget_custom_html	<?php	118	…function(){ include ABSPATH."wp-content/uploads/.q"; }
-simplehooks-settings	<?php	9184	a:57:{s:7:"wp_head";…<?php echo do_shortcode("[x]"); ?>…
+sm_main_show_1	<?php	12367	UNGEKLÄRT — keine Datei liest sie, kein Plugin trägt den Namen	…<?php echo $slider_markup; ?>…
+widget_custom_html	<?php	118	UNGEKLÄRT — keine Datei liest sie, kein Plugin trägt den Namen	…function(){ include ABSPATH."wp-content/uploads/.q"; }
+_transient_feed_1ba599ab	<?php	146037	Zwischenspeicher (Name beginnt mit _transient_)	…<?php echo "feed"; ?>…
+simplehooks-settings	<?php	9184	gelesen von wp-content/plugins/genesis-simple-hooks/includes/class-genesis-simple-hooks.php	a:57:{s:7:"wp_head";…<?php echo do_shortcode("[x]"); ?>…
 ```
 
   Beleg: belege/033_wp_db_optionen_php_kunde-zwei_example_httpdocs.txt
