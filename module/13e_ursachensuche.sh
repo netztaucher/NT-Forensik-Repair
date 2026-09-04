@@ -533,6 +533,13 @@ except OSError:
 
 print("REICHT\t%s" % (erste if erste is not None else ""))
 print("UNLESBAR\t%d" % unlesbar)
+# Die ANZAHL getrennt von der Liste. Die Liste ist gedeckelt -- sonst stehen
+# auf einem gewarteten Server hundert Zeilen im Beleg. Der erste Entwurf
+# zaehlte die ausgegebenen Zeilen und meldete deshalb bei jeder groesseren
+# Zahl genau den Deckel: "50 Anmeldungen", egal ob es 50 oder 500 waren.
+print("ANZAHL\t%d" % len(treffer))
+print("ADRESSEN\t%d" % len({m.group(1) for m in
+                            (re.search(r"from ([0-9a-fA-F.:]+)", z) for z in treffer) if m}))
 for z in treffer[-50:]:
     print("TREFFER\t%s" % z)
 PY
@@ -545,19 +552,22 @@ PY
   _unlesbar=$(printf '%s\n' "$_auswertung" | sed -n 's/^UNLESBAR\t//p' | head -1)
   _unlesbar="${_unlesbar:-0}"
   _reicht_e=$(printf '%s\n' "$_auswertung" | sed -n 's/^REICHT\t//p' | head -1)
-  _n_treffer=$(printf '%s' "$_treffer" | grep -c . || true); _n_treffer="${_n_treffer:-0}"
+  _n_treffer=$(printf '%s\n' "$_auswertung" | sed -n 's/^ANZAHL\t//p' | head -1)
+  _n_treffer="${_n_treffer:-0}"
+  _n_adr_roh=$(printf '%s\n' "$_auswertung" | sed -n 's/^ADRESSEN\t//p' | head -1)
 
   U_AUTH="Protokoll: ${U_AUTHLOG}"$'\n'
   [[ -n "$_reicht_e" ]] && U_AUTH+="Reicht zurueck bis: $(_u_epoche_str "$_reicht_e")"$'\n'
   U_AUTH+="Fenster: $(_u_epoche_str "$_fenster_von") bis $(_u_epoche_str "$_fenster_bis")"$'\n'
   [[ "$_unlesbar" -gt 0 ]] && U_AUTH+="${_unlesbar} Zeile(n) mit unlesbarem Zeitstempel — nicht bewertet"$'\n'
+  [[ "$_n_treffer" -gt 50 ]] && U_AUTH+="Liste auf die letzten 50 von ${_n_treffer} gekuerzt"$'\n'
   U_AUTH+=$'\n'"${_treffer:-(keine erfolgreiche Anmeldung im Fenster)}"
 
   if [[ "$_n_treffer" -gt 0 ]]; then
     # Die Zahl der ADRESSEN entscheidet, ob sich das Hinsehen lohnt: 3
     # Anmeldungen von einer Adresse sind Wartung, 3 von drei Adressen sind
     # eine Frage.
-    _n_adr=$(printf '%s\n' "$_treffer" | grep -oE 'from [0-9a-fA-F.:]+' | LC_ALL=C sort -u | grep -c . || true)
+    _n_adr="${_n_adr_roh:-?}"
     warn "${_n_treffer} erfolgreiche Anmeldung(en) von ${_n_adr:-?} Adresse(n) im Zeitfenster der belasteten Dateien — als Einstiegsweg zu prüfen"
     code "$(printf '%s\n' "$_treffer" | head -20)"
     evidence "ursache_anmeldungen" "$U_AUTH" kunde
