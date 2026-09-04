@@ -681,7 +681,28 @@ unset _uq
 # Mangel, sondern die Bauart: sie spricht nicht frei, sie verschiebt die
 # Beweislast. Wer unter einem dieser Pfade ablegt und per .htaccess freigibt,
 # wird weiterhin von 7.6b gefasst.
-VENDOR_PFADE="${VENDOR_PFADE:-/vendor/|/vendor-prefixed/|/node_modules/|/3rdparty/|/libraries/}"
+#
+# Zweite Erweiterung am 04.09.2026 (#105). Gemessen am Serverlauf
+# 2026-09-03_07-47-39: von 109 Eintraegen der kritischen Stufe, die die Regel
+# NICHT fasste, lagen 68 (62 %) unter einem Verzeichnis, das die Bibliothek
+# beim Namen nennt — nur eben nicht unter vendor/. Kommerzielle Plugins
+# buendeln ihre Abhaengigkeiten anders (Germanized: lib/packages/setasign/,
+# German Market: vendors/dompdf/, ShopMagic: vendor_prefixed/), Gambio und
+# Joomla stammen aus der Zeit vor composer (includes/classes/Smarty_2.6.10/,
+# includes/patTemplate/, administrator/includes/pcl/), Nextcloud-Apps
+# legen unter lib/Vendor/ ab. Die 15 Dateinamen, die dadurch in die Sichtung
+# wandern, sind saemtlich Bibliothekscode:
+#
+#   zip.lib.php 13 (pclzip)     Flate.php 12 (fpdi)      Gzip.php 10 (patTemplate)
+#   Hash.php 6 (web-token/jose)  Smarty-Interna 17        Log4php 3   dompdf 3
+#
+# BEWUSST KEIN lib/, libs/, library/ oder packages/ allein: unter diesen
+# Namen liegt auch Betreiber- und Plugin-Eigencode (vitepos/libs/,
+# rsmartsepa/library/, storeabill/lib/). Aufgenommen ist nur, was die
+# Bibliothek selbst benennt oder ein reines Abhaengigkeitsverzeichnis ist.
+# Die 41 verbleibenden Eintraege desselben Laufs waren genau solcher
+# Eigencode — sie bleiben, wo sie sind.
+VENDOR_PFADE="${VENDOR_PFADE:-/vendor/|/vendor-prefixed/|/vendor_prefixed/|/vendors/|/node_modules/|/3rdparty/|/libraries/|/lib/Vendor/|/setasign/|/[Ff]pdi/|/dompdf/|/[Ss]marty[^/]*/|/patTemplate/|/includes/pcl/|/Log4php/|/ramsey/|/malkusch/}"
 
 # ── Persistenz in der Datenbank (#47) ────────────────────────
 # Ab welcher Groesse eine Option in die Sichtungs-Rangfolge kommt (e3).

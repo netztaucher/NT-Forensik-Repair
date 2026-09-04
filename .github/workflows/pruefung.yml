@@ -344,6 +344,21 @@ jobs:
                   fehler.append('Staging von Kunde 3 IST bestätigt — die Datei hätte entlastet werden müssen (#103)')
               if not s2:
                   fehler.append('Staging von Kunde 2 weicht ab — die Datei darf nicht entlastet werden (#103)')
+          # Bündelpfade ohne vendor/ (#105): die Bibliothek steht im Pfad
+          # (lib/packages/setasign/fpdi) — Sichtung. Eigencode unter lib/
+          # ohne Bibliotheksnamen — bleibt kritisch. Das zweite ist der Test
+          # gegen die Abkürzung, lib/ pauschal aufzunehmen.
+          vend = a.get('webshell_dropper_vendor', [])
+          lp_v = [p for p in vend if 'lib/packages/setasign/fpdi' in p]
+          lp_k = [p for p in drop if 'lib/packages/setasign/fpdi' in p]
+          eig  = [p for p in drop if 'class-pruefstand-eigencode' in p]
+          print(f"Bündelpfad: fpdi unter lib/packages/ Sichtung {len(lp_v)} kritisch {len(lp_k)}, "
+                f"Eigencode unter lib/ kritisch {len(eig)}")
+          if m['webshell_count_roh'] > 0:
+              if not lp_v or lp_k:
+                  fehler.append('fpdi unter lib/packages/ gehört in die Sichtung, nicht in die kritische Stufe (#105)')
+              if not eig:
+                  fehler.append('Eigencode unter lib/ wurde abgeschichtet — lib/ ist kein Bibliotheksname (#105)')
           # 7.2 — die Abschichtung darf den Ort nicht mit dem Format
           # verwechseln (#65). Die getarnte Shell LIEGT im WPML-Cache, sieht
           # aber nicht wie ein Twig-Template aus: sie gehört in die

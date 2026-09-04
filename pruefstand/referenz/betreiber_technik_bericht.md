@@ -33,7 +33,7 @@
 
 ### 7.0 Datei-Inventar (Inode und Zeitstempel sichern)
 
-  Inventar: 666 Datei(en) erfasst, davon 666 mit Anlegezeit (belege/00_dateien.tsv)
+  Inventar: 668 Datei(en) erfasst, davon 668 mit Anlegezeit (belege/00_dateien.tsv)
 
 ### 7.1 Kürzlich veränderte PHP-Dateien (letzte 30 Tage)
 
