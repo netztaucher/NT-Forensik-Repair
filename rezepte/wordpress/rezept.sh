@@ -1422,7 +1422,7 @@ rezept_db() {
   # nicht im Pruefbaum, dessen Referenz von genau dort stammt.
   if ! rezept_db_zugang "${REZEPT_DIR}/wordpress" "${REZ_PFAD}/wp-config.php"; then
     local _grund="Zugangsdaten nicht lesbar"
-    echo 'x' | grep -qP 'x' 2>/dev/null || _grund="grep beherrscht kein -P (PCRE) — die Werte aus wp-config.php sind damit nicht lesbar"
+    echo 'x' | "$NF_GREP" -qP 'x' 2>/dev/null || _grund="grep beherrscht kein -P (PCRE) — die Werte aus wp-config.php sind damit nicht lesbar"
     befund_melden wordpress datenbank unklar \
       "${REZ_KURZ}: Datenbank nicht geprüft (${_grund}). Das ist KEINE Entwarnung." "${REZ_PFAD}/wp-config.php" web
     return 0

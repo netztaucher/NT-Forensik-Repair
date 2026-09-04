@@ -34,7 +34,7 @@ h1 "12. JOOMLA-PRÜFUNG"
 # beide Schreibweisen müssen durch dieselbe Regex.
 jconf_get() {
   grep -vE '^[[:space:]]*(//|#|\*|/\*)' "$1" 2>/dev/null \
-    | grep -oP "public\s+\\\$$2\s*=\s*['\"]?\K[^'\";]*" 2>/dev/null | head -1
+    | "$NF_GREP" -oP "public\s+\\\$$2\s*=\s*['\"]?\K[^'\";]*" 2>/dev/null | head -1
 }
 
 # Joomla-Wahrheitswert: '0', 0, '', false, 'false' sind falsch, alles andere wahr.
@@ -137,15 +137,15 @@ else
     if [[ -f "$jxml" ]]; then
       # Nur das <version>-ELEMENT, nicht das version="3.6"-Attribut am
       # <extension>-Tag — das ist die Manifest-Schemaversion, nicht die CMS-Version.
-      jver=$(grep -oP '<version>\s*\K[0-9][^<[:space:]]*' "$jxml" 2>/dev/null | head -1)
+      jver=$("$NF_GREP" -oP '<version>\s*\K[0-9][^<[:space:]]*' "$jxml" 2>/dev/null | head -1)
       [[ -n "$jver" ]] && jver_src="joomla.xml"
     fi
     jvphp="${CURRENT_J_PATH}/libraries/src/Version.php"
     jver2=""
     if [[ -f "$jvphp" ]]; then
-      _ma=$(grep -oP 'const\s+MAJOR_VERSION\s*=\s*\K[0-9]+' "$jvphp" 2>/dev/null | head -1)
-      _mi=$(grep -oP 'const\s+MINOR_VERSION\s*=\s*\K[0-9]+' "$jvphp" 2>/dev/null | head -1)
-      _pa=$(grep -oP 'const\s+PATCH_VERSION\s*=\s*\K[0-9]+' "$jvphp" 2>/dev/null | head -1)
+      _ma=$("$NF_GREP" -oP 'const\s+MAJOR_VERSION\s*=\s*\K[0-9]+' "$jvphp" 2>/dev/null | head -1)
+      _mi=$("$NF_GREP" -oP 'const\s+MINOR_VERSION\s*=\s*\K[0-9]+' "$jvphp" 2>/dev/null | head -1)
+      _pa=$("$NF_GREP" -oP 'const\s+PATCH_VERSION\s*=\s*\K[0-9]+' "$jvphp" 2>/dev/null | head -1)
       [[ -n "$_ma" && -n "$_mi" && -n "$_pa" ]] && jver2="${_ma}.${_mi}.${_pa}"
     fi
     # Joomla 3.0–3.7: eigene Datei mit RELEASE/DEV_LEVEL. In 3.8.0 wurde sie
@@ -153,8 +153,8 @@ else
     # Rückfall heranziehen, wenn beide Quellen oben nichts geliefert haben.
     jvold="${CURRENT_J_PATH}/libraries/cms/version/version.php"
     if [[ -z "$jver" && -z "$jver2" && -f "$jvold" ]]; then
-      _rel=$(grep -oP '(const|public\s+\$)\s*RELEASE\s*=\s*.\K[0-9.]+' "$jvold" 2>/dev/null | head -1)
-      _dev=$(grep -oP '(const|public\s+\$)\s*DEV_LEVEL\s*=\s*.\K[0-9]+' "$jvold" 2>/dev/null | head -1)
+      _rel=$("$NF_GREP" -oP '(const|public\s+\$)\s*RELEASE\s*=\s*.\K[0-9.]+' "$jvold" 2>/dev/null | head -1)
+      _dev=$("$NF_GREP" -oP '(const|public\s+\$)\s*DEV_LEVEL\s*=\s*.\K[0-9]+' "$jvold" 2>/dev/null | head -1)
       [[ -n "$_rel" ]] && { jver="${_rel}.${_dev:-0}"; jver_src="version.php (Joomla ≤3.7)"; }
     fi
     [[ -z "$jver" && -n "$jver2" ]] && { jver="$jver2"; jver_src="Version.php"; }
@@ -585,7 +585,7 @@ PY
             _reason="ohne zugehöriges Verzeichnis auf der Platte"
           # 2) Verzeichnis vorhanden, enthält aber Schadcode-Muster.
           #    PATTERN_REGEX aus 7.3 wiederverwenden — eine Pflegestelle.
-          elif [[ -n "${PATTERN_REGEX:-}" ]] && grep -rlPi "${PATTERN_REGEX}" "${CURRENT_J_PATH}/plugins/system/${_el}" --include="*.php" >/dev/null 2>&1; then
+          elif [[ -n "${PATTERN_REGEX:-}" ]] && "$NF_GREP" -rlPi "${PATTERN_REGEX}" "${CURRENT_J_PATH}/plugins/system/${_el}" --include="*.php" >/dev/null 2>&1; then
             _reason="mit Schadcode-Muster im Plugin-Verzeichnis"
           # 3) Manifest fehlt, obwohl alle anderen eines haben (s. o.)
           elif [[ "$jmc_aussagekraeftig" -eq 1 ]] \
@@ -943,7 +943,7 @@ for zeile in sys.stdin.read().splitlines():
     if [[ -n "${PATTERN_REGEX:-}" ]]; then
       while IFS= read -r f; do
         [[ -f "$f" ]] && jmal+="$f"$'\n'
-      done < <(grep -rlPi "${PATTERN_REGEX}" \
+      done < <("$NF_GREP" -rlPi "${PATTERN_REGEX}" \
                  "$CURRENT_J_PATH"/tmp "$CURRENT_J_PATH"/cache \
                  "$CURRENT_J_PATH"/administrator/cache "$CURRENT_J_PATH"/media \
                  --include='*.php' --include='*.phtml' --include='*.php[3-8]' --include='*.phar' \

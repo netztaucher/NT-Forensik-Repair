@@ -1768,6 +1768,53 @@ lauf_ausfuehren() {
   return 0
 }
 
+# ── Keine blinde Referenz einchecken (#67) ────────────────────────────────
+#
+# Die Referenz entsteht auf einem macOS-Arbeitsplatz. Dort ist /usr/bin/grep
+# BSD-grep und kennt kein -P. Damit fallen aus: die Webshell-Mustersuche in
+# 7.3 (beide Stufen), der PHP-Marker in Mediendateien, die Joomla-Versions-
+# und -Mustersuche -- und rezept_konf_wert, das die Datenbank-Zugangsdaten
+# aus wp-config.php liest.
+#
+# Die Abschnitte melden den Ausfall korrekt als "nicht messbar". Aber wer die
+# eingecheckte Referenz liest, liest Nullen, und wer eine lokale Zusicherung
+# dagegen schreibt, vergleicht 0 mit 0 und haelt Leere fuer Uebereinstimmung.
+# Genau das ist bei #64 passiert.
+#
+# Gemessen am 04.09.2026: 5 der 19 "nicht messbar"-Eintraege der
+# eingecheckten Referenz waren reine Plattform-Artefakte.
+#
+# Deshalb: `aufnehmen` verweigert eine Referenz, die fuer diese Abschnitte
+# blind ist. Der Ausweg ist ein PCRE-faehiges grep (brew install grep oder
+# ugrep) -- lib/kern.sh sucht `grep`, `ggrep` und `ugrep` in dieser
+# Reihenfolge. Wer die blinde Referenz trotzdem braucht, sagt es ausdruecklich:
+#   NT_GOLDMUSTER_BLIND=1 werkzeuge/goldmuster.sh aufnehmen
+#
+# `vergleichen` bleibt unberuehrt: ein Vergleich blind gegen blind ist
+# weiterhin nuetzlich, er zeigt Veraenderungen an allem anderen.
+referenz_vollstaendig() {
+  local ABLAGE="$1" fund
+  fund=$(grep -rl 'grep beherrscht kein -P' "${ABLAGE}/forensik" 2>/dev/null | head -1 || true)
+  [[ -n "$fund" ]] || return 0
+  if [[ "${NT_GOLDMUSTER_BLIND:-0}" == "1" ]]; then
+    warn "Referenz wird BLIND aufgenommen (NT_GOLDMUSTER_BLIND=1) — 7.3, 7.13, Joomla und die Datenbank-Zugangsdaten sind darin nicht gemessen."
+    return 0
+  fi
+  echo -e "  ${RED}❌${NC} Diese Referenz waere blind: kein grep mit -P (PCRE) verfuegbar." >&2
+  echo "     Nicht gemessen waeren u. a. 7.3 (Webshell-Muster, beide Stufen)," >&2
+  echo "     7.13 (PHP in Mediendateien), Joomla-Version und -Muster in 12," >&2
+  echo "     und die Datenbank-Zugangsdaten aus wp-config.php (rezept_konf_wert)." >&2
+  echo "     Wer sie einchecken wuerde, checkte Nullen als Sollwert ein." >&2
+  echo >&2
+  echo "     Abhilfe:  brew install grep    (legt ggrep ab)" >&2
+  echo "           oder brew install ugrep" >&2
+  echo "     Das Werkzeug sucht grep, ggrep, ugrep in dieser Reihenfolge." >&2
+  echo >&2
+  echo "     Trotzdem aufnehmen (und im Commit sagen, dass sie blind ist):" >&2
+  echo "       NT_GOLDMUSTER_BLIND=1 werkzeuge/goldmuster.sh aufnehmen" >&2
+  return 1
+}
+
 ausgabe_einsammeln() {
   local ABLAGE="$1" ZIEL="$2"
   local lauf; lauf=$(find "${ABLAGE}/forensik" -maxdepth 1 -type d -name '2*' 2>/dev/null | head -1)
@@ -1868,6 +1915,7 @@ case "$AKTION" in
 
   aufnehmen)
     lauf_ausfuehren "$BAUM" "$ABLAGE" || fail "Lauf mit Interpreter-Fehlern — siehe oben"
+    referenz_vollstaendig "$ABLAGE" || exit 1
     rm -rf "$REF_DIR"; ausgabe_einsammeln "$ABLAGE" "$REF_DIR"
     ok "Referenz abgelegt unter pruefstand/referenz/"
     ls -1 "$REF_DIR" | sed 's/^/     /'
