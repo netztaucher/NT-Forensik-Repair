@@ -76,7 +76,7 @@
 - .htaccess mit externen Weiterleitungen gefunden
 - kunde-zwei.example/joomla.kunde-zwei.example: Joomla-Version nicht bestimmbar (weder joomla.xml noch Version.php lesbar)
 - kunde-zwei.example/joomla.kunde-zwei.example: Standard-Tabellenpräfix jos_ (macht SQL-Injection-Angriffe zielgenau ohne Vorab-Erkundung)
-- kunde-drei.example/httpdocs: 3 Core-Datei(en) für den Eigentümer schreibgeschützt (in einem Vorgang gesetzt am <ZEIT>) — Core-Updates scheitern daran; das Muster schützt eingeschleusten Code vor dem nächsten Update
+- kunde-drei.example/httpdocs: 3 Core-Datei(en) für den Eigentümer schreibgeschützt (in einem Vorgang gesetzt am <ZEIT>) — Core-Updates scheitern daran, still; Ursache klären (Härtung von Hand oder Schutz eingeschleusten Codes vor dem nächsten Update)
 - kunde-drei.example/httpdocs: 1 Härtungspunkt(e) in wp-config.php offen
 - kunde-eins.example/httpdocs: 2 Härtungspunkt(e) in wp-config.php offen
 - kunde-vier.example/httpdocs: 2 Härtungspunkt(e) in wp-config.php offen

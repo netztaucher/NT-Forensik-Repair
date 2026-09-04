@@ -136,7 +136,7 @@
   [0;36m⚪[0m kunde-drei.example/httpdocs: 1 Plugin(s) ohne Prüfsummensatz und alle Themes — Unversehrtheit nicht feststellbar (Premium, Fork, Eigenbau; für Themes veröffentlicht wordpress.org keine Prüfsummen)
   [0m·  kunde-drei.example/httpdocs: Core-Update-Staging Fassung 7.1 (<ZEIT>) unverändert gegen amtliche Prüfsummen — WordPress räumt es bei Erfolg weg; das Update ist vermutlich nicht abgeschlossen: <PRUEFSTAND>/vhosts/kunde-drei.example/httpdocs/wp-content/upgrade/wp_pruefstand3/wordpress
   [0;32m✓[0m kunde-drei.example/httpdocs: WordPress-Core unverändert (verify-checksums)
-  [0;33m⚠[0m  kunde-drei.example/httpdocs: 3 Core-Datei(en) für den Eigentümer schreibgeschützt (in einem Vorgang gesetzt am <ZEIT>) — Core-Updates scheitern daran; das Muster schützt eingeschleusten Code vor dem nächsten Update
+  [0;33m⚠[0m  kunde-drei.example/httpdocs: 3 Core-Datei(en) für den Eigentümer schreibgeschützt (in einem Vorgang gesetzt am <ZEIT>) — Core-Updates scheitern daran, still; Ursache klären (Härtung von Hand oder Schutz eingeschleusten Codes vor dem nächsten Update)
   [0;32m✓[0m kunde-drei.example/httpdocs: keine Application Passwords vergeben
   [0;36m⚪[0m kunde-drei.example/httpdocs: REST-Benutzerliste nicht geprüft (ohne --online) — /wp-json/wp/v2/users liefert unangemeldet oft alle Benutzernamen
   [0;33m⚠[0m  kunde-drei.example/httpdocs: 1 Härtungspunkt(e) in wp-config.php offen

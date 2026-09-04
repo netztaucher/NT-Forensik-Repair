@@ -392,7 +392,7 @@ Order allow,deny
   Beleg: belege/011_wp_ohne_pruefsummen_kunde-drei_example_httpdocs.txt
   kunde-drei.example/httpdocs: Core-Update-Staging Fassung 7.1 (<ZEIT>) unverändert gegen amtliche Prüfsummen — WordPress räumt es bei Erfolg weg; das Update ist vermutlich nicht abgeschlossen: <PRUEFSTAND>/vhosts/kunde-drei.example/httpdocs/wp-content/upgrade/wp_pruefstand3/wordpress
 - ✅ kunde-drei.example/httpdocs: WordPress-Core unverändert (verify-checksums)
-- ⚠️  **kunde-drei.example/httpdocs: 3 Core-Datei(en) für den Eigentümer schreibgeschützt (in einem Vorgang gesetzt am <ZEIT>) — Core-Updates scheitern daran; das Muster schützt eingeschleusten Code vor dem nächsten Update**
+- ⚠️  **kunde-drei.example/httpdocs: 3 Core-Datei(en) für den Eigentümer schreibgeschützt (in einem Vorgang gesetzt am <ZEIT>) — Core-Updates scheitern daran, still; Ursache klären (Härtung von Hand oder Schutz eingeschleusten Codes vor dem nächsten Update)**
 
 ```
 <PRUEFSTAND>/vhosts/kunde-drei.example/httpdocs/wp-blog-header.php

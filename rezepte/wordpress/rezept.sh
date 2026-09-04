@@ -766,9 +766,17 @@ rezept_kern() {
 # Sichtbar wurde es einen Monat spaeter, als das Core-Auto-Update daran
 # scheiterte: PHP kann eine 0444-Datei nicht ueberschreiben, auch nicht als
 # Eigentuemer. Die Instanzen standen deshalb am 28.08. noch auf einer
-# Fassung, fuer die das Update laengst bereitlag. Genau dieses Muster --
-# Bootstrap-Kette schreibschuetzen -- ist der Griff, mit dem sich
-# eingeschleuster Code vor dem naechsten Update schuetzt.
+# Fassung, fuer die das Update laengst bereitlag.
+#
+# WER die Bits gesetzt hat, ist NICHT belegt -- und der Befund behauptet es
+# auch nicht. Gemessen ist nur: kein Log deckt das Fenster (panel.log,
+# Imunify-Historie, Shell-Historien leer), es ist NICHT die WP-Toolkit-
+# Massnahme "securityPermissions" (Instanzen mit ihr tragen 0644, gemessen
+# ueber 129 Instanzen), und im selben Fenster wurden 65.241 Core-Dateien neu
+# geschrieben -- eine Core-Neuinstallation. Zwei Lesarten bleiben offen:
+# Haertung von Hand waehrend der Bereinigung, oder ein Angreifer, der die
+# Bootstrap-Kette vor dem naechsten Update festnagelt. Der Befund nennt
+# beide; die Entscheidung braucht Belege, die es hier nicht gab.
 #
 # warn, nicht crit: die Dateien sind meist sauber, die Sofortmassnahmen-Liste
 # passt nicht. Aber kein info: die Instanz kann sich nicht mehr selbst
@@ -797,7 +805,7 @@ _wp_kern_schreibschutz() {
     zeitsatz="gesetzt zwischen $(date -r "$min" '+%Y-%m-%d %H:%M' 2>/dev/null || date -d "@$min" '+%Y-%m-%d %H:%M') und $(date -r "$max" '+%Y-%m-%d %H:%M' 2>/dev/null || date -d "@$max" '+%Y-%m-%d %H:%M')"
   fi
   befund_melden wordpress kern warn \
-    "${REZ_KURZ}: ${n} Core-Datei(en) für den Eigentümer schreibgeschützt (${zeitsatz}) — Core-Updates scheitern daran; das Muster schützt eingeschleusten Code vor dem nächsten Update" "$REZ_PFAD" web
+    "${REZ_KURZ}: ${n} Core-Datei(en) für den Eigentümer schreibgeschützt (${zeitsatz}) — Core-Updates scheitern daran, still; Ursache klären (Härtung von Hand oder Schutz eingeschleusten Codes vor dem nächsten Update)" "$REZ_PFAD" web
   code "$(printf '%s\n' "$liste" | head -30)"
   evidence "wp_kern_schreibschutz_$(echo "$REZ_KURZ" | tr '/.' '__')" \
     "$(while IFS= read -r f; do [[ -n "$f" ]] && printf '%s\t%s\t%s\n' "$(datei_meta "$f" rechte)" "$(datei_meta "$f" mtime)" "$f"; done <<< "$liste")"
