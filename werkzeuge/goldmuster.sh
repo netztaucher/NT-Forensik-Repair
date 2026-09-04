@@ -1798,6 +1798,10 @@ referenz_vollstaendig() {
   [[ -n "$fund" ]] || return 0
   if [[ "${NT_GOLDMUSTER_BLIND:-0}" == "1" ]]; then
     warn "Referenz wird BLIND aufgenommen (NT_GOLDMUSTER_BLIND=1) — 7.3, 7.13, Joomla und die Datenbank-Zugangsdaten sind darin nicht gemessen."
+    # Der Marker wandert MIT in die Referenz. Wer sie liest, soll nicht erst
+    # den ⚪ suchen muessen, um zu erkennen, dass die Nullen dort keine
+    # Messung sind. Punkt 1 aus #67: "Wer die Referenz liest, liest Nullen."
+    NF_REFERENZ_BLIND=1
     return 0
   fi
   echo -e "  ${RED}❌${NC} Diese Referenz waere blind: kein grep mit -P (PCRE) verfuegbar." >&2
@@ -1917,6 +1921,28 @@ case "$AKTION" in
     lauf_ausfuehren "$BAUM" "$ABLAGE" || fail "Lauf mit Interpreter-Fehlern — siehe oben"
     referenz_vollstaendig "$ABLAGE" || exit 1
     rm -rf "$REF_DIR"; ausgabe_einsammeln "$ABLAGE" "$REF_DIR"
+    if [[ "${NF_REFERENZ_BLIND:-0}" == "1" ]]; then
+      cat > "${REF_DIR}/UNVOLLSTAENDIG.txt" <<'MARKE'
+Diese Referenz ist BLIND aufgenommen worden (#67).
+
+Auf dem aufnehmenden Rechner stand kein grep mit -P (PCRE) zur Verfuegung.
+Die folgenden Abschnitte haben deshalb NICHT gemessen; ihre Zahlen in dieser
+Referenz sind Nullen aus einem Ausfall, keine Messergebnisse:
+
+  7.3   Webshell-Mustersuche, beide Stufen
+  7.13  PHP-Marker in Mediendateien
+  12    Joomla-Versionserkennung und -Mustersuche
+  lib/rezepte.sh  rezept_konf_wert -- die Datenbank-Zugangsdaten jedes
+        Rezepts; daher die "Datenbank nicht geprueft"-Zeilen
+
+Eine Zusicherung, die gegen diese Stellen prueft, vergleicht 0 mit 0 und
+haelt Leere fuer Uebereinstimmung. Solche Zusicherungen gehoeren in die CI.
+
+Vollstaendige Fassung: Artefakt "referenz-linux" des CI-Laufs.
+Abhilfe lokal: brew install grep (legt ggrep ab) oder brew install ugrep.
+MARKE
+      warn "Marker UNVOLLSTAENDIG.txt in die Referenz gelegt."
+    fi
     ok "Referenz abgelegt unter pruefstand/referenz/"
     ls -1 "$REF_DIR" | sed 's/^/     /'
     warn "Referenz einchecken und im Commit sagen, von welchem Stand sie stammt."

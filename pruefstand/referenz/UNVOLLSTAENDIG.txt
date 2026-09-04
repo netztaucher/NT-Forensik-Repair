@@ -1,0 +1,17 @@
+Diese Referenz ist BLIND aufgenommen worden (#67).
+
+Auf dem aufnehmenden Rechner stand kein grep mit -P (PCRE) zur Verfuegung.
+Die folgenden Abschnitte haben deshalb NICHT gemessen; ihre Zahlen in dieser
+Referenz sind Nullen aus einem Ausfall, keine Messergebnisse:
+
+  7.3   Webshell-Mustersuche, beide Stufen
+  7.13  PHP-Marker in Mediendateien
+  12    Joomla-Versionserkennung und -Mustersuche
+  lib/rezepte.sh  rezept_konf_wert -- die Datenbank-Zugangsdaten jedes
+        Rezepts; daher die "Datenbank nicht geprueft"-Zeilen
+
+Eine Zusicherung, die gegen diese Stellen prueft, vergleicht 0 mit 0 und
+haelt Leere fuer Uebereinstimmung. Solche Zusicherungen gehoeren in die CI.
+
+Vollstaendige Fassung: Artefakt "referenz-linux" des CI-Laufs.
+Abhilfe lokal: brew install grep (legt ggrep ab) oder brew install ugrep.
