@@ -238,6 +238,17 @@ if ($befehl === 'db query') {
     exit(0);
 }
 if ($befehl === 'core verify-checksums') {
+    // Core-Update-Staging (#103). Kein eigener Kern, aber mit demselben
+    // Werkzeug pruefbar: das Staging von Kunde 3 ist unveraendert, das von
+    // Kunde 2 traegt eine Abweichung -- und die muss stehenbleiben.
+    if (strpos($pfad, '/upgrade/wp_') !== false) {
+        if (strpos($pfad, 'kunde-zwei') !== false) {
+            echo "Warning: File doesn't verify against checksum: wp-includes/class-pruefstand-staging.php\n";
+            exit(1);
+        }
+        echo "Success: WordPress installation verifies against checksums.\n";
+        exit(0);
+    }
     // Kunde 4: KEINE Ausgabe, Rueckgabewert 1. Der Fall, der auf
     // kundenserver42 12 von 121 Instanzen betraf — wp-cli bricht ab, ohne
     // etwas zu sagen. Weder "Success:" noch "Error:", nur Stille.
@@ -1157,6 +1168,29 @@ PHP
   }
   _gross_injiziert "${k3}/wp-includes/gross-kern-geprueft.php"
   _gross_injiziert "${k4}/wp-includes/gross-kern-ungeprueft.php"
+
+  # ── Core-Update-Staging (#103) ────────────────────────────────────────
+  #
+  # WordPress entpackt ein Core-Update nach wp-content/upgrade/wp_<hex>/
+  # wordpress/ und raeumt es bei Erfolg weg. Bleibt es liegen, liegt dort ein
+  # zweiter Kern, auf den die Instanz-Whitelist nicht reicht. Am 04.09.2026
+  # meldete 13d deshalb dieselbe Kern-Datei, die es unter der Instanz gerade
+  # entlastet hatte, im Staging als 🔴 -- bytegleich mit dem amtlichen 7.1.
+  #
+  # Zwei Stagings, gleiche Datei:
+  #   f) Kunde 3: verify-checksums bestaetigt das Staging -> MUSS entlastet werden
+  #   g) Kunde 2: die Datei weicht ab (Attrappe)          -> MUSS 🔴 bleiben
+  #
+  # (g) ist der Test gegen das pauschale Freisprechen von upgrade/: ein
+  # Verzeichnisname ist keine Pruefsumme.
+  local stg
+  for stg in "${k3}/wp-content/upgrade/wp_pruefstand3/wordpress" \
+             "${k2}/wp-content/upgrade/wp_pruefstand2/wordpress"; do
+    mkdir -p "${stg}/wp-includes" "${stg}/wp-admin"
+    printf '<?php\n$wp_version = %s;\n' "'7.1'" > "${stg}/wp-includes/version.php"
+    printf '<?php\n// Pruefstand: Kern-Code im Update-Staging\nif ( preg_match( %s/[^%s]*%s, $d ) ) { return true; }\n' \
+           "'" "$(_hexkette)" "'" > "${stg}/wp-includes/class-pruefstand-staging.php"
+  done
 
   # ── Zerlegte Funktionsnamen (7.16) ───────────────────────────────────
   # Die Machart, die auf kundenserver42 fuenf Verfahren ueberstanden hat:

@@ -8,7 +8,7 @@
 | **Datum** | <ZEIT> |
 | **Geprüfter Server** | imac |
 | **Prüfungs-ID** | <LAUF-ID> |
-| **Befunde** | 🔴 17 kritisch · ⚠️ 24 auffällig · ⚪ 12 nicht messbar |
+| **Befunde** | 🔴 18 kritisch · ⚠️ 24 auffällig · ⚪ 12 nicht messbar |
 
 ---
 
@@ -32,18 +32,18 @@
 
 ## 3. Was wir technisch gefunden haben
 
-- **28 Schadcode-Fundstelle(n)** in Ihrem Webauftritt. Was jede einzelne ist und wozu sie dient, steht in der Einordnung unten und vollständig in `befunde_details.md`.
+- **29 Schadcode-Fundstelle(n)** in Ihrem Webauftritt. Was jede einzelne ist und wozu sie dient, steht in der Einordnung unten und vollständig in `befunde_details.md`.
 - 1 weitere Fundstelle(n) sind noch einzuordnen — sie sind kein belegter Schadcode, aber auch nicht abgehakt. Liste in `befunde_details.md`.
 
-**Schadcode-Einordnung — 28 Fundstelle(n):**
+**Schadcode-Einordnung — 29 Fundstelle(n):**
 
 | Art | Anzahl | Was damit bezweckt wird |
 |---|---|---|
 | Getarnte Payload | 9 | Nachladbarer Schadcode in Nicht-PHP-Datei |
 | Verändertes Plugin | 8 | Fremder Code in einem legitimen Plugin — nachträglich eingebaute Hintertür |
 | Manipulierte .htaccess | 4 | Zugriffsregeln zugunsten des Angreifers — hält seine Dateien erreichbar und sperrt Mitbewerber aus |
+| Code-Injection | 3 | Schadcode in legitime Dateien eingeschleust |
 | PHP im Upload-Verzeichnis | 3 | Ausführbarer Code dort, wo nur Dateien liegen sollen — der klassische Weg einer hochgeladenen Shell |
-| Code-Injection | 2 | Schadcode in legitime Dateien eingeschleust |
 | Bekannte Schaddatei | 1 | Nach Namensmuster erkanntes Angriffswerkzeug (Dateimanager, Uploader, Shell) |
 | Tarnstruktur | 1 | Angelegte Verzeichnisse, die echte nachahmen — Ablage für Nutzlasten |
 
@@ -64,6 +64,7 @@
 - kunde-zwei.example/httpdocs: 1 Datei(en) mit @include base64_decode() — getarnte Payload-Nachladung
 - kunde-zwei.example/httpdocs: 8 veränderte Plugin-Codedatei(en) gegenüber wordpress.org — Plugin neu installieren, Dateien vorher sichern
 - kunde-zwei.example/httpdocs: 1 veränderte Core-Datei(en) — Injektion oder Manipulation
+- kunde-zwei.example/httpdocs: 1 abweichende Datei(en) im Core-Update-Staging (Fassung 7.1) — dort hat niemand etwas zu suchen außer dem Updater
 - kunde-zwei.example/backups/updater-abc123/nextcloud-28.0.1.2-1700000000/.htaccess (nextcloud): 3 Angreifer-Direktive(n) in der .htaccess
 - kunde-zwei.example/cloud.kunde-zwei.example/.htaccess (nextcloud): 3 Angreifer-Direktive(n) in der .htaccess
 - kunde-zwei.example/httpdocs/.htaccess (wordpress): 2 Angreifer-Direktive(n) in der .htaccess
