@@ -258,6 +258,10 @@ if ($befehl === 'core verify-checksums') {
         exit(1);
     }
     if (strpos($pfad, 'kunde-zwei') !== false) {
+        // #107: diese Datei liegt bytegleich im Staging von Kunde 2 -- die
+        // Kopie der neuen Fassung, die ein abgebrochenes Update schon
+        // gezogen hatte. Muss warn "gemischter Kern" werden, nicht crit.
+        echo "Warning: File doesn't verify against checksum: wp-includes/pruefstand-gemischt.php\n";
         echo "Warning: File doesn't verify against checksum: wp-includes/load.php\n";
         echo "Warning: File should not exist: wp-admin/mu.php\n";
         exit(1);
@@ -1191,6 +1195,19 @@ PHP
     printf '<?php\n// Pruefstand: Kern-Code im Update-Staging\nif ( preg_match( %s/[^%s]*%s, $d ) ) { return true; }\n' \
            "'" "$(_hexkette)" "'" > "${stg}/wp-includes/class-pruefstand-staging.php"
   done
+  # ── Gemischter Kern nach abgebrochenem Update (#107) ──────────────────
+  #
+  # WordPress kopiert update-core.php ZUERST aus dem Staging und fuehrt sie
+  # dann aus; bricht das Update ab, bleibt die Datei der neuen Fassung im
+  # alten Kern. Gemessen am 04.09.2026 auf sieben Instanzen. Die Attrappe
+  # meldet pruefstand-gemischt.php als Abweichung; die Datei liegt bytegleich
+  # im (bestaetigten) Staging von Kunde 2 -> warn "gemischt". load.php hat
+  # KEINE Staging-Kopie -> bleibt crit. Beide Richtungen in einer Instanz.
+  mkdir -p "${k2}/wp-includes"
+  printf '<?php\n// Pruefstand: Datei der neuen Fassung, vom abgebrochenen Update bereits kopiert\n$gemischt = 1;\n' \
+         > "${k2}/wp-includes/pruefstand-gemischt.php"
+  cp "${k2}/wp-includes/pruefstand-gemischt.php" \
+     "${k2}/wp-content/upgrade/wp_pruefstand2/wordpress/wp-includes/pruefstand-gemischt.php"
 
   # ── Zerlegte Funktionsnamen (7.16) ───────────────────────────────────
   # Die Machart, die auf kundenserver42 fuenf Verfahren ueberstanden hat:

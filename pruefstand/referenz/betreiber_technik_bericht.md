@@ -33,7 +33,7 @@
 
 ### 7.0 Datei-Inventar (Inode und Zeitstempel sichern)
 
-  Inventar: 668 Datei(en) erfasst, davon 668 mit Anlegezeit (belege/00_dateien.tsv)
+  Inventar: 670 Datei(en) erfasst, davon 670 mit Anlegezeit (belege/00_dateien.tsv)
 
 ### 7.1 Kürzlich veränderte PHP-Dateien (letzte 30 Tage)
 
@@ -41,6 +41,8 @@
 
 ```
 <INODE> -rw-r--r-- <EIGNER> 0 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/uploads/index.php
+<INODE> -rw-r--r-- <EIGNER> 102 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/upgrade/wp_pruefstand2/wordpress/wp-includes/pruefstand-gemischt.php
+<INODE> -rw-r--r-- <EIGNER> 102 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-includes/pruefstand-gemischt.php
 <INODE> -rw-r--r-- <EIGNER> 1083 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/uploads/cache/wpml/twig/3e/getarnt.php
 <INODE> -rw-r--r-- <EIGNER> 12 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/uploads/cache/index.php
 <INODE> -rw-r--r-- <EIGNER> 12 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/uploads/forminator/index.php
@@ -55,8 +57,6 @@
 <INODE> -rw-r--r-- <EIGNER> 230 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/joomla.kunde-zwei.example/configuration.php
 <INODE> -rw-r--r-- <EIGNER> 27 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/upgrade/wp_pruefstand2/wordpress/wp-includes/version.php
 <INODE> -rw-r--r-- <EIGNER> 29 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-includes/version.php
-<INODE> -rw-r--r-- <EIGNER> 33479 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/plugins/pruefstand-ohne-fix/gross-sauber.php
-<INODE> -rw-r--r-- <EIGNER> 33998 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/plugins/pruefstand-ohne-fix/gross-injiziert.php
 <INODE> -rw-r--r-- <EIGNER> 34 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/joomla.kunde-zwei.example/libraries/src/Version.php
 <INODE> -rw-r--r-- <EIGNER> 3466 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/uploads/cache/wpml/twig/3e/3e63fcbd19fd358f040b36a0ac02099.php
 <INODE> -rw-r--r-- <EIGNER> 43 <MTIME> <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/uploads/2026/03/bild.php
@@ -390,8 +390,8 @@ Order allow,deny
 - ✅ kunde-drei.example/httpdocs: 2 Plugin(s) gegen wordpress.org geprüft — keine veränderte Codedatei
 - ⚪ **Nicht messbar: kunde-drei.example/httpdocs: 1 Plugin(s) ohne Prüfsummensatz und alle Themes — Unversehrtheit nicht feststellbar (Premium, Fork, Eigenbau; für Themes veröffentlicht wordpress.org keine Prüfsummen)**
   Beleg: belege/011_wp_ohne_pruefsummen_kunde-drei_example_httpdocs.txt
-- ✅ kunde-drei.example/httpdocs: WordPress-Core unverändert (verify-checksums)
   kunde-drei.example/httpdocs: Core-Update-Staging Fassung 7.1 (<ZEIT>) unverändert gegen amtliche Prüfsummen — WordPress räumt es bei Erfolg weg; das Update ist vermutlich nicht abgeschlossen: <PRUEFSTAND>/vhosts/kunde-drei.example/httpdocs/wp-content/upgrade/wp_pruefstand3/wordpress
+- ✅ kunde-drei.example/httpdocs: WordPress-Core unverändert (verify-checksums)
 - ✅ kunde-drei.example/httpdocs: keine Application Passwords vergeben
 - ⚪ **Nicht messbar: kunde-drei.example/httpdocs: REST-Benutzerliste nicht geprüft (ohne --online) — /wp-json/wp/v2/users liefert unangemeldet oft alle Benutzernamen**
 - ⚠️  **kunde-drei.example/httpdocs: 2 Härtungspunkt(e) in wp-config.php offen**
@@ -502,22 +502,29 @@ Sitemap: https://kunde-zwei.example/index.php/sitemap.xml
   Beleg: belege/023_wp_plugin_fehlt_kunde-zwei_example_httpdocs.txt
 - ⚪ **Nicht messbar: kunde-zwei.example/httpdocs: 1 Plugin(s) ohne Prüfsummensatz und alle Themes — Unversehrtheit nicht feststellbar (Premium, Fork, Eigenbau; für Themes veröffentlicht wordpress.org keine Prüfsummen)**
   Beleg: belege/024_wp_ohne_pruefsummen_kunde-zwei_example_httpdocs.txt
-- 🔴 **KRITISCH: kunde-zwei.example/httpdocs: 1 veränderte Core-Datei(en) — Injektion oder Manipulation**
-
-```
-<PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-includes/load.php
-```
-
-  Beleg: belege/025_wp_core_veraendert_kunde-zwei_example_httpdocs.txt
-- ⚠️  **kunde-zwei.example/httpdocs: 1 Core-fremde Datei(en) in wp-admin/wp-includes — prüfen**
-  Beleg: belege/026_wp_core_fremd_kunde-zwei_example_httpdocs.txt
 - 🔴 **KRITISCH: kunde-zwei.example/httpdocs: 1 abweichende Datei(en) im Core-Update-Staging (Fassung 7.1) — dort hat niemand etwas zu suchen außer dem Updater**
 
 ```
 <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/upgrade/wp_pruefstand2/wordpress/wp-includes/class-pruefstand-staging.php
 ```
 
-  Beleg: belege/027_wp_staging_veraendert_kunde-zwei_example_httpdocs.txt
+  Beleg: belege/025_wp_staging_veraendert_kunde-zwei_example_httpdocs.txt
+- 🔴 **KRITISCH: kunde-zwei.example/httpdocs: 1 veränderte Core-Datei(en) — Injektion oder Manipulation**
+
+```
+<PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-includes/load.php
+```
+
+  Beleg: belege/026_wp_core_veraendert_kunde-zwei_example_httpdocs.txt
+- ⚠️  **kunde-zwei.example/httpdocs: 1 Core-Datei(en) stammen aus Fassung 7.1 (liegengebliebenes Update-Staging) — das Update ist abgebrochen, der Kern gemischt; Update abschließen**
+
+```
+<PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-includes/pruefstand-gemischt.php  (= Fassung 7.1 aus dem Staging)
+```
+
+  Beleg: belege/027_wp_core_gemischt_kunde-zwei_example_httpdocs.txt
+- ⚠️  **kunde-zwei.example/httpdocs: 1 Core-fremde Datei(en) in wp-admin/wp-includes — prüfen**
+  Beleg: belege/028_wp_core_fremd_kunde-zwei_example_httpdocs.txt
 - ✅ kunde-zwei.example/httpdocs: keine Application Passwords vergeben
 - ⚪ **Nicht messbar: kunde-zwei.example/httpdocs: REST-Benutzerliste nicht geprüft (ohne --online) — /wp-json/wp/v2/users liefert unangemeldet oft alle Benutzernamen**
 - ⚠️  **kunde-zwei.example/httpdocs: 2 Härtungspunkt(e) in wp-config.php offen**
@@ -528,7 +535,7 @@ wp-config.php ist weltlesbar (644) — sie enthält die Datenbank-Zugangsdaten
 
 ```
 
-  Beleg: belege/028_wp_haertung_wpconfig_kunde-zwei_example_httpdocs.txt
+  Beleg: belege/029_wp_haertung_wpconfig_kunde-zwei_example_httpdocs.txt
 - ⚠️  **kunde-zwei.example/httpdocs: Wordfence-Scan ist <TAGE> Tage alt — was danach abgelegt wurde, steht in diesem Bestand nicht**
   kunde-zwei.example/httpdocs: Wordfence mit freiem Schlüssel — der Signaturbestand ist kleiner und läuft dem kostenpflichtigen um 30 Tage hinterher
 - ⚠️  **kunde-zwei.example/httpdocs: Wordfence führt 1 Plugin(s) als verwundbar**
@@ -549,7 +556,7 @@ The Theme "pruefstand-thema" has a known security vulnerability
 Scan skipped 99 paths outside the WordPress installation
 ```
 
-  Beleg: belege/029_wordfence_uebersprungen_kunde-zwei_example_httpdocs.txt
+  Beleg: belege/030_wordfence_uebersprungen_kunde-zwei_example_httpdocs.txt
 - ⚠️  **kunde-zwei.example/httpdocs: Wordfence meldet 1 Datei(en) als verändert gegenüber dem Original — Integritätsabweichung, kein Signaturtreffer**
 
 ```
@@ -564,7 +571,7 @@ doorway-gen/loader.php
 
 ```
 
-  Beleg: belege/030_wp_db_plugin_leichen_kunde-zwei_example_httpdocs.txt
+  Beleg: belege/031_wp_db_plugin_leichen_kunde-zwei_example_httpdocs.txt
   kunde-zwei.example/httpdocs: 2 Option(en) mit PHP-Merkmal — KEIN Befund: legitime Plugins legen dort Code ab (gemessen: 12 von 12 Fehlalarmen). Rangfolge für die Sichtung
 
 ```
@@ -572,7 +579,7 @@ widget_custom_html	<?php	118	…function(){ include ABSPATH."wp-content/uploads/
 simplehooks-settings	<?php	9184	a:57:{s:7:"wp_head";…<?php echo do_shortcode("[x]"); ?>…
 ```
 
-  Beleg: belege/031_wp_db_optionen_php_kunde-zwei_example_httpdocs.txt
+  Beleg: belege/032_wp_db_optionen_php_kunde-zwei_example_httpdocs.txt
   kunde-zwei.example/httpdocs: auffällig grosse Optionen (>= 262144 B) — Rangfolge für die Sichtung, kein Befund:
 
 ```
@@ -580,7 +587,7 @@ doorway_terms_cache	1834219
 _transient_dirsize_cache	412008
 ```
 
-  Beleg: belege/032_wp_db_optionen_gross_kunde-zwei_example_httpdocs.txt
+  Beleg: belege/033_wp_db_optionen_gross_kunde-zwei_example_httpdocs.txt
 - ⚪ **Nicht messbar: kunde-zwei.example/httpdocs: Datenbank nicht geprüft (grep beherrscht kein -P (PCRE) — die Werte aus wp-config.php sind damit nicht lesbar). Das ist KEINE Entwarnung.**
 
 ## 13b. .HTACCESS — SICHERUNG UND EINORDNUNG
@@ -602,7 +609,7 @@ Order allow,deny                                      Apache-2.2-Zugriffssyntax 
 <Files filefuns.php> … Allow from all                 Sperre fuer alles, Freigabe fuer genau diese eine PHP-Datei
 ```
 
-  Beleg: belege/033_htaccess_fremd_kunde-zwei_example_backups_updater-abc123_nextcloud-28_0_1_2-1700000000__htaccess.txt
+  Beleg: belege/034_htaccess_fremd_kunde-zwei_example_backups_updater-abc123_nextcloud-28_0_1_2-1700000000__htaccess.txt
 - 🔴 **KRITISCH: kunde-zwei.example/cloud.kunde-zwei.example/.htaccess (nextcloud): 3 Angreifer-Direktive(n) in der .htaccess**
 
 ```
@@ -611,7 +618,7 @@ Order allow,deny                                      Apache-2.2-Zugriffssyntax 
 <Files filefuns.php> … Allow from all                 Sperre fuer alles, Freigabe fuer genau diese eine PHP-Datei
 ```
 
-  Beleg: belege/034_htaccess_fremd_kunde-zwei_example_cloud_kunde-zwei_example__htaccess.txt
+  Beleg: belege/035_htaccess_fremd_kunde-zwei_example_cloud_kunde-zwei_example__htaccess.txt
 - 🔴 **KRITISCH: kunde-zwei.example/httpdocs/.htaccess (wordpress): 2 Angreifer-Direktive(n) in der .htaccess**
 
 ```
@@ -619,15 +626,15 @@ AddType application/x-httpd-php .jpg                  PHP-Ausfuehrung fuer eine 
 php_value auto_prepend_file /var/www/vhosts/<anderer Kunde 2>  auto_prepend_file auf eine Datei im Webspace
 ```
 
-  Beleg: belege/035_htaccess_fremd_kunde-zwei_example_httpdocs__htaccess.txt
+  Beleg: belege/036_htaccess_fremd_kunde-zwei_example_httpdocs__htaccess.txt
 - 🔴 **KRITISCH: kunde-zwei.example/httpdocs/wp-content/uploads/.htaccess (unbekannt): 1 Angreifer-Direktive(n) in der .htaccess**
 
 ```
 <Files bild.php> … Allow from all                     Freigabe fuer eine PHP-Datei in einem Verzeichnis, in das keine gehoert
 ```
 
-  Beleg: belege/036_htaccess_fremd_kunde-zwei_example_httpdocs_wp-content_uploads__htaccess.txt
-  Beleg: belege/037_htaccess_einordnung.txt
+  Beleg: belege/037_htaccess_fremd_kunde-zwei_example_httpdocs_wp-content_uploads__htaccess.txt
+  Beleg: belege/038_htaccess_einordnung.txt
 
 ### 13b.3 Wirksamkeit
 
@@ -644,7 +651,7 @@ php_value auto_prepend_file /var/www/vhosts/<anderer Kunde 2>  auto_prepend_file
 2 Regel(n): <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/plugins/pruefstand-aktuell/pruefstand-aktuell.php — ObfuscatedPhp DodgyStrings
 ```
 
-  Beleg: belege/038_php_malware_finder_treffer.txt
+  Beleg: belege/039_php_malware_finder_treffer.txt
   Quelle: Prüfstand-Attrappe, Regelstand 0 Tage alt — der Regelsatz wird vom Projekt kaum noch gepflegt
 
 ### 13d Einordnung der Mustertreffer aus 7.3 und der Rangfolge aus 7.15
@@ -659,8 +666,8 @@ php_value auto_prepend_file /var/www/vhosts/<anderer Kunde 2>  auto_prepend_file
 <PRUEFSTAND>/vhosts/kunde-zwei.example/httpdocs/wp-content/plugins/pruefstand-kopflos/gross-injiziert.php	4	DICHTE=120,RANDLAGE
 ```
 
-  Beleg: belege/039_injektion_grosse_dateien.txt
-  Beleg: belege/040_injektion_entlastet.txt
+  Beleg: belege/040_injektion_grosse_dateien.txt
+  Beleg: belege/041_injektion_entlastet.txt
 
 ### 13e Infektions-Ursachensuche
 
@@ -686,7 +693,7 @@ php_value auto_prepend_file /var/www/vhosts/<anderer Kunde 2>  auto_prepend_file
 
 ```
 
-  Beleg: belege/041_ursache_zeitachse.txt
+  Beleg: belege/042_ursache_zeitachse.txt
 
 ### 13e.2 ctime gegen mtime — beide Richtungen
 
@@ -710,7 +717,7 @@ ZUKUNFT   <ZEIT>  mtime liegt <SPANNE> NACH der ctime — vorwaerts datiert   <P
 
 ```
 
-  Beleg: belege/042_ursache_zeitstempel_deutung.txt
+  Beleg: belege/043_ursache_zeitstempel_deutung.txt
 
 ### 13e.3 Reichweite: geteilter Systemnutzer
 
@@ -727,19 +734,19 @@ ZUKUNFT   <ZEIT>  mtime liegt <SPANNE> NACH der ctime — vorwaerts datiert   <P
 
 ```
 
-  Beleg: belege/043_ursache_quellenlage.txt
+  Beleg: belege/044_ursache_quellenlage.txt
 
 ## 14. ZUSAMMENFASSUNG
 
 - ✅ Programmstand über den ganzen Lauf unverändert — die Fassungsangabe belegt diesen Lauf
-  Fundstellen-Details: <PRUEFSTAND>/ablage/forensik/<LAUF-ID>/kunde/befunde_details.md (29 Fund(e), 7 Familien, 1 zu prüfen)
+  Fundstellen-Details: <PRUEFSTAND>/ablage/forensik/<LAUF-ID>/kunde/befunde_details.md (30 Fund(e), 7 Familien, 1 zu prüfen)
 
 ### 14.1 Befund-Statistik
 
 | Kategorie | Anzahl |
 |---|---|
 | 🔴 Kritische Befunde | 18 |
-| ⚠️ Warnungen | 27 |
+| ⚠️ Warnungen | 28 |
 | ✅ Unauffällige Prüfungen | 30 |
 | ⚪ Nicht messbar | 18 |
 

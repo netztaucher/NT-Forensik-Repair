@@ -629,6 +629,12 @@ PY
 # der Grund in CHK_ROH, bei sauberem Kern die Success-Zeile (#94).
 rezept_kern() {
   local CHK cmod csne LISTE CHK_ROH CHK_RC
+  local ECHT GEMISCHT n_echt n_gem f rel treffer st st_ver st_alter gem_fassung
+  # Das Staging ZUERST (#107): erst wenn bekannt ist, welche Fassung dort
+  # liegt und dass sie amtlich ist, laesst sich eine Abweichung des Kerns
+  # einordnen -- Manipulation, oder die Datei der neuen Fassung, die ein
+  # abgebrochenes Update schon kopiert hatte.
+  _wp_staging_pruefen
   # Rückgabewert getrennt festhalten. Bis v3.12 stand hier nur die gefilterte
   # Ausgabe, und der Status der Pipe war der von `grep` — ein gescheitertes
   # verify-checksums war damit von einem sauberen Kern nicht zu unterscheiden.
@@ -648,9 +654,51 @@ rezept_kern() {
 
   if [[ "${cmod:-0}" -gt 0 ]]; then
     LISTE=$(echo "$CHK" | grep "doesn.t verify" | sed "s|.*checksum: |${REZ_PFAD}/|")
-    befund_melden wordpress kern crit "${REZ_KURZ}: ${cmod} veränderte Core-Datei(en) — Injektion oder Manipulation" "$REZ_PFAD" web
-    code "$(echo "$LISTE" | head -30)"
-    evidence "wp_core_veraendert_$(echo "$REZ_KURZ" | tr '/.' '__')" "$LISTE"
+    # ── Gemischter Kern nach abgebrochenem Update (#107) ──────────────
+    #
+    # WordPress kopiert beim Core-Update ZUERST wp-admin/includes/
+    # update-core.php aus dem Staging in die Installation und fuehrt dann
+    # diese aus. Bricht das Update danach ab, bleibt ein gemischter Kern:
+    # installierte Fassung alt, update-core.php neu. Gemessen am 04.09.2026
+    # auf sieben Instanzen eines vhosts: md5 der Datei = amtliche 7.1,
+    # installiert 7.0.4, Staging von 02:3x liegt daneben. Das Werkzeug
+    # meldete "Injektion oder Manipulation" und loeste damit die volle
+    # Sofortmassnahmen-Liste aus -- fuer eine amtliche Datei.
+    #
+    # Entlastet wird NICHT ueber den Dateinamen: update-core.php ist ein
+    # attraktives Ziel, wer sie aendert, kontrolliert jedes kuenftige Update.
+    # Entlastet wird nur, was bytegleich mit der Kopie in einem Staging ist,
+    # dessen Kopie verify-checksums bestaetigt hat (_wp_staging_pruefen fuehrt
+    # die Abweichungen des Stagings in REZ_STAGING_AUSN). Kein ok: ein
+    # gemischter Kern ist ein Befund -- das Update ist nicht abgeschlossen.
+    # Die Datei bleibt in CORE_INJECTED; 13d soll sie weiter sehen.
+    ECHT=""; GEMISCHT=""; gem_fassung=""
+    while IFS= read -r f; do
+      [[ -n "$f" ]] || continue
+      rel="${f#"${REZ_PFAD}"/}"; treffer=""
+      while IFS=$'\t' read -r st st_ver st_alter; do
+        [[ -n "$st" && -f "${st}/${rel}" ]] || continue
+        grep -qxF "${st}/${rel}" <<<"${REZ_STAGING_AUSN:-}" && continue
+        cmp -s "$f" "${st}/${rel}" && { treffer="${st_ver:-?}"; break; }
+      done <<< "${REZ_STAGING_OK:-}"
+      if [[ -n "$treffer" ]]; then
+        GEMISCHT+="${f}  (= Fassung ${treffer} aus dem Staging)"$'\n'; gem_fassung="$treffer"
+      else
+        ECHT+="$f"$'\n'
+      fi
+    done <<< "$LISTE"
+    n_echt=$(printf '%s' "$ECHT" | grep -c . || true); n_echt="${n_echt:-0}"
+    n_gem=$(printf '%s' "$GEMISCHT" | grep -c . || true); n_gem="${n_gem:-0}"
+    if [[ "$n_echt" -gt 0 ]]; then
+      befund_melden wordpress kern crit "${REZ_KURZ}: ${n_echt} veränderte Core-Datei(en) — Injektion oder Manipulation" "$REZ_PFAD" web
+      code "$(printf '%s' "$ECHT" | head -30)"
+      evidence "wp_core_veraendert_$(echo "$REZ_KURZ" | tr '/.' '__')" "$ECHT"
+    fi
+    if [[ "$n_gem" -gt 0 ]]; then
+      befund_melden wordpress kern warn "${REZ_KURZ}: ${n_gem} Core-Datei(en) stammen aus Fassung ${gem_fassung} (liegengebliebenes Update-Staging) — das Update ist abgebrochen, der Kern gemischt; Update abschließen" "$REZ_PFAD" web
+      code "$(printf '%s' "$GEMISCHT" | head -30)"
+      evidence "wp_core_gemischt_$(echo "$REZ_KURZ" | tr '/.' '__')" "$GEMISCHT"
+    fi
     CORE_INJECTED+="$LISTE"$'\n'
   elif [[ -z "$CHK_ROH" ]]; then
     # KEINE AUSGABE HEISST NICHT "SAUBER".
@@ -703,7 +751,6 @@ rezept_kern() {
     printf '%s\n' "${REZ_PFAD}" \
       >> "${PRUEFSUMMEN_KERN_WHITELIST:-${RUN_DIR}/.pruefsummen_kern.txt}"
   fi
-  _wp_staging_pruefen
 }
 
 # ── Core-Update-Staging (#103) ────────────────────────────────
@@ -732,6 +779,9 @@ rezept_kern() {
 # Kern selbst zu durchlaufen.
 _wp_staging_pruefen() {
   local st ver alter roh rc chk n_mod n_sne liste owner
+  # Fuer #107: je Zeile "<staging>\t<fassung>\t<zeit>" der geprueften Stagings,
+  # und deren eigene Abweichungen -- gegen die darf nichts entlastet werden.
+  REZ_STAGING_OK=""; REZ_STAGING_AUSN=""
   [[ -d "${REZ_PFAD}/wp-content/upgrade" ]] || return 0
   owner=$(datei_meta "${REZ_PFAD}/wp-config.php" eigner)
   owner="${owner%%:*}"; owner="${owner:-root}"
@@ -752,10 +802,13 @@ _wp_staging_pruefen() {
       code "$(printf '%s\n' "$liste" | head -30)"
       evidence "wp_staging_veraendert_$(echo "$REZ_KURZ" | tr '/.' '__')" "$liste"
       CORE_INJECTED+="$liste"$'\n'
+      REZ_STAGING_AUSN+="$liste"$'\n'
+      REZ_STAGING_OK+="${st}"$'\t'"${ver:-?}"$'\t'"${alter:-}"$'\n'
       # Die Abweichungen stehen jetzt in CORE_INJECTED; der Rest des Stagings
       # ist damit genau die Menge, die verify-checksums bestaetigt hat.
       printf '%s\n' "$st" >> "${PRUEFSUMMEN_KERN_WHITELIST:-${RUN_DIR}/.pruefsummen_kern.txt}"
     elif [[ "$rc" -eq 0 && -n "$roh" ]]; then
+      REZ_STAGING_OK+="${st}"$'\t'"${ver:-?}"$'\t'"${alter:-}"$'\n'
       info "${REZ_KURZ}: Core-Update-Staging Fassung ${ver:-?} (${alter:-Zeit unbekannt}) unverändert gegen amtliche Prüfsummen — WordPress räumt es bei Erfolg weg; das Update ist vermutlich nicht abgeschlossen: ${st}"
       printf '%s\n' "$st" >> "${PRUEFSUMMEN_KERN_WHITELIST:-${RUN_DIR}/.pruefsummen_kern.txt}"
     else
