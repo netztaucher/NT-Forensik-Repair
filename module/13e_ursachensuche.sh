@@ -416,3 +416,147 @@ if [[ -n "$U_QUELLEN" ]]; then
 elif [[ -n "$U_TAB" ]]; then
   unklar "Kein auswertbares Zugriffsprotokoll neben den belasteten vhosts — die Reichweite der Quellen ist unbestimmt"
 fi
+
+# ============================================================
+h2 "13e.5 Einstieg über Anmeldedaten"
+# Der fuenfte Punkt aus #48, und der einzige, dessen Wert im NEGATIVBEFUND
+# liegt: laesst sich eine erfolgreiche Anmeldung im Zeitfenster der belasteten
+# Dateien ausschliessen, engt das den Einstieg auf die Anwendungsebene ein.
+# Im Anlassfall war genau das die Aussage -- kein Einbruch ueber Anmeldedaten,
+# beide Angreifernetze tauchen im auth.log nicht auf.
+#
+# WARUM DAS EIN EIGENER ABSCHNITT IST UND NICHT TEIL VON 3.2
+#
+# Abschnitt 3.2 zaehlt FEHLVERSUCHE ueber den ganzen Bestand. Hier geht es um
+# die andere Richtung und um ein Fenster: gab es im Zeitraum der belasteten
+# Dateien eine ERFOLGREICHE Anmeldung? Ohne das Fenster ist die Antwort
+# wertlos -- auf einem Server mit taeglicher Wartung ist "es gab erfolgreiche
+# Anmeldungen" immer wahr.
+#
+# WAS DIESER ABSCHNITT NICHT SAGT
+#
+# "Keine erfolgreiche Anmeldung gefunden" heisst nicht "niemand hat sich
+# angemeldet". Es heisst: nicht in diesem Protokoll, in diesem Fenster.
+# auth.log rotiert, komprimierte Teile wertet dieser Abschnitt nicht aus, und
+# ein Angreifer mit Rootrechten kann Zeilen entfernen. Deshalb wird die
+# Reichweite des Protokolls mit ausgewiesen -- dieselbe Regel wie in 13e.4.
+U_AUTH=""
+U_AUTHLOG=""
+# Pruefstand-Naht wie NT_DB_ATTRAPPE und NT_WF_ATTRAPPE: der Pruefbaum hat kein
+# /var/log. Ohne diese Naht waere von diesem Abschnitt nur der Ausfallzweig
+# gedeckt -- und ein Abschnitt, von dem nur der Ausfall geprueft ist, ist
+# ungeprueft.
+for _al in "${NT_AUTHLOG_ATTRAPPE:-}" /var/log/auth.log /var/log/secure; do
+  [[ -n "$_al" && -r "$_al" ]] && U_AUTHLOG="$_al" && break
+done
+
+if [[ -z "$U_TAB" ]]; then
+  : # ohne belastete Dateien gibt es kein Fenster — 13e.1 hat das gesagt
+elif [[ -z "$U_AUTHLOG" ]]; then
+  # KEIN "kein Einstieg ueber Anmeldedaten". Nicht lesbar ist nicht geprueft.
+  unklar "Kein lesbares Anmeldeprotokoll (/var/log/auth.log oder /var/log/secure) — ein Einstieg über Anmeldedaten ist damit WEDER belegt NOCH ausgeschlossen"
+else
+  # Das Fenster: vom aeltesten Schreibvorgang bis zum juengsten, mit einem Tag
+  # Vorlauf. Der Vorlauf ist Absicht -- wer sich anmeldet, schreibt nicht in
+  # derselben Sekunde.
+  _fenster_von=$(( U_ERST - 86400 ))
+  _fenster_bis="$U_LETZT"
+  # SYSLOG-ZEITSTEMPEL TRAGEN KEIN JAHR -- UND `date -d` GIBT ES AUF macOS NICHT.
+  #
+  # Der erste Entwurf filterte mit `date -d "$stempel" +%s`. Auf dem
+  # Arbeitsplatz schlug das bei JEDER Zeile fehl, alle landeten als
+  # "unlesbar" in der Ablage, und der Abschnitt meldete "keine erfolgreiche
+  # Anmeldung im Zeitfenster" -- eine Entwarnung aus einer Auswertung, die nie
+  # stattgefunden hat. Die Gegenprobe im Pruefbaum hat es sofort gezeigt.
+  # Dieselbe Falle wie beim nackten `timeout` in #70.
+  #
+  # Deshalb python3: es ist ohnehin Voraussetzung, und die Jahresfrage wird
+  # dort ausdruecklich entschieden statt dem Zufall ueberlassen. Ein
+  # Zeitstempel ohne Jahr wird auf das Jahr gelegt, in dem er in der
+  # Vergangenheit liegt -- ein Protokoll ueber den Jahreswechsel hinweg haette
+  # sonst Zeilen, die in der Zukunft stehen.
+  if ! werkzeug_da python3; then
+    unklar "python3 fehlt — das Anmeldeprotokoll ist nicht auswertbar; ein Einstieg über Anmeldedaten ist WEDER belegt NOCH ausgeschlossen"
+    return 0 2>/dev/null || U_AUTHLOG=""
+  fi
+  _auswertung=$(U_LOG="$U_AUTHLOG" U_VON="$_fenster_von" U_BIS="$_fenster_bis" python3 - <<'PY'
+import os, re, sys, time, datetime
+
+log = os.environ["U_LOG"]
+von = int(os.environ["U_VON"]); bis = int(os.environ["U_BIS"])
+muster = re.compile(r"Accepted (password|publickey|keyboard-interactive)|session opened for user")
+stempel = re.compile(r"^([A-Z][a-z]{2})\s+(\d{1,2})\s+(\d{2}):(\d{2}):(\d{2})")
+monate = {m: i + 1 for i, m in enumerate(
+    ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"])}
+jetzt = datetime.datetime.now()
+
+def epoche(zeile):
+    t = stempel.match(zeile)
+    if not t:
+        return None
+    mon, tag, std, minu, sek = t.groups()
+    if mon not in monate:
+        return None
+    for jahr in (jetzt.year, jetzt.year - 1):
+        try:
+            d = datetime.datetime(jahr, monate[mon], int(tag),
+                                  int(std), int(minu), int(sek))
+        except ValueError:
+            continue
+        if d <= jetzt + datetime.timedelta(days=1):
+            return int(time.mktime(d.timetuple()))
+    return None
+
+treffer = []; unlesbar = 0; erste = None
+try:
+    with open(log, encoding="utf-8", errors="replace") as fh:
+        for zeile in fh:
+            e = epoche(zeile)
+            if e is None:
+                if zeile.strip():
+                    unlesbar += 1
+                continue
+            if erste is None:
+                erste = e
+            if muster.search(zeile) and von <= e <= bis:
+                treffer.append(zeile.rstrip("\n"))
+except OSError:
+    print("FEHLER"); sys.exit(0)
+
+print("REICHT\t%s" % (erste if erste is not None else ""))
+print("UNLESBAR\t%d" % unlesbar)
+for z in treffer[-50:]:
+    print("TREFFER\t%s" % z)
+PY
+)
+  if printf '%s' "$_auswertung" | grep -q '^FEHLER'; then
+    unklar "Anmeldeprotokoll ${U_AUTHLOG} nicht lesbar — ein Einstieg über Anmeldedaten ist WEDER belegt NOCH ausgeschlossen"
+    _auswertung=""
+  fi
+  _treffer=$(printf '%s\n' "$_auswertung" | sed -n 's/^TREFFER\t//p')
+  _unlesbar=$(printf '%s\n' "$_auswertung" | sed -n 's/^UNLESBAR\t//p' | head -1)
+  _unlesbar="${_unlesbar:-0}"
+  _reicht_e=$(printf '%s\n' "$_auswertung" | sed -n 's/^REICHT\t//p' | head -1)
+  _n_treffer=$(printf '%s' "$_treffer" | grep -c . || true); _n_treffer="${_n_treffer:-0}"
+
+  U_AUTH="Protokoll: ${U_AUTHLOG}"$'\n'
+  [[ -n "$_reicht_e" ]] && U_AUTH+="Reicht zurueck bis: $(_u_epoche_str "$_reicht_e")"$'\n'
+  U_AUTH+="Fenster: $(_u_epoche_str "$_fenster_von") bis $(_u_epoche_str "$_fenster_bis")"$'\n'
+  [[ "$_unlesbar" -gt 0 ]] && U_AUTH+="${_unlesbar} Zeile(n) mit unlesbarem Zeitstempel — nicht bewertet"$'\n'
+  U_AUTH+=$'\n'"${_treffer:-(keine erfolgreiche Anmeldung im Fenster)}"
+
+  if [[ "$_n_treffer" -gt 0 ]]; then
+    warn "${_n_treffer} erfolgreiche Anmeldung(en) im Zeitfenster der belasteten Dateien — als Einstiegsweg zu prüfen"
+    code "$(printf '%s\n' "$_treffer" | head -20)"
+    evidence "ursache_anmeldungen" "$U_AUTH" kunde
+  elif [[ -n "$_reicht_e" && "$_reicht_e" -gt "$_fenster_von" ]]; then
+    # Das Protokoll beginnt NACH dem Fensteranfang: der Zeitraum ist gar nicht
+    # abgedeckt. Ein "keine Anmeldung gefunden" waere hier eine Entwarnung aus
+    # einer Suche, die den fraglichen Zeitraum nie gesehen hat.
+    unklar "Anmeldeprotokoll beginnt erst $(_u_epoche_str "$_reicht_e") und deckt den Zeitraum der belasteten Dateien nicht ab — ein Einstieg über Anmeldedaten ist NICHT ausgeschlossen"
+    evidence "ursache_anmeldungen" "$U_AUTH" kunde
+  else
+    ok "Keine erfolgreiche Anmeldung im Zeitfenster der belasteten Dateien (${U_AUTHLOG}, ab $(_u_epoche_str "$_reicht_e")) — der Einstieg lag damit nicht bei Anmeldedaten, soweit dieses Protokoll reicht"
+    evidence "ursache_anmeldungen" "$U_AUTH" kunde
+  fi
+fi

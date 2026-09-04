@@ -643,6 +643,11 @@ jobs:
           # "erklaert" nach "ungeklaert" wechseln -- sonst trennt die
           # Herkunftspruefung nicht, sie sortiert nur.
           gegenprobe "12r e2 Herkunft der Option"  NT_PRUEFSTAND_OHNE_OPTLESER=1
+          # #48. Mit einer erfolgreichen Anmeldung IM Zeitfenster muss 13e.5
+          # von der gruenen Zeile auf eine Warnung wechseln. Ohne diese Probe
+          # waere von dem Abschnitt nur der Negativbefund gedeckt -- und ein
+          # Abschnitt, dessen Positivfall ungeprueft ist, ist ungeprueft.
+          gegenprobe "13e.5 Anmeldung im Zeitfenster" NT_PRUEFSTAND_ANMELDUNG=1
           # 7.16. Ohne die Zerlegung steht der Funktionsname ausgeschrieben da —
           # dann darf die Regel NICHT mehr anschlagen. Die Textverkettung
           # daneben bleibt in beiden Fällen stumm; sie ist die Gegenprobe
