@@ -907,7 +907,36 @@ rezept_sonder() {
     local _sm _mt
     _sm=$(grep -iE '^[[:space:]]*Sitemap:' "${REZ_PFAD}/robots.txt" 2>/dev/null || true)
     _mt=$(datei_meta "${REZ_PFAD}/robots.txt" mtime 2>/dev/null || true)
-    if printf '%s' "$_sm" | grep -qE 'index\.php/'; then
+    # WELCHE FORM EINER SITEMAP-ZEILE IST AUFFAELLIG (#47) -- GEMESSEN
+    #
+    # Das Issue schlug vor: "robots.txt nennt eine Sitemap, zu der es keine
+    # Datei gibt" sei ein Ein-Zeilen-Test mit hoher Trennschaerfe. Am
+    # 04.09.2026 gegen 124 Installationen gehalten: von 48 Sitemap-Zeilen
+    # zeigen 47 auf eine Datei, die es NICHT gibt. Virtuelle Sitemaps sind der
+    # Normalfall -- WordPress selbst liefert /wp-sitemap.xml, Yoast und
+    # RankMath ihre eigenen. Der Test trennt nicht und ist deshalb nicht
+    # gebaut worden.
+    #
+    # "Viele Sitemap-Zeilen" trennt ebenso wenig: vier Instanzen haben sechs
+    # oder sieben, drei davon voellig legitim (Yoast-Satz von 2017 mit
+    # post-/page-/product-/category-sitemap, Google-Sitemap-Generator-Satz
+    # sitemap_1..5 von 2020).
+    #
+    # Was trennt, ist die FORM der Adresse. Auf 124 Installationen genau EINE
+    # mit dieser Machart:
+    #     ?sitemapindex.xml   ?sitemap878.xml   ?sitemap60.xml
+    #     search.php?sitemap74.xml
+    # Eine Abfragezeichenfolge als Sitemap-Adresse erzeugt kein bekanntes
+    # Plugin, eine .php-Route ausser index.php schon gar nicht. Zusammen mit
+    # der PATHINFO-Form aus #86 sind das drei Formen -- die Einstufung
+    # dahinter bleibt unveraendert: Signatur allein ist unklar, hochgestuft
+    # wird nur mit Beleg aus der Route.
+    local _form=""
+    if printf '%s' "$_sm" | grep -qE 'index\.php/'; then _form="PATHINFO"
+    elif printf '%s' "$_sm" | grep -qiE 'https?://[^[:space:]]*\?[^[:space:]]*sitemap'; then _form="ABFRAGE"
+    elif printf '%s' "$_sm" | grep -qiE 'https?://[^[:space:]]*/[^/[:space:]]+\.php\?'; then _form="FREMDE-ROUTE"
+    fi
+    if [[ -n "$_form" ]]; then
       # DIE SIGNATUR ALLEIN IST KEIN BEFUND (#86)
       #
       # Bis hierher meldete diese Zeile crit — "Doorway-Generator IN der
@@ -933,6 +962,9 @@ rezept_sonder() {
       # Beleg aus der Route selbst, und den gibt es nur mit --online.
       local _url _sm_datei _n_url _spam _kern
       _url=$(printf '%s' "$_sm" | grep -oiE 'https?://[^[:space:]]+index\.php/[^[:space:]]*' | head -1)
+      # Fuer die beiden neuen Formen steht die Adresse anders im Text.
+      [[ -n "$_url" ]] || _url=$(printf '%s' "$_sm" \
+        | grep -oiE 'https?://[^[:space:]]*(\?[^[:space:]]*sitemap[^[:space:]]*|/[^/[:space:]]+\.php\?[^[:space:]]*)' | head -1)
       _kern=0; _n_url=0; _spam=0
       if [[ "${WANT_ONLINE:-0}" == "1" && -n "$_url" ]]; then
         _sm_datei=$(mktemp "${RUN_DIR}/.robots_sitemap.XXXXXX")
@@ -947,13 +979,13 @@ rezept_sonder() {
       fi
       if [[ "${_spam:-0}" -gt 0 || "${_n_url:-0}" -gt "${DOORWAY_URL_SCHWELLE:-500}" ]]; then
         befund_melden wordpress schadcode crit \
-          "${REZ_KURZ}: Sitemap über index.php/ liefert ${_n_url} URL-Einträge und ${_spam} Spam-Treffer — Doorway-Generator belegt${_mt:+ (robots.txt vom ${_mt})}" \
+          "${REZ_KURZ}: Sitemap-Adresse der Form ${_form} liefert ${_n_url} URL-Einträge und ${_spam} Spam-Treffer — Doorway-Generator belegt${_mt:+ (robots.txt vom ${_mt})}" \
           "${REZ_PFAD}/robots.txt" web
       elif [[ "${_kern:-0}" -eq 1 ]]; then
-        info "${REZ_KURZ}: robots.txt nennt eine Sitemap über index.php/ — abgerufen: WordPress-Core-Sitemap mit ${_n_url} Einträgen, kein Doorway"
+        info "${REZ_KURZ}: robots.txt nennt eine Sitemap der Form ${_form} — abgerufen: WordPress-Core-Sitemap mit ${_n_url} Einträgen, kein Doorway"
       else
         befund_melden wordpress schadcode unklar \
-          "${REZ_KURZ}: robots.txt verweist auf eine Sitemap über index.php/ — Doorway-Muster, aber nicht belegt: Sitemap-Route und Datenbank prüfen${_mt:+ (robots.txt vom ${_mt})}" \
+          "${REZ_KURZ}: robots.txt verweist auf eine Sitemap der Form ${_form} — Doorway-Muster, aber nicht belegt: Sitemap-Route und Datenbank prüfen${_mt:+ (robots.txt vom ${_mt})}" \
           "${REZ_PFAD}/robots.txt" web
       fi
       code "$_sm"

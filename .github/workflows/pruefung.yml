@@ -408,6 +408,21 @@ jobs:
                   fehler.append('_transient_-Option wurde nicht als Zwischenspeicher erklärt (#70)')
               if not any('widget_custom_html' in z and 'UNGEKL' in z for z in zeilen):
                   fehler.append('die eingebaute Lader-Option blieb nicht ungeklärt (#70)')
+          # Doorway-Sitemapform (#47): gemessen am 04.09. auf 124
+          # Installationen. "Keine Datei" trennt nicht (47 von 48 Zeilen
+          # zeigen ins Virtuelle), "viele Zeilen" auch nicht (drei legitime
+          # Yoast-/GSG-Sätze). Die FORM trennt: Abfragezeichenfolge oder
+          # fremde .php-Route. Beide Richtungen müssen stehen.
+          sd = [b for b in d.get('befunde', {}).get('wordpress', {}).get('schadcode', [])
+                if 'Sitemap' in b.get('text', '')]
+          formen = [b['text'] for b in sd]
+          print(f"Sitemapform: {len(sd)} Befund(e) — {[t[:70] for t in formen]}")
+          if not any('ABFRAGE' in t and 'kunde-vier' in t for t in formen):
+              fehler.append('die gemessene Doorway-Form (Abfragezeichenfolge) wird nicht gemeldet (#47)')
+          if any('kunde-eins' in t for t in formen):
+              fehler.append('der legitime Yoast-Sitemap-Satz wurde gemeldet — die Form trennt nicht (#47)')
+          if any('kunde-drei' in t for t in formen):
+              fehler.append('die virtuelle Core-Sitemap wurde gemeldet — die Form trennt nicht (#47)')
           # 7.2 — die Abschichtung darf den Ort nicht mit dem Format
           # verwechseln (#65). Die getarnte Shell LIEGT im WPML-Cache, sieht
           # aber nicht wie ein Twig-Template aus: sie gehört in die
