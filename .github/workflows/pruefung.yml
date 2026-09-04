@@ -359,6 +359,21 @@ jobs:
                   fehler.append('fpdi unter lib/packages/ gehört in die Sichtung, nicht in die kritische Stufe (#105)')
               if not eig:
                   fehler.append('Eigencode unter lib/ wurde abgeschichtet — lib/ ist kein Bibliotheksname (#105)')
+          # Gemischter Kern (#107): eine Core-Abweichung, die bytegleich im
+          # bestätigten Staging liegt, ist die Datei der neuen Fassung nach
+          # einem abgebrochenen Update — warn, nicht crit. Eine ohne
+          # Staging-Kopie (load.php) bleibt crit. Beide in Kunde 2.
+          kern = d.get('befunde', {}).get('wordpress', {}).get('kern', [])
+          gem = [b for b in kern if 'kunde-zwei' in b.get('text', '') and 'gemischt' in b.get('text', '')]
+          ver = [b for b in kern if 'kunde-zwei' in b.get('text', '') and 'veränderte Core-Datei' in b.get('text', '')]
+          print(f"gemischter Kern: warn {len(gem)} (schwere {[g['schwere'] for g in gem]}), "
+                f"echte Abweichung {len(ver)} (schwere {[v['schwere'] for v in ver]})")
+          if not gem or any(g['schwere'] != 'warn' for g in gem):
+              fehler.append('Datei aus dem bestätigten Staging wurde nicht als gemischter Kern (warn) eingeordnet (#107)')
+          if not ver or any(v['schwere'] != 'crit' for v in ver):
+              fehler.append('echte Core-Abweichung ohne Staging-Kopie ist nicht mehr crit (#107)')
+          if not any('1 veränderte' in v.get('text', '') for v in ver):
+              fehler.append('die Zahl der echten Abweichungen muss 1 sein — die gemischte Datei darf nicht mitgezählt werden (#107)')
           # 7.2 — die Abschichtung darf den Ort nicht mit dem Format
           # verwechseln (#65). Die getarnte Shell LIEGT im WPML-Cache, sieht
           # aber nicht wie ein Twig-Template aus: sie gehört in die
