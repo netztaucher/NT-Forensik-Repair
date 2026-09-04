@@ -1977,6 +1977,13 @@ MARKE
     ABWEICHUNG=0
     for f in "$REF_DIR"/*; do
       n="$(basename "$f")"
+      # UNVOLLSTAENDIG.txt ist eine Aussage UEBER die Referenz, keine Ausgabe
+      # des Laufs (#67). Ohne diese Zeile meldete jeder Vergleich gegen eine
+      # blind aufgenommene Referenz "Datei fehlt im neuen Lauf" und brach ab --
+      # eine Geraeuschquelle, die der Marker selbst erzeugt hat und die genau
+      # den Blick verstellt, fuer den der Vergleich da ist. Am Tag der
+      # Einfuehrung aufgefallen, beim ersten echten Vergleich danach.
+      [[ "$n" == "UNVOLLSTAENDIG.txt" ]] && continue
       if [[ ! -f "${NEU}/${n}" ]]; then
         fail "Datei fehlt im neuen Lauf: ${n}"
       fi
