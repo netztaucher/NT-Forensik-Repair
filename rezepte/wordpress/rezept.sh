@@ -751,6 +751,56 @@ rezept_kern() {
     printf '%s\n' "${REZ_PFAD}" \
       >> "${PRUEFSUMMEN_KERN_WHITELIST:-${RUN_DIR}/.pruefsummen_kern.txt}"
   fi
+  _wp_kern_schreibschutz
+}
+
+# ── Schreibgeschuetzte Core-Dateien (#108) ────────────────────
+#
+# Gemessen am 04.09.2026 auf zehn Instanzen eines vhosts: wp-load.php,
+# wp-blog-header.php, wp-includes/template-loader.php, plugin.php,
+# functions.php und cron.php auf 0444 -- die Bootstrap-Kette, gesetzt am
+# 07.08. zwischen 13:21 und 13:39, dem Tag der Dropper-Welle. Eigentuemer
+# richtig, kein Immutable-Flag, Inhalt laut verify-checksums sauber. Kein
+# Abschnitt sah es: verify-checksums prueft Inhalt, 7.5 prueft chattr +i.
+#
+# Sichtbar wurde es einen Monat spaeter, als das Core-Auto-Update daran
+# scheiterte: PHP kann eine 0444-Datei nicht ueberschreiben, auch nicht als
+# Eigentuemer. Die Instanzen standen deshalb am 28.08. noch auf einer
+# Fassung, fuer die das Update laengst bereitlag. Genau dieses Muster --
+# Bootstrap-Kette schreibschuetzen -- ist der Griff, mit dem sich
+# eingeschleuster Code vor dem naechsten Update schuetzt.
+#
+# warn, nicht crit: die Dateien sind meist sauber, die Sofortmassnahmen-Liste
+# passt nicht. Aber kein info: die Instanz kann sich nicht mehr selbst
+# aktualisieren. Keine ok-Zeile im Normalfall -- find kann nicht ausfallen,
+# und eine Zeile je Instanz waere Rauschen. wp-config.php bleibt aussen vor:
+# 0440 dort ist Haertung (#85 prueft sie in die andere Richtung).
+_wp_kern_schreibschutz() {
+  local liste n f e min=0 max=0 spanne zeitsatz
+  liste=$(find "${REZ_PFAD}/wp-includes" "${REZ_PFAD}/wp-admin" "${REZ_PFAD}"/*.php \
+               -type f ! -perm -u+w ! -name wp-config.php 2>/dev/null | LC_ALL=C sort -u)
+  n=$(printf '%s' "$liste" | grep -c . || true); n="${n:-0}"
+  [[ "$n" -gt 0 ]] || return 0
+  while IFS= read -r f; do
+    [[ -n "$f" ]] || continue
+    e=$(datei_epoche "$f" mtime)
+    [[ "$min" -eq 0 || "$e" -lt "$min" ]] && min="$e"
+    [[ "$e" -gt "$max" ]] && max="$e"
+  done <<< "$liste"
+  spanne=$((max - min))
+  # Zeitliche Haeufung wie in 7.14: liegen alle Treffer innerhalb weniger
+  # Minuten, ist das EIN Vorgang, kein Zufall -- und der Zeitpunkt gehoert in
+  # den Befund, weil er die Frage "seit wann?" beantwortet.
+  if [[ "$spanne" -le "${SCHREIBSCHUTZ_VORGANG_SEK:-300}" ]]; then
+    zeitsatz="in einem Vorgang gesetzt am $(datei_meta "$(printf '%s\n' "$liste" | head -1)" mtime)"
+  else
+    zeitsatz="gesetzt zwischen $(date -r "$min" '+%Y-%m-%d %H:%M' 2>/dev/null || date -d "@$min" '+%Y-%m-%d %H:%M') und $(date -r "$max" '+%Y-%m-%d %H:%M' 2>/dev/null || date -d "@$max" '+%Y-%m-%d %H:%M')"
+  fi
+  befund_melden wordpress kern warn \
+    "${REZ_KURZ}: ${n} Core-Datei(en) für den Eigentümer schreibgeschützt (${zeitsatz}) — Core-Updates scheitern daran; das Muster schützt eingeschleusten Code vor dem nächsten Update" "$REZ_PFAD" web
+  code "$(printf '%s\n' "$liste" | head -30)"
+  evidence "wp_kern_schreibschutz_$(echo "$REZ_KURZ" | tr '/.' '__')" \
+    "$(while IFS= read -r f; do [[ -n "$f" ]] && printf '%s\t%s\t%s\n' "$(datei_meta "$f" rechte)" "$(datei_meta "$f" mtime)" "$f"; done <<< "$liste")"
 }
 
 # ── Core-Update-Staging (#103) ────────────────────────────────

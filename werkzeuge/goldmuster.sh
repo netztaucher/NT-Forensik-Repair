@@ -1209,6 +1209,27 @@ PHP
   cp "${k2}/wp-includes/pruefstand-gemischt.php" \
      "${k2}/wp-content/upgrade/wp_pruefstand2/wordpress/wp-includes/pruefstand-gemischt.php"
 
+  # ── Schreibgeschuetzte Bootstrap-Kette (#108) ─────────────────────────
+  #
+  # Gemessen am 04.09.2026 auf zehn Instanzen eines vhosts: wp-load.php,
+  # wp-blog-header.php, template-loader.php, plugin.php, functions.php,
+  # cron.php auf 0444, gesetzt am Tag der Dropper-Welle. Inhalt sauber, kein
+  # Abschnitt sah es -- bis das Core-Update daran scheiterte.
+  #
+  # Kunde 3 (sauberer Kern) bekommt drei Dateien auf 0444 -> warn mit
+  # Zeitpunkt. Alle anderen Instanzen bleiben 0644 -> KEIN Befund. Und
+  # wp-config.php auf 0440 darf nie zaehlen: das ist Haertung (#85).
+  #
+  # NT_PRUEFSTAND_OHNE_SCHREIBSCHUTZ=1 laesst die Bits weg. Der Vergleich MUSS
+  # das bemerken -- sonst ist nicht belegt, dass die Pruefung ueberhaupt greift.
+  printf '<?php\n// Pruefstand: Bootstrap\n' > "${k3}/wp-load.php"
+  printf '<?php\n// Pruefstand: Bootstrap\n' > "${k3}/wp-blog-header.php"
+  printf '<?php\n// Pruefstand: Bootstrap\n' > "${k3}/wp-includes/template-loader.php"
+  chmod 440 "${k3}/wp-config.php"
+  if [[ "${NT_PRUEFSTAND_OHNE_SCHREIBSCHUTZ:-0}" != "1" ]]; then
+    chmod 444 "${k3}/wp-load.php" "${k3}/wp-blog-header.php" "${k3}/wp-includes/template-loader.php"
+  fi
+
   # ── Zerlegte Funktionsnamen (7.16) ───────────────────────────────────
   # Die Machart, die auf kundenserver42 fuenf Verfahren ueberstanden hat:
   # der Angreifer schreibt nicht `fopen`, sondern "f"."o"."p"."e"."n".
