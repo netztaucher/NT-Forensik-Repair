@@ -387,6 +387,27 @@ jobs:
               fehler.append('Schreibschutz-Zahl bei Kunde 3 muss 3 sein — wp-config.php (0440) darf nicht mitzählen (#108)')
           if len(ss) != len(ss3):
               fehler.append('Schreibschutz-Befund auf einer Instanz ohne 0444-Dateien (#108)')
+          # e2-Herkunft (#70): die Rangfolge muss die ungeklärten oben haben.
+          # Gemessen am 04.09.: 12 von 12 Fehlalarmen auf 101 Installationen
+          # sind über die Herkunft erklärbar, 2 blieben ungeklärt — und genau
+          # so sieht eine Option aus, die ein entferntes Plugin hinterlässt.
+          import re as _re
+          bel = [p for p in glob.glob('pruefstand/referenz/belege_dateiliste.txt')]
+          rep = open('pruefstand/referenz/betreiber_technik_bericht.md', encoding='utf-8').read()
+          blk = _re.search(r'Option\(en\) mit PHP-Merkmal.*?```\n(.*?)```', rep, _re.S)
+          zeilen = [z for z in (blk.group(1).splitlines() if blk else []) if z.strip()]
+          print(f"e2-Herkunft: {len(zeilen)} Zeilen, ungeklärt {sum('UNGEKL' in z for z in zeilen)}")
+          if not zeilen:
+              fehler.append('e2 erzeugt keine Rangfolge — die Herkunftsprüfung ist ungeprüft (#70)')
+          else:
+              if 'UNGEKL' not in zeilen[0]:
+                  fehler.append('e2-Rangfolge sortiert die ungeklärten nicht nach oben (#70)')
+              if not any('genesis-simple-hooks' in z for z in zeilen):
+                  fehler.append('simplehooks-settings wurde nicht über seinen Leser erklärt (#70)')
+              if not any('_transient_' in z and 'Zwischenspeicher' in z for z in zeilen):
+                  fehler.append('_transient_-Option wurde nicht als Zwischenspeicher erklärt (#70)')
+              if not any('widget_custom_html' in z and 'UNGEKL' in z for z in zeilen):
+                  fehler.append('die eingebaute Lader-Option blieb nicht ungeklärt (#70)')
           # 7.2 — die Abschichtung darf den Ort nicht mit dem Format
           # verwechseln (#65). Die getarnte Shell LIEGT im WPML-Cache, sieht
           # aber nicht wie ein Twig-Template aus: sie gehört in die
@@ -573,6 +594,10 @@ jobs:
           # faellt der Schreibschutz-Befund weg -- der Vergleich MUSS das
           # bemerken.
           gegenprobe "12r Schreibschutz auf Core-Dateien" NT_PRUEFSTAND_OHNE_SCHREIBSCHUTZ=1
+          # #70. Ohne den Leser auf der Platte muss simplehooks-settings von
+          # "erklaert" nach "ungeklaert" wechseln -- sonst trennt die
+          # Herkunftspruefung nicht, sie sortiert nur.
+          gegenprobe "12r e2 Herkunft der Option"  NT_PRUEFSTAND_OHNE_OPTLESER=1
           # 7.16. Ohne die Zerlegung steht der Funktionsname ausgeschrieben da —
           # dann darf die Regel NICHT mehr anschlagen. Die Textverkettung
           # daneben bleibt in beiden Fällen stumm; sie ist die Gegenprobe

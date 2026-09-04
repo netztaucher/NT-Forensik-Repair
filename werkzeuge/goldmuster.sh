@@ -387,6 +387,16 @@ db_attrappe_bauen() {   # <zielverzeichnis>
     {
       printf 'widget_custom_html\t<?php\t118\t…function(){ include ABSPATH."wp-content/uploads/.q"; }\n'
       printf 'simplehooks-settings\t<?php\t9184\ta:57:{s:7:"wp_head";…<?php echo do_shortcode("[x]"); ?>…\n'
+      # #70: die HERKUNFT trennt, nicht das Muster. Drei Lagen:
+      #   simplehooks-settings  -> ein Leser liegt auf der Platte (unten
+      #                            angelegt) -> erklaert
+      #   _transient_feed_x     -> Zwischenspeicher, per Name erklaert
+      #   sm_main_show_1        -> KEIN Leser, KEIN Plugin -> ungeklaert,
+      #                            muss in der Rangfolge oben stehen
+      # Der letzte ist der auf dem echten Server gemessene Rest: eine Option,
+      # die ein entferntes Plugin hinterlassen hat.
+      printf '_transient_feed_1ba599ab\t<?php\t146037\t…<?php echo "feed"; ?>…\n'
+      printf 'sm_main_show_1\t<?php\t12367\t…<?php echo $slider_markup; ?>…\n'
     } > "${Z}/optionen_php.tsv"
     # e3: die Wortliste der Kampagne, weit ueber der Schwelle. Dazu eine
     # legitime grosse Option — die Rangfolge muss beide zeigen, denn sie ist
@@ -1208,6 +1218,22 @@ PHP
          > "${k2}/wp-includes/pruefstand-gemischt.php"
   cp "${k2}/wp-includes/pruefstand-gemischt.php" \
      "${k2}/wp-content/upgrade/wp_pruefstand2/wordpress/wp-includes/pruefstand-gemischt.php"
+
+  # ── Leser fuer die e2-Herkunftspruefung (#70) ─────────────────────────
+  #
+  # Ohne eine Datei, die den Optionsnamen liest, ist die Herkunftspruefung
+  # nicht messbar: alle drei Fixture-Optionen waeren "ungeklaert" und der
+  # Test bestuende auch dann, wenn die Pruefung gar nicht trennt.
+  # Genesis Simple Hooks fuehrt seinen Wert wirklich aus (eval("?>$v")) --
+  # deshalb steht der eval-Aufruf hier mit drin: er darf NICHT belasten.
+  # NT_PRUEFSTAND_OHNE_OPTLESER=1 laesst den Leser weg. Dann MUSS
+  # simplehooks-settings ebenfalls "ungeklaert" werden -- sonst ist nicht
+  # belegt, dass die Herkunftspruefung ueberhaupt trennt.
+  if [[ "${NT_PRUEFSTAND_OHNE_OPTLESER:-0}" != "1" ]]; then
+    mkdir -p "${k2}/wp-content/plugins/genesis-simple-hooks/includes"
+    printf '<?php\n// Pruefstand: liest und fuehrt die Option aus -- legitim\n$v = get_option( %ssimplehooks-settings%s );\neval( "?>$v" );\n' \
+           "'" "'" > "${k2}/wp-content/plugins/genesis-simple-hooks/includes/class-genesis-simple-hooks.php"
+  fi
 
   # ── Schreibgeschuetzte Bootstrap-Kette (#108) ─────────────────────────
   #
