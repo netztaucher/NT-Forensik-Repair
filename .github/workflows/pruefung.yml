@@ -162,6 +162,13 @@ jobs:
         # Dazu: der Schlüssel darf nie in der Fehlerausgabe stehen.
         run: bash werkzeuge/lizenzschluessel_selbsttest.sh
 
+      - name: Selbsttest der Zerlegte-Funktionsnamen-Erkennung (7.16)
+        # Beide Zerlegungsarten muessen treffen (Einzelzeichen UND variabel
+        # lange Stuecke, OVA-Kampagne krusty 05.09.); die legitimen Faelle, die
+        # Name-/Primitiv-Filter faelschlich trafen (Text_Diff, Smarty, WPForms),
+        # duerfen NICHT treffen. Gemessen: 734 statt 151 Shells, 0 Fehlalarme.
+        run: bash werkzeuge/zerlegte_selbsttest.sh
+
       - name: Selbsttest der Doorway-Einstufung (#86)
         # Beide Richtungen: die Core-Sitemap entlastet, ein echter Doorway
         # (viele URLs oder Spam-Muster) bleibt crit. Und ohne Abruf darf nie

@@ -625,11 +625,30 @@ ZEITSTEMPEL_ZUSATZ_SEK=2592000     # 30 Tage
 ZEITSTEMPEL_ALLEIN_SEK=7776000     # 90 Tage
 
 # ── Zerlegte Funktionsnamen (7.16) ───────────────────────────
-# Drei oder mehr einzeln gequotete Zeichen, per Punkt verkettet:
-#   $o="f"."o"."p"."e"."n";
+# Drei oder mehr gequotete STUECKE, per Punkt verkettet:
+#   $o="f"."o"."p"."e"."n";            (Einzelzeichen)
+#   $x='s'.'tr'.'_re'.'place';         (variabel lange Stuecke)
 # Zur Laufzeit ein gewoehnlicher Funktionsname, fuer jede Signatur ueber
-# Funktionsnamen unsichtbar. Legitimer Code tut das nicht — gemessen auf
-# 6,4 Mio Pfaden: 5 Treffer, 0 Fehlalarme.
+# Funktionsnamen unsichtbar. Legitimer Code tut das nicht.
+#
+# ERWEITERT 05.09.2026 (krusty-Vorfall). Die alte Fassung verlangte drei
+# EINZELZEICHEN am Stueck — ([\"'][A-Za-z][\"']\.){3,}. Die OVA-Kampagne
+# zerlegte aber in verschieden lange Brocken ('s'.'tr'.'_re'.'place'), und
+# darin steht nur EIN Einzelzeichen hintereinander. Folge: von 1.131
+# quarantaenierten Shells fand die alte Regex nur 151 (13 %).
+#
+# Gemessen mit der neuen Regel [A-Za-z0-9_]{1,8} je Stueck, ueber ALLE vhosts
+# des Servers:
+#   Positiv:  734 von 1.131 Shells (5x mehr; der Rest sind Nicht-
+#             Konkatenations-Familien -- Upload/Rename/Leafmailer, nicht 7.16)
+#   Fehlalarm: 0 im bereinigten Baum. Die 8 Live-Treffer waren AUSNAHMSLOS
+#             echte injizierte Backdoors (wp-login.php, functions.php, db.php).
+#   Gegenprobe: legitime Faelle, die andere Filter faelschlich trafen, matchen
+#             NICHT -- PEAR Text_Diff (shell.php), Smarty function.eval.php,
+#             WPForms shell.php-Template.
+# Damit bleibt die 7.16-Grundregel gewahrt: die Machart allein traegt, keine
+# Orts- oder Namensbeschraenkung noetig -- 0 Fehlalarme auch erweitert.
+#
 # Bewusst ERE und nicht PCRE: dieser Abschnitt soll auch dort laufen, wo
 # grep kein -P kann (#67).
 #
@@ -640,7 +659,7 @@ ZEITSTEMPEL_ALLEIN_SEK=7776000     # 90 Tage
 # geworden. Beim Bauen genau so passiert.
 if [[ -z "${ZERLEGT_REGEX:-}" ]]; then
   _zq="[\"']"                       # ein Anfuehrungszeichen, beide Sorten
-  ZERLEGT_REGEX="(${_zq}[A-Za-z]${_zq}\\.){3,}"
+  ZERLEGT_REGEX="(${_zq}[A-Za-z0-9_]{1,8}${_zq}\\.){3,}"
   unset _zq
 fi
 
