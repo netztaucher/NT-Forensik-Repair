@@ -1959,6 +1959,7 @@ wordpress	4.7.0	1	4.7.33	1	4.7.34		5.5		https://www.wordfence.com/threat-intel/v
 wordpress	4.7.0	1	4.7.33	1	4.7.34		5.8		https://www.wordfence.com/threat-intel/vulnerabilities/id/cddbb0f8-fc73-46d7-80af-edb69227084f?source=api-prod
 wordpress	4.7.0	1	4.7.33	1	4.7.34		6.4		https://www.wordfence.com/threat-intel/vulnerabilities/id/5faaf7d1-2012-42d5-affa-a5ff3388d25a?source=api-prod
 wordpress	4.7.0	1	4.7.33	1	4.7.34	CVE-2026-64638	6.1		https://www.wordfence.com/threat-intel/vulnerabilities/id/278da117-fe04-45d6-86d4-e71fe6536032?source=api-prod
+wordpress	4.7.0	1	4.7.34	1	4.7.35	CVE-2026-65640	8.8		https://www.wordfence.com/threat-intel/vulnerabilities/id/3f6b435b-d8b4-434b-8cac-cc3adbc437eb?source=api-prod
 wordpress	4.8	1	4.8.1	1	3.7.22	CVE-2017-14718	6.4		https://www.wordfence.com/threat-intel/vulnerabilities/id/fe1301d9-738b-485f-b8db-c23c16e4f99d?source=api-prod
 wordpress	4.8	1	4.8.1	1	3.7.22	CVE-2017-14719	4.3		https://www.wordfence.com/threat-intel/vulnerabilities/id/8be739cd-e594-41a5-85a4-9cf7d3436953?source=api-prod
 wordpress	4.8	1	4.8.1	1	3.7.22	CVE-2017-14720	6.4		https://www.wordfence.com/threat-intel/vulnerabilities/id/ca4824fb-192a-499d-bf92-aa59410d8d4a?source=api-prod
@@ -2072,6 +2073,7 @@ wordpress	4.8.0	1	4.8.28	1	4.7.34		5.5		https://www.wordfence.com/threat-intel/v
 wordpress	4.8.0	1	4.8.28	1	4.7.34		5.8		https://www.wordfence.com/threat-intel/vulnerabilities/id/cddbb0f8-fc73-46d7-80af-edb69227084f?source=api-prod
 wordpress	4.8.0	1	4.8.28	1	4.7.34		6.4		https://www.wordfence.com/threat-intel/vulnerabilities/id/5faaf7d1-2012-42d5-affa-a5ff3388d25a?source=api-prod
 wordpress	4.8.0	1	4.8.28	1	4.7.34	CVE-2026-64638	6.1		https://www.wordfence.com/threat-intel/vulnerabilities/id/278da117-fe04-45d6-86d4-e71fe6536032?source=api-prod
+wordpress	4.8.0	1	4.8.29	1	4.7.35	CVE-2026-65640	8.8		https://www.wordfence.com/threat-intel/vulnerabilities/id/3f6b435b-d8b4-434b-8cac-cc3adbc437eb?source=api-prod
 wordpress	4.9	1	4.9	1	3.7.24	CVE-2017-17091	5.4		https://www.wordfence.com/threat-intel/vulnerabilities/id/76516f23-487f-48f6-82c0-88df651ddc65?source=api-prod
 wordpress	4.9	1	4.9	1	3.7.24	CVE-2017-17092	6.4		https://www.wordfence.com/threat-intel/vulnerabilities/id/e5252b2f-c1a1-4fec-abaf-ad234affdcfb?source=api-prod
 wordpress	4.9	1	4.9	1	3.7.24	CVE-2017-17093	6.4		https://www.wordfence.com/threat-intel/vulnerabilities/id/aa8a095b-abda-4a12-a4b9-246cda41fb4e?source=api-prod
@@ -2175,6 +2177,7 @@ wordpress	4.9.0	1	4.9.29	1	4.7.34		5.5		https://www.wordfence.com/threat-intel/v
 wordpress	4.9.0	1	4.9.29	1	4.7.34		5.8		https://www.wordfence.com/threat-intel/vulnerabilities/id/cddbb0f8-fc73-46d7-80af-edb69227084f?source=api-prod
 wordpress	4.9.0	1	4.9.29	1	4.7.34		6.4		https://www.wordfence.com/threat-intel/vulnerabilities/id/5faaf7d1-2012-42d5-affa-a5ff3388d25a?source=api-prod
 wordpress	4.9.0	1	4.9.29	1	4.7.34	CVE-2026-64638	6.1		https://www.wordfence.com/threat-intel/vulnerabilities/id/278da117-fe04-45d6-86d4-e71fe6536032?source=api-prod
+wordpress	4.9.0	1	4.9.30	1	4.7.35	CVE-2026-65640	8.8		https://www.wordfence.com/threat-intel/vulnerabilities/id/3f6b435b-d8b4-434b-8cac-cc3adbc437eb?source=api-prod
 wordpress	5.0	1	5.0	1	3.7.28	CVE-2018-1000773	7.5		https://www.wordfence.com/threat-intel/vulnerabilities/id/1f846ffa-0dfa-4549-845a-7884a390462a?source=api-prod
 wordpress	5.0	1	5.0	1	3.7.28	CVE-2018-20147	7.7		https://www.wordfence.com/threat-intel/vulnerabilities/id/7d61b06b-6709-4f60-8324-53775dbb3c04?source=api-prod
 wordpress	5.0	1	5.0	1	3.7.28	CVE-2018-20148	8.8		https://www.wordfence.com/threat-intel/vulnerabilities/id/29778d95-4859-4383-91c7-15e7907b825c?source=api-prod
@@ -2268,6 +2271,7 @@ wordpress	5.0.0	1	5.0.25	1	4.7.34		5.5		https://www.wordfence.com/threat-intel/v
 wordpress	5.0.0	1	5.0.25	1	4.7.34		5.8		https://www.wordfence.com/threat-intel/vulnerabilities/id/cddbb0f8-fc73-46d7-80af-edb69227084f?source=api-prod
 wordpress	5.0.0	1	5.0.25	1	4.7.34		6.4		https://www.wordfence.com/threat-intel/vulnerabilities/id/5faaf7d1-2012-42d5-affa-a5ff3388d25a?source=api-prod
 wordpress	5.0.0	1	5.0.25	1	4.7.34	CVE-2026-64638	6.1		https://www.wordfence.com/threat-intel/vulnerabilities/id/278da117-fe04-45d6-86d4-e71fe6536032?source=api-prod
+wordpress	5.0.0	1	5.0.26	1	4.7.35	CVE-2026-65640	8.8		https://www.wordfence.com/threat-intel/vulnerabilities/id/3f6b435b-d8b4-434b-8cac-cc3adbc437eb?source=api-prod
 wordpress	5.1	1	5.1	1	3.7.29	CVE-2019-9787	9.6		https://www.wordfence.com/threat-intel/vulnerabilities/id/a50531df-e876-463c-a06b-16b2f30aeefe?source=api-prod
 wordpress	5.1	1	5.1.1	1	3.7.30	CVE-2019-16217	6.4		https://www.wordfence.com/threat-intel/vulnerabilities/id/2be089a0-d4d5-4d64-8fb7-8c42286ebbcd?source=api-prod
 wordpress	5.1	1	5.1.1	1	3.7.30	CVE-2019-16218	7.2		https://www.wordfence.com/threat-intel/vulnerabilities/id/bfcbf652-6cb4-4f3e-9032-ad262e8c8480?source=api-prod
@@ -2352,6 +2356,7 @@ wordpress	5.1.0	1	5.1.22	1	4.7.34		5.5		https://www.wordfence.com/threat-intel/v
 wordpress	5.1.0	1	5.1.22	1	4.7.34		5.8		https://www.wordfence.com/threat-intel/vulnerabilities/id/cddbb0f8-fc73-46d7-80af-edb69227084f?source=api-prod
 wordpress	5.1.0	1	5.1.22	1	4.7.34		6.4		https://www.wordfence.com/threat-intel/vulnerabilities/id/5faaf7d1-2012-42d5-affa-a5ff3388d25a?source=api-prod
 wordpress	5.1.0	1	5.1.22	1	4.7.34	CVE-2026-64638	6.1		https://www.wordfence.com/threat-intel/vulnerabilities/id/278da117-fe04-45d6-86d4-e71fe6536032?source=api-prod
+wordpress	5.1.0	1	5.1.23	1	4.7.35	CVE-2026-65640	8.8		https://www.wordfence.com/threat-intel/vulnerabilities/id/3f6b435b-d8b4-434b-8cac-cc3adbc437eb?source=api-prod
 wordpress	5.2	1	5.2.10	0	4.7.20	CVE-2021-29447	7.1		https://www.wordfence.com/threat-intel/vulnerabilities/id/9df45c8e-c040-4031-9c51-4c43d12f08b0?source=api-prod
 wordpress	5.2	1	5.2.10	0	4.7.20	CVE-2021-29450	6.5		https://www.wordfence.com/threat-intel/vulnerabilities/id/a57426d2-0ca4-405b-bfbf-0685e2c744a0?source=api-prod
 wordpress	5.2	1	5.2.14	0	3.7.37	CVE-2022-21661	8		https://www.wordfence.com/threat-intel/vulnerabilities/id/b0ef885f-fd62-4513-83cb-65381b99a172?source=api-prod
@@ -2435,6 +2440,7 @@ wordpress	5.2.0	1	5.2.24	1	4.7.34		5.5		https://www.wordfence.com/threat-intel/v
 wordpress	5.2.0	1	5.2.24	1	4.7.34		5.8		https://www.wordfence.com/threat-intel/vulnerabilities/id/cddbb0f8-fc73-46d7-80af-edb69227084f?source=api-prod
 wordpress	5.2.0	1	5.2.24	1	4.7.34		6.4		https://www.wordfence.com/threat-intel/vulnerabilities/id/5faaf7d1-2012-42d5-affa-a5ff3388d25a?source=api-prod
 wordpress	5.2.0	1	5.2.24	1	4.7.34	CVE-2026-64638	6.1		https://www.wordfence.com/threat-intel/vulnerabilities/id/278da117-fe04-45d6-86d4-e71fe6536032?source=api-prod
+wordpress	5.2.0	1	5.2.25	1	4.7.35	CVE-2026-65640	8.8		https://www.wordfence.com/threat-intel/vulnerabilities/id/3f6b435b-d8b4-434b-8cac-cc3adbc437eb?source=api-prod
 wordpress	5.3	1	5.3	1	3.7.32	CVE-2019-16780	5.8		https://www.wordfence.com/threat-intel/vulnerabilities/id/78b98f21-ac0c-496b-8cb9-8d2f3bd751b1?source=api-prod
 wordpress	5.3	1	5.3	1	3.7.32	CVE-2019-20041	6.4		https://www.wordfence.com/threat-intel/vulnerabilities/id/1bc0aa64-57a6-44ef-974a-70991cc3820f?source=api-prod
 wordpress	5.3	1	5.3	1	3.7.32	CVE-2019-20042	6.4		https://www.wordfence.com/threat-intel/vulnerabilities/id/8c483cf9-fb63-4c43-ad42-1404448540c2?source=api-prod
@@ -2503,6 +2509,7 @@ wordpress	5.3.0	1	5.3.21	1	4.7.34		5.5		https://www.wordfence.com/threat-intel/v
 wordpress	5.3.0	1	5.3.21	1	4.7.34		5.8		https://www.wordfence.com/threat-intel/vulnerabilities/id/cddbb0f8-fc73-46d7-80af-edb69227084f?source=api-prod
 wordpress	5.3.0	1	5.3.21	1	4.7.34		6.4		https://www.wordfence.com/threat-intel/vulnerabilities/id/5faaf7d1-2012-42d5-affa-a5ff3388d25a?source=api-prod
 wordpress	5.3.0	1	5.3.21	1	4.7.34	CVE-2026-64638	6.1		https://www.wordfence.com/threat-intel/vulnerabilities/id/278da117-fe04-45d6-86d4-e71fe6536032?source=api-prod
+wordpress	5.3.0	1	5.3.22	1	4.7.35	CVE-2026-65640	8.8		https://www.wordfence.com/threat-intel/vulnerabilities/id/3f6b435b-d8b4-434b-8cac-cc3adbc437eb?source=api-prod
 wordpress	5.4	1	5.4	1	3.7.33	CVE-2020-11025	5.8		https://www.wordfence.com/threat-intel/vulnerabilities/id/adf3fb57-b080-4cda-b78b-14d94bad21a9?source=api-prod
 wordpress	5.4	1	5.4	1	3.7.33	CVE-2020-11026	6.4		https://www.wordfence.com/threat-intel/vulnerabilities/id/3379dde1-d1fb-4ec8-b834-de00fb6a38f2?source=api-prod
 wordpress	5.4	1	5.4	1	3.7.33	CVE-2020-11027	6.1		https://www.wordfence.com/threat-intel/vulnerabilities/id/71fe2687-0dc9-4c56-91a4-447420818cca?source=api-prod
@@ -2564,6 +2571,7 @@ wordpress	5.4.0	1	5.4.19	1	4.7.34		5.5		https://www.wordfence.com/threat-intel/v
 wordpress	5.4.0	1	5.4.19	1	4.7.34		5.8		https://www.wordfence.com/threat-intel/vulnerabilities/id/cddbb0f8-fc73-46d7-80af-edb69227084f?source=api-prod
 wordpress	5.4.0	1	5.4.19	1	4.7.34		6.4		https://www.wordfence.com/threat-intel/vulnerabilities/id/5faaf7d1-2012-42d5-affa-a5ff3388d25a?source=api-prod
 wordpress	5.4.0	1	5.4.19	1	4.7.34	CVE-2026-64638	6.1		https://www.wordfence.com/threat-intel/vulnerabilities/id/278da117-fe04-45d6-86d4-e71fe6536032?source=api-prod
+wordpress	5.4.0	1	5.4.20	1	4.7.35	CVE-2026-65640	8.8		https://www.wordfence.com/threat-intel/vulnerabilities/id/3f6b435b-d8b4-434b-8cac-cc3adbc437eb?source=api-prod
 wordpress	5.5	1	5.5.1	1	3.7.35	CVE-2020-28032	8.8		https://www.wordfence.com/threat-intel/vulnerabilities/id/58300545-3e53-49be-bf55-eaf3e4cd82e9?source=api-prod
 wordpress	5.5	1	5.5.1	1	3.7.35	CVE-2020-28033	4.3		https://www.wordfence.com/threat-intel/vulnerabilities/id/f3ff473c-c629-487c-9b18-e074534c7b79?source=api-prod
 wordpress	5.5	1	5.5.1	1	3.7.35	CVE-2020-28034	6.1		https://www.wordfence.com/threat-intel/vulnerabilities/id/4290ee15-0362-48c5-a570-4a1b6719a948?source=api-prod
@@ -2619,6 +2627,7 @@ wordpress	5.5.0	1	5.5.18	1	4.7.34		5.5		https://www.wordfence.com/threat-intel/v
 wordpress	5.5.0	1	5.5.18	1	4.7.34		5.8		https://www.wordfence.com/threat-intel/vulnerabilities/id/cddbb0f8-fc73-46d7-80af-edb69227084f?source=api-prod
 wordpress	5.5.0	1	5.5.18	1	4.7.34		6.4		https://www.wordfence.com/threat-intel/vulnerabilities/id/5faaf7d1-2012-42d5-affa-a5ff3388d25a?source=api-prod
 wordpress	5.5.0	1	5.5.18	1	4.7.34	CVE-2026-64638	6.1		https://www.wordfence.com/threat-intel/vulnerabilities/id/278da117-fe04-45d6-86d4-e71fe6536032?source=api-prod
+wordpress	5.5.0	1	5.5.19	1	4.7.35	CVE-2026-65640	8.8		https://www.wordfence.com/threat-intel/vulnerabilities/id/3f6b435b-d8b4-434b-8cac-cc3adbc437eb?source=api-prod
 wordpress	5.6	1	5.6.11	0	4.1.38		4.3		https://www.wordfence.com/threat-intel/vulnerabilities/id/0da1cc3b-5d6b-4ca0-9d8a-31c63ab5b9c9?source=api-prod
 wordpress	5.6	1	5.6.11	0	4.1.38		6.4		https://www.wordfence.com/threat-intel/vulnerabilities/id/834c92ba-8b48-4ae3-9073-085e8f559762?source=api-prod
 wordpress	5.6	1	5.6.11	0	4.1.38		6.4		https://www.wordfence.com/threat-intel/vulnerabilities/id/bba3eeeb-5e7e-4ec3-9db0-02c44585647a?source=api-prod
@@ -2665,6 +2674,7 @@ wordpress	5.6.0	1	5.6.17	1	4.7.34		5.5		https://www.wordfence.com/threat-intel/v
 wordpress	5.6.0	1	5.6.17	1	4.7.34		5.8		https://www.wordfence.com/threat-intel/vulnerabilities/id/cddbb0f8-fc73-46d7-80af-edb69227084f?source=api-prod
 wordpress	5.6.0	1	5.6.17	1	4.7.34		6.4		https://www.wordfence.com/threat-intel/vulnerabilities/id/5faaf7d1-2012-42d5-affa-a5ff3388d25a?source=api-prod
 wordpress	5.6.0	1	5.6.17	1	4.7.34	CVE-2026-64638	6.1		https://www.wordfence.com/threat-intel/vulnerabilities/id/278da117-fe04-45d6-86d4-e71fe6536032?source=api-prod
+wordpress	5.6.0	1	5.6.18	1	4.7.35	CVE-2026-65640	8.8		https://www.wordfence.com/threat-intel/vulnerabilities/id/3f6b435b-d8b4-434b-8cac-cc3adbc437eb?source=api-prod
 wordpress	5.7	1	5.7.1	0	4.7.20	CVE-2021-29447	7.1		https://www.wordfence.com/threat-intel/vulnerabilities/id/9df45c8e-c040-4031-9c51-4c43d12f08b0?source=api-prod
 wordpress	5.7	1	5.7.1	0	4.7.20	CVE-2021-29450	6.5		https://www.wordfence.com/threat-intel/vulnerabilities/id/a57426d2-0ca4-405b-bfbf-0685e2c744a0?source=api-prod
 wordpress	5.7	1	5.7.11	1	4.1.41	CVE-2024-32111	4.3		https://www.wordfence.com/threat-intel/vulnerabilities/id/4af2b01b-2dcb-44ae-a764-8ecc5f8caa81?source=api-prod
@@ -2711,6 +2721,7 @@ wordpress	5.7.0	1	5.7.15	1	4.7.34		5.5		https://www.wordfence.com/threat-intel/v
 wordpress	5.7.0	1	5.7.15	1	4.7.34		5.8		https://www.wordfence.com/threat-intel/vulnerabilities/id/cddbb0f8-fc73-46d7-80af-edb69227084f?source=api-prod
 wordpress	5.7.0	1	5.7.15	1	4.7.34		6.4		https://www.wordfence.com/threat-intel/vulnerabilities/id/5faaf7d1-2012-42d5-affa-a5ff3388d25a?source=api-prod
 wordpress	5.7.0	1	5.7.15	1	4.7.34	CVE-2026-64638	6.1		https://www.wordfence.com/threat-intel/vulnerabilities/id/278da117-fe04-45d6-86d4-e71fe6536032?source=api-prod
+wordpress	5.7.0	1	5.7.16	1	4.7.35	CVE-2026-65640	8.8		https://www.wordfence.com/threat-intel/vulnerabilities/id/3f6b435b-d8b4-434b-8cac-cc3adbc437eb?source=api-prod
 wordpress	5.8	1	5.8.1	0	5.4.7	CVE-2020-8203	6.1		https://www.wordfence.com/threat-intel/vulnerabilities/id/51cd834e-1b18-4702-9c6c-db7f34f2c687?source=api-prod
 wordpress	5.8	1	5.8.1	0	5.4.7	CVE-2021-39200	5.3		https://www.wordfence.com/threat-intel/vulnerabilities/id/7b851fd6-1477-4370-abf9-42ae2b6f8899?source=api-prod
 wordpress	5.8	1	5.8.1	0	5.4.7	CVE-2021-39201	7.6		https://www.wordfence.com/threat-intel/vulnerabilities/id/b801e7d9-0ca0-471e-a524-af19ea0d85be?source=api-prod
@@ -2755,6 +2766,7 @@ wordpress	5.8.0	1	5.8.13	1	4.7.34		5.5		https://www.wordfence.com/threat-intel/v
 wordpress	5.8.0	1	5.8.13	1	4.7.34		5.8		https://www.wordfence.com/threat-intel/vulnerabilities/id/cddbb0f8-fc73-46d7-80af-edb69227084f?source=api-prod
 wordpress	5.8.0	1	5.8.13	1	4.7.34		6.4		https://www.wordfence.com/threat-intel/vulnerabilities/id/5faaf7d1-2012-42d5-affa-a5ff3388d25a?source=api-prod
 wordpress	5.8.0	1	5.8.13	1	4.7.34	CVE-2026-64638	6.1		https://www.wordfence.com/threat-intel/vulnerabilities/id/278da117-fe04-45d6-86d4-e71fe6536032?source=api-prod
+wordpress	5.8.0	1	5.8.14	1	4.7.35	CVE-2026-65640	8.8		https://www.wordfence.com/threat-intel/vulnerabilities/id/3f6b435b-d8b4-434b-8cac-cc3adbc437eb?source=api-prod
 wordpress	5.9	1	5.9.1	1	3.7.38		5.4		https://www.wordfence.com/threat-intel/vulnerabilities/id/954b8064-f317-4af4-a55f-9a61ee945006?source=api-prod
 wordpress	5.9	1	5.9.1	1	3.7.38	CVE-2021-20083	8.8		https://www.wordfence.com/threat-intel/vulnerabilities/id/c90844e1-0502-4d08-888f-4835f63f8dd0?source=api-prod
 wordpress	5.9	1	5.9.11	1	4.7.31	CVE-2025-58246	4.3		https://www.wordfence.com/threat-intel/vulnerabilities/id/a2926c11-c6a2-4988-89ed-42d9e0791b95?source=api-prod
@@ -2798,6 +2810,7 @@ wordpress	5.9.0	1	5.9.13	1	4.7.34		5.5		https://www.wordfence.com/threat-intel/v
 wordpress	5.9.0	1	5.9.13	1	4.7.34		5.8		https://www.wordfence.com/threat-intel/vulnerabilities/id/cddbb0f8-fc73-46d7-80af-edb69227084f?source=api-prod
 wordpress	5.9.0	1	5.9.13	1	4.7.34		6.4		https://www.wordfence.com/threat-intel/vulnerabilities/id/5faaf7d1-2012-42d5-affa-a5ff3388d25a?source=api-prod
 wordpress	5.9.0	1	5.9.13	1	4.7.34	CVE-2026-64638	6.1		https://www.wordfence.com/threat-intel/vulnerabilities/id/278da117-fe04-45d6-86d4-e71fe6536032?source=api-prod
+wordpress	5.9.0	1	5.9.15	1	4.7.35	CVE-2026-65640	8.8		https://www.wordfence.com/threat-intel/vulnerabilities/id/3f6b435b-d8b4-434b-8cac-cc3adbc437eb?source=api-prod
 wordpress	6.0	1	6.0.1	1	3.7.39		4.4		https://www.wordfence.com/threat-intel/vulnerabilities/id/300c6ea4-4eed-4be5-abfd-ec4ad9b741d3?source=api-prod
 wordpress	6.0	1	6.0.1	1	3.7.39		8		https://www.wordfence.com/threat-intel/vulnerabilities/id/0248f829-84de-40b9-bb63-354fbf06472d?source=api-prod
 wordpress	6.0	1	6.0.1	1	3.7.39	CVE-2022-4973	4.9		https://www.wordfence.com/threat-intel/vulnerabilities/id/b5582e89-83e6-4898-b9fe-09eddeb5f7ae?source=api-prod
@@ -2839,6 +2852,7 @@ wordpress	6.0.0	1	6.0.12	1	4.7.34		5.5		https://www.wordfence.com/threat-intel/v
 wordpress	6.0.0	1	6.0.12	1	4.7.34		5.8		https://www.wordfence.com/threat-intel/vulnerabilities/id/cddbb0f8-fc73-46d7-80af-edb69227084f?source=api-prod
 wordpress	6.0.0	1	6.0.12	1	4.7.34		6.4		https://www.wordfence.com/threat-intel/vulnerabilities/id/5faaf7d1-2012-42d5-affa-a5ff3388d25a?source=api-prod
 wordpress	6.0.0	1	6.0.12	1	4.7.34	CVE-2026-64638	6.1		https://www.wordfence.com/threat-intel/vulnerabilities/id/278da117-fe04-45d6-86d4-e71fe6536032?source=api-prod
+wordpress	6.0.0	1	6.0.13	1	4.7.35	CVE-2026-65640	8.8		https://www.wordfence.com/threat-intel/vulnerabilities/id/3f6b435b-d8b4-434b-8cac-cc3adbc437eb?source=api-prod
 wordpress	6.1	1	6.1.2	0	4.1.38		4.3		https://www.wordfence.com/threat-intel/vulnerabilities/id/0da1cc3b-5d6b-4ca0-9d8a-31c63ab5b9c9?source=api-prod
 wordpress	6.1	1	6.1.2	0	4.1.38		6.4		https://www.wordfence.com/threat-intel/vulnerabilities/id/834c92ba-8b48-4ae3-9073-085e8f559762?source=api-prod
 wordpress	6.1	1	6.1.2	0	4.1.38		6.4		https://www.wordfence.com/threat-intel/vulnerabilities/id/bba3eeeb-5e7e-4ec3-9db0-02c44585647a?source=api-prod
@@ -2865,6 +2879,7 @@ wordpress	6.1.0	1	6.1.10	1	4.7.34		5.5		https://www.wordfence.com/threat-intel/v
 wordpress	6.1.0	1	6.1.10	1	4.7.34		5.8		https://www.wordfence.com/threat-intel/vulnerabilities/id/cddbb0f8-fc73-46d7-80af-edb69227084f?source=api-prod
 wordpress	6.1.0	1	6.1.10	1	4.7.34		6.4		https://www.wordfence.com/threat-intel/vulnerabilities/id/5faaf7d1-2012-42d5-affa-a5ff3388d25a?source=api-prod
 wordpress	6.1.0	1	6.1.10	1	4.7.34	CVE-2026-64638	6.1		https://www.wordfence.com/threat-intel/vulnerabilities/id/278da117-fe04-45d6-86d4-e71fe6536032?source=api-prod
+wordpress	6.1.0	1	6.1.11	1	4.7.35	CVE-2026-65640	8.8		https://www.wordfence.com/threat-intel/vulnerabilities/id/3f6b435b-d8b4-434b-8cac-cc3adbc437eb?source=api-prod
 wordpress	6.2	1	6.2.1	0	4.1.38		4.3		https://www.wordfence.com/threat-intel/vulnerabilities/id/0da1cc3b-5d6b-4ca0-9d8a-31c63ab5b9c9?source=api-prod
 wordpress	6.2	1	6.2.1	0	4.1.38		6.4		https://www.wordfence.com/threat-intel/vulnerabilities/id/834c92ba-8b48-4ae3-9073-085e8f559762?source=api-prod
 wordpress	6.2	1	6.2.1	0	4.1.38		6.4		https://www.wordfence.com/threat-intel/vulnerabilities/id/bba3eeeb-5e7e-4ec3-9db0-02c44585647a?source=api-prod
@@ -2883,6 +2898,7 @@ wordpress	6.2	1	6.2.5	1	5.9.10	CVE-2024-31111	6.4		https://www.wordfence.com/thr
 wordpress	6.2	1	6.2.5	1	5.9.10	CVE-2024-6307	6.4		https://www.wordfence.com/threat-intel/vulnerabilities/id/bc0d36f8-6569-49a1-b722-5cf57c4bb32a?source=api-prod
 wordpress	6.2	1	6.2.7	1	4.7.31	CVE-2025-58246	4.3		https://www.wordfence.com/threat-intel/vulnerabilities/id/a2926c11-c6a2-4988-89ed-42d9e0791b95?source=api-prod
 wordpress	6.2	1	6.2.7	1	4.7.31	CVE-2025-58674	6.4		https://www.wordfence.com/threat-intel/vulnerabilities/id/c3ecda09-ecee-4e97-ae6f-92d52b0589e5?source=api-prod
+wordpress	6.2.0	1	6.2.10	1	4.7.35	CVE-2026-65640	8.8		https://www.wordfence.com/threat-intel/vulnerabilities/id/3f6b435b-d8b4-434b-8cac-cc3adbc437eb?source=api-prod
 wordpress	6.2.0	1	6.2.9	1	4.7.34		4.3		https://www.wordfence.com/threat-intel/vulnerabilities/id/80f92f7f-72e7-4d83-9ceb-ed0e11fb8003?source=api-prod
 wordpress	6.2.0	1	6.2.9	1	4.7.34		4.3		https://www.wordfence.com/threat-intel/vulnerabilities/id/cac1c1fa-7d6c-43c3-885e-9be320cb8f83?source=api-prod
 wordpress	6.2.0	1	6.2.9	1	4.7.34		4.9		https://www.wordfence.com/threat-intel/vulnerabilities/id/92babbbf-74bd-474f-9057-c5022a7d64c7?source=api-prod
@@ -2912,6 +2928,7 @@ wordpress	6.3.0	1	6.3.8	1	4.7.34		5.5		https://www.wordfence.com/threat-intel/vu
 wordpress	6.3.0	1	6.3.8	1	4.7.34		5.8		https://www.wordfence.com/threat-intel/vulnerabilities/id/cddbb0f8-fc73-46d7-80af-edb69227084f?source=api-prod
 wordpress	6.3.0	1	6.3.8	1	4.7.34		6.4		https://www.wordfence.com/threat-intel/vulnerabilities/id/5faaf7d1-2012-42d5-affa-a5ff3388d25a?source=api-prod
 wordpress	6.3.0	1	6.3.8	1	4.7.34	CVE-2026-64638	6.1		https://www.wordfence.com/threat-intel/vulnerabilities/id/278da117-fe04-45d6-86d4-e71fe6536032?source=api-prod
+wordpress	6.3.0	1	6.3.9	1	4.7.35	CVE-2026-65640	8.8		https://www.wordfence.com/threat-intel/vulnerabilities/id/3f6b435b-d8b4-434b-8cac-cc3adbc437eb?source=api-prod
 wordpress	6.4	1	6.4.3	1	6.0.8	CVE-2024-4439	7.2		https://www.wordfence.com/threat-intel/vulnerabilities/id/e363c09a-4381-4b3a-951c-9a0ff5669016?source=api-prod
 wordpress	6.4	1	6.4.4	1	4.1.41	CVE-2024-32111	4.3		https://www.wordfence.com/threat-intel/vulnerabilities/id/4af2b01b-2dcb-44ae-a764-8ecc5f8caa81?source=api-prod
 wordpress	6.4	1	6.4.4	1	5.9.10	CVE-2024-31111	6.4		https://www.wordfence.com/threat-intel/vulnerabilities/id/2a225ccb-a7dc-4437-bd97-b309d6ae6a47?source=api-prod
@@ -2927,6 +2944,7 @@ wordpress	6.4.0	1	6.4.8	1	4.7.34		5.5		https://www.wordfence.com/threat-intel/vu
 wordpress	6.4.0	1	6.4.8	1	4.7.34		5.8		https://www.wordfence.com/threat-intel/vulnerabilities/id/cddbb0f8-fc73-46d7-80af-edb69227084f?source=api-prod
 wordpress	6.4.0	1	6.4.8	1	4.7.34		6.4		https://www.wordfence.com/threat-intel/vulnerabilities/id/5faaf7d1-2012-42d5-affa-a5ff3388d25a?source=api-prod
 wordpress	6.4.0	1	6.4.8	1	4.7.34	CVE-2026-64638	6.1		https://www.wordfence.com/threat-intel/vulnerabilities/id/278da117-fe04-45d6-86d4-e71fe6536032?source=api-prod
+wordpress	6.4.0	1	6.4.9	1	4.7.35	CVE-2026-65640	8.8		https://www.wordfence.com/threat-intel/vulnerabilities/id/3f6b435b-d8b4-434b-8cac-cc3adbc437eb?source=api-prod
 wordpress	6.4.1	1	6.4.1	1	6.4.2	CVE-2024-31211	9.8		https://www.wordfence.com/threat-intel/vulnerabilities/id/b170ac00-5d5c-46ef-95f3-e98ef4528999?source=api-prod
 wordpress	6.5	1	6.5.1	1	6.0.8	CVE-2024-4439	7.2		https://www.wordfence.com/threat-intel/vulnerabilities/id/e363c09a-4381-4b3a-951c-9a0ff5669016?source=api-prod
 wordpress	6.5	1	6.5.4	1	4.1.41	CVE-2024-32111	4.3		https://www.wordfence.com/threat-intel/vulnerabilities/id/4af2b01b-2dcb-44ae-a764-8ecc5f8caa81?source=api-prod
@@ -2942,6 +2960,7 @@ wordpress	6.5.0	1	6.5.8	1	4.7.34		5.5		https://www.wordfence.com/threat-intel/vu
 wordpress	6.5.0	1	6.5.8	1	4.7.34		5.8		https://www.wordfence.com/threat-intel/vulnerabilities/id/cddbb0f8-fc73-46d7-80af-edb69227084f?source=api-prod
 wordpress	6.5.0	1	6.5.8	1	4.7.34		6.4		https://www.wordfence.com/threat-intel/vulnerabilities/id/5faaf7d1-2012-42d5-affa-a5ff3388d25a?source=api-prod
 wordpress	6.5.0	1	6.5.8	1	4.7.34	CVE-2026-64638	6.1		https://www.wordfence.com/threat-intel/vulnerabilities/id/278da117-fe04-45d6-86d4-e71fe6536032?source=api-prod
+wordpress	6.5.0	1	6.5.9	1	4.7.35	CVE-2026-65640	8.8		https://www.wordfence.com/threat-intel/vulnerabilities/id/3f6b435b-d8b4-434b-8cac-cc3adbc437eb?source=api-prod
 wordpress	6.6	1	6.6.3	1	4.7.31	CVE-2025-58246	4.3		https://www.wordfence.com/threat-intel/vulnerabilities/id/a2926c11-c6a2-4988-89ed-42d9e0791b95?source=api-prod
 wordpress	6.6	1	6.6.3	1	4.7.31	CVE-2025-58674	6.4		https://www.wordfence.com/threat-intel/vulnerabilities/id/c3ecda09-ecee-4e97-ae6f-92d52b0589e5?source=api-prod
 wordpress	6.6.0	1	6.6.5	1	4.7.34		4.3		https://www.wordfence.com/threat-intel/vulnerabilities/id/80f92f7f-72e7-4d83-9ceb-ed0e11fb8003?source=api-prod
@@ -2952,6 +2971,7 @@ wordpress	6.6.0	1	6.6.5	1	4.7.34		5.5		https://www.wordfence.com/threat-intel/vu
 wordpress	6.6.0	1	6.6.5	1	4.7.34		5.8		https://www.wordfence.com/threat-intel/vulnerabilities/id/cddbb0f8-fc73-46d7-80af-edb69227084f?source=api-prod
 wordpress	6.6.0	1	6.6.5	1	4.7.34		6.4		https://www.wordfence.com/threat-intel/vulnerabilities/id/5faaf7d1-2012-42d5-affa-a5ff3388d25a?source=api-prod
 wordpress	6.6.0	1	6.6.5	1	4.7.34	CVE-2026-64638	6.1		https://www.wordfence.com/threat-intel/vulnerabilities/id/278da117-fe04-45d6-86d4-e71fe6536032?source=api-prod
+wordpress	6.6.0	1	6.6.6	1	4.7.35	CVE-2026-65640	8.8		https://www.wordfence.com/threat-intel/vulnerabilities/id/3f6b435b-d8b4-434b-8cac-cc3adbc437eb?source=api-prod
 wordpress	6.7	1	6.7.3	1	4.7.31	CVE-2025-58246	4.3		https://www.wordfence.com/threat-intel/vulnerabilities/id/a2926c11-c6a2-4988-89ed-42d9e0791b95?source=api-prod
 wordpress	6.7	1	6.7.3	1	4.7.31	CVE-2025-58674	6.4		https://www.wordfence.com/threat-intel/vulnerabilities/id/c3ecda09-ecee-4e97-ae6f-92d52b0589e5?source=api-prod
 wordpress	6.7.0	1	6.7.5	1	4.7.34		4.3		https://www.wordfence.com/threat-intel/vulnerabilities/id/80f92f7f-72e7-4d83-9ceb-ed0e11fb8003?source=api-prod
@@ -2962,6 +2982,7 @@ wordpress	6.7.0	1	6.7.5	1	4.7.34		5.5		https://www.wordfence.com/threat-intel/vu
 wordpress	6.7.0	1	6.7.5	1	4.7.34		5.8		https://www.wordfence.com/threat-intel/vulnerabilities/id/cddbb0f8-fc73-46d7-80af-edb69227084f?source=api-prod
 wordpress	6.7.0	1	6.7.5	1	4.7.34		6.4		https://www.wordfence.com/threat-intel/vulnerabilities/id/5faaf7d1-2012-42d5-affa-a5ff3388d25a?source=api-prod
 wordpress	6.7.0	1	6.7.5	1	4.7.34	CVE-2026-64638	6.1		https://www.wordfence.com/threat-intel/vulnerabilities/id/278da117-fe04-45d6-86d4-e71fe6536032?source=api-prod
+wordpress	6.7.0	1	6.7.6	1	4.7.35	CVE-2026-65640	8.8		https://www.wordfence.com/threat-intel/vulnerabilities/id/3f6b435b-d8b4-434b-8cac-cc3adbc437eb?source=api-prod
 wordpress	6.8	1	6.8.2	1	4.7.31	CVE-2025-58246	4.3		https://www.wordfence.com/threat-intel/vulnerabilities/id/a2926c11-c6a2-4988-89ed-42d9e0791b95?source=api-prod
 wordpress	6.8	1	6.8.2	1	4.7.31	CVE-2025-58674	6.4		https://www.wordfence.com/threat-intel/vulnerabilities/id/c3ecda09-ecee-4e97-ae6f-92d52b0589e5?source=api-prod
 wordpress	6.8	1	6.8.3	1	6.8.4		4.3		https://www.wordfence.com/threat-intel/vulnerabilities/id/3e0b4faf-35cd-4f59-ae77-fb4f4819ad32?source=api-prod
@@ -2978,6 +2999,7 @@ wordpress	6.8.0	1	6.8.6	1	4.7.34		5.5		https://www.wordfence.com/threat-intel/vu
 wordpress	6.8.0	1	6.8.6	1	4.7.34		5.8		https://www.wordfence.com/threat-intel/vulnerabilities/id/cddbb0f8-fc73-46d7-80af-edb69227084f?source=api-prod
 wordpress	6.8.0	1	6.8.6	1	4.7.34		6.4		https://www.wordfence.com/threat-intel/vulnerabilities/id/5faaf7d1-2012-42d5-affa-a5ff3388d25a?source=api-prod
 wordpress	6.8.0	1	6.8.6	1	4.7.34	CVE-2026-64638	6.1		https://www.wordfence.com/threat-intel/vulnerabilities/id/278da117-fe04-45d6-86d4-e71fe6536032?source=api-prod
+wordpress	6.8.0	1	6.8.7	1	4.7.35	CVE-2026-65640	8.8		https://www.wordfence.com/threat-intel/vulnerabilities/id/3f6b435b-d8b4-434b-8cac-cc3adbc437eb?source=api-prod
 wordpress	6.9	1	6.9.1	1	6.8.4		4.3		https://www.wordfence.com/threat-intel/vulnerabilities/id/3e0b4faf-35cd-4f59-ae77-fb4f4819ad32?source=api-prod
 wordpress	6.9	1	6.9.1	1	6.8.4		4.4		https://www.wordfence.com/threat-intel/vulnerabilities/id/572fe891-5845-4a1c-ad3e-ddf5c54af5ba?source=api-prod
 wordpress	6.9	1	6.9.1	1	6.8.4		4.4		https://www.wordfence.com/threat-intel/vulnerabilities/id/72273368-042d-4ad4-9d1d-ca9c6db9cf3b?source=api-prod
@@ -2994,6 +3016,7 @@ wordpress	6.9.0	1	6.9.5	1	4.7.34		5.5		https://www.wordfence.com/threat-intel/vu
 wordpress	6.9.0	1	6.9.5	1	4.7.34		5.8		https://www.wordfence.com/threat-intel/vulnerabilities/id/cddbb0f8-fc73-46d7-80af-edb69227084f?source=api-prod
 wordpress	6.9.0	1	6.9.5	1	4.7.34		6.4		https://www.wordfence.com/threat-intel/vulnerabilities/id/5faaf7d1-2012-42d5-affa-a5ff3388d25a?source=api-prod
 wordpress	6.9.0	1	6.9.5	1	4.7.34	CVE-2026-64638	6.1		https://www.wordfence.com/threat-intel/vulnerabilities/id/278da117-fe04-45d6-86d4-e71fe6536032?source=api-prod
+wordpress	6.9.0	1	6.9.6	1	4.7.35	CVE-2026-65640	8.8		https://www.wordfence.com/threat-intel/vulnerabilities/id/3f6b435b-d8b4-434b-8cac-cc3adbc437eb?source=api-prod
 wordpress	7.0	1	7.0.2	0	6.8.6	CVE-2026-60137	7.5	ja	https://www.wordfence.com/threat-intel/vulnerabilities/id/bd087d06-5395-4dfd-a288-2c3271a62842?source=api-prod
 wordpress	7.0	1	7.0.2	0	6.9.5	CVE-2026-63030	9.8	ja	https://www.wordfence.com/threat-intel/vulnerabilities/id/1ba55302-b38f-4932-bbba-cdd517380ad7?source=api-prod
 wordpress	7.0.0	1	7.0.2	1	4.7.34		4.3		https://www.wordfence.com/threat-intel/vulnerabilities/id/80f92f7f-72e7-4d83-9ceb-ed0e11fb8003?source=api-prod
@@ -3004,3 +3027,4 @@ wordpress	7.0.0	1	7.0.2	1	4.7.34		5.5		https://www.wordfence.com/threat-intel/vu
 wordpress	7.0.0	1	7.0.2	1	4.7.34		5.8		https://www.wordfence.com/threat-intel/vulnerabilities/id/cddbb0f8-fc73-46d7-80af-edb69227084f?source=api-prod
 wordpress	7.0.0	1	7.0.2	1	4.7.34		6.4		https://www.wordfence.com/threat-intel/vulnerabilities/id/5faaf7d1-2012-42d5-affa-a5ff3388d25a?source=api-prod
 wordpress	7.0.0	1	7.0.2	1	4.7.34	CVE-2026-64638	6.1		https://www.wordfence.com/threat-intel/vulnerabilities/id/278da117-fe04-45d6-86d4-e71fe6536032?source=api-prod
+wordpress	7.0.0	1	7.0.3	1	4.7.35	CVE-2026-65640	8.8		https://www.wordfence.com/threat-intel/vulnerabilities/id/3f6b435b-d8b4-434b-8cac-cc3adbc437eb?source=api-prod
