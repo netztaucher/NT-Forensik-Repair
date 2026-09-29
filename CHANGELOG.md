@@ -4,6 +4,19 @@ Alle nennenswerten Änderungen an `wp_plesk_forensik.sh`.
 
 ## [unveröffentlicht]
 
+### Prüfstand — CI auf dem eigenen Runner, Zeitachse ohne Uhrzeit-Abhängigkeit (infra#689)
+
+Beide Workflows laufen auf `[self-hosted, linux, docker]` statt
+`ubuntu-latest`. Der erste Lauf auf dem 1-CPU-Slot deckte eine Abhängigkeit
+des Prüfbaums von der Uhr auf: `werkzeuge/goldmuster.sh` setzte den
+Massenvorgang (fünf Bilder, alte mtime) *nach* dem Mitternachts-Stempel über
+den ganzen Baum. Fielen beide in dieselbe ctime-Sekunde, sortierte 13e.1 die
+Bilder nach vorn, lag eine Sekundengrenze dazwischen, nach hinten — zwei Läufe
+im selben Auftrag wichen genau daran ab. Der Massenvorgang wird jetzt *vor*
+dem Stempel gesetzt und von ihm ausgenommen; die Folge ist in beiden Fällen
+dieselbe wie in der eingecheckten Referenz. Am Werkzeug selbst ändert sich
+nichts.
+
 ### Behoben — 13e.1 hielt eine Wiederherstellung für den Infektionsbeginn (#65)
 
 Der erste Lauf mit Abschnitt 13e (`20260813_150137_global`) begann seine

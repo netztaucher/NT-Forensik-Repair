@@ -1517,7 +1517,6 @@ LOG
     # Ausgenommen: die Zeitstempel-Haeufung fuer 7.14. Ihr fester Wert IST der
     # Pruefgegenstand.
     local _stempel; _stempel="$(date '+%Y%m%d')0000.00"
-    find "$W" -type f ! -name 'eintrag-*.dat' -exec touch -t "$_stempel" {} + 2>/dev/null || true
     # ZUERST der Massenvorgang — so wie auf dem echten Server, wo die
     # Wiederherstellung vom 19.02.2026 am Anfang der Achse stand und
     # `aeltester_nachweis` auf ihr Datum zog. Stuende er am Ende, bliebe genau
@@ -1525,6 +1524,16 @@ LOG
     #
     # EIN touch-Aufruf fuer alle fuenf, damit sie dieselbe ctime-Sekunde
     # teilen — so entsteht ein Block ohne Spanne.
+    #
+    # VOR dem Mitternachts-Stempel, nicht danach, und vom Stempel
+    # ausgenommen. Stand der Aufruf dahinter, entschied die Uhr die
+    # Reihenfolge auf der Achse: fielen Stempel und Massenvorgang in dieselbe
+    # ctime-Sekunde, sortierte 13e.1 die fuenf Bilder nach vorn (aeltere
+    # mtime), lag eine Sekundengrenze dazwischen, nach hinten. Auf dem
+    # 1-CPU-Runner (infra#689) dauert der Stempel lange genug, dass beides
+    # vorkommt — zwei Laeufe im selben Auftrag wichen genau daran ab. Davor
+    # ist die ctime der Bilder nie spaeter als die des Stempels; beide Faelle
+    # ergeben dieselbe Folge, und zwar die der eingecheckten Referenz.
     local _wh="${k2c}/httpdocs/wp-content/uploads/2026/03/wiederherstellung"
     if [[ "${NT_PRUEFSTAND_OHNE_MASSENVORGANG:-0}" != "1" ]]; then
       # Alte mtime, neue ctime → INODE. Fuenf von fuenf, also Mehrheit.
@@ -1535,6 +1544,8 @@ LOG
       # `aeltester_nachweis` faellt auf seine Zeit zurueck.
       touch "${_wh}"/bild*.png
     fi
+    find "$W" -type f ! -name 'eintrag-*.dat' ! -path "${_wh}/bild*.png" \
+      -exec touch -t "$_stempel" {} + 2>/dev/null || true
     sleep 10
     # Erste echte Welle. Die robots.txt zuerst: sie ist im Anlassfall der
     # aelteste Beleg, weil sie einmal angefasst und nie wieder angesehen wurde.
