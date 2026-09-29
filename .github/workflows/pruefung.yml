@@ -30,6 +30,11 @@ jobs:
     # Eigener Runner statt ubuntu-latest (NT-Brain docs/tools/github-runner.md,
     # netztaucher/infra#689). Slot nt-forensik-repair-1: 1 GB, 1 CPU, ephemeral.
     runs-on: [self-hosted, linux, docker]
+    # Das Repo ist OEFFENTLICH (Entscheidung 2026-09-29, netztaucher/infra#690, Option B):
+    # Code aus Fork-PRs darf nie auf dem eigenen Runner laufen (Docker-Socket, Tailnet).
+    # Fork-PRs laufen deshalb gar nicht erst an; zusaetzlich verlangt das Repo Freigabe
+    # fuer alle externen Beitraege (fork-pr-contributor-approval = all_external_contributors).
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     # GitHub-hosted: 36–58 s (22 Laeufe), davon der Gegentest mit 30.000
     # Faellen und zwei apt-Installationen. Auf 1 CPU mehrfach Luft.
     timeout-minutes: 15
@@ -292,6 +297,11 @@ jobs:
     # Eigener Runner statt ubuntu-latest (NT-Brain docs/tools/github-runner.md,
     # netztaucher/infra#689). Slot nt-forensik-repair-1: 1 GB, 1 CPU, ephemeral.
     runs-on: [self-hosted, linux, docker]
+    # Das Repo ist OEFFENTLICH (Entscheidung 2026-09-29, netztaucher/infra#690, Option B):
+    # Code aus Fork-PRs darf nie auf dem eigenen Runner laufen (Docker-Socket, Tailnet).
+    # Fork-PRs laufen deshalb gar nicht erst an; zusaetzlich verlangt das Repo Freigabe
+    # fuer alle externen Beitraege (fork-pr-contributor-approval = all_external_contributors).
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     # GitHub-hosted: 329–374 s (22 Laeufe); auf nt-forensik-repair-1 gemessen
     # 6:38 und 6:43 min (29.09.2026). 30 als Deckel: gut das Vierfache, und
     # ein Haenger blockiert den einzigen Slot nicht zwei Stunden.
