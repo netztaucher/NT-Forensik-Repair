@@ -40,7 +40,18 @@ concurrency:
 jobs:
   bestand:
     name: Feed abrufen, pruefen, PR oeffnen
-    runs-on: ubuntu-latest
+    # Eigener Runner statt ubuntu-latest (NT-Brain docs/tools/github-runner.md,
+    # netztaucher/infra#689). Slot nt-forensik-repair-1: 1 GB, 1 CPU. Keine
+    # zusaetzliche Action (siehe unten "Bordmittel"): python3, curl und git
+    # bringt das Runner-Image mit.
+    #
+    # ACHTUNG Speicher: der Feed ist rund 150 MB JSON und wird in
+    # werkzeuge/wordpress-daten-update.sh mit json.load am Stueck gelesen.
+    # Auf 1 GB ist das knapp; bricht der Lauf mit rc=137 ab, ist es der
+    # Speicher und nicht der Feed.
+    runs-on: [self-hosted, linux, docker]
+    # GitHub-hosted: 12–14 s (4 Laeufe). Der Abruf selbst hat --max-time 300.
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
 
