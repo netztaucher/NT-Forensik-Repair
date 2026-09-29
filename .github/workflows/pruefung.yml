@@ -27,9 +27,26 @@ on:
 jobs:
   syntax:
     name: Syntax und statische Analyse
-    runs-on: ubuntu-latest
+    # Eigener Runner statt ubuntu-latest (NT-Brain docs/tools/github-runner.md,
+    # netztaucher/infra#689). Slot nt-forensik-repair-1: 1 GB, 1 CPU, ephemeral.
+    runs-on: [self-hosted, linux, docker]
+    # GitHub-hosted: 36–58 s (22 Laeufe), davon der Gegentest mit 30.000
+    # Faellen und zwei apt-Installationen. Auf 1 CPU mehrfach Luft.
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+
+      - name: Werkzeuge vorhanden?
+        # Scheitert laut, statt nachzuinstallieren: fehlt etwas, gehoert es
+        # ins Runner-Image (infra stacks/gh-runners/Dockerfile).
+        run: |
+          fehlt=0
+          for w in bash python3 git awk grep sed perl find stat sort docker; do
+            command -v "$w" >/dev/null || { echo "::error::$w fehlt im Runner-Image"; fehlt=1; }
+          done
+          python3 --version
+          grep -P 'x' <<<x >/dev/null || { echo "::error::grep ohne -P (PCRE) — kein GNU grep"; fehlt=1; }
+          exit $fehlt
 
       - name: bash -n über alle Skripte
         run: |
@@ -124,13 +141,22 @@ jobs:
         # im Bericht plausibel aus und fällt im Betrieb nicht auf.
         run: python3 lib/wp_schwachstellen.py --selbsttest
 
+      - name: php-cli
+        # Das Runner-Image hat kein PHP. Installiert wird im Runner-Container
+        # selbst (ephemeral, laeuft als root), NICHT als Geschwister-Container:
+        # php wird hier auf Dateien unter mktemp/$HOME/tmp aufgerufen, und
+        # diese Pfade gibt es auf dem Host nicht — nur der Arbeitsordner ist
+        # auf beiden Seiten derselbe.
+        run: |
+          SUDO=; [[ "$(id -u)" -eq 0 ]] || SUDO=sudo
+          $SUDO apt-get update -qq && $SUDO apt-get install -y -qq --no-install-recommends php-cli
+          php --version | head -1
+
       - name: Versionsvergleich gegen PHP
         # Die eigentliche Absicherung: nicht gegen eine handgeschriebene
         # Erwartungstabelle prüfen, sondern gegen die Umsetzung, die WordPress
         # selbst benutzt. 30.000 Fälle je Lauf.
-        run: |
-          sudo apt-get update -qq && sudo apt-get install -y -qq php-cli
-          bash werkzeuge/version_compare_gegentest.sh 30000
+        run: bash werkzeuge/version_compare_gegentest.sh 30000
 
       - name: Selbsttest der WordPress-Härtungsprüfungen (#85)
         # Beide Richtungen: der offene Zustand muss melden, der gehärtete
@@ -230,22 +256,46 @@ jobs:
           gegenprobe "verfälschte Prüfsumme"         NT_BAUMSCAN_OHNE_PRUEFSUMME
 
       - name: shellcheck
+        # Als Geschwister-Container statt apt-get: der Arbeitsordner liegt auf
+        # Host und Runner unter demselben Pfad. v0.9.0 ist die Fassung, die
+        # ubuntu-latest (noble) per apt lieferte — gleiche Befunde wie bisher.
+        env:
+          SHELLCHECK: docker run --rm -v ${{ github.workspace }}:${{ github.workspace }} -w ${{ github.workspace }} koalaman/shellcheck:v0.9.0
         run: |
-          sudo apt-get update -qq && sudo apt-get install -y -qq shellcheck
+          $SHELLCHECK --version
           # Die Module werden per `source` in den Runner gezogen und sehen
           # dessen Variablen — shellcheck kennt diesen Zusammenhang nicht und
           # meldet sonst jede geerbte Variable als undefiniert (SC2154).
           # SC1091: eingebundene Dateien werden zur Prüfzeit nicht aufgelöst.
-          shellcheck --severity=warning --exclude=SC2154,SC1091 \
+          $SHELLCHECK --severity=warning --exclude=SC2154,SC1091 \
             $(git ls-files '*.sh') || true
           echo "--- als Fehler gewertet: nur error-Stufe ---"
-          shellcheck --severity=error --exclude=SC2154,SC1091 $(git ls-files '*.sh')
+          $SHELLCHECK --severity=error --exclude=SC2154,SC1091 $(git ls-files '*.sh')
 
   determinismus:
     name: Zwei Läufe, dieselbe Ausgabe
-    runs-on: ubuntu-latest
+    # Eigener Runner statt ubuntu-latest (NT-Brain docs/tools/github-runner.md,
+    # netztaucher/infra#689). Slot nt-forensik-repair-1: 1 GB, 1 CPU, ephemeral.
+    runs-on: [self-hosted, linux, docker]
+    # GitHub-hosted: 329–374 s (22 Laeufe) auf 4 CPUs; rund zwei Dutzend
+    # vollstaendige Prueflaeufe hintereinander. Auf 1 CPU mit dem Faktor 4
+    # gerechnet ~25 min — 45 als Deckel, damit ein Haenger den einzigen
+    # Slot nicht zwei Stunden blockiert.
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
+
+      - name: Werkzeuge vorhanden?
+        # Scheitert laut, statt nachzuinstallieren: fehlt etwas, gehoert es
+        # ins Runner-Image (infra stacks/gh-runners/Dockerfile).
+        run: |
+          fehlt=0
+          for w in bash python3 git awk grep sed perl find stat sort docker; do
+            command -v "$w" >/dev/null || { echo "::error::$w fehlt im Runner-Image"; fehlt=1; }
+          done
+          python3 --version
+          grep -P 'x' <<<x >/dev/null || { echo "::error::grep ohne -P (PCRE) — kein GNU grep"; fehlt=1; }
+          exit $fehlt
 
       - name: php-cli
         # Der Pruefbaum enthaelt eine wp-cli-Attrappe. Echtes wp-cli ist ein
@@ -253,7 +303,16 @@ jobs:
         # bricht er nach der Werkzeug-Probe ab und die Kern- sowie
         # Plugin-Integritaet blieben wieder ungeprueft. Ausdruecklich
         # installiert statt auf das Runner-Abbild zu vertrauen.
-        run: sudo apt-get update -qq && sudo apt-get install -y -qq php-cli
+        #
+        # Das Runner-Image hat kein PHP. Installiert wird im Runner-Container
+        # selbst (ephemeral, laeuft als root), NICHT als Geschwister-Container:
+        # php wird hier auf Dateien unter mktemp/$HOME/tmp aufgerufen, und
+        # diese Pfade gibt es auf dem Host nicht — nur der Arbeitsordner ist
+        # auf beiden Seiten derselbe.
+        run: |
+          SUDO=; [[ "$(id -u)" -eq 0 ]] || SUDO=sudo
+          $SUDO apt-get update -qq && $SUDO apt-get install -y -qq --no-install-recommends php-cli
+          php --version | head -1
 
       - name: Referenz auf dieser Plattform aufnehmen
         run: bash werkzeuge/goldmuster.sh aufnehmen
