@@ -41,7 +41,7 @@ jobs:
         # ins Runner-Image (infra stacks/gh-runners/Dockerfile).
         run: |
           fehlt=0
-          for w in bash python3 git awk grep sed perl find stat sort docker; do
+          for w in bash python3 git awk grep sed perl find stat sort docker openssl curl hostname; do
             command -v "$w" >/dev/null || { echo "::error::$w fehlt im Runner-Image"; fehlt=1; }
           done
           python3 --version
@@ -181,6 +181,21 @@ jobs:
         # KEV nicht geraten wird.
         run: bash werkzeuge/zweitquelle_selbsttest.sh
 
+      - name: Rechner-Kennung für den Lader
+        # nt_repair.sh bindet die Lizenz an /etc/machine-id und bricht ohne sie
+        # VOR der Formpruefung ab — der Selbsttest saehe dann ueberall "DURCH".
+        # Ein Linux-Arbeitsplatz hat die Datei immer, ein Runner-Container
+        # nicht. Angelegt wird nur, was fehlt; der Wert ist beliebig, der
+        # Selbsttest braucht ihn nie beim Lizenzserver.
+        run: |
+          if [[ ! -s /etc/machine-id && ! -s /var/lib/dbus/machine-id ]]; then
+            SUDO=; [[ "$(id -u)" -eq 0 ]] || SUDO=sudo
+            python3 -c 'import uuid; print(uuid.uuid4().hex)' | $SUDO tee /etc/machine-id >/dev/null
+            echo "  /etc/machine-id fehlte — fuer diesen Lauf angelegt"
+          else
+            echo "  machine-id vorhanden"
+          fi
+
       - name: Selbsttest der Lizenzschlüssel-Formprüfung (#83)
         # Beide Richtungen: die hineinkopierte Befehlszeile muss abgefangen
         # werden, ein gültiger Schlüssel darf NICHT hängenbleiben. Eine
@@ -290,7 +305,7 @@ jobs:
         # ins Runner-Image (infra stacks/gh-runners/Dockerfile).
         run: |
           fehlt=0
-          for w in bash python3 git awk grep sed perl find stat sort docker; do
+          for w in bash python3 git awk grep sed perl find stat sort docker openssl curl hostname; do
             command -v "$w" >/dev/null || { echo "::error::$w fehlt im Runner-Image"; fehlt=1; }
           done
           python3 --version
