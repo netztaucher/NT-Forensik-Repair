@@ -143,7 +143,7 @@ jobs:
 
       - name: php-cli
         # Das Runner-Image hat kein PHP. Installiert wird im Runner-Container
-        # selbst (ephemeral, laeuft als root), NICHT als Geschwister-Container:
+        # selbst (laeuft als root), NICHT als Geschwister-Container:
         # php wird hier auf Dateien unter mktemp/$HOME/tmp aufgerufen, und
         # diese Pfade gibt es auf dem Host nicht — nur der Arbeitsordner ist
         # auf beiden Seiten derselbe.
@@ -292,11 +292,10 @@ jobs:
     # Eigener Runner statt ubuntu-latest (NT-Brain docs/tools/github-runner.md,
     # netztaucher/infra#689). Slot nt-forensik-repair-1: 1 GB, 1 CPU, ephemeral.
     runs-on: [self-hosted, linux, docker]
-    # GitHub-hosted: 329–374 s (22 Laeufe) auf 4 CPUs; rund zwei Dutzend
-    # vollstaendige Prueflaeufe hintereinander. Auf 1 CPU mit dem Faktor 4
-    # gerechnet ~25 min — 45 als Deckel, damit ein Haenger den einzigen
-    # Slot nicht zwei Stunden blockiert.
-    timeout-minutes: 45
+    # GitHub-hosted: 329–374 s (22 Laeufe); auf nt-forensik-repair-1 gemessen
+    # 6:38 und 6:43 min (29.09.2026). 30 als Deckel: gut das Vierfache, und
+    # ein Haenger blockiert den einzigen Slot nicht zwei Stunden.
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
 
@@ -320,7 +319,7 @@ jobs:
         # installiert statt auf das Runner-Abbild zu vertrauen.
         #
         # Das Runner-Image hat kein PHP. Installiert wird im Runner-Container
-        # selbst (ephemeral, laeuft als root), NICHT als Geschwister-Container:
+        # selbst (laeuft als root), NICHT als Geschwister-Container:
         # php wird hier auf Dateien unter mktemp/$HOME/tmp aufgerufen, und
         # diese Pfade gibt es auf dem Host nicht — nur der Arbeitsordner ist
         # auf beiden Seiten derselbe.
