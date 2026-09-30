@@ -5,7 +5,7 @@ name: Schwachstellen-Bestand erneuern
 # Der Bestand veraltet mit der ZEIT, nicht mit Commits. Und er veraltet nicht
 # lautlos: steht er laenger als WP_DATEN_MAX_TAGE (30), meldet das Rezept den
 # eigenen Abgleich als "nicht belastbar" und bricht ihn ab
-# (rezepte/wordpress/rezept.sh:160). Ein Werkzeug, das seinen Kernabgleich
+# (rezepte/wordpress/rezept.sh, Stelle mit WP_DATEN_MAX_TAGE). Ein Werkzeug, das seinen Kernabgleich
 # stillschweigend einstellt, ist schlimmer als eines, das ihn nie hatte.
 #
 # Ein Githook koennte das nicht leisten: .git/hooks wird nicht versioniert und
@@ -202,3 +202,23 @@ jobs:
           unabhaengig — ein Datenwechsel kann die Referenz nicht bewegen.
 
           Hintergrund: \`docs/schwachstellen-bestand.md\`"
+
+      # Warnt VOR der 30-Tage-Marke (#129). Am 30.09.2026 stand der Bestand
+      # auf main 49 Tage: der Daten-PR lag sieben Wochen offen, dieser Lauf war
+      # dabei viermal gruen. Gelesen wird der Bestand des ausgecheckten
+      # main-Commits (GITHUB_SHA), nicht der frisch gebaute im Arbeitsbaum —
+      # entscheidend ist, was ausgeliefert wird. Laeuft auch nach einem Fehler
+      # weiter oben: dann ist das Alter die wichtigste Zahl im Lauf.
+      - name: Bestand auf main aktuell?
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git show "${GITHUB_SHA}:rezepte/wordpress/daten/VERSION" > /tmp/version-main
+          if ! aus=$(bash werkzeuge/bestand-alter.sh /tmp/version-main); then
+            pr=$(gh pr list --head daten/schwachstellen-bestand --state open --json number,createdAt \
+                   -q '.[0] | select(.) | "#\(.number), offen seit \(.createdAt[0:10])"' || true)
+            echo "::error::${aus}${pr:+ Daten-PR ${pr}.}"
+            exit 1
+          fi
+          echo "$aus"
