@@ -235,6 +235,11 @@ jobs:
         # die ein zweites Mal übernommen wurde.
         run: bash werkzeuge/hub_sso_selbsttest.sh
 
+      - name: Selbsttest der Alterswarnung des Schwachstellen-Bestands (#129)
+        # Beide Richtungen: frisch bleibt gruen, ab der Schwelle (30 - 9 = 21
+        # Tage) wird es rot. Eine Warnung, die immer anschlaegt, ginge unter.
+        run: bash werkzeuge/bestand_alter_selbsttest.sh
+
       - name: Zeitstempel in Belegen (lib/kern.sh)
         # Eigener Prüfstand, weil die Referenz unter pruefstand/referenz/ von
         # den Belegen nur die DATEINAMEN festhält, nicht deren Inhalt. Der

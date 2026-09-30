@@ -64,9 +64,9 @@ die Arbeitskopie des Betreibers, nie den Kundenserver.
 
 ## Die 30-Tage-Marke
 
-`WP_DATEN_MAX_TAGE` steht auf **30** (`lib/konfig.sh`). Ist der Bestand älter,
-meldet das Rezept einen Befund und **bricht den Abgleich ab**
-(`rezepte/wordpress/rezept.sh:160`):
+`WP_DATEN_MAX_TAGE` steht auf **30** (Standardwert in `rezepte/wordpress/rezept.sh`,
+`${WP_DATEN_MAX_TAGE:-30}`; per Umgebung überschreibbar). Ist der Bestand älter,
+meldet das Rezept einen Befund und **bricht den Abgleich ab**:
 
 ```
 Schwachstellen-Datenbestand ist N Tage alt — Ergebnis nicht belastbar,
@@ -80,6 +80,26 @@ nicht als Bestand — käme sie durch, wäre jedes Plugin `SAUBER`.
 
 **Daraus folgt die Taktung.** Der Zeitplan läuft wöchentlich, nicht monatlich:
 vier Puffer bis zur Marke. Fällt ein Lauf aus, bleibt Zeit für den nächsten.
+
+### Warnschwelle: 21 Tage (#129)
+
+Die Puffer helfen nur, wenn der Daten-PR auch gemergt wird. Am 30.09.2026
+stand der Bestand auf `main` 49 Tage: der PR lag seit dem 17.08. offen, der
+Wochenlauf war viermal grün und hat ihn jedes Mal nur erneuert. Der Abgleich
+lief in dieser Zeit nicht.
+
+Seitdem prüft der letzte Schritt des Wochenlaufs („Bestand auf main
+aktuell?“) das Alter des Bestands **auf `main`**, nicht des frisch gebauten.
+Ab `WP_DATEN_MAX_TAGE − 9` Tagen (also 21) wird der Lauf rot und nennt den
+offenen Daten-PR. GitHub meldet den roten Lauf per Mail. Neun Tage Vorlauf
+heißt: mindestens ein weiterer Wochenlauf, bevor der Abgleich abbricht.
+
+**Bei Rot:** den Daten-PR `daten/schwachstellen-bestand` ansehen (Abdeckung
+gegenüber `main`, siehe oben) und mergen. Nicht den Lauf neu starten — er
+ändert am Alter auf `main` nichts.
+
+Werkzeug: `werkzeuge/bestand-alter.sh <VERSION>`, Selbsttest
+`werkzeuge/bestand_alter_selbsttest.sh` (läuft in der Prüfung).
 
 ---
 

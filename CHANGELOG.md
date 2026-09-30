@@ -4,6 +4,17 @@ Alle nennenswerten Änderungen an `wp_plesk_forensik.sh`.
 
 ## [unveröffentlicht]
 
+### Schwachstellen-Bestand — Alterswarnung ab 21 Tagen (#129)
+
+Der Wochenlauf prüft zum Schluss das Alter des Bestands auf `main` und wird
+ab `WP_DATEN_MAX_TAGE − 9` Tagen (21) rot, mit Nummer und Alter des offenen
+Daten-PRs. Anlass: am 30.09.2026 war der Bestand auf `main` 49 Tage alt, weil
+der Daten-PR sieben Wochen offen lag; der Abgleich lief so lange nicht, der
+Wochenlauf war trotzdem grün. Neu: `werkzeuge/bestand-alter.sh`, Selbsttest
+`werkzeuge/bestand_alter_selbsttest.sh` in der Prüfung. Korrigiert:
+`docs/schwachstellen-bestand.md` nannte `lib/konfig.sh` als Ort von
+`WP_DATEN_MAX_TAGE` (dort stand es nie) und eine veraltete Zeilennummer.
+
 ### Prüfstand — CI auf dem eigenen Runner, Zeitachse ohne Uhrzeit-Abhängigkeit (infra#689)
 
 Beide Workflows laufen auf `[self-hosted, linux, docker]` statt
