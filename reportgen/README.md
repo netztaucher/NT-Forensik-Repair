@@ -2,6 +2,11 @@
 
 Erzeugt Abschlussberichte im **netztaucher-Design** als PDF: full-bleed Navy-Deckblatt, Orange-Akzent (#ff8800), oranger Titel-Unterstrich, „Bei Fragen"-Block, Seiten-Footer (Logo · Kontakt · VERTRAULICH). Teil 1 (Kundenbericht) + optional Teil 2 (Forensik-Protokoll).
 
+> **Abgelöst als Standard.** Seit 21.10.2026 entstehen Kundendokumente im Designsystem
+> **NT Docs** (feste A4-Seiten, Kopfband, Statuskarten, `tokens.css` + `components/bundle.css`),
+> nicht mehr in diesem Layout. Die Umstellung des Werkzeugs läuft in #149; bis dahin erzeugt
+> dieser Generator weiter das PDF des Forensik-Laufs als Rohfassung.
+
 ## Pipeline
 
 ```
