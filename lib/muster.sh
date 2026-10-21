@@ -65,3 +65,59 @@ for _nf_i in 1 2 3 4 5; do
     NF_SELF_PIDS+="$_nf_p "
 done
 nf_is_self() { [[ " $NF_SELF_PIDS " == *" $1 "* ]]; }
+
+# ── Ternär-Kette aus Hex-Literalen (#144) ───────────────────────────────────
+#
+# 21.10.2026, web68 auf cletus: wp-content/plugins/german.php.bak, 48 993 B,
+# EINE Zeile, die mit einer Kette wie dieser beginnt:
+#
+#     <?php (0x4eF1)?0xBf9C0:(0x21afd)?0xC3:(0x0Be)?0xFf9cD:…
+#
+# Jede Bedingung ist ein konstantes Hex-Literal, das Ergebnis steht also
+# vorher fest — die Kette rechnet nichts, sie verschleiert nur. Kein Mensch
+# und kein Codegenerator fuer legitimen PHP-Code schreibt zwanzig solcher
+# Glieder hintereinander. Imunify meldete die Datei als Malware; keines der
+# Muster in PATTERN_REGEX (lib/konfig.sh) traf sie.
+#
+# Genau zwanzig Glieder, nicht "zwanzig oder mehr": fuer die Entscheidung
+# reicht der Anfang, und die Vorschau in 7.3 bleibt kurz statt die ganze
+# 48-kB-Zeile auszugeben. Leerraum zwischen den Teilen ist zugelassen — eine
+# Kette, die ein Formatierer umbrochen hat, ist dieselbe Kette.
+#
+# Weil das Muster nur in Verschleierung vorkommt, wertet 7.3 es UNABHAENGIG
+# von der Groesse als Stufe 1. Die Groessenschwelle DROPPER_MAX_BYTES trennt
+# Dropper von Frameworks, die dieselben Funktionen legitim benutzen — fuer
+# eine Hex-Ternaer-Kette gibt es diesen legitimen Fall nicht.
+HEX_TERNAER_REGEX='(\(\s*0x[0-9a-f]+\s*\)\s*\?\s*0x[0-9a-f]+\s*:\s*){20}'
+
+# ── Suchraum der Mustersuche: PHP ist nicht nur, was .php heisst (#144) ─────
+#
+# Dieselbe Datei wie oben fiel schon vor dem Muster durch: 7.3 suchte mit
+# `--include="*.php"`, und german.php.bak heisst nicht so. Sie stand im
+# Inventar (belege/00_dateien.tsv) und sonst nirgends.
+#
+# Ein Webserver fuehrt .php.bak nicht aus — aber `include`/`require` fragt
+# nicht nach der Endung. Ein einziges include "german.php.bak" in einer
+# harmlosen Datei, und der Code laeuft. Merkregel aus frueheren Faellen:
+# Schadcode nach Dateikopf und Groesse suchen, nicht nach Endung.
+#
+# Die Endung erweitert NUR den Suchraum. Ob eine Datei ein Befund wird,
+# entscheiden allein die Muster: eine Editor-Sicherung upgrade.php~ ohne
+# Schadmuster bleibt unsichtbar, wie ihr Original.
+PHP_SUCHRAUM_INCLUDE=(--include='*.php' --include='*.php.*' --include='*.php~'
+                      --include='*.phtml' --include='*.php[3-8]' --include='*.phar'
+                      --include='*.inc' --include='*.phps')
+# Dieselbe Menge als ERE fuer awk (Pfad kleingeschrieben). Was hierauf passt,
+# deckt der grep oben bereits ab und wird bei der Kopfsuche uebersprungen.
+PHP_SUCHRAUM_ERE='\.(php|phtml|php[3-8]|phar|inc|phps|php~)$|\.php\.[^/]*$'
+# Endungen, deren Kopf NICHT gelesen wird: Medien und Schriften sind Sache von
+# 7.13 (dort ohne Kopfbedingung, auch PHP mitten im Bild), Archive und .mo
+# sind binaer und koennen nicht mit "<?php" beginnen, kosten aber das Lesen.
+PHP_KOPF_OHNE_ERE='\.(png|jpe?g|gif|webp|bmp|ico|svg|tiff?|woff2?|ttf|otf|eot|pdf|mp3|mp4|wav|avi|mov|wmv|mpe?g|m4v|mkv|webm|flv|ogg|oga|ogv|aac|flac|m4a|wma|zip|gz|tgz|bz2|xz|7z|rar|tar|mo)$'
+# Verzeichnisse ohne Kopfsuche: Seiten-Caches (zehntausende erzeugte Dateien)
+# und Abhaengigkeiten, dazu die Testframeworks, die 7.3 ohnehin auslaesst.
+PHP_KOPF_OHNE_DIR_ERE='/(cache|node_modules|\.git|phpunit|sebastian|mockery)/'
+# Obergrenze fuer die Kopfsuche in KiB. Ein Dropper ist klein; die Grenze haelt
+# Datenbank-Abzuege und Logs heraus, deren Kopf zu lesen nichts kostet, deren
+# Mustersuche aber sehr wohl.
+PHP_KOPF_MAX_KIB="${PHP_KOPF_MAX_KIB:-2048}"

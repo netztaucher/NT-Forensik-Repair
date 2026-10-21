@@ -254,7 +254,7 @@
   [0m·  Aeltester Nachweis ist nicht Infektionsbeginn: er ist die aelteste ueberlebende Spur. Aeltere Vorgaenge koennen ueberschrieben, rotiert oder nie protokolliert worden sein.
 
 [0;36m▶ 13e.5 Einstiegsweg im Zugriffsprotokoll[0m
-  [0m·  9 Zeitpunkt(e) gegen das Zugriffsprotokoll gehalten (Fenster ±2 s): die juengsten belasteten Dateien und frisch angelegte Plugins/Themes
+  [0m·  23 Kandidat(en) gegen das Zugriffsprotokoll gehalten (Fenster ±2 s je Anlage-/Schreibzeitpunkt): die juengsten belasteten Dateien und frisch angelegte Plugins/Themes
   [0;36m⚪[0m Kein Request mit Fernsteuerungs-, Upload- oder Installationskennung im Fenster ±2 s um die belasteten Dateien im Protokollfenster — der Einstiegsweg laesst sich aus den vorhandenen Quellen nicht bestimmen
 
 [0;36m▶ 13e.6 Einstieg über Anmeldedaten[0m

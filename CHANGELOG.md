@@ -4,6 +4,28 @@ Alle nennenswerten Änderungen an `wp_plesk_forensik.sh`.
 
 ## [unveröffentlicht]
 
+### Nachlese Vorfall 21.10.2026 (#141, #142, #144)
+
+- **#144 PHP ohne `.php`-Endung:** `wp-content/plugins/german.php.bak` (web68,
+  Hex-Ternär-Kette, 48 993 B) stand nur im Inventar; Imunify fand sie. Die
+  Mustersuche nimmt jetzt Endungsvarianten (`.php.bak`, `.php~`, `.php.old`, …)
+  und Dateien mit PHP-Kopf auf; neues Muster für Hex-Ternär-Ketten. Selbsttest
+  `php_endung`.
+- **#141 Anlegezeit `-1`:** GNU `find` liefert `-1`, wenn die crtime nicht
+  messbar ist. Das Inventar schrieb sie durch, 7.0 zählte auf cletus 18 541
+  „Anlegezeiten“, die es nicht gab. Jetzt `-`. Selbsttest `inventar_crtime`.
+- **#142 anonymisierte Zugriffsprotokolle:** Abschnitt 4 misst je Protokoll den
+  Anteil auf `.0` gekürzter Adressen (auch `.gz`) und meldet ⚪ „IOC-Adressen nur
+  als /24“, 13e.5 ebenso für die Adresse eines belegten Einstiegswegs.
+  `metrics.logs_anonymisiert` in `findings.json`. Hinweis im
+  Incident-Response-Playbook: Roh-Protokolle vor der nächsten Plesk-Rotation
+  sichern. Anlass: 43.250.53.42 stand nach der Rotation um 06:43 nur noch als
+  43.250.53.0 im Protokoll. Selbsttest `log_anonym`, `einstieg_request` Fall 5.
+- **13e.5 Zahl im Bericht reproduzierbar:** „N Zeitpunkt(e) gegen das
+  Zugriffsprotokoll“ zählte Sekunden; ob zwei Dateien in dieselbe Sekunde
+  fielen, hing vom Bautempo des Prüfbaums ab (CI zu #145: 8 gegen 9 in zwei
+  Läufen). Der Bericht nennt jetzt die Zahl verschiedener Kandidaten-Pfade.
+
 ### Behoben — UpdraftCentral-Abgleich übersah rotierte Protokolle (#139)
 
 Der zweite Lauf vom 21.10.2026 (web68, `--online`) meldete den Schlüssel nur

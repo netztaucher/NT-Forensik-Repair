@@ -762,7 +762,7 @@ ZUKUNFT   <ZEIT>  mtime liegt <SPANNE> NACH der ctime — vorwaerts datiert   <P
 
 ### 13e.5 Einstiegsweg im Zugriffsprotokoll
 
-  9 Zeitpunkt(e) gegen das Zugriffsprotokoll gehalten (Fenster ±2 s): die juengsten belasteten Dateien und frisch angelegte Plugins/Themes
+  23 Kandidat(en) gegen das Zugriffsprotokoll gehalten (Fenster ±2 s je Anlage-/Schreibzeitpunkt): die juengsten belasteten Dateien und frisch angelegte Plugins/Themes
 - ⚪ **Nicht messbar: Kein Request mit Fernsteuerungs-, Upload- oder Installationskennung im Fenster ±2 s um die belasteten Dateien im Protokollfenster — der Einstiegsweg laesst sich aus den vorhandenen Quellen nicht bestimmen**
 
 ### 13e.6 Einstieg über Anmeldedaten

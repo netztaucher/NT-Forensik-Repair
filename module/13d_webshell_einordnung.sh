@@ -243,7 +243,15 @@ if [[ "${_N_VENDOR:-0}" -gt 0 ]]; then
 fi
 WEBSHELL_PLUGIN_UNGEPRUEFT=0
 if [[ "${_D_N:-0}" -gt 0 ]]; then
-  crit "Webshells/Dropper gefunden: ${_D_N} Datei(en) < ${DROPPER_MAX_BYTES} B mit Obfuskation$(_dropper_entlastet_satz "$_D_NW")" web
+  # Eine Hex-Ternaer-Kette steht in jeder Groesse in Stufe 1 (7.3, #144).
+  # Dann stimmt "< 3000 B" nicht mehr fuer alle — der Satz sagt es. Ohne
+  # solche Datei bleibt er wortgleich, auch fuer die Referenz des Pruefstands.
+  _D_HEX=$(printf '%s\n' "$_D_REST" | grep -c '^OBFUSKATION: HEX-TERNÄR-KETTE' || true)
+  if [[ "${_D_HEX:-0}" -gt 0 ]]; then
+    crit "Webshells/Dropper gefunden: ${_D_N} Datei(en) mit Obfuskation (< ${DROPPER_MAX_BYTES} B oder Hex-Ternär-Kette in jeder Größe, davon ${_D_HEX})$(_dropper_entlastet_satz "$_D_NW")" web
+  else
+    crit "Webshells/Dropper gefunden: ${_D_N} Datei(en) < ${DROPPER_MAX_BYTES} B mit Obfuskation$(_dropper_entlastet_satz "$_D_NW")" web
+  fi
   if _plugin_pruefsummen_ungeprueft; then
     WEBSHELL_PLUGIN_UNGEPRUEFT=$(printf '%s\n' "$_D_REST" | grep '^=== ' | grep -c '/wp-content/plugins/' || true)
     WEBSHELL_PLUGIN_UNGEPRUEFT="${WEBSHELL_PLUGIN_UNGEPRUEFT:-0}"
