@@ -83,8 +83,9 @@ werkzeuge/kundenpaket-pruefstand.sh
 
 Echter Lauf über den Goldmuster-Baum plus Fixture: drei PDFs, Seitenzahlen, Seitenbilder,
 fremder Kunde bleibt draussen, Interna grün und rot (eingeschleuster Issue-Verweis),
-Anschreiben, Übergabepaket. Braucht WeasyPrint und läuft darum lokal, nicht in CI; CI
-prüft den Wächter über `werkzeuge/interna_waechter_selbsttest.sh`.
+Anschreiben, Übergabepaket. Braucht WeasyPrint und poppler. Die CI installiert beides
+(`python3-weasyprint`, `poppler-utils`) im Job „Zwei Läufe“ und lässt den Prüfstand dort
+laufen; den Wächter allein prüft zusätzlich `werkzeuge/interna_waechter_selbsttest.sh`.
 
 ---
 

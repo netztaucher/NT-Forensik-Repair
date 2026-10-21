@@ -254,7 +254,7 @@ jobs:
       - name: Selbsttest Interna-Wächter für Kundendokumente (#150)
         # Zwei Richtungen: Beweise zum Vorfall (Hashes, IPs, Pfade im Webspace)
         # müssen schweigen, jedes Beispiel aus #150 muss anschlagen. Die PDFs
-        # selbst prüft werkzeuge/kundenpaket-pruefstand.sh lokal (braucht WeasyPrint).
+        # selbst prüft werkzeuge/kundenpaket-pruefstand.sh im Job „Zwei Läufe".
         run: bash werkzeuge/interna_waechter_selbsttest.sh
 
       - name: Selbsttest Einstiegsweg aus dem Request derselben Sekunde (#135)
@@ -872,6 +872,17 @@ jobs:
           fi
           echo "  ok — Schadcode auf Platz ${PLATZ}, ${WEG} bestätigte Datei(en) herausgefiltert"
 
+      - name: WeasyPrint und poppler für die Kundendokumente (#149)
+        # Der Kundenpaket-Prüfstand setzt Bericht, DSGVO- und BSI-Dokument mit
+        # WeasyPrint und liest sie mit pdfinfo/pdftotext/pdftoppm zurück. Ohne
+        # beides bricht er ab, statt die Dokumente ungeprüft durchzuwinken.
+        # Installiert wie php-cli im Runner-Container selbst.
+        run: |
+          SUDO=; [[ "$(id -u)" -eq 0 ]] || SUDO=sudo
+          $SUDO apt-get install -y -qq --no-install-recommends python3-weasyprint poppler-utils
+          python3 -c 'import weasyprint; print("WeasyPrint", weasyprint.__version__)'
+          pdfinfo -v 2>&1 | head -1
+
       - name: Was das Kundenpaket zurückhält (#4)
         # Eigener Prüfstand, weil goldmuster.sh den LAUF vergleicht und das
         # Paket danach aus einem anderen Werkzeug entsteht. Und weil der
@@ -880,6 +891,8 @@ jobs:
         # `betreiber` wäre also unsichtbar — in der Richtung, die weh tut.
         # Der Prüfstand ergänzt den echten Lauf deshalb um je einen künstlichen
         # Beleg beider Stufen und prüft, dass sie draussen bleiben.
+        env:
+          NT_WEASYPRINT_PY: python3
         run: bash werkzeuge/kundenpaket-pruefstand.sh
 
       - name: Nachweis — Plugin-Prüfsummen laufen ohne wp-cli (#10)
