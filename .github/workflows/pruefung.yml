@@ -257,6 +257,11 @@ jobs:
         # selbst prüft werkzeuge/kundenpaket-pruefstand.sh im Job „Zwei Läufe".
         run: bash werkzeuge/interna_waechter_selbsttest.sh
 
+      - name: Selbsttest Fremdkunden-Maskierung lässt Vorlagentext stehen (#148)
+        # BSI-Meldewege, Betreiber-Kontakt und der eigene Hostname bleiben stehen,
+        # Nachbarn als Domain, Mail, vhost-Pfad und webNN werden weiter maskiert.
+        run: bash werkzeuge/maskierung_selbsttest.sh
+
       - name: Selbsttest Einstiegsweg aus dem Request derselben Sekunde (#135)
         # 13e.5 haelt die juengsten belasteten Dateien gegen das Access-Log
         # (+-2 s, auch .gz). UpdraftCentral-POST zur Anlage = crit + IOC;

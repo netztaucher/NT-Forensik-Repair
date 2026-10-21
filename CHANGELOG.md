@@ -4,6 +4,16 @@ Alle nennenswerten Änderungen an `wp_plesk_forensik.sh`.
 
 ## [unveröffentlicht]
 
+### Maskierung lässt Meldewege und eigenen Server stehen (#148)
+
+- `nf_fremdkunden_maskieren` (`lib/kern.sh`) maskierte in `bsi_meldung.md` die Meldewege
+  des BSI (`mip.bsi.bund.de`, `meldestelle@bsi.bund.de`) und den geprüften Server selbst
+  als `<anderer Kunde N>`. Jetzt frei: alles unter `bund.de`, Allianz für Cybersicherheit,
+  `wpvulnerability`, die Betreiber-Domains aus den eigenen Vorlagen (`netztaucher.com/.de`,
+  je mit Subdomains) und der eigene Hostname (`hostname -f`, im Test `NF_HOST_FQDN`).
+  Andere Server derselben Hosting-Domain bleiben maskiert.
+- Selbsttest `werkzeuge/maskierung_selbsttest.sh` in beide Richtungen, in CI.
+
 ### Broken pipe bei langen Listen
 
 - `module/07_dateisystem.sh` (tmp-Executables) und `module/08_netzwerk.sh` (veränderte

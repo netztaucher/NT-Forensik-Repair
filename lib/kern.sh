@@ -686,7 +686,10 @@ nf_fremdkunden_maskieren() {   # nf_fremdkunden_maskieren <datei> [pruefen]
     echo "  Maskierung uebersprungen: kein eigener Bezug bestimmbar (SCAN_PATHS/DOMAIN leer)." >&2
     return 1
   fi
-  EIGENE_RE="$eigene" NF_MODUS="$NF_MODUS" python3 - "$datei" <<'PY'
+  # Der eigene Server ist kein Nachbar: in der BSI-Meldung stand cletus als
+  # "<anderer Kunde 4>" (#148). NF_HOST_FQDN laesst sich fuer Tests vorgeben.
+  local host_fqdn="${NF_HOST_FQDN:-$(hostname -f 2>/dev/null || hostname)}"
+  EIGENE_RE="$eigene" NF_MODUS="$NF_MODUS" NF_HOST_FQDN="$host_fqdn" python3 - "$datei" <<'PY'
 import os, re, sys
 p = sys.argv[1]
 eigen = re.compile(r'^(' + os.environ.get("EIGENE_RE", "___nichts___") + r')$')
@@ -727,9 +730,19 @@ TECHNISCH = re.compile(r'\.(?:arpa|local|localdomain|invalid|test|example)$|^(?:
     r'mysql\.com|oracle\.com|apache\.org|nginx\.org|openssl\.org|python\.org|'
     r'kernel\.org|systemd\.io|freedesktop\.org|npmjs\.com|packagist\.org'
     r')$', re.I)
+# Feste Vorlagentexte sind keine Nachbarn (#148): die Meldewege in bsi_meldung.md
+# (mip.bsi.bund.de, meldestelle@bsi.bund.de) standen als "<anderer Kunde 2/3>" im
+# Bericht, und der Kunde fand den Meldeweg nicht mehr. Behoerden unter bund.de
+# bleiben deshalb samt Subdomains stehen, ebenso die Domains des Betreibers aus
+# den eigenen Vorlagen (Kontakt, Kundenbericht).
+AMTLICH = re.compile(r'(?:^|\.)(?:bund\.de|allianz-fuer-cybersicherheit\.de|'
+                     r'wpvulnerability\.(?:net|com)|netztaucher\.(?:com|de))$', re.I)
+HOST_FQDN = os.environ.get("NF_HOST_FQDN", "").strip().lower()
 
 def _domain_frei(d):
     dl = d.lower()
+    if (HOST_FQDN and dl == HOST_FQDN) or AMTLICH.search(dl):
+        return True
     return bool(eigen.match(dl)) or bool(TECHNISCH.search(dl)) or dl.endswith(tuple(
         '.' + e for e in (os.environ.get("EIGENE_RE","").split('|')) if e))
 
