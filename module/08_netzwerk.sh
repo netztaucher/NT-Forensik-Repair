@@ -467,7 +467,7 @@ if [[ -n "$TIMESTOMP" ]]; then
 fi
 if [[ -n "$RECENT_SYS" ]]; then
     warn "Kürzlich veränderte Dateien in normalerweise stabilen Systemverzeichnissen — gegen Wartungsfenster/Paket-Updates abgleichen"
-    code "$(printf '%s' "$RECENT_SYS" | head -60)"
+    code "$(printf '%s' "$RECENT_SYS" | awk 'NR<=60')"
     evidence "recent_system_changes" "$RECENT_SYS"
 elif [[ -z "$TIMESTOMP" ]]; then
     ok "Keine kürzlich veränderten Dateien in stabilen Systemverzeichnissen (${DAYS_BACK} Tage)"

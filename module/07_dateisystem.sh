@@ -633,7 +633,7 @@ TMP_N_AUS=$(( TMP_N_ALLE - TMP_N_ZEIG ))
 TMP_KAPPUNG=""
 if [[ "$TMP_N_ZEIG" -gt 60 ]]; then
   TMP_KAPPUNG="Anzeige auf 60 von ${TMP_N_ZEIG} Dateien begrenzt — vollstaendige Liste im Beleg."
-  TMP_EXECS=$(printf '%s\n' "$TMP_EXECS" | head -60)
+  TMP_EXECS=$(printf '%s\n' "$TMP_EXECS" | awk 'NR<=60')
 fi
 if [[ -n "$TMP_EXECS" ]]; then
   warn "Ausführbare Dateien/Skripte in tmp-Verzeichnissen — prüfen (${TMP_N_ZEIG})"
