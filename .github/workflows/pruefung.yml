@@ -251,6 +251,12 @@ jobs:
         # Echte Weichen (PHP-Ziel, fremde URL, [P]) müssen crit bleiben.
         run: bash werkzeuge/htaccess_sperrliste_selbsttest.sh
 
+      - name: Selbsttest Interna-Wächter für Kundendokumente (#150)
+        # Zwei Richtungen: Beweise zum Vorfall (Hashes, IPs, Pfade im Webspace)
+        # müssen schweigen, jedes Beispiel aus #150 muss anschlagen. Die PDFs
+        # selbst prüft werkzeuge/kundenpaket-pruefstand.sh im Job „Zwei Läufe".
+        run: bash werkzeuge/interna_waechter_selbsttest.sh
+
       - name: Selbsttest Einstiegsweg aus dem Request derselben Sekunde (#135)
         # 13e.5 haelt die juengsten belasteten Dateien gegen das Access-Log
         # (+-2 s, auch .gz). UpdraftCentral-POST zur Anlage = crit + IOC;
@@ -865,6 +871,23 @@ jobs:
             exit 1
           fi
           echo "  ok — Schadcode auf Platz ${PLATZ}, ${WEG} bestätigte Datei(en) herausgefiltert"
+
+      - name: WeasyPrint und poppler für die Kundendokumente (#149)
+        # Der Kundenpaket-Prüfstand setzt Bericht, DSGVO- und BSI-Dokument mit
+        # WeasyPrint und liest sie mit pdfinfo/pdftotext/pdftoppm zurück. Ohne
+        # beides bricht er ab, statt die Dokumente ungeprüft durchzuwinken.
+        # Installiert wie php-cli im Runner-Container selbst. Das Abbild (noble)
+        # hat kein python3-weasyprint; deshalb venv mit derselben Version wie
+        # am Arbeitsplatz (reportgen/README.md), damit der Satz gleich ausfällt.
+        run: |
+          SUDO=; [[ "$(id -u)" -eq 0 ]] || SUDO=sudo
+          $SUDO apt-get install -y -qq --no-install-recommends \
+            python3-venv libpango-1.0-0 libpangoft2-1.0-0 libharfbuzz-subset0 poppler-utils
+          python3 -m venv "$RUNNER_TEMP/weasyprint"
+          "$RUNNER_TEMP/weasyprint/bin/pip" install -q 'weasyprint==70.0'
+          "$RUNNER_TEMP/weasyprint/bin/python" -c 'import weasyprint; print("WeasyPrint", weasyprint.__version__)'
+          pdfinfo -v 2>&1 | head -1
+          echo "NT_WEASYPRINT_PY=$RUNNER_TEMP/weasyprint/bin/python" >> "$GITHUB_ENV"
 
       - name: Was das Kundenpaket zurückhält (#4)
         # Eigener Prüfstand, weil goldmuster.sh den LAUF vergleicht und das

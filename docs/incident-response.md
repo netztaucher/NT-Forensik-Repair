@@ -122,7 +122,7 @@ cd "$RUN/belege" && sha256sum ./* > SHA256SUMS
 
 ### Kundenpaket — Standard seit 21.10.2026
 
-Was an den Kunden geht, folgt diesem Standard (Umsetzung im Werkzeug: #149, #150, #151):
+Was an den Kunden geht, folgt diesem Standard. Das Werkzeug erzeugt ihn (#149, #150, #151):
 
 | Teil | Form |
 |---|---|
@@ -140,6 +140,30 @@ Beweise zum Vorfall (Hashes, Angreifer-IPs, Zeitstempel, Pfade im Kunden-Webspac
 **Vor der Auslieferung jede Seite als Bild prüfen.** Feste A4-Seiten schneiden Überlauf
 still ab; Abstände, fluchtende Tabellenzeilen und die Kante unter dem Kopfband sind
 nur im Bild sichtbar. Danach `pdftotext` gegen die Interna-Liste.
+
+So entsteht das Paket:
+
+```bash
+# 1. Der Lauf hat einen Entwurf aus seinen Funden gebaut (kunde/NT-*.pdf) und die
+#    Vorlage betreiber/kundenpaket_fall.entwurf.json geschrieben. Kunde, Erzählung,
+#    Bereinigung, Aufgaben und Meldepflicht dort eintragen (Muster:
+#    pruefstand/kundenpaket/fall.json), dann neu setzen:
+reportgen/kundenpaket.py --lauf "$RUN" --fall fall.json --ziel "$RUN/kunde" \
+    --pruefung "$RUN/betreiber/kundenpaket_pruefung"
+# 2. Jede Seite ansehen: $RUN/betreiber/kundenpaket_pruefung/seiten/*.png
+# 3. Anschreiben mit Bildschirmfotos der Startseiten, Entwurf in Apple Mail:
+mailgen/anschreiben.py --fall fall.json --ziel "$RUN/betreiber/mail" \
+    --anhang "$RUN"/kunde/NT-*.pdf --bildschirmfoto https://kunde.tld --apple-mail
+# 4. Übergabepaket mit Belegen (prüft die PDFs erneut gegen die Interna-Liste):
+werkzeuge/kundenpaket.sh "$RUN"
+```
+
+`reportgen/kundenpaket.py` setzt die Seiten selbst um (gemessen, nicht geschätzt),
+prüft jede Seite auf Überlauf (≥ 8 mm über der Fusszeile), Titel einzeilig, Seitenzahl
+und Sprachregeln und legt die Seitenbilder beim Betreiber ab. Ansehen muss sie trotzdem
+ein Mensch. Der Wächter `werkzeuge/interna-waechter.sh` liest die Sperrliste
+`werkzeuge/interna-sperrliste.txt`; Namen anderer Kunden desselben Servers lassen sich
+über `NT_INTERNA_EXTRA=<datei>` ergänzen.
 
 ## Phase 6 — Melden (falls einschlägig)
 

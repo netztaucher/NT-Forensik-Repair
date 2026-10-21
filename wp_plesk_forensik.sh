@@ -17,13 +17,14 @@
 #     │   ├── kundenbericht.md                 ← lesbar für den Kunden
 #     │   ├── befunde_details.md               ← Anlage, relative Pfade
 #     │   ├── root_aussage.md                  ← nur bei --nur-root
-#     │   └── abschlussbericht.pdf             ← optional
+#     │   └── NT-*.pdf                         ← Kundenpaket NT Docs (optional, WeasyPrint)
 #     └── betreiber/                           ← NICHT WEITERGEBEN
 #         ├── technik_bericht.md               ← vollständig, auch serverweit
 #         ├── bsi_meldung.md                   ← Entwurf
 #         ├── dsgvo_meldung.md                 ← Entwurf, eigener Meldeweg
 #         ├── findings.json                    ← Eingabe für die Bereinigung
 #         ├── lauf.log                         ← Ausführungsprotokoll
+#         ├── kundenpaket_*                     ← Fundliste, Fall-Entwurf, Seitenbilder
 #         └── belege/                          ← Rohdaten, gehasht, UNMASKIERT
 #             ├── 00_manifest.txt              ← Chain-of-Custody
 #             ├── NN_*.txt / logs_sicherung.tar.gz

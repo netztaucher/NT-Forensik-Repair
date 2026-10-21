@@ -835,7 +835,7 @@ ZUKUNFT   <ZEIT>  mtime liegt <SPANNE> NACH der ctime — vorwaerts datiert   <P
 
 > **Hinweis zum Datenschutz.** Dieser Server beherbergt weitere Kunden. Wo serverweite Prüfungen deren Domains oder Systemkonten berührten, stehen Platzhalter (`<anderer Kunde N>`); derselbe Nachbar trägt dabei immer dieselbe Nummer, sodass Zusammenhänge erkennbar bleiben. Betroffen waren 2 fremde Kennungen. Die unmaskierte Fassung verbleibt beim Betreiber.
 - ✅ Kundenspur enthält keine fremden Kennungen
-  PDF übersprungen (pandoc/weasyprint/reportgen nicht verfügbar).
+  Kundenpaket übersprungen (Prüfstand-Lauf).
 
 > **Eingeschränkter Lauf.** Die folgenden Prüfabschnitte wurden auf ausdrückliche Auswahl hin NICHT ausgeführt. Ihre Ergebnisse fehlen in diesem Bericht — das ist keine Entwarnung für diese Bereiche:
 >

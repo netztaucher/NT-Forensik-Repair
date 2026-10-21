@@ -1,0 +1,42 @@
+# Interna-Sperrliste fuer Kundendokumente (NT-Forensik-Repair#150)
+#
+# Gelesen von werkzeuge/interna-waechter.sh. Eine Zeile je Muster:
+#   <regulaerer Ausdruck (Python re)><TAB><Begruendung>
+# (?i) am Anfang macht das Muster unabhaengig von Gross-/Kleinschreibung.
+#
+# Darf DRIN bleiben (und darf hier nicht getroffen werden): Beweise zum Vorfall -
+# Hashes des Schadcodes, Angreifer-IPs, Zeitstempel, Requests, Pfade im
+# Kunden-Webspace ab der Dokumentenwurzel.
+#
+# Neue Muster immer mit Gegenprobe in werkzeuge/interna_waechter_selbsttest.sh.
+
+# ── Issue- und PR-Nummern ───────────────────────────────────────────────────
+[A-Za-z][\w.-]*#\d+	Verweis auf Issue oder PR (infra#…, NT-Repair#…)
+(?<![\w&/])#\d{1,5}\b	Issue- oder PR-Nummer (#140)
+(?i)\b(pull request|issue|PR)\s+#?\d+	Issue oder PR im Text
+(?i)lücken im werkzeug	Seite „Lücken im Werkzeug“
+
+# ── Werkzeuge, Staende, Schalter ────────────────────────────────────────────
+(?i)NT-Forensik|NT-Repair|wp_plesk_forensik|\bnt_repair\b	Werkzeugname
+(?i)\b(bereinigung_[\w-]+|nt_repair|rotate-[\w-]+|set-wp-user-password|kundenpaket|app-token|baumscan)\.sh\b	Skriptname
+\b[0-9a-f]{7,40}\s*(→|->)\s*[0-9a-f]{7,40}\b	Werkzeugstand (Commit → Commit)
+\b\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}_\S+	Lauf-Ordner
+_abo-[\w-]+	Lauf-Ordner eines Abos
+(?<!\S)--(online|global|nur-website|kein-menue|mit-server|mit-technik|yara|fall|lauf)\b	Werkzeug-Schalter
+(?i)findings\.json|technik_bericht|kundenpaket_funde|\blauf\.log\b|00_verzeichnis	Werkzeugdatei
+
+# ── Ablagen ─────────────────────────────────────────────────────────────────
+(?i)1password|secrets\.registry	Ablage für Geheimnisse
+\bRegister\b	Ablage (Register)
+
+# ── Serverpfade und Bereinigungsprotokolle ──────────────────────────────────
+/root/|/var/lib/nt-|wartungsscripte|/var/www/vhosts/	Serverpfad (Quarantäne, Sicherung, vhost)
+(?i)actions\.jsonl|RUECKWEG\.txt	Protokolldatei der Bereinigung
+
+# ── Interne Servernamen und Infrastruktur ───────────────────────────────────
+(?i)\b(k42|homer|cletus)\b	interner Servername
+(?i)k42-sprung|vca-mail-wrapper|kundenserver42	interne Infrastruktur
+
+# ── Fachjargon ohne Erklaerung ──────────────────────────────────────────────
+(?i)root-verdikt|kill-proof|rotations-ritual|\bverdikt\b	Fachjargon (→ „Prüfung der Server“, „altes Passwort wird abgewiesen“)
+(?i)fingerabdruck|sha256-12	Fingerabdruck als Beleg (→ Klartext „altes Passwort wird abgewiesen“)

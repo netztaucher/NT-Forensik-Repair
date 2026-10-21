@@ -39,7 +39,10 @@
 Die Markdown-Berichte sind Rohfassungen. Was an den Kunden geht, folgt seit 21.10.2026 dem
 Standard **Kundenpaket** (Sicherheitsbericht, DSGVO-Dokumentation und BSI-Einordnung im Designsystem
 NT Docs, kurzes Anschreiben, keine Interna) — siehe [Incident-Response-Playbook, Phase 5](docs/incident-response.md#kundenpaket--standard-seit-21102026).
-Das Werkzeug erzeugt diesen Standard noch nicht selbst (#149, #150, #151).
+Der Lauf erzeugt die drei PDFs selbst ([`reportgen/kundenpaket.py`](reportgen/README.md)), sobald
+WeasyPrint da ist; Kunde, Erzählung und Bereinigung kommen aus einer Fall-Datei. Das Anschreiben
+baut [`mailgen/anschreiben.py`](mailgen/README.md), der [Interna-Wächter](werkzeuge/interna-sperrliste.txt)
+prüft alles vor der Auslieferung.
 
 Alle Rohdaten werden als nummerierte, SHA256-versiegelte Belege abgelegt (Chain-of-Custody).
 
@@ -118,7 +121,7 @@ rsync -a --exclude laeufe --exclude .git ./ root@SERVER:/root/nt-forensik/
 | `lib/`, `module/` | Runner und Prüfabschnitte | **immer** |
 | `daten/` | Joomla-Prüfsummen und Schwachstellenlisten (3 MB) | für Abschnitt 12 |
 | `signaturen/` | YARA-Regeln | nur mit `--yara` |
-| `reportgen/` | PDF-Erzeugung | nur für den PDF-Bericht |
+| `reportgen/` | Kundenpaket im Designsystem NT Docs (WeasyPrint) | nur für die Kunden-PDFs |
 
 ```bash
 # Ein Plesk-Abo als Ganzes — alle Verzeichnisse dieses Kunden, sonst nichts
@@ -176,13 +179,18 @@ Das Skript installiert sich beim ersten Lauf nach `/root/wartungsscripte/` und l
 │   ├── kundenbericht.md        # laienlesbar, mit Ampel
 │   ├── befunde_details.md      # Fundstellen relativ zum Kundenverzeichnis (nur bei Funden)
 │   ├── root_aussage.md         # nur bei --nur-root
-│   └── abschlussbericht.pdf    # gebrandetes PDF (nur wenn pandoc+weasyprint da)
+│   ├── NT-Sicherheitsbericht_<Kunde>_<Datum>.pdf         # NT Docs (nur wenn WeasyPrint da)
+│   ├── NT-Dokumentation_DSGVO-Art33_<Kunde>_<Datum>.pdf  # 2 Seiten
+│   └── NT-Einordnung_BSI-Meldung_<Kunde>_<Datum>.pdf     # 2 Seiten
 └── betreiber/                  # NICHT WEITERGEBEN
     ├── technik_bericht.md      # vollständig, auch serverweite Befunde
     ├── bsi_meldung.md          # Entwurf
     ├── dsgvo_meldung.md        # Entwurf, eigener Meldeweg
     ├── findings.json           # maschinenlesbar, Eingabe für die Bereinigung
     ├── lauf.log
+    ├── kundenpaket_funde.tsv         # Fundliste für die Kunden-PDFs
+    ├── kundenpaket_fall.entwurf.json # Vorlage für die Fall-Datei (NT_KUNDENFALL)
+    ├── kundenpaket_pruefung/         # Seitenbilder und Prüfbericht der Kunden-PDFs
     └── belege/                 # Rohdaten, SHA256-versiegelt, bewusst UNMASKIERT
 ```
 

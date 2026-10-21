@@ -4,6 +4,35 @@ Alle nennenswerten Änderungen an `wp_plesk_forensik.sh`.
 
 ## [unveröffentlicht]
 
+### Kundenpaket aus dem Werkzeug (#149, #150, #151)
+
+- **#149 NT Docs:** `reportgen/kundenpaket.py` erzeugt aus dem Lauf Sicherheitsbericht,
+  Dokumentation Art. 33 DSGVO (2 Seiten) und Einordnung BSI-Meldung (2 Seiten) im
+  Designsystem NT Docs (Kopie unter `reportgen/ntdocs/`, Herkunft in `QUELLE.md`). Inhalt
+  aus `findings.json` und der neuen Fundliste `betreiber/kundenpaket_funde.tsv`, nur Pfade
+  im Prüfumfang; Kunde, Erzählung und Bereinigung aus einer Fall-Datei (`--fall`,
+  im Lauf `NT_KUNDENFALL`). `reportgen/ntdocs_satz.py` misst die Bausteine, verteilt sie
+  auf feste A4-Seiten, bricht Tabellen zwischen Zeilen um und prüft das fertige PDF
+  (Seitenzahl, ≥ 8 mm über der Fusszeile, Titel einzeilig, Sprachregeln, Seitenbilder).
+  `module/14_berichte/60_pdf.sh` baut damit `kunde/NT-*.pdf` statt `abschlussbericht.pdf`;
+  Seitenbilder, Prüfbericht und Fall-Entwurf liegen in `betreiber/`. Prüfstand-Läufe bauen
+  kein PDF (Goldmuster-Referenz unabhängig von WeasyPrint).
+- **CI:** Der Job „Zwei Läufe“ installiert WeasyPrint 70.0 (venv) und `poppler-utils` und
+  lässt `werkzeuge/kundenpaket-pruefstand.sh` mit den echten PDFs laufen (vorher Abbruch
+  „Kein Python mit WeasyPrint“).
+- **#150 Interna:** Sperrliste `werkzeuge/interna-sperrliste.txt` und Wächter
+  `werkzeuge/interna-waechter.sh` (PDF über pdftotext, HTML, E-Mail). Generator, Anschreiben
+  und `werkzeuge/kundenpaket.sh` brechen bei einem Treffer ab. Selbsttest in CI
+  (`werkzeuge/interna_waechter_selbsttest.sh`), beide Richtungen.
+- **#151 Anschreiben:** `mailgen/anschreiben.py` — rund 150 Wörter, Kasten „Bitte heute“,
+  Meldepflicht, normale Gross-/Kleinschreibung, kein Kopf, kein Logo, Text-Alternative,
+  Bildschirmfotos über Chrome headless, Apple-Mail-Entwurf mit allen Anhängen in einem Lauf.
+- `werkzeuge/kundenpaket.sh` legt die NT-Docs-PDFs ab (Bericht in 01, DSGVO und BSI in 02);
+  Markdown-Rohfassungen nur noch mit `--mit-rohfassung`. Ohne Kunden-PDFs kein Paket.
+- `werkzeuge/kundenpaket-pruefstand.sh` prüft die Kundendokumente mit der anonymen Fixture
+  `pruefstand/kundenpaket/fall.json`: drei PDFs, Seiten, Seitenbilder, fremder Kunde,
+  Interna grün und rot, Mail, Paket.
+
 ### Standard Kundenpaket (Doku, #149, #150, #151)
 
 - Playbook `docs/incident-response.md`: Phase 5 um den Standard **Kundenpaket** ergänzt
@@ -13,7 +42,7 @@ Alle nennenswerten Änderungen an `wp_plesk_forensik.sh`.
   Befehle und gezählten Personenbezug, NIS2-Schwellen mit Stand. Phase 7: Rotation nur über
   die Aktuatoren in `infra/ops/secret-rotation/` mit Kill-Proof, Fernwartung widerrufen und von
   aussen prüfen, Fremd-Zugangsdaten, FTP-Unterkonten, `WP_DEBUG`. Zwei neue Merksätze.
-- README und `reportgen/README.md` verweisen auf den Standard; das Werkzeug setzt ihn noch nicht um.
+- README und `reportgen/README.md` verweisen auf den Standard.
 
 ### Nachlese Vorfall 21.10.2026 (#141, #142, #144)
 
