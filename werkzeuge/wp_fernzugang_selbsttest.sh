@@ -47,7 +47,7 @@ RUN_DIR="$TMP"; DAYS_BACK=30; REZ_PFX="wp_"; WANT_ONLINE=0
 VHOSTS_DIR="$TMP/vhosts"
 
 eval "$(sed -n '/^datei_epoche()/,/^}/p' "${SELF_DIR}/lib/kern.sh")"
-for f in _db_da _db_sql _wp_im_verzeichnis _wp_logdir _wp_log_tage _wp_autologin_plugins \
+for f in _db_da _db_sql _wp_im_verzeichnis _wp_logdir _wp_log_lesen _wp_log_tage _wp_autologin_plugins \
          _wp_udc_lesen _wp_haertung_updraftcentral _wp_db_persistenz; do
   eval "$(sed -n "/^${f}()/,/^}\$/p" "$REZEPT")"
   declare -F "$f" >/dev/null || { echo "FEHLER: ${f} nicht im Rezept gefunden"; exit 1; }
@@ -250,6 +250,16 @@ _wp_haertung_updraftcentral
 hat_befund  "Schlüssel + udrpc-Logzeile im Zeitraum" crit "203.0.113.7"
 if grep '^BEFUND' "$AUSGABE" | grep -qF '198.51.100.9'; then ergebnis "Logzeile ausserhalb des Zeitraums zaehlt nicht" FEHLER
 else ergebnis "Logzeile ausserhalb des Zeitraums zaehlt nicht" ok; fi
+
+# Anlass 21.10.2026: Plesk hatte um 06:43 rotiert, die RPC-Aufrufe lagen nur
+# noch gepackt vor. Eine Pruefung, die .gz uebergeht, meldet dann warn statt crit.
+neu gz-rpc.example
+NT_DB_ATTRAPPE="$TMP/db_udc"
+: > "${VHOSTS_DIR}/system/gz-rpc.example/logs/access_ssl_log"
+printf '203.0.113.8 - - [%s] "POST / HTTP/1.1" 200 7084 "-" "WordPress/6.4; class-udrpc.php"\n' "$_heute" \
+  | gzip -c > "${VHOSTS_DIR}/system/gz-rpc.example/logs/access_ssl_log.processed.1.gz"
+_wp_haertung_updraftcentral
+hat_befund  "udrpc-Zeile nur im rotierten .gz" crit "203.0.113.8"
 
 neu alt-rpc.example
 NT_DB_ATTRAPPE="$TMP/db_udc"

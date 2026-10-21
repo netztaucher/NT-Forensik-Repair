@@ -1001,6 +1001,21 @@ _wp_logdir() {
   return 1
 }
 
+# Ein Protokoll als Klartext, gleich ob rotiert und gepackt. Anlass 21.10.2026:
+# Plesk rotierte das Zugriffsprotokoll von web68 um 06:43 — die drei
+# UpdraftCentral-Aufrufe vom 19.10. lagen danach nur noch in
+# access_ssl_log.processed.1.gz, und die Pruefung, die gepackte Dateien
+# uebersprang, stufte einen BENUTZTEN Fernzugang als blosse Moeglichkeit ein.
+# Gleiche Funktion wie _u_lesen in module/13e_ursachensuche.sh.
+_wp_log_lesen() {   # <protokoll>
+  case "$1" in
+    *.gz)  gzip  -dc -- "$1" 2>/dev/null ;;
+    *.bz2) bzip2 -dc -- "$1" 2>/dev/null ;;
+    *.xz)  xz    -dc -- "$1" 2>/dev/null ;;
+    *)     cat       -- "$1" 2>/dev/null ;;
+  esac
+}
+
 # Tagesstempel des Untersuchungszeitraums im Format des Zugriffsprotokolls,
 # "[dd/Mon/yyyy:" je Zeile, heute zuerst. Als Musterliste fuer grep -F: kein
 # Datumsrechnen je Logzeile, und dasselbe Verhalten mit GNU- und BSD-date.
@@ -1147,8 +1162,7 @@ _wp_autologin_plugins() {
       local _fz
       _fz=$(for _lf in "${logdir}"/*error_log*; do
               [[ -f "$_lf" ]] || continue
-              [[ "$_lf" == *.gz || "$_lf" == *.bz2 || "$_lf" == *.xz ]] && continue
-              grep -hF "${ordner#"${REZ_PFAD}"/}" "$_lf" 2>/dev/null | grep -E 'Fatal|Uncaught' || true
+              _wp_log_lesen "$_lf" | grep -F "${ordner#"${REZ_PFAD}"/}" | grep -E 'Fatal|Uncaught' || true
             done | sed -nE 's/^\[([^]]+)\].*/\1/p')
       n_fatal=$(printf '%s' "$_fz" | grep -c . || true)
       [[ "${n_fatal:-0}" -gt 0 ]] && fatal_zeit="$(printf '%s\n' "$_fz" | head -1) bis $(printf '%s\n' "$_fz" | tail -1)"
@@ -1685,8 +1699,7 @@ _wp_haertung_updraftcentral() {
   if [[ -n "$logdir" ]]; then
     rpc=$(for _lf in "${logdir}"/*access*; do
             [[ -f "$_lf" ]] || continue
-            [[ "$_lf" == *.gz || "$_lf" == *.bz2 || "$_lf" == *.xz ]] && continue
-            grep -hF 'class-udrpc.php' "$_lf" 2>/dev/null || true
+            _wp_log_lesen "$_lf" | grep -F 'class-udrpc.php' || true
           done | grep -F -f <(_wp_log_tage) 2>/dev/null \
                | awk '{ t = $4; sub(/^\[/, "", t); n[$1]++; if (!($1 in a)) a[$1] = t; z[$1] = t }
                       END { for (ip in n) printf "%s\t%d\t%s\t%s\n", ip, n[ip], a[ip], z[ip] }' \
