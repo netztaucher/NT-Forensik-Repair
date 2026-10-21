@@ -36,6 +36,11 @@
 - **`technik_bericht.md`** — vollständiger technischer Bericht über alle Prüfpunkte.
 - **`findings.json`** — maschinenlesbarer Export aller Befunde (Verdikte, IOCs, actionable Pfade) für nachgelagerte Werkzeuge.
 
+Die Markdown-Berichte sind Rohfassungen. Was an den Kunden geht, folgt seit 21.10.2026 dem
+Standard **Kundenpaket** (Sicherheitsbericht, DSGVO-Dokumentation und BSI-Einordnung im Designsystem
+NT Docs, kurzes Anschreiben, keine Interna) — siehe [Incident-Response-Playbook, Phase 5](docs/incident-response.md#kundenpaket--standard-seit-21102026).
+Das Werkzeug erzeugt diesen Standard noch nicht selbst (#149, #150, #151).
+
 Alle Rohdaten werden als nummerierte, SHA256-versiegelte Belege abgelegt (Chain-of-Custody).
 
 > Entwickelt von **netztaucher | digital** für den Einsatz auf eigenen und betreuten Systemen.

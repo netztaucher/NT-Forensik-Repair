@@ -109,10 +109,37 @@ Im `kundenbericht.md`/`bsi_meldung.md` ergänzen (die maschinellen Teile stehen 
 - „Bereits durchgeführt" um Quarantäne/Offline-Nahme,
 - BSI-Formularfelder (Kontakt, Einstufung).
 
+**Ursache auch beim Hersteller suchen.** Kam der Einstieg über eine Fernwartung oder ein
+Premium-Plugin (UpdraftCentral, ManageWP, MainWP, WPMU-Dashboard), zuerst die
+Sicherheitsmeldungen des Herstellers prüfen. Im Vorfall vom 21.10.2026 stammte der
+Schlüssel aus einem Einbruch bei TeamUpdraft — belegt durch das `updraftcentral_client_log`
+(Sondierung unter erfundener Kennung, danach ein gültig signierter Befehl).
+
 Belege nach Änderungen neu versiegeln:
 ```bash
 cd "$RUN/belege" && sha256sum ./* > SHA256SUMS
 ```
+
+### Kundenpaket — Standard seit 21.10.2026
+
+Was an den Kunden geht, folgt diesem Standard (Umsetzung im Werkzeug: #149, #150, #151):
+
+| Teil | Form |
+|---|---|
+| Sicherheitsbericht | PDF im Designsystem **NT Docs**; Seite 1 Ergebnis mit Statuskarten, Teil 1 Kundenbericht (Sie), Teil 2 Protokoll in nummerierten Abschnitten bis „Offene Punkte" |
+| Dokumentation Art. 33 DSGVO | 2 Seiten NT Docs, Einschätzung + Angaben nach Abs. 3 + Unterschriftsfeld des Verantwortlichen |
+| Einordnung BSI-Meldung | 2 Seiten NT Docs, KRITIS/NIS2/freiwillig + alle Angaben für eine freiwillige Meldung |
+| Bildschirmfotos | Startseiten nach der Bereinigung (Chrome headless, 1440×1000) |
+| Anschreiben | kurze HTML-Mail (~150 Wörter, ein Kasten „Bitte heute", Meldepflicht in 2–3 Sätzen), normale Gross-/Kleinschreibung, kein Kopf, kein Logo |
+
+**Keine Interna im Kundenpaket:** keine Issue-Nummern, Werkzeugnamen oder -stände,
+Serverpfade, Ablagen (1Password, Register), internen Servernamen, keine Daten anderer
+Kunden, keine Admin-Benutzernamen, kein unerklärter Fachjargon (Liste in #150).
+Beweise zum Vorfall (Hashes, Angreifer-IPs, Zeitstempel, Pfade im Kunden-Webspace) bleiben.
+
+**Vor der Auslieferung jede Seite als Bild prüfen.** Feste A4-Seiten schneiden Überlauf
+still ab; Abstände, fluchtende Tabellenzeilen und die Kante unter dem Kopfband sind
+nur im Bild sichtbar. Danach `pdftotext` gegen die Interna-Liste.
 
 ## Phase 6 — Melden (falls einschlägig)
 
@@ -120,15 +147,34 @@ cd "$RUN/belege" && sha256sum ./* > SHA256SUMS
 |---|---|---|
 | **Datenschutz-Aufsichtsbehörde** (DSGVO Art. 33) | personenbezogene Daten betroffen/möglich | **72 h** ab Kenntnis |
 | **BSI-Meldeportal** (mip.bsi.bund.de) | KRITIS / NIS2 / §32 BSIG | Erst ≤ 24 h, Folge ≤ 72 h |
-| **BSI freiwillig** | alle anderen | jederzeit sinnvoll |
+| **BSI freiwillig** | alle anderen (Allianz für Cybersicherheit) | jederzeit sinnvoll |
 | **ZAC der Landespolizei** | Straftatverdacht | Strafanzeige empfohlen |
+
+**Meldepflicht belegen statt schätzen.** Für Art. 33 zählen, was der Angreifer *tatsächlich*
+tun konnte und was in der Instanz liegt:
+- ausgeführte Befehle der Fernwartung (Client-Log) und Antworten > 10 MB im Zugriffsprotokoll,
+- Personenbezug zählen: Benutzer, Kommentare mit E-Mail, Formular-/Newsletter-/Bestell-/Quizdaten.
+
+Bleibt es bei „kein Abruf, nur Admin-Konten", ist das Risiko voraussichtlich keines: keine
+Meldung, aber Dokumentation nach Abs. 5 (unterschrieben beim Verantwortlichen). NIS2 gilt
+seit 06.12.2025 für mittlere Unternehmen (≥ 50 Beschäftigte oder > 10 Mio. € Umsatz und
+Bilanzsumme) in den gelisteten Sektoren; Stand und Quelle im Dokument nennen. Keine
+Rechtsberatung — die Entscheidung trifft der Verantwortliche.
 
 ## Phase 7 — Bereinigen & Härten
 
 **Sofort:**
-- Alle Passwörter rotieren (WordPress, Plesk, FTP, SSH, DB).
+- Alle Passwörter rotieren (WordPress, Plesk, FTP, SSH, DB) — **nur über die Aktuatoren**
+  in `infra/ops/secret-rotation/` (`rotate-plesk-wp-db.sh`, `rotate-plesk-ftp.sh`,
+  `set-wp-user-password.sh`), mit Kill-Proof: rotiert ist erst, was den alten Wert ablehnt.
+- Fernwartungs-Schlüssel widerrufen und von aussen prüfen (UpdraftCentral: RPC-POST mit
+  alter Kennung muss die normale Startseite liefern, nicht eine leere Antwort).
+- Im Kunden-Webspace gespeicherte Fremd-Zugangsdaten entfernen (z. B. updraftplus.com-Login
+  in `updraftplus-addons_options`).
+- Zusätzliche FTP-Unterkonten und ungenutzte `.ssh/id_rsa` prüfen; unbekannte sperren bzw. in Quarantäne.
 - Alle WP-Sitzungen invalidieren (Salts in `wp-config.php` neu).
-- Angreifer-IP + Brute-Force-IPs sperren.
+- `WP_DEBUG` abschalten, wenn es an ist (vorher `wp-config.php` sichern).
+- Angreifer-IP + Brute-Force-IPs sperren — anonymisierte `.0`-Adressen nie als Einzel-IP.
 - Verwundbare/genutzte Plugins deaktivieren/aktualisieren.
 
 **Kurzfristig:**
@@ -149,6 +195,8 @@ cd "$RUN/belege" && sha256sum ./* > SHA256SUMS
 3. **Passwörter zuerst** — solange Zugänge gültig sind, ist jede Reinigung sinnlos.
 4. **Sauberes Backup** schlägt Nachbereinigung.
 5. **Dokumentieren** — der Kunde, das BSI und ggf. das Gericht brauchen die Kette.
+6. **Rotiert ist, was den alten Wert ablehnt** — „der neue funktioniert" reicht nicht.
+7. **Kundenpaket ohne Interna** — und jede Seite einmal als Bild ansehen.
 
 ---
 *netztaucher | digital*

@@ -4,6 +4,17 @@ Alle nennenswerten Änderungen an `wp_plesk_forensik.sh`.
 
 ## [unveröffentlicht]
 
+### Standard Kundenpaket (Doku, #149, #150, #151)
+
+- Playbook `docs/incident-response.md`: Phase 5 um den Standard **Kundenpaket** ergänzt
+  (Sicherheitsbericht, DSGVO-Dokumentation, BSI-Einordnung im Designsystem NT Docs,
+  kurzes Anschreiben, Bildschirmfotos, keine Interna, Seitenprüfung als Bild) und um
+  „Ursache auch beim Hersteller suchen“. Phase 6 belegt die Meldepflicht über ausgeführte
+  Befehle und gezählten Personenbezug, NIS2-Schwellen mit Stand. Phase 7: Rotation nur über
+  die Aktuatoren in `infra/ops/secret-rotation/` mit Kill-Proof, Fernwartung widerrufen und von
+  aussen prüfen, Fremd-Zugangsdaten, FTP-Unterkonten, `WP_DEBUG`. Zwei neue Merksätze.
+- README und `reportgen/README.md` verweisen auf den Standard; das Werkzeug setzt ihn noch nicht um.
+
 ### Nachlese Vorfall 21.10.2026 (#141, #142, #144)
 
 - **#144 PHP ohne `.php`-Endung:** `wp-content/plugins/german.php.bak` (web68,
