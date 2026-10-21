@@ -187,6 +187,46 @@ _entlastet_satz() {   # _entlastet_satz <anzahl>
   [[ "${1:-0}" -gt 0 ]] && printf ' (%s gegen amtliche Prüfsummen entlastet)' "$1"
 }
 
+# ── DIE KLAMMER SAGT NICHT, WELCHE DATEI ENTLASTET IST (#136) ───────────
+#
+# Lauf web68 vom 21.10.2026:
+#
+#   🔴 KRITISCH: Webshells/Dropper gefunden: 1 Datei(en) < 3000 B mit
+#      Obfuskation (1 gegen amtliche Prüfsummen entlastet)
+#
+# Gelesen wurde das als "die eine Datei ist entlastet und steht trotzdem da".
+# Daraus wurde #136. Tatsaechlich waren es ZWEI Treffer: entlastet war
+# wp-includes/class-wp-simplepie-sanitize-kses.php (Kern geprueft), kritisch
+# blieb advanced-ads/includes/ads/class-ad-plain.php — und die blieb, weil der
+# Lauf OHNE --online lief und die Plugin-Pruefsummen gar nicht geholt wurden
+# (12r: "Plugin-Integrität nicht geprüft"). Die Datei entsprach der amtlichen
+# Pruefsumme; der Lauf wusste das nur nicht.
+#
+# Die Rechnung war richtig, der Satz nicht. Eine Klammer direkt hinter der
+# Zahl liest sich als Teilmenge DIESER Zahl. Darum steht in der kritischen
+# Zeile ausdruecklich "weitere … nicht mitgezaehlt". Die anderen Stufen
+# behalten die Klammer: sie sind kein Handlungsbefehl, und ihr Wortlaut steht
+# in der Referenz des Pruefstands.
+_dropper_entlastet_satz() {   # <anzahl>
+  [[ "${1:-0}" -gt 0 ]] \
+    && printf ' — %s weitere(r) Mustertreffer gegen amtliche Prüfsummen entlastet, nicht mitgezählt und nicht zur Bereinigung vorgesehen' "$1"
+}
+
+# Wurden die Plugin-Pruefsummen in diesem Lauf ueberhaupt geholt? Dieselbe
+# Bedingung wie das --online-Tor in rezept_kern (rezepte/wordpress/rezept.sh,
+# "Plugin-Integrität nicht geprüft"): Netzquelle und kein --online heisst,
+# keine Plugin-Datei KONNTE entlastet werden. Eine lokale Pruefsummenquelle
+# (WP_PRUEFSUMMEN_BASIS als Verzeichnis, Pruefstand) braucht das Tor nicht.
+#
+# Das entlastet nichts. Es sagt nur, dass hier eine Pruefung fehlt, die die
+# Entlastung haette liefern koennen — sonst sieht "kritisch" nach Pruefung
+# aus, wo keine stattfand, und die Bereinigung verschiebt ein unveraendertes
+# Plugin in Quarantaene.
+_plugin_pruefsummen_ungeprueft() {
+  [[ "${WANT_ONLINE:-0}" != "1" ]] \
+    && [[ "${WP_PRUEFSUMMEN_BASIS:-https://downloads.wordpress.org/plugin-checksums}" == http*://* ]]
+}
+
 # ── Stufe 1: kleine Dateien mit Obfuskation ──────────────────────────────
 _einordnen "${DROPPER_DETAIL:-}"
 _D_REST="$_REST"; _D_WEG="$_WEG"; _D_N="$_N_REST"; _D_NW="$_N_WEG"
@@ -201,8 +241,15 @@ if [[ "${_N_VENDOR:-0}" -gt 0 ]]; then
   warn "${_N_VENDOR} Mustertreffer liegen in Abhängigkeitsverzeichnissen (vendor/, node_modules/) — zur Sichtung, nicht zur Quarantäne. Für sie gibt es keinen Prüfsummensatz" web
   evidence "webshell_vendor_sichtung" "$_V_VENDOR" kunde
 fi
+WEBSHELL_PLUGIN_UNGEPRUEFT=0
 if [[ "${_D_N:-0}" -gt 0 ]]; then
-  crit "Webshells/Dropper gefunden: ${_D_N} Datei(en) < ${DROPPER_MAX_BYTES} B mit Obfuskation$(_entlastet_satz "$_D_NW")" web
+  crit "Webshells/Dropper gefunden: ${_D_N} Datei(en) < ${DROPPER_MAX_BYTES} B mit Obfuskation$(_dropper_entlastet_satz "$_D_NW")" web
+  if _plugin_pruefsummen_ungeprueft; then
+    WEBSHELL_PLUGIN_UNGEPRUEFT=$(printf '%s\n' "$_D_REST" | grep '^=== ' | grep -c '/wp-content/plugins/' || true)
+    WEBSHELL_PLUGIN_UNGEPRUEFT="${WEBSHELL_PLUGIN_UNGEPRUEFT:-0}"
+    [[ "$WEBSHELL_PLUGIN_UNGEPRUEFT" -gt 0 ]] && \
+      info "${WEBSHELL_PLUGIN_UNGEPRUEFT} davon liegen in Plugin-Verzeichnissen, deren Dateien in diesem Lauf NICHT gegen die Prüfsummen von wordpress.org geprüft wurden (ohne --online) — vor einer Bereinigung mit --online wiederholen; eine unveränderte Plugin-Datei wird dann entlastet"
+  fi
   DROPPER_CLUSTER=$(printf '%s\n' "$_D_REST" | grep "^=== " \
     | sed 's|=== /var/www/vhosts/||;s| ===||' | cut -d/ -f1 | LC_ALL=C sort | uniq -c | sort -rn || true)
   info "Betroffene Domains (Dropper-Cluster):"
@@ -218,7 +265,13 @@ else
 fi
 # Was entlastet wurde, bleibt belegt. Sonst liesse sich spaeter nicht
 # nachvollziehen, WAS der Filter herausgenommen hat.
-[[ "${_D_NW:-0}" -gt 0 ]] && evidence "webshell_dropper_entlastet" "$_D_WEG"
+# Der Vermerk steht IM Beleg: wer ihn einzeln oeffnet, sieht sonst nur eine
+# Liste von Dropper-Bloecken im selben Format wie im kritischen Beleg.
+[[ "${_D_NW:-0}" -gt 0 ]] && evidence "webshell_dropper_entlastet" "# AMTLICH ENTLASTET — gegen amtliche Prüfsummen als unverändert bestätigt
+# (Plugin-Prüfsummen von wordpress.org bzw. bestandenes verify-checksums).
+# Nicht in der Zählung, nicht im kritischen Befund, nicht in
+# actionable.webshell_dropper — keine Bereinigung.
+${_D_WEG}"
 
 # ── DIE ENTLASTUNG MUSS IN findings.json ANKOMMEN ───────────────────────
 #

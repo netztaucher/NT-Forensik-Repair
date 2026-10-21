@@ -70,6 +70,32 @@ json_db_arr() {
   printf '%s]' "$out"
 }
 
+# stdin: TAB-getrennte Zeilen → JSON-Array von Objekten mit den genannten
+# Feldnamen, in Spaltenreihenfolge (#134, #138, #139).
+#
+#   printf '%s\n' "$WP_ORPHAN_CAPS" | json_felder_arr pfad user_id meta_key rechte
+#
+# Getrennt wird am Unit Separator, nicht am Tab: Tab ist fuer `read` ein
+# IFS-Leerraumzeichen, mehrere Tabs gelten als EIN Trenner, und ein leeres
+# Mittelfeld schoebe alles dahinter um eine Spalte nach links (dieselbe Falle
+# wie in rezept_version). Fehlende Felder bleiben leer.
+json_felder_arr() {
+  local first=1 out="[" zeile i obj feld
+  local -a werte
+  while IFS= read -r zeile; do
+    [ -z "$zeile" ] && continue
+    IFS=$'\x1f' read -r -a werte <<< "${zeile//$'\t'/$'\x1f'}"
+    obj="" i=0
+    for feld in "$@"; do
+      obj="${obj}${obj:+,}\"${feld}\":\"$(printf '%s' "${werte[$i]:-}" | json_esc)\""
+      i=$((i+1))
+    done
+    [ "$first" -eq 1 ] && first=0 || out="${out},"
+    out="${out}{${obj}}"
+  done
+  printf '%s]' "$out"
+}
+
 # stdin: <ctime>\t<mtime>\t<pfad> → JSON-Array von Objekten (Abschnitt 13e)
 #
 # Rohe Sekunden, keine formatierten Zeitangaben. Wer die Achse
@@ -92,9 +118,17 @@ emit_findings_json() {
   local corei coresne doorw coreinj disg rogue rogued suspadmd uzeit dbleichen dboptcode
   dbleichen=$(printf '%s\n' "${WP_PLUGIN_LEICHEN:-}" | json_db_arr)
   dboptcode=$(printf '%s\n' "${WP_OPT_CODE:-}"       | json_db_arr)
+  # Bereinigungsziele aus dem Fall vom 21.10.2026 (#134, #138, #139). Je
+  # Eintrag mit Installationspfad — dieselbe Begruendung wie bei json_admin_arr.
+  local wpautologin wporphan wpudc
+  wpautologin=$(printf '%s\n' "${WP_AUTOLOGIN_PLUGINS:-}" | json_felder_arr pfad plugin datei slug)
+  wporphan=$(printf '%s\n'    "${WP_ORPHAN_CAPS:-}"       | json_felder_arr pfad user_id meta_key rechte)
+  wpudc=$(printf '%s\n'       "${WP_UDC_SCHLUESSEL:-}"    | json_felder_arr pfad id name angelegt)
   # Zeitachse aus 13e. Leer, wenn 13e nichts belastet fand oder uebersprungen
   # wurde — dann bleibt das Array leer, nicht das Feld weg.
   uzeit=$(printf '%s\n' "${U_TAB:-}" | json_zeitachse_arr)
+  # Belegter Einstiegsweg aus 13e.5 (#135): Kanal, Zeit, Adresse, Datei.
+  ueinst=$(printf '%s\n' "${U_EINSTIEG:-}" | json_felder_arr kanal zeit ip datei)
   corei=$(printf '%s\n' "${CORE_INJECTED:-}"      | json_arr)
   coresne=$(printf '%s\n' "${CORE_SNE:-}"         | json_arr)
   doorw=$(printf '%s\n' "${DOORWAY_DIRS:-}"       | json_arr)
@@ -315,6 +349,7 @@ print(json.dumps(raus, ensure_ascii=False))' 2>/dev/null || echo '{}')
     "inode_spaeter_geaendert": ${U_INODE:-0},
     "vorwaerts_datiert": ${U_ZUKUNFT:-0},
     "zeitachse": ${uzeit:-[]},
+    "einstiegsweg": ${ueinst:-[]},
     "reichweite_systemnutzer": "$(json_str "${U_REICHWEITE:-}")",
     "quellenlage": "$(json_str "${U_QUELLEN:-}")"
   },
@@ -324,6 +359,7 @@ print(json.dumps(raus, ensure_ascii=False))' 2>/dev/null || echo '{}')
     "webshell_count_roh": ${WEBSHELL_COUNT_ROH:-0},
     "webshell_vendor": ${WEBSHELL_VENDOR:-0},
     "webshell_entlastet": ${WEBSHELL_ENTLASTET:-0},
+    "webshell_plugin_ungeprueft": ${WEBSHELL_PLUGIN_UNGEPRUEFT:-0},
     "webshell_review_roh": ${WEBSHELL_REVIEW_ROH:-0},
     "webshell_review_entlastet": ${WEBSHELL_REVIEW_ENTLASTET:-0},
     "uploads_guards_gefiltert": ${GUARD_COUNT:-0},
@@ -360,6 +396,9 @@ print(json.dumps(raus, ensure_ascii=False))' 2>/dev/null || echo '{}')
     "suspect_wp_admins_detail": ${suspadmd:-[]},
     "wp_db_plugin_leichen": ${dbleichen:-[]},
     "wp_db_optionen_php": ${dboptcode:-[]},
+    "wp_autologin_plugins": ${wpautologin:-[]},
+    "wp_orphan_caps": ${wporphan:-[]},
+    "wp_updraftcentral_keys": ${wpudc:-[]},
     "nextcloud_htaccess": ${nchta:-[]},
     "nextcloud_malware": ${ncmal:-[]},
     "nextcloud_nested": ${ncnest:-[]},

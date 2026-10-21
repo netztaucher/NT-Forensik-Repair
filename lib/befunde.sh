@@ -103,6 +103,9 @@ U_ERST_ROH=""   # aeltester Zeitstempel EINSCHLIESSLICH der Massenvorgaenge
 U_ANKER=0       # mtime == ctime → seit dem Schreiben unberuehrt
 U_INODE=0       # Inode spaeter geaendert → mtime stammt nicht von diesem Vorgang
 U_ZUKUNFT=0     # mtime vorwaerts datiert
+U_EINSTIEG=""   # 13e.5 (#135): <kanal>\t<zeit>\t<ip>\t<datei> je belegtem Einstiegsweg
+U_EINSTIEG_N=0
+U_FENSTER=""    # Beginn des Protokollfensters (Epoche)
 U_SICHTFELD=0   # vhost-Verzeichnisse, die dieser Lauf ueberhaupt sehen darf
 U_REICHWEITE="" # vhosts, die ein Fund ueber den Systemnutzer miterfasst
 U_QUELLEN=""    # Protokollfenster je betroffenem vhost
@@ -162,6 +165,19 @@ SIGNATUR_TREFFER=""    # Treffer aus rezepte/*/signaturen.tsv (alle Anwendungen)
 # Entscheidung. Bis dahin: erkennen und ausweisen.
 WP_PLUGIN_LEICHEN=""   # active_plugins-Eintraege ohne Datei auf der Platte
 WP_OPT_CODE=""         # Optionen mit PHP-Code (Lader eines Generators)
+# ── Fernzugaenge und Hintertueren (#134, #138, #139) ─────────
+# Anlass 21.10.2026 (web68, web345): Einstieg ueber einen vergessenen
+# UpdraftCentral-Schluessel, danach ein Autologin-Plugin, dazu verwaiste
+# Administratorrechte in usermeta. Keine der drei Spuren stand in einer
+# Liste, die NT-Repair liest — das Plugin erschien nur in der Dateiliste.
+# Anders als die beiden Listen darueber sind diese drei Bereinigungsziele.
+#   WP_AUTOLOGIN_PLUGINS  <pfad>\t<plugin-ordner>\t<ausloesende datei>\t<slug>
+#   WP_ORPHAN_CAPS        <pfad>\t<user_id>\t<meta_key>\t<rechte>
+#   WP_UDC_SCHLUESSEL     <pfad>\t<id>\t<name>\t<angelegt>
+#                         NIE das Schluesselmaterial, nur die Kennung.
+WP_AUTOLOGIN_PLUGINS=""
+WP_ORPHAN_CAPS=""
+WP_UDC_SCHLUESSEL=""
 # Pfade aller gefundenen wp-config.php. Gelesen von findings.json, der
 # DSGVO-Meldung UND von NT-Repair als Rotationsziele — war nach dem Umzug
 # nach rezepte/ dauerhaft leer (siehe module/12r_rezepte.sh).

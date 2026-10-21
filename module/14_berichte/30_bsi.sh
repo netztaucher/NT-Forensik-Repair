@@ -11,6 +11,14 @@
 
 FIRST_SEEN=$(date -d "-${DAYS_BACK} days" +"%d.%m.%Y" 2>/dev/null || echo "[AUSFÜLLEN]")
 
+# §8 vorbefüllen, wenn 13e.5 den Weg im Zugriffsprotokoll belegt hat (#135).
+# Ein belegter Weg ist keine Vermutung — er steht vor den Platzhaltern, die
+# der Bearbeiter für weitere Hypothesen ausfüllt.
+BSI_VEKTOR_BELEGT=""
+if [[ -n "${U_EINSTIEG:-}" ]]; then
+  BSI_VEKTOR_BELEGT=$(printf '%s\n' "$U_EINSTIEG" | awk -F'\t' 'NF>=4{print "- **Belegt:** " $1 " — Request " $2 " von " $3 ", in derselben Sekunde angelegt: `" $4 "`"}')$'\n\n'"Weitere Hypothesen:"$'\n\n'
+fi
+
 cat > "$BSI_FILE" <<BSI
 # Meldung eines IT-Sicherheitsvorfalls an das BSI
 
@@ -127,7 +135,7 @@ ${RELAY_VERDICT}
 
 Basierend auf der forensischen Analyse (in absteigender Wahrscheinlichkeit):
 
-1. [AUSFÜLLEN — z. B. kompromittiertes/veraltetes WordPress-Plugin]
+${BSI_VEKTOR_BELEGT}1. [AUSFÜLLEN — z. B. kompromittiertes/veraltetes WordPress-Plugin]
 2. [AUSFÜLLEN — z. B. wp-admin Brute-Force mit anschließendem Plugin-Upload]
 3. [AUSFÜLLEN — z. B. kompromittierte FTP/SSH-Zugangsdaten]
 

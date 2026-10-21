@@ -390,6 +390,7 @@ Order allow,deny
 - ✅ kunde-drei.example/httpdocs: 2 Plugin(s) gegen wordpress.org geprüft — keine veränderte Codedatei
 - ⚪ **Nicht messbar: kunde-drei.example/httpdocs: 1 Plugin(s) ohne Prüfsummensatz und alle Themes — Unversehrtheit nicht feststellbar (Premium, Fork, Eigenbau; für Themes veröffentlicht wordpress.org keine Prüfsummen)**
   Beleg: belege/011_wp_ohne_pruefsummen_kunde-drei_example_httpdocs.txt
+- ✅ kunde-drei.example/httpdocs: kein Plugin mit Autologin-Muster (wp_set_auth_cookie neben Benutzeranlage und Anfrageparameter)
   kunde-drei.example/httpdocs: Core-Update-Staging Fassung 7.1 (<ZEIT>) unverändert gegen amtliche Prüfsummen — WordPress räumt es bei Erfolg weg; das Update ist vermutlich nicht abgeschlossen: <PRUEFSTAND>/vhosts/kunde-drei.example/httpdocs/wp-content/upgrade/wp_pruefstand3/wordpress
 - ✅ kunde-drei.example/httpdocs: WordPress-Core unverändert (verify-checksums)
 - ⚠️  **kunde-drei.example/httpdocs: 3 Core-Datei(en) für den Eigentümer schreibgeschützt (in einem Vorgang gesetzt am <ZEIT>) — Core-Updates scheitern daran, still; Ursache klären (Härtung von Hand oder Schutz eingeschleusten Codes vor dem nächsten Update)**
@@ -520,6 +521,7 @@ Sitemap: https://kunde-zwei.example/index.php/sitemap.xml
   Beleg: belege/025_wp_plugin_fehlt_kunde-zwei_example_httpdocs.txt
 - ⚪ **Nicht messbar: kunde-zwei.example/httpdocs: 1 Plugin(s) ohne Prüfsummensatz und alle Themes — Unversehrtheit nicht feststellbar (Premium, Fork, Eigenbau; für Themes veröffentlicht wordpress.org keine Prüfsummen)**
   Beleg: belege/026_wp_ohne_pruefsummen_kunde-zwei_example_httpdocs.txt
+- ✅ kunde-zwei.example/httpdocs: kein Plugin mit Autologin-Muster (wp_set_auth_cookie neben Benutzeranlage und Anfrageparameter)
 - 🔴 **KRITISCH: kunde-zwei.example/httpdocs: 1 abweichende Datei(en) im Core-Update-Staging (Fassung 7.1) — dort hat niemand etwas zu suchen außer dem Updater**
 
 ```
@@ -543,6 +545,7 @@ Sitemap: https://kunde-zwei.example/index.php/sitemap.xml
   Beleg: belege/029_wp_core_gemischt_kunde-zwei_example_httpdocs.txt
 - ⚠️  **kunde-zwei.example/httpdocs: 1 Core-fremde Datei(en) in wp-admin/wp-includes — prüfen**
   Beleg: belege/030_wp_core_fremd_kunde-zwei_example_httpdocs.txt
+- ✅ kunde-zwei.example/httpdocs: kein UpdraftCentral-Schlüssel hinterlegt
 - ✅ kunde-zwei.example/httpdocs: keine Application Passwords vergeben
 - ⚪ **Nicht messbar: kunde-zwei.example/httpdocs: REST-Benutzerliste nicht geprüft (ohne --online) — /wp-json/wp/v2/users liefert unangemeldet oft alle Benutzernamen**
 - ⚠️  **kunde-zwei.example/httpdocs: 2 Härtungspunkt(e) in wp-config.php offen**
@@ -608,6 +611,7 @@ _transient_dirsize_cache	412008
 ```
 
   Beleg: belege/035_wp_db_optionen_gross_kunde-zwei_example_httpdocs.txt
+- ✅ kunde-zwei.example/httpdocs: keine verwaisten Administratorrechte in usermeta
 - ⚪ **Nicht messbar: kunde-zwei.example/httpdocs: Datenbank nicht geprüft (grep beherrscht kein -P (PCRE) — die Werte aus wp-config.php sind damit nicht lesbar). Das ist KEINE Entwarnung.**
 
 ## 13b. .HTACCESS — SICHERUNG UND EINORDNUNG
@@ -749,14 +753,19 @@ ZUKUNFT   <ZEIT>  mtime liegt <SPANNE> NACH der ctime — vorwaerts datiert   <P
 
 ```
 <PRUEFSTAND>/vhosts/kunde-zwei.example
+    3 Zugriffsprotokoll(e) gelesen, davon 1 komprimiert
     Zugriffsprotokoll reicht zurueck bis <ZEIT>
-    1 aeltere(s) Protokoll(e) liegen komprimiert vor — nicht ausgewertet
 
 ```
 
   Beleg: belege/046_ursache_quellenlage.txt
 
-### 13e.5 Einstieg über Anmeldedaten
+### 13e.5 Einstiegsweg im Zugriffsprotokoll
+
+  9 Zeitpunkt(e) gegen das Zugriffsprotokoll gehalten (Fenster ±2 s): die juengsten belasteten Dateien und frisch angelegte Plugins/Themes
+- ⚪ **Nicht messbar: Kein Request mit Fernsteuerungs-, Upload- oder Installationskennung im Fenster ±2 s um die belasteten Dateien im Protokollfenster — der Einstiegsweg laesst sich aus den vorhandenen Quellen nicht bestimmen**
+
+### 13e.6 Einstieg über Anmeldedaten
 
 - ✅ Keine erfolgreiche Anmeldung im Zeitfenster der belasteten Dateien <PRUEFSTAND>/auth.log, ab <ZEIT>) — der Einstieg lag damit nicht bei Anmeldedaten, soweit dieses Protokoll reicht
   Beleg: belege/047_ursache_anmeldungen.txt
@@ -772,10 +781,10 @@ ZUKUNFT   <ZEIT>  mtime liegt <SPANNE> NACH der ctime — vorwaerts datiert   <P
 |---|---|
 | 🔴 Kritische Befunde | 18 |
 | ⚠️ Warnungen | 29 |
-| ✅ Unauffällige Prüfungen | 31 |
-| ⚪ Nicht messbar | 19 |
+| ✅ Unauffällige Prüfungen | 35 |
+| ⚪ Nicht messbar | 20 |
 
-> **19 Prüfung(en) haben keine Aussage geliefert.** Ihr Ergebnis ist weder
+> **20 Prüfung(en) haben keine Aussage geliefert.** Ihr Ergebnis ist weder
 > ein Befund noch eine Entwarnung — der jeweilige Bereich ist ungeprüft:
 >
 > - Webshell-Mustersuche nicht ausgeführt — grep beherrscht kein -P (PCRE). Auf macOS ist BSD-grep die Vorgabe; GNU grep oder ugrep installieren. Das ist KEINE Entwarnung.
@@ -797,6 +806,7 @@ ZUKUNFT   <ZEIT>  mtime liegt <SPANNE> NACH der ctime — vorwaerts datiert   <P
 > - kunde-zwei.example/httpdocs: REST-Benutzerliste nicht geprüft (ohne --online) — /wp-json/wp/v2/users liefert unangemeldet oft alle Benutzernamen
 > - kunde-zwei.example/httpdocs: Datenbank nicht geprüft (grep beherrscht kein -P (PCRE) — die Werte aus wp-config.php sind damit nicht lesbar). Das ist KEINE Entwarnung.
 > - Dieser Lauf sieht nur 1 vhost-Verzeichnis(se) — ob der Systemnutzer weitere besitzt, ist hier nicht feststellbar. Mit --global messbar
+> - Kein Request mit Fernsteuerungs-, Upload- oder Installationskennung im Fenster ±2 s um die belasteten Dateien im Protokollfenster — der Einstiegsweg laesst sich aus den vorhandenen Quellen nicht bestimmen
 
 ### 14.2 Empfohlene Sofortmaßnahmen
 

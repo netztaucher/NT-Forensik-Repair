@@ -112,8 +112,27 @@ Read-only-SELECTs gegen jede gefundene WP-DB (Zugang aus `wp-config.php`, bevorz
 | Optionen | `option_value` mit `base64_decode`/`eval(` oder `auto_prepend`/`auto_append` |
 | `siteurl`/`home` | Abweichung vom Domainnamen (Hinweis, Redirect-Hijack) |
 | aktive Plugins | Datei-Manager (`fileorganizer`, `wp-file-manager`) = ⚠️ Vektor |
+| verwaiste Rechte (#138) | `usermeta` mit Admin-Rechten ohne Zeile in `users` = ⚠️ — wer eine Benutzerzeile mit dieser ID anlegt, erbt die Rechte ohne Spur |
+| UpdraftCentral (#139) | Schlüssel in `updraft_central_localkeys` = ⚠️; zusätzlich RPC-Aufrufe (`class-udrpc.php`) im Access-Log = 🔴. Ausgegeben werden nur Anzahl, ID, Name, Anlagedatum — nie der Schlüssel |
 
 Ein heimlich angelegtes Admin-Konto ist die häufigste WordPress-Persistenz — es überlebt jede Datei-Bereinigung.
+
+### 6.1 Autologin-Hintertür als Plugin (#134)
+
+Anlass 21.10.2026: Fake-Plugins `hero-hub` („QuietPress Labs") und `hero-binder-1d4` („CopperForge WP") aus einem Baukasten — Name, Autor und Token wechseln je Opfer, das Verhalten nicht. Erkannt wird deshalb das **Verhalten**: eine PHP-Datei unter `plugins/` oder `mu-plugins/` mit `wp_set_auth_cookie(`, in deren Nähe (±40 Zeilen) sowohl Benutzeranlage oder Rechtevergabe (`wp_insert_user`, `wp_create_user`, `add_cap`, `set_role`) als auch eine Eingabe aus `$_GET`/`$_REQUEST`/`$_COOKIE`/`$_POST` steht = 🔴, Plugin-Ordner in `actionable.wp_autologin_plugins`. Amtlich bestätigte Dateien (nur mit `--online`) werden entlastet. Der Beleg nennt Ordneralter, Verzeichnisstatus und die Zahl der Fatal-Zeilen im `error_log` — nie den Dateiinhalt, nie Logzeilen (ein Stacktrace kann das Token tragen).
+
+### 6.2 Einstiegsweg aus dem Request derselben Sekunde (#135)
+
+Abschnitt 13e.5 hält die jüngsten belasteten Dateien (je Art höchstens `URSACHE_EINSTIEG_MAX`, Vorgabe 20; Zeitpunkt = Anlage, bei späterer ctime auch der Schreibvorgang) gegen das vhost-Access-Log, ±2 s, gepackte Rotationen eingeschlossen. Gesucht wird an `<vhost>/logs`, `<vhost>/logs/*/` und `system/<domain>/logs`.
+
+| Kanal | Kennung | Schwere |
+|---|---|---|
+| Fernsteuerung (nur POST) | UpdraftCentral `class-udrpc.php`, ManageWP, MainWP, InfiniteWP, WPMU DEV Hub, BlogVault/MalCare | 🔴 + Adresse als IOC |
+| Upload / Installation / Editor | `update.php?action=upload-plugin`, `plugin-install`, REST `/wp/v2/plugins`, Plugin-/Theme-Editor | 🔴 + Adresse als IOC |
+| schwach | `xmlrpc.php`, POST auf `wp-login.php` | ⚠️, keine IOC |
+| frische Plugin-/Theme-Anlage ohne Belastung | eine der obigen Kennungen | ⚠️ „beauftragt?“, keine IOC |
+
+Ein belegter Weg steht im Kundenbericht unter „Einfallstor“, in §8 der BSI-Meldung und in `findings.json` unter `ursache.einstiegsweg`. „Nicht bestimmbar“ gilt danach nur noch für die Dateien, die vor dem Protokollfenster liegen. Anlass: `POST /` mit `class-udrpc.php` in derselben Sekunde wie die Anlage von `hero-hub/`. Grenze: die Suche nimmt an, dass das Werkzeug in der Zeitzone des Webservers läuft.
 
 ## 7. Joomla-Prüfung (§12)
 

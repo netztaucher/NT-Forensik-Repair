@@ -6,7 +6,7 @@
 | **Einstufung** | 🔴 KRITISCH |
 | **Erstellt durch** | netztaucher \| digital |
 | **Datum** | <ZEIT> |
-| **Geprüfter Server** | imac |
+| **Geprüfter Server** | mac |
 | **Prüfungs-ID** | <LAUF-ID> |
 | **Befunde** | 🔴 18 kritisch · ⚠️ 26 auffällig · ⚪ 13 nicht messbar |
 

@@ -770,6 +770,10 @@ URSACHE_MASSE_FENSTER_SEK="${URSACHE_MASSE_FENSTER_SEK:-1800}"  # in welcher Spa
 # `head -1` je Logdatei; auf allen 475 vhosts waere er sinnlos teuer, und
 # Aussagekraft hat er nur dort, wo tatsaechlich etwas liegt.
 URSACHE_LOGS_MAX="${URSACHE_LOGS_MAX:-20}"
+# Wie viele Zeitpunkte je Art (belastet / frisch angelegt) 13e.5 gegen das
+# Zugriffsprotokoll haelt (#135). Ein Plugin mit 300 Dateien ist ein Vorgang,
+# kein 300-facher grep.
+URSACHE_EINSTIEG_MAX="${URSACHE_EINSTIEG_MAX:-20}"
 
 # ── Injektion in grosse Dateien (7.15) ───────────────────────
 #
