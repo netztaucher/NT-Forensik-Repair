@@ -4,6 +4,16 @@ Alle nennenswerten Änderungen an `wp_plesk_forensik.sh`.
 
 ## [unveröffentlicht]
 
+### Behoben — UpdraftCentral-Abgleich übersah rotierte Protokolle (#139)
+
+Der zweite Lauf vom 21.10.2026 (web68, `--online`) meldete den Schlüssel nur
+als ⚠️ „Fernsteuerung möglich", obwohl drei RPC-Aufrufe vom 19.10. im
+Protokoll lagen: Plesk hatte um 06:43 rotiert, die Zeilen standen nur noch in
+`access_ssl_log.processed.1.gz`, und die Prüfung übersprang gepackte Dateien.
+Neu: `_wp_log_lesen` (wie `_u_lesen` in 13e) für den RPC-Abgleich und die
+Fatal-Zählung des Autologin-Befunds. Selbsttest um den Fall erweitert, mit
+Gegenprobe gegen die alte Fassung.
+
 ### Vorfall 21.10.2026 — Autologin-Plugin über UpdraftCentral (#134–#139)
 
 Zwei Installationen (cletus web68, k42 web345) bekamen am 19.10.2026 ein
