@@ -4,6 +4,14 @@ Alle nennenswerten Änderungen an `wp_plesk_forensik.sh`.
 
 ## [unveröffentlicht]
 
+### Broken pipe bei langen Listen
+
+- `module/07_dateisystem.sh` (tmp-Executables) und `module/08_netzwerk.sh` (veränderte
+  Systemdateien) kappen die Anzeige mit `awk 'NR<=60'` statt `head -60`. Über 64 KB
+  Eingabe beendete sich `head` vor dem Ende, `printf` meldete „write error: Broken pipe“,
+  und das Goldmuster wertete den Lauf als Interpreter-Fehler (CI auf main ab 445a503).
+  Ausgabe unverändert.
+
 ### Kundenpaket aus dem Werkzeug (#149, #150, #151)
 
 - **#149 NT Docs:** `reportgen/kundenpaket.py` erzeugt aus dem Lauf Sicherheitsbericht,
