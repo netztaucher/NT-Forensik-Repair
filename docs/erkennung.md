@@ -117,6 +117,10 @@ Read-only-SELECTs gegen jede gefundene WP-DB (Zugang aus `wp-config.php`, bevorz
 
 Ein heimlich angelegtes Admin-Konto ist die häufigste WordPress-Persistenz — es überlebt jede Datei-Bereinigung.
 
+### 5.1 Suchraum: PHP ohne `.php`-Endung (#144)
+
+Die Mustersuche (7.3, beide Stufen) und die Rangfolge 7.15 durchsuchen nicht nur `*.php`, sondern auch Endungsvarianten (`*.php.*`, `*.php~`, `*.phtml`, `*.php[3-8]`, `*.phar`, `*.inc`, `*.phps`) und Dateien ohne PHP-Endung, deren erste Bytes `<?php` sind (Kandidaten aus dem Inventar, bis `PHP_KOPF_MAX_KIB`). Eine Kette aus Hex-Ternären (`(0x…)?0x…:` mindestens 20-mal) gilt in jeder Größe als Stufe 1. Liegt ein Treffer nicht auf `.php`, vermerkt der Beleg „per include ausführbar". Anlass: `german.php.bak` (21.10.2026), 48 993 B, nur im Inventar — Imunify fand sie.
+
 ### 6.1 Autologin-Hintertür als Plugin (#134)
 
 Anlass 21.10.2026: Fake-Plugins `hero-hub` („QuietPress Labs") und `hero-binder-1d4` („CopperForge WP") aus einem Baukasten — Name, Autor und Token wechseln je Opfer, das Verhalten nicht. Erkannt wird deshalb das **Verhalten**: eine PHP-Datei unter `plugins/` oder `mu-plugins/` mit `wp_set_auth_cookie(`, in deren Nähe (±40 Zeilen) sowohl Benutzeranlage oder Rechtevergabe (`wp_insert_user`, `wp_create_user`, `add_cap`, `set_role`) als auch eine Eingabe aus `$_GET`/`$_REQUEST`/`$_COOKIE`/`$_POST` steht = 🔴, Plugin-Ordner in `actionable.wp_autologin_plugins`. Amtlich bestätigte Dateien (nur mit `--online`) werden entlastet. Der Beleg nennt Ordneralter, Verzeichnisstatus und die Zahl der Fatal-Zeilen im `error_log` — nie den Dateiinhalt, nie Logzeilen (ein Stacktrace kann das Token tragen).

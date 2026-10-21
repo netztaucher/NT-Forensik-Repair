@@ -508,31 +508,50 @@ datei_inventar() {   # <zieldatei> <pfad...>
   # GNU-find, beide koennen -printf. Ein Zweig, den kein Pruefstand erreicht,
   # ist unbelegter Code — und dieser hier liefe ausgerechnet auf der Plattform,
   # auf der niemand nachsieht.
-  if [[ "${NT_INVENTAR_BSD:-0}" != "1" ]] && find "$1" -maxdepth 0 -printf '' 2>/dev/null; then
-    find "$@" -type f \
-         -printf '%D\t%i\t%m\t%u\t%g\t%s\t%T@\t%C@\t%B@\t%p\n' 2>/dev/null \
-      | awk -F'\t' 'BEGIN { OFS = "\t" }
-          {
-            # Bruchteile abschneiden. GNU liefert "1786509287.9950781560";
-            # die Nanosekunden sagen nichts, was die Sekunde nicht sagt, und
-            # sie machen die Datei um ein Fuenftel groesser.
-            #
-            # Fehlt die Anlegezeit, liefert GNU-find ein leeres Feld oder 0.
-            # Beides wird zu "-": eine 0 liest sich wie 1970, ein leeres Feld
-            # wie "kein Befund" — gemeint ist "nicht messbar".
-            for (i = 7; i <= 9; i++) {
-              sub(/\..*/, "", $i)
-              if ($i == "" || $i == "0") $i = "-"
-            }
-            print
-          }' >> "$ziel"
-  else
-    # BSD-stat nimmt beliebig viele Dateien auf einmal entgegen; %t ist dort
-    # der Tabulator, %OLp die Rechte in Oktal und %N der Dateiname.
-    find "$@" -type f -print0 2>/dev/null \
-      | xargs -0 stat -f '%d%t%i%t%OLp%t%Su%t%Sg%t%z%t%m%t%c%t%B%t%N' 2>/dev/null \
-      >> "$ziel"
-  fi
+  #
+  # Beide Zweige laufen durch DIESELBE Bereinigung. Frueher tat das nur der
+  # GNU-Zweig; was BSD-stat fuer eine fehlende Anlegezeit liefert (nicht
+  # nachgemessen — APFS fuehrt sie immer), ging ungefiltert in den Beleg.
+  {
+    if [[ "${NT_INVENTAR_BSD:-0}" != "1" ]] && find "$1" -maxdepth 0 -printf '' 2>/dev/null; then
+      find "$@" -type f \
+           -printf '%D\t%i\t%m\t%u\t%g\t%s\t%T@\t%C@\t%B@\t%p\n' 2>/dev/null
+    else
+      # BSD-stat nimmt beliebig viele Dateien auf einmal entgegen; %t ist dort
+      # der Tabulator, %OLp die Rechte in Oktal und %N der Dateiname.
+      find "$@" -type f -print0 2>/dev/null \
+        | xargs -0 stat -f '%d%t%i%t%OLp%t%Su%t%Sg%t%z%t%m%t%c%t%B%t%N' 2>/dev/null
+    fi
+  } | awk -F'\t' 'BEGIN { OFS = "\t" }
+        {
+          # Bruchteile abschneiden. GNU liefert "1786509287.9950781560";
+          # die Nanosekunden sagen nichts, was die Sekunde nicht sagt, und
+          # sie machen die Datei um ein Fuenftel groesser.
+          #
+          # Fehlt die Anlegezeit, liefert GNU-find ein leeres Feld, 0 oder
+          # -1. Alles wird zu "-": eine 0 liest sich wie 1970, eine -1 wie
+          # 31.12.1969 23:59:59, ein leeres Feld wie "kein Befund" —
+          # gemeint ist "nicht messbar".
+          #
+          # Die -1 stand zuerst nicht auf der Liste. 21.10.2026, Abo web68
+          # auf cletus: alle 18541 Zeilen trugen crtime -1, und 7.0 meldete
+          # "18541 mit Anlegezeit" — die Zaehlung kannte nur "-" als
+          # "nicht messbar". Deshalb gilt fuer die crtime jetzt umgekehrt:
+          # nur eine positive Ganzzahl ist eine Zeit, alles andere ist "-"
+          # (#141).
+          #
+          # NUR fuer die crtime. Eine negative mtime ist echt: `touch -d
+          # 1969-01-01` setzt sie, und genau so sieht eine plumpe
+          # Rueckdatierung aus. Sie zu "-" zu machen, hiesse den Befund aus
+          # dem Beleg zu loeschen. mtime und ctime verlieren deshalb wie
+          # bisher nur leer und 0.
+          for (i = 7; i <= 9; i++) {
+            sub(/\..*/, "", $i)
+            if ($i == "" || $i == "0") $i = "-"
+          }
+          if ($9 !~ /^[0-9]+$/ || $9 + 0 <= 0) $9 = "-"
+          print
+        }' >> "$ziel"
 
   # Die Zahl gehoert genannt. Ein Inventar, dessen Umfang niemand kennt, ist
   # keines — und ein leeres faellt sonst gar nicht auf.

@@ -257,6 +257,21 @@ jobs:
         # ein Browser-GET darf kein Einstiegsweg werden.
         run: bash werkzeuge/einstieg_request_selbsttest.sh
 
+      - name: Selbsttest Anlegezeit im Inventar (#141)
+        # GNU find liefert -1, wenn die crtime nicht messbar ist. Auf cletus
+        # zaehlte 7.0 damit 18541 "Anlegezeiten", die es nicht gab.
+        run: bash werkzeuge/inventar_crtime_selbsttest.sh
+
+      - name: Selbsttest anonymisierte Zugriffsprotokolle (#142)
+        # Plesk kuerzt bei der Rotation auf /24. Eine IOC-Adresse auf .0 aus
+        # einer gekuerzten Datei ist eine Netzadresse, keine Angreifer-IP.
+        run: bash werkzeuge/log_anonym_selbsttest.sh
+
+      - name: Selbsttest PHP ohne .php-Endung (#144)
+        # german.php.bak (Hex-Ternaer-Kette) stand am 21.10.2026 nur im
+        # Inventar. Gesucht wird nach Dateikopf, nicht nach Endung.
+        run: bash werkzeuge/php_endung_selbsttest.sh
+
       - name: Selbsttest der Alterswarnung des Schwachstellen-Bestands (#129)
         # Beide Richtungen: frisch bleibt gruen, ab der Schwelle (30 - 9 = 21
         # Tage) wird es rot. Eine Warnung, die immer anschlaegt, ginge unter.

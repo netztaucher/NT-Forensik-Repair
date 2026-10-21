@@ -26,6 +26,24 @@ Der Lauf:
 - legt SHA256-versiegelte Belege an und packt **zwei** Archive:
   `<LAUF>_kunde.tar.gz` (weitergabefähig) und `<LAUF>_betreiber.tar.gz` (nicht weitergeben).
 
+> **Frischer Vorfall: Roh-Protokolle vor der nächsten Plesk-Rotation sichern.**
+> Plesk rotiert die vhost-Protokolle einmal täglich (auf web68/cletus um 06:43). Ist
+> „Anonymize IPs during log rotation“ eingeschaltet (*Tools & Settings › Server Settings*),
+> trägt die Rotation nur noch das /24 — aus `43.250.53.42` wurde am 21.10.2026 `43.250.53.0`,
+> die volle Adresse stand danach nirgends mehr (#142). Die Einstellung gilt **serverweit**;
+> ein Schalter je Abo ist nicht belegt, und Plesk bietet dafür keine CLI. Deshalb vor der
+> nächsten Rotation, auch wenn Abschnitt 2 (Log-Archiv) übersprungen wird:
+>
+> ```bash
+> D=betroffene-domain.tld
+> tar czf /root/roh-logs_${D}_$(date +%Y%m%d-%H%M).tar.gz -C /var/www/vhosts/system/$D logs
+> ```
+>
+> Abschnitt 4 meldet gekürzte Protokolle je Datei (Beleg `zugriffsprotokolle_anonymisiert`)
+> und ⚪ *„IOC-Adressen nur als /24“*, sobald eine IOC-Adresse daraus stammt; in
+> `findings.json` steht dann `metrics.logs_anonymisiert: 1`. Solche Adressen nicht als
+> Einzel-IP sperren und nicht als Einzel-IP melden.
+
 **Ergebnis sichten:**
 ```bash
 ssh root@SERVER "cat /root/wartungsscripte/forensik/<LAUF>/kunde/kundenbericht.md"

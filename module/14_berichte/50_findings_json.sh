@@ -370,6 +370,7 @@ print(json.dumps(raus, ensure_ascii=False))' 2>/dev/null || echo '{}')
     "suspicious_plugins": ${n_suspp:-0},
     "schadcode_gesamt": ${MALWARE_TOTAL:-0},
     "zu_pruefen_gesamt": ${PRUEF_TOTAL:-0},
+    "logs_anonymisiert": $( { [[ "${LOGS_ANONYMISIERT:-0}" == 1 ]] || { [[ -n "${ANON_DATEIEN:-}" ]] && printf '%s\n' "${ATTACK_IPS_UNIQ:-}" | grep -qE '([0-9]{1,3}\.){3}0([^0-9]|$)'; }; } && echo 1 || echo 0),
     "ssh_failed": ${SSH_FAILED_COUNT:-0},
     "wp_installs": ${WP_COUNT:-0},
     "joomla_installs": ${JOOMLA_COUNT:-0},

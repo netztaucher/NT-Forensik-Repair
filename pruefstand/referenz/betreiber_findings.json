@@ -64,6 +64,7 @@
     "suspicious_plugins": 0,
     "schadcode_gesamt": 30,
     "zu_pruefen_gesamt": 1,
+    "logs_anonymisiert": 0,
     "ssh_failed": 0,
     "wp_installs": 4,
     "joomla_installs": 1,

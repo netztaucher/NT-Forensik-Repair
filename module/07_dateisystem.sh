@@ -34,7 +34,10 @@ if [[ "${INVENTAR_N:-0}" -gt 0 ]]; then
   # meldet sie aber nur bei ausreichend grossem Inode. Ohne diese Zahl liest
   # sich eine Spalte voller "-" wie ein Fehler des Werkzeugs statt wie eine
   # Eigenschaft des Dateisystems.
-  INVENTAR_CRT=$(awk -F'\t' '!/^#/ && $9 != "-" {n++} END{print n+0}' "$INVENTAR_DATEI" 2>/dev/null || echo 0)
+  # Gezaehlt wird nur eine positive Ganzzahl, nicht "alles ausser -": am
+  # 21.10.2026 (web68/cletus) stand in jeder Zeile -1, und die Zaehlung
+  # meldete 18541 Anlegezeiten, wo keine einzige messbar war (#141).
+  INVENTAR_CRT=$(awk -F'\t' '!/^#/ && $9 ~ /^[0-9]+$/ && $9 > 0 {n++} END{print n+0}' "$INVENTAR_DATEI" 2>/dev/null || echo 0)
   info "Inventar: ${INVENTAR_N} Datei(en) erfasst, davon ${INVENTAR_CRT} mit Anlegezeit (belege/00_dateien.tsv)"
   [[ "${INVENTAR_CRT:-0}" -eq 0 ]] && \
     info "Kein Dateisystem mit auslesbarer Anlegezeit — nach einer Quarantäne bleibt nur die mtime, und die lässt sich mit touch verstellen"
@@ -207,6 +210,82 @@ fi
 h2 "7.3 Webshell-Muster (Inhalt) — zweistufig"
 echo -e "  ${YLW}Scanne auf Webshell-Signaturen (inkl. obfuskierte Cookie-Backdoors)...${NC}"
 
+# ── SUCHRAUM NACH KOPF, NICHT NACH NAME (#144) ───────────────────────────
+#
+# 21.10.2026, web68 auf cletus: wp-content/plugins/german.php.bak, 48 993 B,
+# eine einzige Zeile Hex-Ternaer-Verschleierung, mtime auf 2013 gefaelscht.
+# Imunify meldete sie als Malware. Dieses Werkzeug fuehrte sie in vier
+# Laeufen nur im Inventar — die Mustersuche las ausschliesslich *.php.
+#
+# Jetzt zweierlei. Erstens die Endungsvarianten (PHP_SUCHRAUM_INCLUDE in
+# lib/muster.sh): .php.bak, .php~, .php.old, .php.suspected, .phtml, .php5,
+# .phar, .inc. Zweitens Dateien OHNE solche Endung, deren erste Bytes
+# "<?php" sind — ein Angreifer, der "german.txt" schreibt und per include
+# laedt, faellt sonst genauso durch.
+#
+# Die Kopfsuche liest je Datei 64 Byte, nicht die Datei. Kandidaten kommen
+# aus dem Inventar von 7.0, wenn es vorliegt — das spart einen zweiten
+# Baumdurchlauf; sonst aus find. Medien bleiben bei 7.13, Caches und
+# node_modules bleiben draussen, ueber PHP_KOPF_MAX_KIB wird nicht gelesen.
+#
+# python3 liest genau 64 Byte. Fehlt es, liest awk die erste Zeile — langsamer
+# bei langen Einzeilern (minifiziertes JS), aber dasselbe Ergebnis.
+# NT_KOPF_OHNE_PYTHON=1 erzwingt den awk-Weg, damit der Selbsttest ihn
+# erreicht; sonst liefe er nirgends, wo jemand hinsieht.
+_php_kopf_kandidaten() {
+  local max_b=$(( PHP_KOPF_MAX_KIB * 1024 ))
+  if [[ -n "${INVENTAR_DATEI:-}" && -s "${INVENTAR_DATEI}" ]]; then
+    # Pfad ist die letzte Spalte und darf Tabulatoren enthalten: die ersten
+    # neun Felder abschneiden statt $10 zu nehmen.
+    awk -F'\t' -v max="$max_b" '!/^#/ && $6 + 0 <= max {
+        p = $0; for (i = 1; i <= 9; i++) p = substr(p, index(p, "\t") + 1); print p }' \
+      "$INVENTAR_DATEI" 2>/dev/null
+  else
+    find "${SCAN_PATHS[@]}" -type f -size -"$((PHP_KOPF_MAX_KIB + 1))"k 2>/dev/null
+  # Die Ausdruecke ueber ENVIRON, nicht -v: awk wertet in -v-Zuweisungen
+  # Escapes aus, aus "\." wird "." — und damit passte ".php" auf "xphp".
+  # Im ersten Lauf im Linux-Container gesehen (gawk warnt, BSD-awk nicht).
+  fi | ein="$PHP_SUCHRAUM_ERE" med="$PHP_KOPF_OHNE_ERE" dir="$PHP_KOPF_OHNE_DIR_ERE" \
+       LC_ALL=C awk '
+        BEGIN { ein = ENVIRON["ein"]; med = ENVIRON["med"]; dir = ENVIRON["dir"] }
+        { l = tolower($0) }
+        l ~ ein || l ~ med || l ~ dir { next }
+        { print }' \
+    | nf_strip_self
+}
+_php_kopf_pruefen() {   # liest NUL-getrennte Pfade, schreibt die mit PHP-Kopf
+  if [[ "${NT_KOPF_OHNE_PYTHON:-0}" != "1" ]] && command -v python3 >/dev/null 2>&1; then
+    xargs -0 -r -P4 -n500 python3 -c '
+import os, sys
+aus = sys.stdout.buffer
+for p in sys.argv[1:]:
+    try:
+        with open(p, "rb") as fh:
+            k = fh.read(64)
+    except OSError:
+        continue
+    if k.startswith(b"\xef\xbb\xbf"):
+        k = k[3:]
+    if k.lstrip()[:5].lower() == b"<?php":
+        aus.write(os.fsencode(p) + b"\n")
+' 2>/dev/null
+  else
+    # Erste nicht-leere Zeile (hoechstens die fuenfte), BOM und Leerraum vorn
+    # ab. nextfile beherrschen gawk, mawk und das awk von macOS.
+    xargs -0 -r -P4 -n500 env LC_ALL=C awk '
+      { z = $0; if (FNR == 1) sub(/^\357\273\277/, "", z); sub(/^[ \t\r]+/, "", z)
+        if (z == "" && FNR < 5) next
+        if (tolower(substr(z, 1, 5)) == "<?php") print FILENAME
+        nextfile }' 2>/dev/null
+  fi
+}
+PHP_KOPF_DATEIEN=$(_php_kopf_kandidaten | tr '\n' '\0' | _php_kopf_pruefen | LC_ALL=C sort -u || true)
+PHP_KOPF_ANZ=$(printf '%s\n' "$PHP_KOPF_DATEIEN" | grep -c . || true)
+[[ "${PHP_KOPF_ANZ:-0}" -gt 0 ]] && \
+  info "${PHP_KOPF_ANZ} Datei(en) ohne PHP-Endung beginnen mit <?php — in die Mustersuche aufgenommen"
+# Die Signatur aus lib/konfig.sh plus die Hex-Ternaer-Kette aus lib/muster.sh.
+WEBSHELL_REGEX="${PATTERN_REGEX}|${HEX_TERNAER_REGEX}"
+
 
 # ── OHNE -P KEINE SUCHE, UND DAS MUSS MAN SEHEN ──────────────────────────
 #
@@ -228,8 +307,15 @@ if ! echo 'x' | "$NF_GREP" -qP 'x' 2>/dev/null; then
   WEBSHELL_HITS=""
   NF_OHNE_PCRE=1
 else
-  WEBSHELL_HITS=$("$NF_GREP" -rlPi "$PATTERN_REGEX" "${SCAN_PATHS[@]}" --include="*.php" \
+  # Zwei Wege in denselben Suchraum (#144, lib/muster.sh): erst alles, was
+  # nach PHP HEISST (.php, .php.bak, .php~, .phtml …), in einem grep-Lauf wie
+  # bisher; dann die Dateien mit PHP-KOPF, die anders heissen. Die Reihenfolge
+  # der ersten Liste bleibt die alte — angehaengt wird nur, was neu ist.
+  WEBSHELL_HITS=$("$NF_GREP" -rlPi "$WEBSHELL_REGEX" "${SCAN_PATHS[@]}" "${PHP_SUCHRAUM_INCLUDE[@]}" \
     --exclude-dir=phpunit --exclude-dir=sebastian --exclude-dir=mockery 2>/dev/null || true)
+  _kopf_hits=$(printf '%s' "$PHP_KOPF_DATEIEN" | tr '\n' '\0' \
+    | xargs -0 -r -P4 -n200 "$NF_GREP" -lPi "$WEBSHELL_REGEX" 2>/dev/null | LC_ALL=C sort || true)
+  [[ -n "$_kopf_hits" ]] && WEBSHELL_HITS=$(printf '%s\n%s' "$WEBSHELL_HITS" "$_kopf_hits" | grep -v '^$' || true)
 fi
 
 DROPPER_CLUSTER=""
@@ -259,13 +345,31 @@ if [[ -n "$WEBSHELL_HITS" ]]; then
     if [[ "$_ct" -gt 0 && $(( _ct - _mt )) -gt "${ZEITSTEMPEL_ZUSATZ_SEK:-2592000}" ]]; then
       fzeit="ZEITSTEMPEL: mtime ist $(( (_ct - _mt) / 86400 )) Tage älter als die letzte Metadatenänderung — Rückdatierung möglich"$'\n'
     fi
-    preview=$("$NF_GREP" -noPi "$PATTERN_REGEX" "$f" 2>/dev/null | head -2 | cut -c1-160 || true)
+    preview=$("$NF_GREP" -noPi "$WEBSHELL_REGEX" "$f" 2>/dev/null | head -2 | cut -c1-160 || true)
+    # Hex-Ternaer-Kette (#144): reine Verschleierung, legitimer Code schreibt
+    # so nicht. Deshalb Stufe 1 in jeder Groesse — german.php.bak hatte
+    # 48 993 B und waere ueber DROPPER_MAX_BYTES in der Sichtung gelandet.
+    fhex=""
+    if "$NF_GREP" -qPi "$HEX_TERNAER_REGEX" "$f" 2>/dev/null; then
+      fhex="OBFUSKATION: HEX-TERNÄR-KETTE — konstante Bedingungen aus Hex-Literalen, kein legitimer Code; Stufe 1 unabhängig von der Größe"$'\n'
+    fi
+    # Endung (#144): .php.bak, .php~ oder eine Datei, die nur am Kopf als PHP
+    # zu erkennen ist, ruft der Webserver meist nicht direkt auf. Das macht
+    # sie nicht harmlos — include/require fragt nicht nach der Endung. Wer
+    # "nur ein Backup" liest, soll den Satz daneben lesen.
+    fendung=""
+    _bn="${f##*/}"
+    case "$_bn" in
+      *.php) ;;
+      *.*) fendung="ENDUNG: .${_bn#*.} statt .php — per include ausführbar"$'\n' ;;
+      *)   fendung="ENDUNG: keine, PHP nur am Dateikopf erkennbar — per include ausführbar"$'\n' ;;
+    esac
     entry="=== $f ===
 Größe: ${fsize} B | mtime: ${fmtime} | SHA256: ${fhash}
 Angelegt (crtime): ${fcrtime}
-${fzeit}Treffer: ${preview}
+${fzeit}${fhex}${fendung}Treffer: ${preview}
 "
-    if [[ "$fsize" -lt "$DROPPER_MAX_BYTES" ]]; then
+    if [[ "$fsize" -lt "$DROPPER_MAX_BYTES" || -n "$fhex" ]]; then
       WEBSHELL_COUNT=$((WEBSHELL_COUNT+1))
       DROPPER_DETAIL+="$entry"$'\n'
     else
@@ -314,8 +418,13 @@ Angelegt (crtime): $(stat -c %w "$f" 2>/dev/null)
 Treffer: $("$NF_GREP" -noPi "$PATTERN_REGEX_MED" "$f" 2>/dev/null | head -2 | cut -c1-160)
 "$'\n'
 done < <(if [[ "${NF_OHNE_PCRE:-0}" == "1" ]]; then :; else
-           "$NF_GREP" -rlPi "$PATTERN_REGEX_MED" "${SCAN_PATHS[@]}" --include="*.php" \
-             --exclude-dir=phpunit --exclude-dir=sebastian --exclude-dir=mockery 2>/dev/null | sort || true
+           # Derselbe Suchraum wie Stufe 1 (#144): Endungsvarianten und
+           # PHP-Kopf. Eine Filemanager-Shell als .php.bak ist dieselbe Shell.
+           { "$NF_GREP" -rlPi "$PATTERN_REGEX_MED" "${SCAN_PATHS[@]}" "${PHP_SUCHRAUM_INCLUDE[@]}" \
+               --exclude-dir=phpunit --exclude-dir=sebastian --exclude-dir=mockery 2>/dev/null
+             printf '%s' "$PHP_KOPF_DATEIEN" | tr '\n' '\0' \
+               | xargs -0 -r -P4 -n200 "$NF_GREP" -lPi "$PATTERN_REGEX_MED" 2>/dev/null
+           } | sort || true
          fi)
 
 # Auch hier nur sammeln — die Einordnung steht in 13d, siehe oben.
@@ -826,8 +935,15 @@ else
   # Gebündelt über xargs, nicht je Datei: ein Python-Start pro Datei wären bei
   # 25.000 PHP-Dateien 25.000 Prozessstarts. Dieselbe Überlegung wie beim
   # gebündelten yara-Aufruf in 13c.
-  INJ_TREFFER=$(find "${SCAN_PATHS[@]}" -type f -size -3M \
-                     \( -name "*.php" -o -name "*.phtml" -o -name "*.inc" \) 2>/dev/null \
+  # Suchraum wie 7.3 (#144): auch .php.bak, .php~, .php5 … und die Dateien
+  # mit PHP-Kopf aus 7.3. Eine Injektion in die Sicherungskopie einer grossen
+  # Plugin-Datei ist per include genauso wirksam wie im Original.
+  INJ_TREFFER=$({ find "${SCAN_PATHS[@]}" -type f -size -3M \
+                     \( -name "*.php" -o -name "*.phtml" -o -name "*.inc" \
+                        -o -name "*.php.*" -o -name "*.php~" -o -name "*.php[3-8]" \
+                        -o -name "*.phps" \) 2>/dev/null
+                  [[ -n "${PHP_KOPF_DATEIEN:-}" ]] && printf '%s\n' "$PHP_KOPF_DATEIEN"
+                } \
                 | nf_strip_self \
                 | fortschritt_strom "7.15 Injektionsmass" \
                 | tr '\n' '\0' \

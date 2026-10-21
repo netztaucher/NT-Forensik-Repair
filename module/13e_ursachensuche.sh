@@ -734,6 +734,15 @@ ${_beleg}" kunde
     # derselben Sekunde ein Bild lud, gehoert in keine Sperrliste.
     _ips=$(printf '%s\n' "$_stark" | cut -f10 | grep -E '^[0-9a-fA-F.:]+$' | LC_ALL=C sort | uniq -c | LC_ALL=C sort -rn || true)
     [[ -n "$_ips" ]] && ATTACK_IPS_UNIQ="${ATTACK_IPS_UNIQ:-}"$'\n'"$_ips"
+    # Gekuerzte Adressen (#142). 13e liest auch die gepackten Rotationen, die
+    # Plesk mit "Anonymize IPs during log rotation" auf /24 schreibt — Abschnitt
+    # 4 sieht nur die aktuellen Dateien und meldet die Kuerzung dann nicht.
+    # Anlass k42/web345 am 21.10.2026: Einstiegsweg belegt, Adresse 43.250.53.0.
+    _anon=$(printf '%s\n' "$_stark" | cut -f10 | grep -E '^([0-9]{1,3}\.){3}0$' | LC_ALL=C sort -u | paste -sd, - | sed 's/,/, /g' || true)
+    if [[ -n "$_anon" ]]; then
+      LOGS_ANONYMISIERT=1
+      unklar "Einstiegsweg-Adresse nur als /24 (${_anon}) — Zugriffsprotokoll bei der Rotation anonymisiert; als Einzel-IP gesperrt wirkt sie nicht" web
+    fi
   fi
 
   # ── Zeitgleich, aber mit Kennung, die auch ohne Zusammenhang auftritt ──

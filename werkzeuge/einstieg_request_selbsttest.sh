@@ -174,5 +174,17 @@ pruefe f4 "kein crit (nicht belastet)"                      crit   "Einstiegsweg
 if grep -qF 203.0.113.42 "$TMP/f4/iocs"; then printf '  FEHLER %-58s\n' "keine IOC-Adresse ohne Belastung"; fail=1
 else printf '  OK     %-58s\n' "keine IOC-Adresse ohne Belastung"; fi
 
+echo "=== Fall 5: Einstiegsweg-Adresse nur als /24 (Plesk-Anonymisierung, #142)"
+D=$(baum f5); T=$(epoche_ctime "$D")
+SYS="$TMP/f5/vhosts/system/kunde.example/logs"; mkdir -p "$SYS"
+{ zeile $(( T - 60 )) 198.51.100.0 "GET /" "$UA_BROWSER"
+  zeile "$T"          203.0.113.0  "POST /" "$UA_UDRPC"
+} | gzip -c > "$SYS/access_ssl_log.processed.1.gz"
+: > "$TMP/f5/vhosts/kunde.example/logs/access_ssl_log"
+lauf "$TMP/f5" "$D"
+pruefe f5 "crit Einstiegsweg bleibt"                        crit   "Einstiegsweg: UpdraftCentral"
+pruefe f5 "unklar: Adresse nur als /24"                     unklar "nur als /24 (203.0.113.0)"
+pruefe f1 "volle Adresse: kein /24-Hinweis"                 unklar "nur als /24" nicht
+
 [[ $fail -eq 0 ]] && echo "=> ALLE BESTANDEN" || echo "=> FEHLGESCHLAGEN"
 exit $fail
