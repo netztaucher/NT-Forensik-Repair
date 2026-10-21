@@ -876,12 +876,18 @@ jobs:
         # Der Kundenpaket-Prüfstand setzt Bericht, DSGVO- und BSI-Dokument mit
         # WeasyPrint und liest sie mit pdfinfo/pdftotext/pdftoppm zurück. Ohne
         # beides bricht er ab, statt die Dokumente ungeprüft durchzuwinken.
-        # Installiert wie php-cli im Runner-Container selbst.
+        # Installiert wie php-cli im Runner-Container selbst. Das Abbild (noble)
+        # hat kein python3-weasyprint; deshalb venv mit derselben Version wie
+        # am Arbeitsplatz (reportgen/README.md), damit der Satz gleich ausfällt.
         run: |
           SUDO=; [[ "$(id -u)" -eq 0 ]] || SUDO=sudo
-          $SUDO apt-get install -y -qq --no-install-recommends python3-weasyprint poppler-utils
-          python3 -c 'import weasyprint; print("WeasyPrint", weasyprint.__version__)'
+          $SUDO apt-get install -y -qq --no-install-recommends \
+            python3-venv libpango-1.0-0 libpangoft2-1.0-0 libharfbuzz-subset0 poppler-utils
+          python3 -m venv "$RUNNER_TEMP/weasyprint"
+          "$RUNNER_TEMP/weasyprint/bin/pip" install -q 'weasyprint==70.0'
+          "$RUNNER_TEMP/weasyprint/bin/python" -c 'import weasyprint; print("WeasyPrint", weasyprint.__version__)'
           pdfinfo -v 2>&1 | head -1
+          echo "NT_WEASYPRINT_PY=$RUNNER_TEMP/weasyprint/bin/python" >> "$GITHUB_ENV"
 
       - name: Was das Kundenpaket zurückhält (#4)
         # Eigener Prüfstand, weil goldmuster.sh den LAUF vergleicht und das
@@ -891,8 +897,6 @@ jobs:
         # `betreiber` wäre also unsichtbar — in der Richtung, die weh tut.
         # Der Prüfstand ergänzt den echten Lauf deshalb um je einen künstlichen
         # Beleg beider Stufen und prüft, dass sie draussen bleiben.
-        env:
-          NT_WEASYPRINT_PY: python3
         run: bash werkzeuge/kundenpaket-pruefstand.sh
 
       - name: Nachweis — Plugin-Prüfsummen laufen ohne wp-cli (#10)

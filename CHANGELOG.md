@@ -17,7 +17,7 @@ Alle nennenswerten Änderungen an `wp_plesk_forensik.sh`.
   `module/14_berichte/60_pdf.sh` baut damit `kunde/NT-*.pdf` statt `abschlussbericht.pdf`;
   Seitenbilder, Prüfbericht und Fall-Entwurf liegen in `betreiber/`. Prüfstand-Läufe bauen
   kein PDF (Goldmuster-Referenz unabhängig von WeasyPrint).
-- **CI:** Der Job „Zwei Läufe“ installiert `python3-weasyprint` und `poppler-utils` und
+- **CI:** Der Job „Zwei Läufe“ installiert WeasyPrint 70.0 (venv) und `poppler-utils` und
   lässt `werkzeuge/kundenpaket-pruefstand.sh` mit den echten PDFs laufen (vorher Abbruch
   „Kein Python mit WeasyPrint“).
 - **#150 Interna:** Sperrliste `werkzeuge/interna-sperrliste.txt` und Wächter
