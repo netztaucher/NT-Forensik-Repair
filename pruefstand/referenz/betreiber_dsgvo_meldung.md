@@ -30,7 +30,7 @@
 
 ## 2. Art der Verletzung (Art. 33 Abs. 3 lit. a)
 
-**Sachverhalt (technisch belegt):** Kompromittierung der Website auf dem Server imac. Auffälligkeiten mit möglichem unbefugtem Zugriff.
+**Sachverhalt (technisch belegt):** Kompromittierung der Website auf dem Server mac. Auffälligkeiten mit möglichem unbefugtem Zugriff.
 
 - **Art:** ☑ Vertraulichkeitsverletzung (unbefugter Zugriff)  ☐ Integritätsverletzung  ☐ Verfügbarkeitsverletzung — [prüfen]
 - **Zeitraum:** [AUSFÜLLEN — aus Analyse: Datei-Zeitstempel / Log-Auswertung, siehe technik_bericht.md]

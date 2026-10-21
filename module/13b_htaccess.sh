@@ -181,8 +181,9 @@ def ist_fremd(z):
     # Schutzsoftware als Hintertuer.
     if re.search(r"auto_(pre|ap)pend_file", zl, re.I) and not SCHUTZ_PLUGINS.search(zl):
         return "auto_prepend_file auf eine Datei im Webspace"
-    if re.search(r"RewriteCond.*HTTP_USER_AGENT", zl, re.I) and SUCHMASCHINE.search(zl):
-        return "Weiche nach Suchmaschinen-Kennung (Cloaking)"
+    # Die Suchmaschinen-Kennung steht hier NICHT mehr: eine RewriteCond sagt
+    # allein nichts, erst ihre RewriteRule entscheidet — siehe ua_weiche()
+    # weiter unten.
     if re.search(r"^ErrorDocument\b", zl, re.I) and re.search(r"upload.*\.php", zl, re.I):
         return "Fehlerseite auf ein PHP-Skript im Upload-Verzeichnis"
     if re.search(r"base64_decode|eval\s*\(|\\x[0-9a-f]{2}", zl, re.I):
@@ -192,6 +193,69 @@ def ist_fremd(z):
     if sys_typ == "nextcloud" and re.search(r"^Order\s+allow,deny", zl, re.I):
         return "Apache-2.2-Zugriffssyntax in einer Nextcloud — dort nie vom Kern erzeugt"
     return None
+
+# ── Suchmaschinen-Kennung: die Bedingung allein ist kein Urteil ─
+# Bis 21.10.2026 galt jede RewriteCond auf %{HTTP_USER_AGENT} mit bingbot,
+# yandex & Co. als Cloaking — Zeile fuer Zeile, ohne Blick auf die Regel. Im
+# Anlassfall (#137, eine WordPress-.htaccess von 12/2020) war das eine
+# klassische Bad-Bot-Sperrliste: ueber 100 'RewriteCond %{HTTP_USER_AGENT} …
+# [OR]', darunter bingbot, YANDEX und YandexBot, und am Ende genau EINE
+# 'RewriteRule ^.* - [F,L]'. Gemeldet wurden 3 Angreifer-Direktiven, crit.
+#
+# Cloaking heisst: die Suchmaschine bekommt etwas ANDERES — eine andere
+# Datei, eine fremde Seite, eine Umleitung. Eine Regel mit Ziel '-' und
+# [F]/[G] (oder R=403/410) liefert ihr gar nichts, sie sperrt aus. Das ist
+# Abwehr, wenn auch gegen die falschen Gaeste.
+#
+# Apache haengt alle RewriteCond an die NAECHSTE RewriteRule. Genau so wird
+# hier ausgewertet: jede Bedingung mit IHRER Regel, nicht mit der Datei.
+#   sperre    Ziel '-', Abschluss [F]/[G]/R=403/410  -> eigen, mit Vermerk
+#   weiche    Ziel PHP-Datei, absolute URL oder [P]   -> fremd (crit)
+#   unklar    alles andere, auch keine Regel gefunden -> warn, Handentscheidung
+# Eine VERNEINTE Bedingung ('!googlebot') vor einer Sperre ist ausdruecklich
+# nicht entlastet: sie sperrt alle AUSSER der Suchmaschine aus, und das ist
+# die Rueckseite derselben Weiche.
+SPERR_FLAGGE = re.compile(r"^(f|forbidden|g|gone|r(edirect)?=(403|410))$", re.I)
+
+def regel_zerlegen(z):
+    m = re.match(r"^\s*RewriteRule\s+(\S+)\s+(\S+)(?:\s+\[([^\]]*)\])?", z, re.I)
+    if not m:
+        return None, []
+    return m.group(2), [f.strip().lower() for f in (m.group(3) or "").split(",") if f.strip()]
+
+def ua_weiche(bed, regel):
+    """-> ("sperre"|"weiche"|"unklar", Begruendung)"""
+    if regel is None:
+        return "unklar", "Suchmaschinen-Kennung ohne nachfolgende RewriteRule"
+    ziel, flaggen = regel_zerlegen(regel)
+    if ziel is None:
+        return "unklar", "Suchmaschinen-Kennung, RewriteRule nicht lesbar"
+    kurz = regel.strip()[:60]
+    if any(f in ("p", "proxy") for f in flaggen):
+        return "weiche", "Weiche nach Suchmaschinen-Kennung (Cloaking) — Proxy [P]: " + kurz
+    if re.match(r"^(https?:)?//", ziel, re.I):
+        return "weiche", "Weiche nach Suchmaschinen-Kennung (Cloaking) — fremde URL: " + kurz
+    if re.search(r"\.php\d?(\?|$)", ziel, re.I):
+        return "weiche", "Weiche nach Suchmaschinen-Kennung (Cloaking) — PHP-Ziel: " + kurz
+    sperre = ziel == "-" and any(SPERR_FLAGGE.match(f) for f in flaggen)
+    verneint = bool(re.match(r"^\s*RewriteCond\s+\S+\s+!", bed, re.I))
+    if sperre and not verneint:
+        return "sperre", "Sperrliste (Zugriff verweigert): " + kurz
+    if sperre:
+        return "unklar", "verneinte Suchmaschinen-Kennung vor einer Sperre — alle ausser der Suchmaschine ausgesperrt"
+    return "unklar", "Suchmaschinen-Kennung, Ziel weder Sperre noch eindeutig fremd: " + kurz
+
+# Jede RewriteCond-Zeile -> die RewriteRule, an der sie haengt (Apache-Semantik).
+regel_zu = {}
+_offen = []
+for _i, _roh in enumerate(zeilen):
+    _z = _roh.strip()
+    if re.match(r"^RewriteCond\b", _z, re.I):
+        _offen.append(_i)
+    elif re.match(r"^RewriteRule\b", _z, re.I):
+        for _k in _offen:
+            regel_zu[_k] = _roh
+        _offen = []
 
 # ── Eigen: Positivliste ──────────────────────────────────────
 EIGEN = re.compile(
@@ -225,10 +289,10 @@ roher_text = "\n".join(zeilen)
 sperrt = bool(re.search(r"^\s*(Order\s+allow,deny|Deny\s+from\s+all|Require\s+all\s+denied)",
                         roher_text, re.I | re.M))
 
-erg = {"kern": [], "eigen": [], "fremd": [], "unklar": []}
+erg = {"kern": [], "eigen": [], "fremd": [], "unklar": [], "sperre": [], "weiche_unklar": []}
 marker = None
 behaelter = None   # aktuell offener <Files …> / <FilesMatch …>
-for roh in zeilen:
+for nr, roh in enumerate(zeilen):
     z = roh.strip()
     if not z:
         continue
@@ -263,6 +327,21 @@ for roh in zeilen:
     if grund:
         erg["fremd"].append({"zeile": roh, "grund": grund, "block": marker})
         continue
+    if re.search(r"^RewriteCond.*HTTP_USER_AGENT", z, re.I) and SUCHMASCHINE.search(z):
+        art, grund = ua_weiche(z, regel_zu.get(nr))
+        eintrag = {"zeile": roh, "grund": grund, "block": marker}
+        if art == "weiche":
+            erg["fremd"].append(eintrag)
+        elif art == "sperre":
+            # Gehoert dem Betreiber und muss eine Erneuerung ueberleben —
+            # der Vermerk steht trotzdem im Beleg, damit niemand ihn fuer
+            # eine uebersehene Weiche haelt.
+            erg["eigen"].append(eintrag)
+            erg["sperre"].append(eintrag)
+        else:
+            erg["unklar"].append({"zeile": roh, "block": marker})
+            erg["weiche_unklar"].append(eintrag)
+        continue
     if marker:
         # Innerhalb eines Markerblocks: nur der WordPress-Block ist
         # regenerierbar, alles andere gehoert der Erweiterung und damit
@@ -283,6 +362,8 @@ for roh in zeilen:
 print(json.dumps({"system": sys_typ,
                   "n_kern": len(erg["kern"]), "n_eigen": len(erg["eigen"]),
                   "n_fremd": len(erg["fremd"]), "n_unklar": len(erg["unklar"]),
+                  "n_sperre": len(erg["sperre"]), "n_weiche_unklar": len(erg["weiche_unklar"]),
+                  "sperre": erg["sperre"][:20], "weiche_unklar": erg["weiche_unklar"][:20],
                   "fremd": erg["fremd"][:20], "unklar": [u["zeile"] for u in erg["unklar"]][:20]},
                  ensure_ascii=False))
 PY
@@ -296,6 +377,8 @@ PY
   _nf=$(printf '%s' "$_urteil" | python3 -c 'import json,sys;print(json.load(sys.stdin)["n_fremd"])' 2>/dev/null || echo 0)
   _nu=$(printf '%s' "$_urteil" | python3 -c 'import json,sys;print(json.load(sys.stdin)["n_unklar"])' 2>/dev/null || echo 0)
   _ne=$(printf '%s' "$_urteil" | python3 -c 'import json,sys;print(json.load(sys.stdin)["n_eigen"])' 2>/dev/null || echo 0)
+  _ns=$(printf '%s' "$_urteil" | python3 -c 'import json,sys;print(json.load(sys.stdin)["n_sperre"])' 2>/dev/null || echo 0)
+  _nw=$(printf '%s' "$_urteil" | python3 -c 'import json,sys;print(json.load(sys.stdin)["n_weiche_unklar"])' 2>/dev/null || echo 0)
 
   HTA_BERICHT+="${_kurz}"$'\t'"${_sys}"$'\t'"${_nf}"$'\t'"${_nu}"$'\t'"${_ne}"$'\n'
 
@@ -310,6 +393,16 @@ for f in d["fremd"]:
     evidence "htaccess_fremd_$(echo "$_kurz" | tr '/.' '__')" \
       "$(datei_steckbrief "Angreifer-Direktiven in .htaccess (System: ${_sys})" \
          'AddType|AddHandler|SetHandler|auto_prepend|auto_append|HTTP_USER_AGENT|ErrorDocument' "$_h")"
+  elif [[ "${_nw:-0}" -gt 0 ]]; then
+    # Eine Suchmaschinen-Kennung, deren Regel weder klar sperrt noch klar
+    # umleitet (#137): nicht still unter "nicht zuordenbar" verschwinden
+    # lassen — Cloaking ist der Zweck genau dieser Bedingung.
+    warn "${_kurz} (${_sys}): ${_nw} Bedingung(en) auf Suchmaschinen-Kennung ohne eindeutiges Ziel — von Hand prüfen" web
+    code "$(printf '%s' "$_urteil" | python3 -c '
+import json,sys
+d=json.load(sys.stdin)
+for f in d["weiche_unklar"]:
+    print("%-52s  %s" % (f["zeile"].strip()[:52], f["grund"]))' 2>/dev/null)"
   elif [[ "${_nu:-0}" -gt 0 ]]; then
     # Nicht als Befund melden: unentscheidbare Umleitungen sind der Normalfall.
     # Die Zahl gehoert trotzdem in den Bericht, damit bei einer spaeteren
@@ -317,6 +410,17 @@ for f in d["fremd"]:
     info "${_kurz} (${_sys}): ${_ne} eigene, ${_nu} nicht zuordenbare Direktive(n) — Handentscheidung bei einer Erneuerung"
   else
     ok "${_kurz} (${_sys}): ${_ne} eigene Direktive(n), nichts Fremdes"
+  fi
+  # Bot-Sperrliste mit Suchmaschinen-Kennung (#137): kein Befund, aber ein
+  # Vermerk im Beleg — wer bingbot in einer .htaccess findet, soll lesen, dass
+  # es geprueft und als Sperre erkannt wurde.
+  if [[ "${_ns:-0}" -gt 0 ]]; then
+    info "${_kurz} (${_sys}): ${_ns} Suchmaschinen-Kennung(en) in einer Bot-Sperrliste — Sperrliste (Zugriff verweigert), kein Cloaking"
+    code "$(printf '%s' "$_urteil" | python3 -c '
+import json,sys
+d=json.load(sys.stdin)
+for f in d["sperre"]:
+    print("%-52s  %s" % (f["zeile"].strip()[:52], f["grund"]))' 2>/dev/null)"
   fi
 done <<< "$HTA_LISTE"
 

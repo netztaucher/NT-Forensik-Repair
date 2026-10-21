@@ -4,6 +4,48 @@ Alle nennenswerten Änderungen an `wp_plesk_forensik.sh`.
 
 ## [unveröffentlicht]
 
+### Vorfall 21.10.2026 — Autologin-Plugin über UpdraftCentral (#134–#139)
+
+Zwei Installationen (cletus web68, k42 web345) bekamen am 19.10.2026 ein
+Fake-Plugin aus einem Baukasten (`hero-hub` „QuietPress Labs",
+`hero-binder-1d4` „CopperForge WP"): GET-Feld plus Token legt einen
+Benutzer mit `manage_options` an und meldet ihn an. Eingespielt über
+UpdraftCentral (`POST /`, UA `class-udrpc.php`) in derselben Sekunde wie die
+Anlage des Plugin-Ordners. Der Lauf auf `e4c5e1c` fand das Plugin nicht,
+nannte den Einstieg „nicht bestimmbar" und meldete zwei Fehlalarme.
+
+- **#134 Autologin-Hintertür als Plugin:** Erkennung nach Verhalten
+  (`wp_set_auth_cookie` neben Benutzeranlage/Rechtevergabe und
+  Anfrageparameter, ±`WP_AUTOLOGIN_FENSTER` Zeilen) in `plugins/` und
+  `mu-plugins/` → 🔴, `actionable.wp_autologin_plugins`. Amtlich bestätigte
+  Dateien werden entlastet. Beleg ohne Dateiinhalt und ohne Logzeilen.
+- **#135 Einstiegsweg aus dem Request derselben Sekunde:** neues 13e.5 hält
+  die jüngsten belasteten Dateien und frische Plugin-/Theme-Anlagen gegen das
+  Access-Log (±2 s, jetzt auch `.gz` und `system/<domain>/logs`). Kennungen
+  für UpdraftCentral, ManageWP, MainWP, InfiniteWP, WPMU DEV Hub,
+  BlogVault/MalCare, Upload, Installation, Editor. Belegter Weg → 🔴, Adresse
+  in `ioc_ips.attacker`, Text im Kundenbericht („Einfallstor"), §8 der
+  BSI-Meldung und `ursache.einstiegsweg`. Bisheriges 13e.5 heisst 13e.6.
+  Neu: `URSACHE_EINSTIEG_MAX`.
+- **#136 Dropper-Wortlaut und Prüflücke:** „1 Datei(en) (1 entlastet)" las
+  sich, als sei genau diese Datei entlastet — entlastet war eine andere. Ohne
+  `--online` werden Plugin-Dateien nicht gegen wordpress.org geprüft; das
+  steht jetzt im Bericht und als `metrics.webshell_plugin_ungeprueft`.
+- **#137 Bad-Bot-Sperrliste ist kein Cloaking:** UA-Bedingungen werden mit
+  ihrer RewriteRule ausgewertet; Ziel `-` mit `[F]`/`[G]`/403/410 ist eine
+  Sperre. Weichen auf PHP, fremde URL oder `[P]` bleiben 🔴, Mehrdeutiges ⚠️.
+- **#138 Verwaiste Administratorrechte:** `usermeta` mit Admin-Rechten ohne
+  Zeile in `users` → ⚠️, `actionable.wp_orphan_caps`.
+- **#139 UpdraftCentral-Fernzugang:** Schlüssel in `updraft_central_localkeys`
+  → ⚠️, mit RPC-Aufrufen im Log → 🔴, `actionable.wp_updraftcentral_keys`.
+  Ausgegeben werden nur Anzahl, ID, Name, Anlagedatum; das Schlüsselmaterial
+  gelangt in keine Shell-Variable.
+
+Neue Selbsttests in der Prüfung: `wp_fernzugang`, `dropper_entlastung`,
+`htaccess_sperrliste`, `einstieg_request`. Referenz unter `pruefstand/referenz/`
+neu aufgenommen (blind wie bisher, #67; macOS ohne PCRE-grep).
+NT-Repair liest die drei neuen `actionable`-Listen noch nicht.
+
 ### Schwachstellen-Bestand — offener Daten-PR zeigt den letzten Abzug
 
 Lag der Daten-PR schon offen, hat der Wochenlauf nur den Zweig erneuert;

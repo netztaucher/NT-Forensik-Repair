@@ -235,6 +235,28 @@ jobs:
         # die ein zweites Mal übernommen wurde.
         run: bash werkzeuge/hub_sso_selbsttest.sh
 
+      - name: Selbsttest Fernzugang (#134 Autologin-Plugin, #138 verwaiste Rechte, #139 UpdraftCentral)
+        # Anlass 21.10.2026: Fake-Plugin aus einem Baukasten, eingespielt über
+        # UpdraftCentral. Der Test prüft auch, dass das Schlüsselmaterial in
+        # KEINER Ausgabe und keiner Shell-Variable auftaucht.
+        run: bash werkzeuge/wp_fernzugang_selbsttest.sh
+
+      - name: Selbsttest Dropper-Entlastung (#136)
+        # Entlastete Dateien raus aus crit und actionable; ungeprüfte
+        # Plugin-Dateien (ohne --online) werden als Prüflücke ausgewiesen.
+        run: bash werkzeuge/dropper_entlastung_selbsttest.sh
+
+      - name: Selbsttest .htaccess-Sperrliste (#137)
+        # Eine Bot-Liste mit [F] sperrt aus, sie ist keine Cloaking-Weiche.
+        # Echte Weichen (PHP-Ziel, fremde URL, [P]) müssen crit bleiben.
+        run: bash werkzeuge/htaccess_sperrliste_selbsttest.sh
+
+      - name: Selbsttest Einstiegsweg aus dem Request derselben Sekunde (#135)
+        # 13e.5 haelt die juengsten belasteten Dateien gegen das Access-Log
+        # (+-2 s, auch .gz). UpdraftCentral-POST zur Anlage = crit + IOC;
+        # ein Browser-GET darf kein Einstiegsweg werden.
+        run: bash werkzeuge/einstieg_request_selbsttest.sh
+
       - name: Selbsttest der Alterswarnung des Schwachstellen-Bestands (#129)
         # Beide Richtungen: frisch bleibt gruen, ab der Schwelle (30 - 9 = 21
         # Tage) wird es rot. Eine Warnung, die immer anschlaegt, ginge unter.

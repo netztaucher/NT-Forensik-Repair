@@ -99,6 +99,13 @@ fi
 
 # Einfallstor-Hypothesen aus Befundlage
 ANGRIFF_VEKTOR=""
+# Ein im Zugriffsprotokoll BELEGTER Weg (13e.5, #135) steht vor allen
+# Vermutungen. Am 21.10.2026 stand hier "Kein eindeutiger Vektor", obwohl der
+# UpdraftCentral-Request in derselben Sekunde wie die Anlage des Schad-Plugins
+# im Protokoll lag.
+if [[ -n "${U_EINSTIEG:-}" ]]; then
+  ANGRIFF_VEKTOR+=$(printf '%s\n' "$U_EINSTIEG" | awk -F'\t' 'NF>=4{print "  - **Belegt im Zugriffsprotokoll:** " $1 " — Request " $2 " von " $3 " in derselben Sekunde wie die Anlage von `" $4 "`."}')$'\n'
+fi
 [[ "${WEBSHELL_COUNT:-0}" -gt 0 ]] && ANGRIFF_VEKTOR+="  - Abgelegte Hintertüren (${WEBSHELL_COUNT}) deuten auf Datei-Upload über ein verwundbares Plugin/Theme oder gestohlene Zugangsdaten."$'\n'
 [[ "${WPLOGIN_TOTAL:-0}" -gt 20 ]] && ANGRIFF_VEKTOR+="  - Auffällige wp-login-Aktivität → WordPress-Login als möglicher Einstieg."$'\n'
 [[ "${SSH_FAILED_COUNT:-0}" -gt 1000 ]] && ANGRIFF_VEKTOR+="  - ${SSH_FAILED_COUNT} SSH-Rateangriffe → Passwort-Brute-Force auf den Serverzugang."$'\n'

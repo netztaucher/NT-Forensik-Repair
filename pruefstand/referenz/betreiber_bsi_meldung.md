@@ -29,7 +29,7 @@
 | Unternehmen | [AUSFÜLLEN — Kunde] |
 | Branche / Sektor | [AUSFÜLLEN] |
 | Betroffene Domain(s) | [AUSFÜLLEN] |
-| Betroffener Server | imac () |
+| Betroffener Server | mac () |
 | Einstufung | ☐ KRITIS  ☐ NIS2 besonders wichtige Einrichtung  ☐ NIS2 wichtige Einrichtung  ☐ nicht meldepflichtig (freiwillige Meldung) |
 
 ## 3. Zeitliche Einordnung

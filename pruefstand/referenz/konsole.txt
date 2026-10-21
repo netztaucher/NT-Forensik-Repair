@@ -134,6 +134,7 @@
   [0;32m✓[0m kunde-drei.example/httpdocs: keine @include base64_decode()-Injektion
   [0;32m✓[0m kunde-drei.example/httpdocs: 2 Plugin(s) gegen wordpress.org geprüft — keine veränderte Codedatei
   [0;36m⚪[0m kunde-drei.example/httpdocs: 1 Plugin(s) ohne Prüfsummensatz und alle Themes — Unversehrtheit nicht feststellbar (Premium, Fork, Eigenbau; für Themes veröffentlicht wordpress.org keine Prüfsummen)
+  [0;32m✓[0m kunde-drei.example/httpdocs: kein Plugin mit Autologin-Muster (wp_set_auth_cookie neben Benutzeranlage und Anfrageparameter)
   [0m·  kunde-drei.example/httpdocs: Core-Update-Staging Fassung 7.1 (<ZEIT>) unverändert gegen amtliche Prüfsummen — WordPress räumt es bei Erfolg weg; das Update ist vermutlich nicht abgeschlossen: <PRUEFSTAND>/vhosts/kunde-drei.example/httpdocs/wp-content/upgrade/wp_pruefstand3/wordpress
   [0;32m✓[0m kunde-drei.example/httpdocs: WordPress-Core unverändert (verify-checksums)
   [0;33m⚠[0m  kunde-drei.example/httpdocs: 3 Core-Datei(en) für den Eigentümer schreibgeschützt (in einem Vorgang gesetzt am <ZEIT>) — Core-Updates scheitern daran, still; Ursache klären (Härtung von Hand oder Schutz eingeschleusten Codes vor dem nächsten Update)
@@ -184,10 +185,12 @@
   [0;33m⚠[0m  kunde-zwei.example/httpdocs: 1 veränderte Nicht-Codedatei(en) in Plugins (readme, Übersetzungen, Stilvorlagen) — meist harmlos
   [0;33m⚠[0m  kunde-zwei.example/httpdocs: 1 im Prüfsummensatz geführte Plugin-Datei(en) fehlen auf der Platte
   [0;36m⚪[0m kunde-zwei.example/httpdocs: 1 Plugin(s) ohne Prüfsummensatz und alle Themes — Unversehrtheit nicht feststellbar (Premium, Fork, Eigenbau; für Themes veröffentlicht wordpress.org keine Prüfsummen)
+  [0;32m✓[0m kunde-zwei.example/httpdocs: kein Plugin mit Autologin-Muster (wp_set_auth_cookie neben Benutzeranlage und Anfrageparameter)
   [0;31m✗[0m  [1mkunde-zwei.example/httpdocs: 1 abweichende Datei(en) im Core-Update-Staging (Fassung 7.1) — dort hat niemand etwas zu suchen außer dem Updater[0m
   [0;31m✗[0m  [1mkunde-zwei.example/httpdocs: 1 veränderte Core-Datei(en) — Injektion oder Manipulation[0m
   [0;33m⚠[0m  kunde-zwei.example/httpdocs: 1 Core-Datei(en) stammen aus Fassung 7.1 (liegengebliebenes Update-Staging) — das Update ist abgebrochen, der Kern gemischt; Update abschließen
   [0;33m⚠[0m  kunde-zwei.example/httpdocs: 1 Core-fremde Datei(en) in wp-admin/wp-includes — prüfen
+  [0;32m✓[0m kunde-zwei.example/httpdocs: kein UpdraftCentral-Schlüssel hinterlegt
   [0;32m✓[0m kunde-zwei.example/httpdocs: keine Application Passwords vergeben
   [0;36m⚪[0m kunde-zwei.example/httpdocs: REST-Benutzerliste nicht geprüft (ohne --online) — /wp-json/wp/v2/users liefert unangemeldet oft alle Benutzernamen
   [0;33m⚠[0m  kunde-zwei.example/httpdocs: 2 Härtungspunkt(e) in wp-config.php offen
@@ -201,6 +204,7 @@
   [0;33m⚠[0m  kunde-zwei.example/httpdocs: active_plugins führt Einträge ohne Datei auf der Platte — Leiche oder Tarnung, sichten
   [0m·  kunde-zwei.example/httpdocs: 4 Option(en) mit PHP-Merkmal, davon 2 ohne erkennbare Herkunft — KEIN Befund: legitime Plugins legen dort Code ab und führen ihn aus (gemessen: 12 von 12 Fehlalarmen, alle erklärbar). Rangfolge für die Sichtung, ungeklärte zuerst
   [0m·  kunde-zwei.example/httpdocs: auffällig grosse Optionen (>= 262144 B) — Rangfolge für die Sichtung, kein Befund:
+  [0;32m✓[0m kunde-zwei.example/httpdocs: keine verwaisten Administratorrechte in usermeta
   [0;36m⚪[0m kunde-zwei.example/httpdocs: Datenbank nicht geprüft (grep beherrscht kein -P (PCRE) — die Werte aus wp-config.php sind damit nicht lesbar). Das ist KEINE Entwarnung.
   [0;36mübersprungen:[0m 13. Root- & Eskalations-Prüfung
 
@@ -249,7 +253,11 @@
 [0;36m▶ 13e.4 Reichweite der Quellen[0m
   [0m·  Aeltester Nachweis ist nicht Infektionsbeginn: er ist die aelteste ueberlebende Spur. Aeltere Vorgaenge koennen ueberschrieben, rotiert oder nie protokolliert worden sein.
 
-[0;36m▶ 13e.5 Einstieg über Anmeldedaten[0m
+[0;36m▶ 13e.5 Einstiegsweg im Zugriffsprotokoll[0m
+  [0m·  9 Zeitpunkt(e) gegen das Zugriffsprotokoll gehalten (Fenster ±2 s): die juengsten belasteten Dateien und frisch angelegte Plugins/Themes
+  [0;36m⚪[0m Kein Request mit Fernsteuerungs-, Upload- oder Installationskennung im Fenster ±2 s um die belasteten Dateien im Protokollfenster — der Einstiegsweg laesst sich aus den vorhandenen Quellen nicht bestimmen
+
+[0;36m▶ 13e.6 Einstieg über Anmeldedaten[0m
   [0;32m✓[0m Keine erfolgreiche Anmeldung im Zeitfenster der belasteten Dateien <PRUEFSTAND>/auth.log, ab <ZEIT>) — der Einstieg lag damit nicht bei Anmeldedaten, soweit dieses Protokoll reicht
 
 [1m[0;34m══════════════════════════════════════════[0m
@@ -270,8 +278,8 @@
 [1m[0;32m  ANALYSE ABGESCHLOSSEN — Lauf <LAUF-ID>[0m
 [1m[0;32m══════════════════════════════════════════[0m
 
-[1mBefunde:[0m       🔴 18 kritisch, ⚠️ 29 Warnungen, ✅ 32 ok, ⚪ 19 nicht messbar
-[0;33m               19 Prüfung(en) ohne Ergebnis — das ist keine Entwarnung.[0m
+[1mBefunde:[0m       🔴 18 kritisch, ⚠️ 29 Warnungen, ✅ 36 ok, ⚪ 20 nicht messbar
+[0;33m               20 Prüfung(en) ohne Ergebnis — das ist keine Entwarnung.[0m
                  Webshell-Mustersuche nicht ausgeführt — grep beherrscht kein -P (PCRE). Auf macOS ist BSD-grep die Vorgabe; GNU grep oder ugrep installieren. Das ist KEINE Entwarnung.
                  YARA-Signaturscan nicht gelaufen (Schalter --yara nicht gesetzt) — diese Erkennungsebene fehlt in diesem Bericht
                  kunde-zwei.example/cloud.kunde-zwei.example: Werkzeug antwortet nicht verwertbar — nicht geprüft
@@ -291,6 +299,7 @@
                  kunde-zwei.example/httpdocs: REST-Benutzerliste nicht geprüft (ohne --online) — /wp-json/wp/v2/users liefert unangemeldet oft alle Benutzernamen
                  kunde-zwei.example/httpdocs: Datenbank nicht geprüft (grep beherrscht kein -P (PCRE) — die Werte aus wp-config.php sind damit nicht lesbar). Das ist KEINE Entwarnung.
                  Dieser Lauf sieht nur 1 vhost-Verzeichnis(se) — ob der Systemnutzer weitere besitzt, ist hier nicht feststellbar. Mit --global messbar
+                 Kein Request mit Fernsteuerungs-, Upload- oder Installationskennung im Fenster ±2 s um die belasteten Dateien im Protokollfenster — der Einstiegsweg laesst sich aus den vorhandenen Quellen nicht bestimmen
 
 [1mLauf-Ordner:[0m     <PRUEFSTAND>/ablage/forensik/<LAUF-ID>
 

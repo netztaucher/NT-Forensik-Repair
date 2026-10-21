@@ -972,6 +972,223 @@ _wp_staging_pruefen() {
                 -name wordpress -path '*/wp_*/wordpress' 2>/dev/null | LC_ALL=C sort)
 }
 
+# ── Protokolle des vhosts dieser Instanz ─────────────────────
+#
+# Zwei Pruefungen (#134, #139) brauchen das Protokollverzeichnis der Instanz,
+# nicht das des Laufs. Plesk legt es an zwei Stellen ab: als logs/ NEBEN
+# httpdocs/ (Verweis) und unter ${VHOSTS_DIR}/system/<domain>/logs (Ziel).
+#
+# Gesucht wird vom Installationspfad aufwaerts, hoechstens sechs Ebenen —
+# dieselbe Grenze wie in 13e. Der system/-Pfad hat Vorrang: eine Subdomain
+# liegt als <domain>/<subdomain>/ UNTER dem Hauptvhost, und die blosse
+# Aufwaertssuche fände dort dessen logs/ — das Protokoll einer anderen Seite.
+# Die Instanzwurzel selbst zaehlt nicht: ein logs/ IN der Installation ist ein
+# Plugin-Ordner, kein Zugriffsprotokoll.
+#
+# Kein Fund: Rueckgabe 1, keine Ausgabe. Der Aufrufer sagt dann, dass er nicht
+# nachsehen konnte — eine leere Suche ist keine Entwarnung.
+_wp_logdir() {
+  local d="${REZ_PFAD}" i=0 vh="${VHOSTS_DIR:-/var/www/vhosts}"
+  while [[ "$i" -lt 6 && -n "$d" && "$d" != "/" && "$d" != "$vh" ]]; do
+    if [[ -d "${vh}/system/$(basename "$d")/logs" ]]; then
+      printf '%s\n' "${vh}/system/$(basename "$d")/logs"; return 0
+    fi
+    if [[ "$d" != "$REZ_PFAD" && -d "${d}/logs" ]]; then
+      printf '%s\n' "${d}/logs"; return 0
+    fi
+    d=$(dirname "$d"); i=$((i+1))
+  done
+  return 1
+}
+
+# Tagesstempel des Untersuchungszeitraums im Format des Zugriffsprotokolls,
+# "[dd/Mon/yyyy:" je Zeile, heute zuerst. Als Musterliste fuer grep -F: kein
+# Datumsrechnen je Logzeile, und dasselbe Verhalten mit GNU- und BSD-date.
+_wp_log_tage() {
+  local i jetzt t
+  jetzt=$(date +%s)
+  for ((i=0; i<=${DAYS_BACK:-30}; i++)); do
+    t=$((jetzt - i*86400))
+    LC_ALL=C date -d "@$t" '+[%d/%b/%Y:' 2>/dev/null || LC_ALL=C date -r "$t" '+[%d/%b/%Y:'
+  done
+}
+
+# ── Autologin-Hintertür als Plugin (#134) ────────────────────
+#
+# Anlass 21.10.2026, zwei Installationen auf zwei Servern: ein Plugin von rund
+# 2 KB, "Small maintenance toolkit", je Opfer mit neuem Namen, Autor und Token
+# (hero-hub/ von "QuietPress Labs", hero-binder-1d4/ von "CopperForge WP").
+# Auf 'init' mit Prioritaet 1 prueft es ein GET-Feld per hash_equals gegen das
+# Token, legt per wp_insert_user einen Redakteur an, gibt ihm per add_cap
+# manage_options und install_plugins und meldet ihn per wp_set_auth_cookie an.
+#
+# Der Lauf auf main fand es NICHT. Es stand nur in der Dateiliste: kein
+# Signaturtreffer (nichts verschleiert, kein eval), kein Pruefsummenbefund
+# (nie im Verzeichnis), kein Namensmuster (der Name wechselt je Opfer).
+#
+# Erkannt wird deshalb das VERHALTEN, nicht der Name: in derselben PHP-Datei,
+# im Abstand von hoechstens WP_AUTOLOGIN_FENSTER Zeilen um wp_set_auth_cookie(
+#   - eine Benutzeranlage oder Rechtevergabe (wp_insert_user, wp_create_user,
+#     add_cap, set_role) UND
+#   - eine Eingabe aus der Anfrage ($_GET, $_REQUEST, $_COOKIE, $_POST).
+#
+# WARUM DAS FENSTER: wp_set_auth_cookie allein steht in jedem Plugin mit
+# eigener Anmeldung, und eine grosse Sammeldatei (WooCommerce
+# wc-user-functions.php) fuehrt Kontoanlage und Anmelde-Cookie in zwei
+# verschiedenen Funktionen. Ohne Naehe waere sie ein Treffer. Im Anlassfall
+# liegen alle drei Merkmale in 20 Zeilen.
+#
+# FEHLALARME, DIE BLEIBEN KOENNEN: Social-Login und Magic-Link legen
+# tatsaechlich aus einer Anfrage heraus Konten an und melden sie an. Wer davon
+# im Verzeichnis steht und gegen die amtlichen Pruefsummen bestaetigt ist
+# (Whitelist aus _wp_plugin_integritaet), wird NICHT crit, sondern als
+# entlastet vermerkt. Ohne --online gibt es diese Bestaetigung nicht; der Beleg
+# sagt das dann ausdruecklich.
+#
+# Der Beleg nennt Merkmale, Ordneralter, Verzeichnisstatus und die Fatal-Flut
+# im error_log (im Anlass 16.015 bzw. 7.451 Zeilen "Undefined constant
+# HeroHub::FIELD" — die Vorlage war fehlerhaft). NICHT in den Beleg: der
+# Dateiinhalt. Dort stehen Token und Kennwort des Angreiferkontos.
+_wp_autologin_plugins() {
+  local wc="${REZ_PFAD}/wp-content" kand="" w f gesucht=0
+  for w in "${wc}/plugins" "${wc}/mu-plugins"; do
+    [[ -d "$w" ]] || continue
+    gesucht=1
+    kand+=$(grep -rlF --include='*.php' 'wp_set_auth_cookie' "$w" 2>/dev/null || true)$'\n'
+  done
+  local fenster="${WP_AUTOLOGIN_FENSTER:-40}" treffer=""
+  while IFS= read -r f; do
+    [[ -n "$f" && -f "$f" ]] || continue
+    # Je Fundstelle von wp_set_auth_cookie( muessen BEIDE anderen Merkmale im
+    # Fenster liegen. Rueckgabe 0 = Treffer.
+    if awk -v w="$fenster" '
+         /wp_set_auth_cookie[[:space:]]*\(/ { k[++nk] = NR }
+         /(^|[^A-Za-z0-9_])(wp_insert_user|wp_create_user|add_cap|set_role)[[:space:]]*\(/ { a[++na] = NR }
+         /\$_(GET|REQUEST|COOKIE|POST)([^A-Za-z0-9_]|$)/ { e[++ne] = NR }
+         END {
+           for (i = 1; i <= nk; i++) {
+             ha = 0; he = 0
+             for (j = 1; j <= na; j++) if (a[j] >= k[i] - w && a[j] <= k[i] + w) ha = 1
+             for (j = 1; j <= ne; j++) if (e[j] >= k[i] - w && e[j] <= k[i] + w) he = 1
+             if (ha && he) exit 0
+           }
+           exit 1
+         }' "$f" 2>/dev/null; then
+      treffer+="$f"$'\n'
+    fi
+  done <<< "$kand"
+
+  # Kein Plugin-Verzeichnis: nichts gemessen, also auch keine gruene Zeile.
+  [[ "$gesucht" -eq 1 ]] || return 0
+  if [[ -z "$treffer" ]]; then
+    befund_melden wordpress schadcode ok \
+      "${REZ_KURZ}: kein Plugin mit Autologin-Muster (wp_set_auth_cookie neben Benutzeranlage und Anfrageparameter)" "$REZ_PFAD"
+    return 0
+  fi
+
+  local wl="${PRUEFSUMMEN_WHITELIST:-${RUN_DIR:-}/.pruefsummen_bestaetigt.txt}"
+  local logdir=""; logdir=$(_wp_logdir) || logdir=""
+  local gesehen=$'\n' beleg="" liste="" entlastet="" n=0
+  local rel slug ordner art name autor merk alter_s alter_t verz n_fatal fatal_zeit jetzt
+  jetzt=$(date +%s)
+  while IFS= read -r f; do
+    [[ -n "$f" ]] || continue
+    rel="${f#"${wc}"/}"
+    case "$rel" in
+      plugins/*/*)    slug="${rel#plugins/}";    slug="${slug%%/*}"; ordner="${wc}/plugins/${slug}";    art="plugin" ;;
+      mu-plugins/*/*) slug="${rel#mu-plugins/}"; slug="${slug%%/*}"; ordner="${wc}/mu-plugins/${slug}"; art="mu-plugin" ;;
+      mu-plugins/*)   slug=$(basename "$f" .php); ordner="$f"; art="mu-plugin" ;;
+      *)              slug=$(basename "$f" .php); ordner="$f"; art="plugin" ;;
+    esac
+    # Ein Plugin, ein Eintrag — auch wenn mehrere seiner Dateien treffen.
+    [[ "$gesehen" == *$'\n'"${ordner}"$'\n'* ]] && continue
+    gesehen+="${ordner}"$'\n'
+
+    # Amtlich entlastet: die Datei ist Byte fuer Byte die Fassung aus dem
+    # Verzeichnis. Dann ist das Muster Absicht des Herstellers (Social-Login,
+    # Magic-Link) und kein untergeschobener Code — sichtbar, aber nicht crit.
+    if [[ -r "$wl" ]] && grep -qxF "$f" "$wl" 2>/dev/null; then
+      entlastet+="${f}"$'\n'
+      continue
+    fi
+    n=$((n+1))
+
+    # Kopfzeilen: Name und Autor. Nur diese beiden Felder, nicht der Rest der
+    # Datei — im Anlass stand das Token drei Zeilen darunter.
+    name=$(head -40 "$f" 2>/dev/null | sed -nE 's/^[[:space:]]*\*?[[:space:]]*Plugin Name[[:space:]]*:[[:space:]]*(.*)$/\1/p' | head -1 | cut -c1-80)
+    autor=$(head -40 "$f" 2>/dev/null | sed -nE 's/^[[:space:]]*\*?[[:space:]]*Author[[:space:]]*:[[:space:]]*(.*)$/\1/p' | head -1 | cut -c1-80)
+
+    # Merkmale als Funktions- und Rechtenamen, nie als Werte.
+    merk=$(grep -oE "wp_set_auth_cookie|wp_set_current_user|wp_insert_user|wp_create_user|set_role|hash_equals|\\\$_(GET|REQUEST|COOKIE|POST)|add_cap\([[:space:]]*['\"][a-z_]+['\"]|add_action\([[:space:]]*['\"]init['\"]" "$f" 2>/dev/null \
+           | sed -E "s/[[:space:]]+//g; s/['\"]//g; s/^(add_cap|add_action)\((.*)\$/\1(\2)/" | LC_ALL=C sort -u | tr '\n' ' ')
+
+    # Alter des Ordners: frisch angelegt heisst im Untersuchungszeitraum.
+    alter_s=$(datei_epoche "$ordner" mtime 2>/dev/null || echo 0)
+    alter_t=""
+    [[ "${alter_s:-0}" -gt 0 ]] && alter_t=$(( (jetzt - alter_s) / 86400 ))
+
+    # Im Verzeichnis gefuehrt? Nur fuer echte Plugin-Ordner sinnvoll.
+    verz="nicht gefragt (ohne --online)"
+    if [[ "$art" == "plugin" && "$ordner" != "$f" ]]; then
+      local _rc; _wp_im_verzeichnis "$slug"; _rc=$?
+      case "$_rc" in
+        0) verz="im Verzeichnis gefuehrt — Datei aber NICHT gegen Pruefsummen bestaetigt" ;;
+        1) verz="NICHT im wordpress.org-Verzeichnis" ;;
+      esac
+    else
+      verz="mu-Plugin — kein Verzeichniseintrag moeglich"
+    fi
+
+    # Fatal-Flut im error_log mit Pfad in diesem Plugin. Gezaehlt, nicht
+    # zitiert: ein Stacktrace kann Argumente tragen, und im Anlass waeren das
+    # Token und Kennwort gewesen.
+    n_fatal=""; fatal_zeit=""
+    if [[ -n "$logdir" ]]; then
+      local _fz
+      _fz=$(for _lf in "${logdir}"/*error_log*; do
+              [[ -f "$_lf" ]] || continue
+              [[ "$_lf" == *.gz || "$_lf" == *.bz2 || "$_lf" == *.xz ]] && continue
+              grep -hF "${ordner#"${REZ_PFAD}"/}" "$_lf" 2>/dev/null | grep -E 'Fatal|Uncaught' || true
+            done | sed -nE 's/^\[([^]]+)\].*/\1/p')
+      n_fatal=$(printf '%s' "$_fz" | grep -c . || true)
+      [[ "${n_fatal:-0}" -gt 0 ]] && fatal_zeit="$(printf '%s\n' "$_fz" | head -1) bis $(printf '%s\n' "$_fz" | tail -1)"
+    fi
+
+    liste+="${ordner}"$'\n'
+    WP_AUTOLOGIN_PLUGINS+="${REZ_PFAD}"$'\t'"${ordner}"$'\t'"${f}"$'\t'"${slug}"$'\n'
+    beleg+="Plugin:      ${ordner}  (${art})
+Datei:       ${f}
+Kopf:        ${name:-–} / Autor: ${autor:-–}
+Merkmale:    ${merk:-–}
+Ordner:      $(datei_meta "$ordner" mtime 2>/dev/null || echo '?')${alter_t:+ (vor ${alter_t} Tagen$([[ "$alter_t" -le "${DAYS_BACK:-30}" ]] && echo ', IM Untersuchungszeitraum'))}
+Verzeichnis: ${verz}
+Pruefsummen: $([[ -r "$wl" ]] && echo 'abgeglichen, Datei nicht bestaetigt' || echo 'kein Abgleich in diesem Lauf (ohne --online) — Entlastung nicht moeglich')
+error_log:   $(if [[ -z "$logdir" ]]; then echo 'Protokollverzeichnis des vhosts nicht gefunden — nicht geprueft'; else echo "${n_fatal:-0} Fatal-Zeile(n) mit diesem Pfad${fatal_zeit:+ (${fatal_zeit})} in ${logdir}"; fi)
+
+"
+  done <<< "$treffer"
+
+  if [[ "$n" -gt 0 ]]; then
+    befund_melden wordpress schadcode crit \
+      "${REZ_KURZ}: Autologin-Hintertür — ${n} Plugin(s) legen aus einer Anfrage heraus ein Konto an bzw. erweitern seine Rechte und melden es per wp_set_auth_cookie an. Plugin-Ordner sichern und entfernen, angelegte Konten suchen" \
+      "$(printf '%s\n' "$liste" | head -1)" web
+    code "$liste"
+    evidence "wp_autologin_plugins_$(echo "$REZ_KURZ" | tr '/.' '__')" \
+      "# Plugins mit Autologin-Muster (#134): wp_set_auth_cookie, Benutzeranlage
+# oder Rechtevergabe und ein Anfrageparameter im Abstand von <= ${fenster} Zeilen.
+# Dateiinhalte werden nicht zitiert (Token, Kennwort).
+
+${beleg}"
+  fi
+  if [[ -n "$entlastet" ]]; then
+    info "${REZ_KURZ}: $(printf '%s' "$entlastet" | grep -c .) Plugin-Datei(en) mit Autologin-Muster sind gegen die amtlichen Prüfsummen bestätigt — Herstellercode (Social-Login o.ä.), keine Hintertür"
+    code "$entlastet"
+  fi
+  [[ "$n" -eq 0 ]] && befund_melden wordpress schadcode ok \
+    "${REZ_KURZ}: Autologin-Muster nur in amtlich bestätigten Plugin-Dateien" "$REZ_PFAD"
+  return 0
+}
+
 # ── Dateibasierte Merkmale ───────────────────────────────────
 rezept_sonder() {
   # ── Vergiftete robots.txt (#47) ────────────────────────────
@@ -1206,6 +1423,10 @@ ${_sm}" kunde
   else
     _wp_plugin_integritaet
   fi
+
+  # Autologin-Hintertuer (#134). NACH der Plugin-Integritaet: deren
+  # Whitelist entscheidet, ob ein Treffer amtlich entlastet ist.
+  _wp_autologin_plugins
 }
 
 # ── Konfiguration: exponierter Fernzugang ────────────────────
@@ -1319,6 +1540,190 @@ Dashboard: ${ver:-unbekannt}
 SSO:       $([[ $sso_an -eq 1 ]] && echo scharf || echo aus)${sso_user:+ , Benutzer ${sso_user}}
 Konstante: $([[ $konstante -eq 1 ]] && echo 'WPMUDEV_DISABLE_SSO gesetzt' || echo 'nicht gesetzt')
 Schlüssel: $([[ ${keylen:-0} -gt 0 ]] && echo "gesetzt (${keylen} Zeichen, Wert nicht protokolliert)" || echo 'leer')"
+}
+
+# ── UpdraftCentral-Fernzugang (#139) ─────────────────────────
+#
+# Einfallstor im Fall vom 21.10.2026 (web68, web345): "POST /" mit dem
+# User-Agent "class-udrpc.php" in DERSELBEN Sekunde, in der das Autologin-Plugin
+# (#134) auf der Platte erschien. Auf web68 lag genau ein Schluessel
+# "UpdraftCentral Remote Control" von 2021 — angelegt, vergessen, nie
+# widerrufen.
+#
+# Ein solcher Schluessel ist ein Fernzugang wie Hub-SSO: wer den privaten Teil
+# hat, installiert Plugins ohne Anmeldung, und keine Anmeldeprotokollierung
+# sieht es. Er steht in der Option 'updraft_central_localkeys' (Multisite: in
+# sitemeta), PHP-serialisiert: id => [name, key, created, …].
+#
+# DAS SCHLUESSELMATERIAL BETRITT DIE SHELL NICHT. Die Abfrage laeuft als Pipe
+# direkt in den Leser (_wp_udc_lesen), der nur Anzahl, id, name und created
+# herausgibt. Keine Variable, kein Beleg, keine Logzeile haelt den Wert — auch
+# kein `set -x` und kein Variablenabzug.
+#
+# Schwere: Schluessel vorhanden -> warn (die Tuer ist da). Zusaetzlich
+# RPC-Aufrufe im Zugriffsprotokoll des Untersuchungszeitraums -> crit mit
+# Adressen und Zeiten (die Tuer wurde benutzt). Ob eine Adresse die eigene
+# UpdraftCentral-Zentrale ist, kann nur der Betreiber sagen; der Befund nennt
+# sie deshalb.
+_wp_udc_lesen() {   # stdin: Optionswert (mysql -N); stdout: LEER | FEHLER | ANZAHL\tn + SCHLUESSEL\tid\tname\tcreated
+  python3 -c '
+import sys, time
+roh = sys.stdin.buffer.read().rstrip(b"\n")
+if not roh.strip():
+    print("LEER"); sys.exit(0)
+# mysql -N gibt Zeilenumbrueche, Tabs und Backslashes im Wert maskiert aus.
+# Die Laengenangaben der Serialisierung zaehlen die Bytes OHNE Maskierung.
+ESC = {ord("n"): b"\n", ord("t"): b"\t", ord("0"): b"\x00", ord("r"): b"\r", 0x5c: b"\x5c"}
+def unesc(b):
+    out = bytearray(); i = 0
+    while i < len(b):
+        if b[i] == 0x5c and i + 1 < len(b) and b[i + 1] in ESC:
+            out += ESC[b[i + 1]]; i += 2
+        else:
+            out.append(b[i]); i += 1
+    return bytes(out)
+def zahl(b, i, ende):
+    j = b.index(ende, i); return b[i:j], j + 1
+def lies(b, i):
+    t = b[i:i + 1]
+    if t == b"N":
+        return None, i + 2
+    if t in (b"i", b"b", b"d"):
+        v, i = zahl(b, i + 2, b";")
+        if t == b"i": return int(v), i
+        if t == b"b": return v == b"1", i
+        return float(v), i
+    if t == b"s":
+        n, i = zahl(b, i + 2, b":"); n = int(n)
+        s = b[i + 1:i + 1 + n]
+        if b[i + 1 + n:i + 3 + n] != b"\x22;": raise ValueError
+        return s, i + 3 + n
+    if t == b"a":
+        n, i = zahl(b, i + 2, b":"); n = int(n); i += 1; d = {}
+        for _ in range(n):
+            k, i = lies(b, i); v, i = lies(b, i); d[k] = v
+        if b[i:i + 1] != b"}": raise ValueError
+        return d, i + 1
+    raise ValueError
+d = None
+for kandidat in (roh, unesc(roh)):
+    try:
+        d, _ = lies(kandidat, 0); break
+    except Exception:
+        d = None
+if not isinstance(d, dict):
+    print("FEHLER"); sys.exit(0)
+def text(x, n):
+    if isinstance(x, bytes): x = x.decode("utf-8", "replace")
+    return " ".join(str(x).split())[:n]
+print("ANZAHL\t%d" % len(d))
+for k, v in d.items():
+    name, wann = "", ""
+    if isinstance(v, dict):
+        name = v.get(b"name", b"")
+        c = v.get(b"created", "")
+        if isinstance(c, bytes) and c.isdigit(): c = int(c)
+        if isinstance(c, int) and c > 0:
+            wann = time.strftime("%Y-%m-%d %H:%M UTC", time.gmtime(c))
+    print("SCHLUESSEL\t%s\t%s\t%s" % (text(k, 40), text(name, 80) or "-", wann or "unbekannt"))
+' 2>/dev/null || echo "FEHLER"
+}
+
+_wp_haertung_updraftcentral() {
+  local p="${REZ_PFX:-}" plug="" _d
+  # Pruefstand: nur die in `nur` genannte Instanz hat Daten. Die uebrigen
+  # bekaemen sonst "kein Schluessel hinterlegt" als gruene Zeile, ohne dass
+  # etwas gemessen wurde — dieselbe Regel wie in _wp_db_persistenz.
+  if [[ -n "${NT_DB_ATTRAPPE:-}" && -r "${NT_DB_ATTRAPPE}/nur" ]] \
+     && ! grep -qF "$(cat "${NT_DB_ATTRAPPE}/nur")" <<<"${REZ_KURZ}"; then
+    return 0
+  fi
+  for _d in updraftplus updraftcentral; do
+    [[ -d "${REZ_PFAD}/wp-content/plugins/${_d}" ]] && plug="${plug}${plug:+, }${_d}"
+  done
+  if ! _db_da; then
+    # Ohne Datenbank nur dort etwas sagen, wo der Fernzugang ueberhaupt
+    # bedient werden kann. Sonst stuende diese Zeile auf jeder Instanz.
+    [[ -n "$plug" ]] && befund_melden wordpress haertung unklar \
+      "${REZ_KURZ}: UpdraftCentral-Schlüssel nicht geprüft (kein Datenbankzugang, ${plug} installiert) — das ist KEINE Entwarnung" "$REZ_PFAD"
+    return 0
+  fi
+  if ! werkzeug_da python3; then
+    befund_melden wordpress haertung unklar \
+      "${REZ_KURZ}: UpdraftCentral-Schlüssel nicht auswertbar (python3 fehlt)" "$REZ_PFAD"
+    return 0
+  fi
+
+  # Pipe, keine Variable: siehe Kopf.
+  local erg quelle="options"
+  erg=$(_db_sql udc_optionen \
+        "SELECT option_value FROM ${p}options WHERE option_name='updraft_central_localkeys';" 2>/dev/null \
+        | _wp_udc_lesen)
+  if [[ "$erg" == "LEER" ]]; then
+    quelle="sitemeta"
+    erg=$(_db_sql udc_sitemeta \
+          "SELECT meta_value FROM ${p}sitemeta WHERE meta_key='updraft_central_localkeys';" 2>/dev/null \
+          | _wp_udc_lesen)
+  fi
+
+  if [[ "$erg" == "FEHLER" ]]; then
+    befund_melden wordpress haertung unklar \
+      "${REZ_KURZ}: Option updraft_central_localkeys vorhanden, aber nicht lesbar — UpdraftCentral-Fernzugang nicht bewertbar" "$REZ_PFAD" web
+    return 0
+  fi
+  local n schl
+  n=$(printf '%s\n' "$erg" | awk -F'\t' '$1=="ANZAHL"{print $2}')
+  schl=$(printf '%s\n' "$erg" | awk -F'\t' '$1=="SCHLUESSEL"{print $2 "\t" $3 "\t" $4}')
+  if [[ "$erg" == "LEER" || "${n:-0}" -eq 0 ]]; then
+    befund_melden wordpress haertung ok "${REZ_KURZ}: kein UpdraftCentral-Schlüssel hinterlegt" "$REZ_PFAD"
+    return 0
+  fi
+
+  # RPC-Nutzung im Zugriffsprotokoll des Untersuchungszeitraums.
+  local logdir="" rpc="" rpc_text="" _lf
+  logdir=$(_wp_logdir) || logdir=""
+  if [[ -n "$logdir" ]]; then
+    rpc=$(for _lf in "${logdir}"/*access*; do
+            [[ -f "$_lf" ]] || continue
+            [[ "$_lf" == *.gz || "$_lf" == *.bz2 || "$_lf" == *.xz ]] && continue
+            grep -hF 'class-udrpc.php' "$_lf" 2>/dev/null || true
+          done | grep -F -f <(_wp_log_tage) 2>/dev/null \
+               | awk '{ t = $4; sub(/^\[/, "", t); n[$1]++; if (!($1 in a)) a[$1] = t; z[$1] = t }
+                      END { for (ip in n) printf "%s\t%d\t%s\t%s\n", ip, n[ip], a[ip], z[ip] }' \
+               | LC_ALL=C sort -t$'\t' -k2,2nr -k1,1)
+  fi
+
+  local liste
+  liste=$(printf '%s\n' "$schl" | awk -F'\t' 'NF{printf "id %s — \"%s\", angelegt %s\n", $1, $2, $3}')
+  local _id _nm _cr
+  while IFS=$'\t' read -r _id _nm _cr; do
+    [[ -n "$_id" ]] && WP_UDC_SCHLUESSEL+="${REZ_PFAD}"$'\t'"${_id}"$'\t'"${_nm}"$'\t'"${_cr}"$'\n'
+  done <<< "$schl"
+
+  if [[ -n "$rpc" ]]; then
+    rpc_text=$(printf '%s\n' "$rpc" | head -5 | awk -F'\t' '{printf "%s%s (%d×, %s bis %s)", (NR>1?", ":""), $1, $2, $3, $4}')
+    befund_melden wordpress haertung crit \
+      "${REZ_KURZ}: UpdraftCentral-Fernzugang BENUTZT — ${n} Schlüssel hinterlegt, RPC-Aufrufe (class-udrpc.php) im Untersuchungszeitraum von ${rpc_text}. Wer den Schlüssel hat, installiert Plugins ohne Anmeldung. Prüfen, ob die Adresse die eigene UpdraftCentral-Zentrale ist; sonst Schlüssel widerrufen" \
+      "$REZ_PFAD" web
+  else
+    befund_melden wordpress haertung warn \
+      "${REZ_KURZ}: ${n} UpdraftCentral-Schlüssel hinterlegt — Fernsteuerung möglich: wer den Schlüssel hat, installiert Plugins ohne Anmeldung$([[ -z "$logdir" ]] && echo '. Zugriffsprotokoll des vhosts nicht gefunden — RPC-Nutzung nicht geprüft')" \
+      "$REZ_PFAD" web
+  fi
+  code "$liste"
+  evidence "wp_updraftcentral_$(echo "$REZ_KURZ" | tr '/.' '__')" \
+    "# UpdraftCentral-Schlüssel (#139). Schlüsselmaterial wird nie gelesen
+# und gelangt in keine Variable — nur id, Bezeichnung und Anlagedatum.
+Instanz:  ${REZ_PFAD}
+Quelle:   ${p}${quelle} / updraft_central_localkeys
+Plugins:  ${plug:-weder updraftplus noch updraftcentral installiert}
+Anzahl:   ${n}
+${liste}
+
+RPC-Aufrufe (User-Agent class-udrpc.php, letzte ${DAYS_BACK:-30} Tage):
+$(if [[ -z "$logdir" ]]; then echo '  Protokollverzeichnis des vhosts nicht gefunden — nicht geprüft'
+  elif [[ -z "$rpc" ]]; then echo "  keine in ${logdir}"
+  else printf '# Adresse <TAB> Anzahl <TAB> erster <TAB> letzter\n%s\n' "$rpc"; fi)"
 }
 
 # ── Application Passwords ────────────────────────────────────
@@ -1475,6 +1880,7 @@ rezept_konfig() {
     REZ_DB_OK=1
   fi
   _wp_haertung_hub_sso
+  _wp_haertung_updraftcentral
   _wp_haertung_app_passwords
   _wp_haertung_admin_domains
   _wp_haertung_rest_enum
@@ -1684,6 +2090,9 @@ ${GRUENDER}"
 #       uebliche Ort. BEWUSST nur info + Beleg: die Schwelle ist geraten, und
 #       legitime Optionen werden gross (Transients, Page-Builder-CSS). Erst
 #       messen, dann einstufen — dieselbe Regel wie bei 7.15.
+#   e4) Traegt usermeta Administratorrechte fuer eine user_id, zu der es in
+#       users keine Zeile gibt (#138)? Ein Konto, das noch angelegt werden
+#       muss, um Administrator zu sein.
 #
 # Die Bereinigung fasst NICHTS davon an. Das ist eine offene Entscheidung
 # (#47): eine falsch entfernte Option macht eine Seite unbrauchbar, und anders
@@ -1913,6 +2322,54 @@ ${_rang}" kunde
     info "${REZ_KURZ}: auffällig grosse Optionen (>= ${WP_OPTION_GROSS_BYTES:-262144} B) — Rangfolge für die Sichtung, kein Befund:"
     code "$OPTGROSS"
     evidence "wp_db_optionen_gross_$(echo "$REZ_KURZ" | tr '/.' '__')" "$OPTGROSS" kunde
+  fi
+
+  # e4) Verwaiste Administratorrechte (#138).
+  #
+  # Anlass web68, 21.10.2026: usermeta user_id 5 trug capabilities =
+  # administrator und user_level 10 — eine Benutzerzeile mit ID 5 gab es
+  # nicht. Wer sie anlegt (SQL-Insert, Import, zurueckgesetzter
+  # Auto-Increment), erbt Administratorrechte, ohne dass irgendwo ein Konto
+  # "angelegt" oder "befoerdert" wurde. Abschnitt a) sieht das nicht: er
+  # verbindet usermeta mit users und verliert damit genau diese Zeilen.
+  #
+  # Gesucht wird mit LEFT JOIN … IS NULL auf die Rechteschluessel der Seite
+  # (<pfx>capabilities, bei Multisite auch <pfx><n>_capabilities) mit einem
+  # der Rechte, die eine Uebernahme ausmachen. warn, nicht crit: eine Leiche
+  # aus einem unsauberen Loeschen sieht genauso aus — erst die Neuanlage
+  # macht sie scharf. Die Bereinigung braucht user_id und Schluessel.
+  local VERWAIST p="${REZ_PFX:-}"
+  VERWAIST=$(_db_sql verwaiste_rechte "SELECT m.user_id, m.meta_key, m.meta_value,
+       (SELECT l.meta_value FROM ${p}usermeta l WHERE l.user_id = m.user_id AND l.meta_key = '${p}user_level' LIMIT 1)
+     FROM ${p}usermeta m LEFT JOIN ${p}users u ON u.ID = m.user_id
+     WHERE u.ID IS NULL
+       AND (m.meta_key = '${p}capabilities' OR m.meta_key REGEXP '^${p}[0-9]+_capabilities\$')
+       AND (m.meta_value LIKE '%administrator%' OR m.meta_value LIKE '%manage_options%'
+            OR m.meta_value LIKE '%install_plugins%' OR m.meta_value LIKE '%edit_users%'
+            OR m.meta_value LIKE '%promote_users%');" 2>/dev/null || true)
+  if [[ -n "$VERWAIST" ]]; then
+    local _uid _key _wert _lvl _rechte _zeilen=""
+    while IFS=$'\t' read -r _uid _key _wert _lvl; do
+      [[ "$_uid" =~ ^[0-9]+$ ]] || continue
+      # Nur die gesetzten Rechte-/Rollennamen aus dem serialisierten Wert:
+      # s:13:"administrator";b:1; -> administrator
+      _rechte=$(printf '%s' "$_wert" | grep -oE 's:[0-9]+:"[a-z_]+";b:1' \
+                | sed -E 's/^s:[0-9]+:"([a-z_]+)".*/\1/' | LC_ALL=C sort -u | paste -sd, -)
+      [[ "$_lvl" == "NULL" ]] && _lvl=""
+      _zeilen+="${_uid}"$'\t'"${_key}"$'\t'"${_rechte:-?}"$'\t'"${_lvl:--}"$'\n'
+      WP_ORPHAN_CAPS+="${REZ_PFAD}"$'\t'"${_uid}"$'\t'"${_key}"$'\t'"${_rechte:-?}"$'\n'
+    done <<< "$VERWAIST"
+    if [[ -n "$_zeilen" ]]; then
+      befund_melden wordpress datenbank warn \
+        "${REZ_KURZ}: $(printf '%s' "$_zeilen" | grep -c .) verwaiste Administratorrecht(e) in usermeta ohne Benutzerzeile — wer ein Konto mit dieser ID anlegt, erbt die Rechte ohne Spur. Bereinigen" \
+        "$REZ_PFAD" web
+      code "$_zeilen"
+      evidence "wp_db_verwaiste_rechte_$(echo "$REZ_KURZ" | tr '/.' '__')" \
+        "# user_id <TAB> meta_key <TAB> Rechte <TAB> user_level — usermeta ohne Zeile in ${p}users (#138)
+${_zeilen}" kunde
+    fi
+  elif _db_da; then
+    befund_melden wordpress datenbank ok "${REZ_KURZ}: keine verwaisten Administratorrechte in usermeta" "$REZ_PFAD"
   fi
 }
 
