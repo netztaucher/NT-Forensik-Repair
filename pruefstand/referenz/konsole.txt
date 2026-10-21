@@ -266,10 +266,10 @@
   [0;32m✓[0m Programmstand über den ganzen Lauf unverändert — die Fassungsangabe belegt diesen Lauf
 
 [1mDatenschutz[0m
-  kunde/kundenbericht.md              1 fremde Kennungen maskiert
+  kunde/kundenbericht.md              0 fremde Kennungen maskiert
   kunde/befunde_details.md            0 fremde Kennungen maskiert
   betreiber/technik_bericht.md        2 fremde Kennungen maskiert
-  betreiber/bsi_meldung.md            3 fremde Kennungen maskiert
+  betreiber/bsi_meldung.md            0 fremde Kennungen maskiert
   betreiber/dsgvo_meldung.md          0 fremde Kennungen maskiert
   betreiber/lauf.log                  0 fremde Kennungen maskiert
   [0;32m✓[0m Kundenspur enthält keine fremden Kennungen
