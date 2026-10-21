@@ -590,6 +590,7 @@ _u_zeitpunkte() {   # <art> <ctime> <pfad> → t<TAB>art<TAB>wie<TAB>pfad
 
 U_KORR=""         # alle Treffer im Fenster, Rohform fuer Beleg und Befunde
 U_GESUCHT=0       # Zeitpunkte, gegen die ein Protokoll gehalten wurde
+U_GESUCHT_PFADE=0 # verschiedene Kandidaten-Pfade dazu — die Zahl fuer den Bericht
 if [[ -n "$U_FENSTER" ]]; then
   while IFS=$'\t' read -r _vd _ab; do
     [[ -n "$_vd" ]] || continue
@@ -611,6 +612,11 @@ if [[ -n "$U_FENSTER" ]]; then
       done < <(find "$_vd" -maxdepth 5 \( -path '*/wp-content/plugins/*' -o -path '*/wp-content/themes/*' \
                  -o -path '*/wp-content/mu-plugins/*' \) -prune -print 2>/dev/null)
     )
+    # Fuer den Bericht: verschiedene Kandidaten-PFADE im Fenster. Nicht die
+    # Zahl der Sekunden unten — die haengt davon ab, ob zwei Dateien zufaellig
+    # in dieselbe Sekunde fallen, und schwankte im Pruefbaum zwischen zwei
+    # Laeufen (8/9, CI zu #145). Eine Zahl im Bericht muss reproduzierbar sein.
+    U_GESUCHT_PFADE=$(( ${U_GESUCHT_PFADE:-0} + $(printf '%s\n' "$_k" | awk -F'\t' -v ab="$_ab" '$1 ~ /^[0-9]+$/ && $1 >= ab {print $4}' | LC_ALL=C sort -u | grep -c . || true) ))
     # Je Sekunde EIN Kandidat (belastet vor anlage), nur im Fenster, und je Art
     # die juengsten URSACHE_EINSTIEG_MAX. Ein Plugin mit 300 Dateien ist EINE
     # Anlage, nicht 300.
@@ -686,7 +692,7 @@ _u_bezug() {        # <d> <wie> <pfad> <anzahl> → "in derselben Sekunde wie di
 }
 
 if [[ "$U_GESUCHT" -gt 0 ]]; then
-  info "${U_GESUCHT} Zeitpunkt(e) gegen das Zugriffsprotokoll gehalten (Fenster ±2 s): die juengsten belasteten Dateien und frisch angelegte Plugins/Themes"
+  info "${U_GESUCHT_PFADE:-0} Kandidat(en) gegen das Zugriffsprotokoll gehalten (Fenster ±2 s je Anlage-/Schreibzeitpunkt): die juengsten belasteten Dateien und frisch angelegte Plugins/Themes"
 fi
 
 if [[ -n "$U_KORR" ]]; then

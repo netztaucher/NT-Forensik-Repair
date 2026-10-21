@@ -21,6 +21,10 @@ Alle nennenswerten Änderungen an `wp_plesk_forensik.sh`.
   Incident-Response-Playbook: Roh-Protokolle vor der nächsten Plesk-Rotation
   sichern. Anlass: 43.250.53.42 stand nach der Rotation um 06:43 nur noch als
   43.250.53.0 im Protokoll. Selbsttest `log_anonym`, `einstieg_request` Fall 5.
+- **13e.5 Zahl im Bericht reproduzierbar:** „N Zeitpunkt(e) gegen das
+  Zugriffsprotokoll“ zählte Sekunden; ob zwei Dateien in dieselbe Sekunde
+  fielen, hing vom Bautempo des Prüfbaums ab (CI zu #145: 8 gegen 9 in zwei
+  Läufen). Der Bericht nennt jetzt die Zahl verschiedener Kandidaten-Pfade.
 
 ### Behoben — UpdraftCentral-Abgleich übersah rotierte Protokolle (#139)
 
