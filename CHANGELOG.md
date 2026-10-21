@@ -4,6 +4,14 @@ Alle nennenswerten Änderungen an `wp_plesk_forensik.sh`.
 
 ## [unveröffentlicht]
 
+### Schwachstellen-Bestand — offener Daten-PR zeigt den letzten Abzug
+
+Lag der Daten-PR schon offen, hat der Wochenlauf nur den Zweig erneuert;
+Titel und Abdeckung im Text blieben auf dem ersten Lauf stehen. #131 trug am
+19.10.2026 noch „Stand 2026-10-05" und die Zahlen von damals, obwohl der
+Zweig den Abzug vom 19.10. führte — der Lauf wirkte ausgefallen. Jetzt zieht
+der Lauf Titel und Text per `gh pr edit` nach.
+
 ### Schwachstellen-Bestand — Alterswarnung ab 21 Tagen (#129)
 
 Der Wochenlauf prüft zum Schluss das Alter des Bestands auf `main` und wird

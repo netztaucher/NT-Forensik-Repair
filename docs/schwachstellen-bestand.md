@@ -115,7 +115,11 @@ Ablauf:
 3. Prüfen, dass alle drei Tabellen Datenzeilen führen
 4. `werkzeuge/lizenz-pruefstand.sh`
 5. `python3 lib/wp_schwachstellen.py --selbsttest`
-6. Pull Request öffnen, mit den Abdeckungszahlen im Text
+6. Pull Request öffnen, mit den Abdeckungszahlen im Text. Ist der Daten-PR
+   noch offen, erneuert der Lauf den Zweig und zieht Titel (Stand) und Text
+   (Abdeckung) per `gh pr edit` nach — der PR zeigt immer den letzten Abzug.
+   Der Text wird dabei ganz ersetzt: die `Doku:`-Zeile erst unmittelbar vor
+   dem Merge ergänzen.
 
 ### Warum die Prüfstände im erzeugenden Lauf stehen
 

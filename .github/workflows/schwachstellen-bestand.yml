@@ -154,22 +154,15 @@ jobs:
           # Zahlen stehen, die auch ausgeliefert werden.
           ABDECKUNG=$(sed -n '/^Abdeckung/,$p' rezepte/wordpress/daten/VERSION | tail -n +2)
 
+          TITEL="data(wordfence): Schwachstellen-Bestand erneuern (Stand ${STAND})"
+
           git checkout -B "$ZWEIG"
-          git commit -q -m "data(wordfence): Schwachstellen-Bestand erneuern (Stand ${STAND})" \
+          git commit -q -m "$TITEL" \
                         -m "Erzeugt vom Zeitplan in .github/workflows/schwachstellen-bestand.yml.
           LICENSE ist aus demselben Abzug abgeleitet wie die Daten."
           git push -f origin "$ZWEIG"
 
-          # Laeuft schon einer, nur den Zweig erneuern — sonst haeuft jeder
-          # Wochenlauf einen weiteren PR auf denselben Pfaden an.
-          if gh pr list --head "$ZWEIG" --state open --json number -q '.[0].number' | grep -q .; then
-            echo "PR besteht bereits, Zweig erneuert."
-            exit 0
-          fi
-
-          gh pr create --base main --head "$ZWEIG" \
-            --title "data(wordfence): Schwachstellen-Bestand erneuern (Stand ${STAND})" \
-            --body "Erneuert den Schwachstellen-Bestand. Erzeugt vom Zeitplan, nicht von Hand.
+          TEXT="Erneuert den Schwachstellen-Bestand. Erzeugt vom Zeitplan, nicht von Hand.
 
           ## Abdeckung
 
@@ -202,6 +195,21 @@ jobs:
           unabhaengig — ein Datenwechsel kann die Referenz nicht bewegen.
 
           Hintergrund: \`docs/schwachstellen-bestand.md\`"
+
+          # Laeuft schon einer, Zweig UND Titel/Text erneuern — sonst haeuft
+          # jeder Wochenlauf einen weiteren PR auf denselben Pfaden an, und
+          # der Text zeigte weiter Stand und Abdeckung des ersten Laufs
+          # (#131 trug am 19.10. noch die Zahlen vom 05.10.). Der Text wird
+          # ganz ersetzt: eine von Hand ergaenzte Doku-Zeile gehoert erst
+          # unmittelbar vor dem Merge hinein.
+          PR=$(gh pr list --head "$ZWEIG" --state open --json number -q '.[0].number')
+          if [[ -n "$PR" ]]; then
+            gh pr edit "$PR" --title "$TITEL" --body "$TEXT"
+            echo "PR #${PR} besteht bereits: Zweig, Titel und Abdeckung erneuert."
+            exit 0
+          fi
+
+          gh pr create --base main --head "$ZWEIG" --title "$TITEL" --body "$TEXT"
 
       # Warnt VOR der 30-Tage-Marke (#129). Am 30.09.2026 stand der Bestand
       # auf main 49 Tage: der Daten-PR lag sieben Wochen offen, dieser Lauf war
