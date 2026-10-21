@@ -19,8 +19,22 @@
 # ergänzt. Ein rein synthetischer Laufordner würde nur prüfen, ob das
 # Paketwerkzeug sein eigenes Dateiformat versteht.
 #
+# Seit dem Standard vom 21.10.2026 (#149, #150, #151) prüft er ausserdem die
+# Kundendokumente selbst: aus dem echten Lauf und der anonymen Fixture
+# pruefstand/kundenpaket/fall.json entstehen Sicherheitsbericht, DSGVO- und
+# BSI-Dokument (NT Docs, WeasyPrint) und das Anschreiben. Geprüft werden
+# Seitenzahl, Überlauf, Seitenbilder, fremde Kunden, die Interna-Sperrliste in
+# beide Richtungen (grün ohne, rot mit eingeschleustem Issue-Verweis) und die
+# Mail (Wortzahl, Anhänge).
+#
+# Braucht ein Python mit WeasyPrint (reportgen/README.md): $NT_WEASYPRINT_PY,
+# sonst der Interpreter hinter $WEASYPRINT, sonst ~/.venvs/weasyprint.
+#
 # Nutzung:  werkzeuge/kundenpaket-pruefstand.sh
 # Rückgabe: 0 wenn alle Soll-Werte erreicht wurden, sonst 1
+#
+# Test:     ja - ist selbst der Prüfstand (Soll-Werte, Gegenproben je Sperre) · NT-Forensik-Repair#1, #149
+# Rueckweg: entfällt - schreibt nur in den Arbeitsordner (KUNDENPAKET_PRUEFSTAND_DIR)
 # =============================================================================
 set -uo pipefail
 
@@ -76,6 +90,117 @@ ERSTER=$(awk -F'\t' '$2=="kunde"{print $4; exit}' "$VERZ")
 [[ -n "$ERSTER" ]] || { pfehl "kein kunde-Beleg im Lauf — Probe nicht durchführbar"; exit 1; }
 printf '\n/var/www/vhosts/fremder-kunde.example/httpdocs/geheim.php\n' >> "${BELEGE}/${ERSTER}"
 
+# ── Kundendokumente (NT Docs) aus Lauf und Fixture ──────────────────────────
+WPY="${NT_WEASYPRINT_PY:-}"
+if [[ -z "$WPY" ]]; then
+  _wp="${WEASYPRINT:-$(command -v weasyprint 2>/dev/null || true)}"
+  [[ -n "$_wp" && "$_wp" != */* ]] && _wp="$(command -v "$_wp" 2>/dev/null || true)"
+  [[ -n "$_wp" && -f "$_wp" ]] && WPY="$(head -1 "$_wp" | sed -n 's/^#![[:space:]]*//p' | awk '{print $1}')"
+fi
+[[ -z "$WPY" && -x "${HOME}/.venvs/weasyprint/bin/python" ]] && WPY="${HOME}/.venvs/weasyprint/bin/python"
+if [[ -z "$WPY" ]] || ! "$WPY" -c 'import weasyprint' >/dev/null 2>&1; then
+  pfehl "Kein Python mit WeasyPrint — die Kundendokumente sind NICHT geprüft (reportgen/README.md)"
+  exit 1
+fi
+FALL="${SELF_DIR}/pruefstand/kundenpaket/fall.json"
+KP="${ARBEIT}/kp_pruefung"
+
+# Ein fremder Kunde in findings.json und in der Fundliste. Das Werkzeug darf
+# nur Pfade aus dem Prüfumfang aufnehmen — sonst stünde er im Bericht.
+python3 - "${LAUF}/betreiber/findings.json" "${LAUF}/betreiber/kundenpaket_funde.tsv" <<'PY'
+import json, sys
+p = sys.argv[1]
+d = json.load(open(p, encoding="utf-8"))
+d.setdefault("actionable", {}).setdefault("disguised_payloads", []).append(
+    "/var/www/vhosts/fremder-kunde.example/httpdocs/wp-content/uploads/fremd.png")
+json.dump(d, open(p, "w", encoding="utf-8"))
+with open(sys.argv[2], "a", encoding="utf-8") as f:
+    f.write("Getarnte Payload\t/var/www/vhosts/fremder-kunde.example/httpdocs/wp-content/uploads/fremd.png\t\n")
+PY
+
+"$WPY" "${SELF_DIR}/reportgen/kundenpaket.py" --lauf "$LAUF" --ziel "${LAUF}/kunde" --fall "$FALL" \
+       --pruefung "$KP" --entwurf "${ARBEIT}/fall.entwurf.json" >"${ARBEIT}/kundenpaket_py.log" 2>&1
+KP_RC=$?
+if [[ "$KP_RC" -eq 0 ]]; then
+  pok "Kundendokumente gesetzt, regelgerecht und ohne Interna"
+else
+  pfehl "reportgen/kundenpaket.py endet mit ${KP_RC} — siehe ${ARBEIT}/kundenpaket_py.log"
+fi
+BER=$(find "${LAUF}/kunde" -maxdepth 1 -name 'NT-Sicherheitsbericht_*.pdf' | head -1)
+DSG=$(find "${LAUF}/kunde" -maxdepth 1 -name 'NT-Dokumentation_DSGVO-Art33_*.pdf' | head -1)
+BSI=$(find "${LAUF}/kunde" -maxdepth 1 -name 'NT-Einordnung_BSI-Meldung_*.pdf' | head -1)
+if [[ -s "$BER" && -s "$DSG" && -s "$BSI" ]]; then
+  pok "drei PDFs: $(basename "$BER"), $(basename "$DSG"), $(basename "$BSI")"
+else
+  pfehl "nicht alle drei Kunden-PDFs entstanden"
+fi
+
+seiten() { pdfinfo "$1" 2>/dev/null | awk '/^Pages:/{print $2}'; }
+for paar in "${DSG}:2" "${BSI}:2"; do
+  f="${paar%:*}"; soll="${paar##*:}"
+  [[ -f "$f" ]] || continue
+  if [[ "$(seiten "$f")" == "$soll" ]]; then pok "$(basename "$f"): ${soll} Seiten"
+  else pfehl "$(basename "$f"): $(seiten "$f") Seiten statt ${soll}"; fi
+done
+# Seitenzahl in der Fusszeile = Seiten des PDFs, und jede Seite liegt als Bild vor
+for f in "$BER" "$DSG" "$BSI"; do
+  [[ -f "$f" ]] || continue
+  n=$(seiten "$f")
+  fuss=$(pdftotext -enc UTF-8 "$f" - 2>/dev/null | grep -oE 'Seite [0-9]+ von [0-9]+' | awk '{print $4}' | sort -u | tr '\n' ' ')
+  bilder=$(find "${KP}/seiten" -name "$(basename "$f" .pdf)-*.png" 2>/dev/null | grep -c .)
+  if [[ "$fuss" == "${n} " && "$bilder" == "$n" ]]; then
+    pok "$(basename "$f" .pdf): ${n} Seiten, Fusszeile (Seite x von ${n}), ${bilder} Seitenbilder"
+  else
+    pfehl "$(basename "$f" .pdf): ${n} Seiten, Fusszeile (Seite x von ${fuss}), ${bilder} Seitenbilder"
+  fi
+done
+if python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); sys.exit(any(x["fehler"] or x["regelverstoesse"] for x in d["dokumente"]))' "${KP}/pruefung.json" 2>/dev/null; then
+  pok "kein Überlauf, ≥ 8 mm über der Fusszeile, Titel einzeilig, Sprachregeln eingehalten"
+else
+  pfehl "Satzprüfung meldet Fehler — ${KP}/pruefung.json"
+fi
+if pdftotext -enc UTF-8 "$BER" - 2>/dev/null | grep -q 'fremder-kunde'; then
+  pfehl "Ein fremder Kunde steht im Sicherheitsbericht"
+else
+  pok "fremder Kunde aus findings.json steht nicht im Sicherheitsbericht"
+fi
+# Die Fundliste (Abschnitt Schadcode) muss die Funde des Laufs tragen, nicht
+# nur die Zeitachse. Gegenprobe zu einem Lauf, der eine leere Liste lieferte.
+if pdftotext -enc UTF-8 "$BER" - 2>/dev/null | grep -qE '[0-9]+ Funde? im Webspace\. Pfade ab der Dokumentenwurzel'; then
+  pok "Funde aus dem Prüfumfang stehen mit Pfad im Webspace im Bericht"
+else
+  pfehl "Funde aus dem Lauf fehlen im Bericht"
+fi
+
+# Gegenprobe Interna: ein Issue-Verweis in der Fall-Datei muss auffallen.
+python3 - "$FALL" "${ARBEIT}/fall_interna.json" <<'PY'
+import json, sys
+d = json.load(open(sys.argv[1], encoding="utf-8"))
+d["bericht"]["jetzt"] += " Siehe infra#1062."
+json.dump(d, open(sys.argv[2], "w", encoding="utf-8"), ensure_ascii=False)
+PY
+"$WPY" "${SELF_DIR}/reportgen/kundenpaket.py" --lauf "$LAUF" --ziel "${ARBEIT}/kunde_interna" \
+       --fall "${ARBEIT}/fall_interna.json" >"${ARBEIT}/kundenpaket_interna.log" 2>&1
+IRC=$?
+if [[ "$IRC" -eq 3 ]] && grep -q 'infra#1062' "${ARBEIT}/kundenpaket_interna.log"; then
+  pok "Interna-Wächter schlägt bei eingeschleustem Issue-Verweis an"
+else
+  pfehl "Interna-Wächter schweigt zum eingeschleusten Issue-Verweis (rc ${IRC})"
+fi
+
+# Anschreiben: kurz, drei Punkte, alle Anhänge, ohne Interna
+pdftoppm -r 60 -png -f 1 -l 1 "$BER" "${ARBEIT}/Screenshot_kunde-zwei.example" >/dev/null 2>&1
+FOTO=$(find "$ARBEIT" -maxdepth 1 -name 'Screenshot_kunde-zwei.example*.png' | head -1)
+python3 "${SELF_DIR}/mailgen/anschreiben.py" --fall "${ARBEIT}/fall.entwurf.json" --ziel "${ARBEIT}/mail" \
+        --anhang "$BER" --anhang "$DSG" --anhang "$BSI" --bild "$FOTO" >"${ARBEIT}/anschreiben.log" 2>&1
+MRC=$?
+ANH=$(python3 -c 'import email,sys; m=email.message_from_bytes(open(sys.argv[1],"rb").read()); print(sum(1 for p in m.walk() if p.get_filename()))' "${ARBEIT}/mail/anschreiben.eml" 2>/dev/null)
+if [[ "$MRC" -eq 0 && "$ANH" == "4" && -s "${ARBEIT}/mail/anschreiben.txt" && -s "${ARBEIT}/mail/anschreiben_entwurf.applescript" ]]; then
+  pok "Anschreiben: $(grep -oE '[0-9]+ Wörter' "${ARBEIT}/anschreiben.log"), HTML + Text, 4 Anhänge, ohne Interna"
+else
+  pfehl "Anschreiben nicht regelgerecht (rc ${MRC}, ${ANH:-0} Anhänge) — ${ARBEIT}/anschreiben.log"
+fi
+
 # ── Paket ohne Schalter ─────────────────────────────────────────────────────
 P1="${ARBEIT}/paket_ohne"
 bash "${SELF_DIR}/werkzeuge/kundenpaket.sh" "$LAUF" "$P1" >"${ARBEIT}/paket_ohne.log" 2>&1
@@ -106,6 +231,12 @@ if [[ -e "${P1}/betreiber" ]] || find "$P1" -name 'findings.json' | grep -q .; t
 else
   pok "findings.json und Betreiberspur bleiben draussen"
 fi
+if [[ -f "${P1}/01_Kundenunterlagen/$(basename "$BER")" && -f "${P1}/02_Meldungen/$(basename "$DSG")" \
+      && -f "${P1}/02_Meldungen/$(basename "$BSI")" ]] && ! find "${P1}/01_Kundenunterlagen" "${P1}/02_Meldungen" -name '*.md' | grep -q .; then
+  pok "Paket: Sicherheitsbericht in 01, DSGVO und BSI in 02, keine Markdown-Rohfassung"
+else
+  pfehl "Paket enthält nicht die NT-Docs-PDFs an ihrem Platz (oder Rohfassungen)"
+fi
 
 # Lückenlose Nummerierung: 001..N ohne Loch. Nach dem Aussortieren klaffen
 # sonst Lücken, und eine Belegliste mit Löchern liest sich, als fehle etwas.
@@ -130,6 +261,19 @@ if grep -q "SHA256" "${P1}/00_LIESMICH.txt" 2>/dev/null; then
   pok "LIESMICH erklärt, warum das Siegel abweicht"
 else
   pfehl "LIESMICH sagt nicht, warum das Siegel vom Original abweicht"
+fi
+
+# ── Paket aus einem Lauf mit Interna im PDF wird abgelehnt ──────────────────
+LAUF_I="${ARBEIT}/lauf_interna"
+cp -R "$LAUF" "$LAUF_I"
+rm -f "${LAUF_I}"/kunde/NT-*.pdf
+cp "${ARBEIT}"/kunde_interna/NT-*.pdf "${LAUF_I}/kunde/" 2>/dev/null
+if bash "${SELF_DIR}/werkzeuge/kundenpaket.sh" "$LAUF_I" "${ARBEIT}/paket_interna" >"${ARBEIT}/paket_interna.log" 2>&1; then
+  pfehl "Ein Lauf mit Interna in den Kunden-PDFs wurde zu einem Paket verarbeitet"
+elif [[ -e "${ARBEIT}/paket_interna" ]]; then
+  pfehl "kundenpaket.sh lehnt ab, hinterlässt aber ein Paket"
+else
+  pok "kundenpaket.sh lehnt Kunden-PDFs mit Interna ab, kein Paket entsteht"
 fi
 
 # ── Paket mit --mit-server ──────────────────────────────────────────────────

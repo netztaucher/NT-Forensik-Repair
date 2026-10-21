@@ -251,6 +251,12 @@ jobs:
         # Echte Weichen (PHP-Ziel, fremde URL, [P]) müssen crit bleiben.
         run: bash werkzeuge/htaccess_sperrliste_selbsttest.sh
 
+      - name: Selbsttest Interna-Wächter für Kundendokumente (#150)
+        # Zwei Richtungen: Beweise zum Vorfall (Hashes, IPs, Pfade im Webspace)
+        # müssen schweigen, jedes Beispiel aus #150 muss anschlagen. Die PDFs
+        # selbst prüft werkzeuge/kundenpaket-pruefstand.sh lokal (braucht WeasyPrint).
+        run: bash werkzeuge/interna_waechter_selbsttest.sh
+
       - name: Selbsttest Einstiegsweg aus dem Request derselben Sekunde (#135)
         # 13e.5 haelt die juengsten belasteten Dateien gegen das Access-Log
         # (+-2 s, auch .gz). UpdraftCentral-POST zur Anlage = crit + IOC;

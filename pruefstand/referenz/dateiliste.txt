@@ -70,6 +70,7 @@
 ./betreiber/bsi_meldung.md
 ./betreiber/dsgvo_meldung.md
 ./betreiber/findings.json
+./betreiber/kundenpaket_funde.tsv
 ./betreiber/lauf.log
 ./betreiber/technik_bericht.md
 ./kunde/00_LIESMICH.txt

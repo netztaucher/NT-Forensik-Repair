@@ -1,0 +1,431 @@
+{
+  "_hinweis": "Fixture für werkzeuge/kundenpaket-pruefstand.sh. Erfundener Fall nach dem Muster des Vorfalls vom 21.10.2026, ohne Kundendaten. Personen, Adressen und IPs sind ausgedacht (IPs aus den Dokumentationsnetzen RFC 5737).",
+  "bereinigt": true,
+  "kunde": {
+    "name": "Jana Lindqvist",
+    "kurz": "Lindqvist",
+    "datei": "Lindqvist",
+    "zeilen": [
+      "kunde-zwei.example"
+    ],
+    "email": "jana@kunde-zwei.example",
+    "rolle": "Betreiberin der Website",
+    "anrede": "Sehr geehrte Frau Lindqvist"
+  },
+  "datum": "21.10.2026",
+  "stand": "21.10.2026, 10:30 Uhr",
+  "kenntnis": "21.10.2026, 06:00 Uhr",
+  "frist_72h": "24.10.2026, 06:00 Uhr",
+  "bericht": {
+    "meta": [
+      "Sicherheitsvorfall vom 19.10.2026",
+      "Stand 21.10.2026, 10:30 Uhr"
+    ],
+    "kicker": "Sicherheitsvorfall · Abschlussbericht",
+    "titel": [
+      "Die Website ist",
+      "sauber",
+      "."
+    ],
+    "lede": "Schad-Plugin auf kunde-zwei.example am 19.10.2026. Bereinigt, die Seite ist wieder erreichbar, alle Zugänge erneuert. Die Ursache liegt sehr wahrscheinlich beim Hersteller eines Sicherungs-Plugins.",
+    "status": [
+      {
+        "art": "ok",
+        "titel": "bereinigt",
+        "text": "seit 21.10. wieder erreichbar, kein Schadcode mehr",
+        "regel": "alle Funde in Quarantäne"
+      },
+      {
+        "art": "warn",
+        "titel": "Herstellervorfall",
+        "text": "Schlüssel der Fernsteuerung beim Hersteller abgeflossen",
+        "regel": "Fernwartung"
+      },
+      {
+        "art": "ok",
+        "titel": "Zugänge erneuert",
+        "text": "Fernsteuerung abgeschaltet, Datenbank und FTP neu, alle Anmeldungen beendet",
+        "regel": "alter Schlüssel abgelehnt"
+      }
+    ],
+    "wichtigste": [
+      {
+        "art": "warn",
+        "titel": "Getarntes Plugin eingespielt",
+        "text": "Es sollte dem Angreifer ein Administratorkonto verschaffen. Wegen eines Fehlers im Schadcode scheiterte das, die Seite zeigte nur noch Fehler 500."
+      },
+      {
+        "art": "warn",
+        "titel": "Einfallstor Fernwartung",
+        "text": "Nicht über ein Passwort und nicht über eine Lücke in WordPress, sondern über die Fernsteuerung des Sicherungs-Plugins."
+      },
+      {
+        "art": "warn",
+        "titel": "Ursache beim Hersteller",
+        "text": "Der Hersteller meldet einen Einbruch in die eigene Kundendatenbank. Ihr Konto dort muss gesichert werden."
+      },
+      {
+        "art": "ok",
+        "titel": "Bereinigt und geprüft",
+        "text": "Schadcode in Quarantäne, Fernsteuerung abgeschaltet und von aussen geprüft. Kein fremdes Admin-Konto."
+      }
+    ],
+    "jetzt": "**Sofort** das Passwort Ihres Kontos beim Hersteller des Sicherungs-Plugins ändern und die Zwei-Faktor-Anmeldung dort neu einrichten. Die Adresse selbst eintippen, keinem Link folgen. Alle weiteren Schritte mit Frist stehen in Teil 1.",
+    "kurz": {
+      "absaetze": [
+        "Am 19. Oktober 2026 hat ein Angreifer auf Ihrer Website ein getarntes Zusatzprogramm (Plugin) eingespielt. Es sollte ihm ein Administratorkonto verschaffen.",
+        "Wegen eines Programmierfehlers im Schadcode funktionierte das nicht. Dafür war die Seite ab diesem Moment nicht mehr erreichbar (Fehlermeldung 500).",
+        "Der Angreifer kam über die Fernsteuerung des Sicherungs-Plugins herein. Wer deren Schlüssel besitzt, kann ohne Anmeldung Plugins installieren."
+      ],
+      "hinweis": {
+        "label": "Ursache beim Hersteller",
+        "text": "Der Hersteller hat am 19.10.2026 einen Einbruch in seine eigenen Systeme öffentlich gemacht. Darin lagen nach Herstellerangabe auch die Schlüssel der Fernsteuerung. Zeitlich passt das genau zu unseren Spuren. Die Ursache liegt damit sehr wahrscheinlich **beim Hersteller** und nicht bei Ihnen."
+      },
+      "nach": [
+        "Wir haben den Schadcode entfernt (in Quarantäne verschoben, nichts gelöscht), die Fernsteuerung abgeschaltet und nachgewiesen, dass der alte Schlüssel nicht mehr angenommen wird. Die Seite läuft wieder."
+      ]
+    },
+    "bewertung": {
+      "spalten": [
+        "kunde-zwei.example"
+      ],
+      "zeilen": [
+        [
+          "Einstufung",
+          {
+            "art": "warn",
+            "text": "kompromittiert",
+            "nach": " jetzt bereinigt"
+          }
+        ],
+        [
+          "Schadcode",
+          "Plugin, getarnt als Sicherungs-Zusatz"
+        ],
+        [
+          "eingespielt",
+          "19.10.2026, 06:49 Uhr"
+        ],
+        [
+          "Einfallstor",
+          "Fernsteuerung des Sicherungs-Plugins"
+        ],
+        [
+          "Seite ausgefallen",
+          "19.10. 06:49 bis 21.10. 07:52"
+        ],
+        [
+          "fremdes Admin-Konto",
+          {
+            "art": "ok",
+            "text": "nein"
+          }
+        ],
+        [
+          "Datenabfluss",
+          "nicht belegt, nicht ausgeschlossen"
+        ]
+      ]
+    },
+    "ablauf": [
+      [
+        "2021",
+        "Die Fernsteuerung des Sicherungs-Plugins wird eingerichtet."
+      ],
+      [
+        "17./18.10.2026",
+        "Einbruch beim Hersteller. Die Verbindungsschlüssel liegen offen (Herstellerangabe)."
+      ],
+      [
+        "18.10.2026, 23:33 Uhr",
+        "Erster Zugriff über die Fernsteuerung von `203.0.113.7`, ein Abtasten mit erfundenem Schlüsselnamen."
+      ],
+      [
+        "19.10.2026, 06:49 Uhr",
+        "Über die Fernsteuerung wird ein Plugin installiert und aktiviert."
+      ],
+      [
+        "Unmittelbar danach",
+        "Das Plugin bricht bei jedem Seitenaufruf ab. Die Seite zeigt nur noch einen Fehler."
+      ],
+      [
+        "21.10.2026",
+        "Untersuchung, Bereinigung, Wiederinbetriebnahme, Erneuerung aller Zugänge."
+      ]
+    ],
+    "erledigt": [
+      {
+        "titel": "Schadcode in Quarantäne",
+        "text": "Alle Funde in Quarantäne verschoben, mit Prüfsumme und umkehrbar."
+      },
+      {
+        "titel": "Fernsteuerung abgeschaltet",
+        "text": "Schlüssel widerrufen und von aussen nachgeprüft: Eine Anfrage mit dem alten Schlüssel wird nicht mehr angenommen."
+      },
+      {
+        "titel": "Alle Anmeldungen beendet",
+        "text": "Die Sicherheitsschlüssel von WordPress sind erneuert. Alle Benutzer müssen sich einmal neu anmelden."
+      },
+      {
+        "titel": "Datenbank- und FTP-Passwörter erneuert",
+        "text": "Geprüft: Das alte Passwort wird abgewiesen."
+      },
+      {
+        "titel": "Erneut vollständig untersucht",
+        "text": "Kein Schadcode mehr, kein Wiederkehren nach Seitenaufrufen."
+      }
+    ],
+    "aufgaben": [
+      {
+        "frist": "sofort",
+        "art": "warn",
+        "text": "**Passwort Ihres Kontos beim Hersteller ändern.** Adresse selbst eintippen, keinem Link folgen. Zwei-Faktor-Anmeldung dort neu einrichten."
+      },
+      {
+        "frist": "sofort",
+        "art": "warn",
+        "text": "**Dasselbe Passwort überall sonst ändern**, wo Sie es nutzen."
+      },
+      {
+        "frist": "sofort",
+        "art": "warn",
+        "text": "**Im Herstellerkonto die verbundenen Websites prüfen** und uns die Liste schicken. Sie sind auf demselben Weg angreifbar."
+      },
+      {
+        "frist": "diese Woche",
+        "art": "info",
+        "text": "Lizenzschlüssel der Premium-Plugins beim Hersteller neu ausstellen lassen."
+      },
+      {
+        "frist": "später",
+        "art": "info",
+        "text": "Die Fernsteuerung nur wieder einrichten, wenn sie gebraucht wird, dann mit neuem Schlüssel."
+      }
+    ],
+    "aufgaben_hinweis": "Datenbank- und FTP-Zugänge sind bereits erneuert. Neue Passwörter schicken wir nicht per E-Mail.",
+    "meldepflichten": {
+      "einschaetzung": "**Keine Meldung an die Datenschutzaufsicht nötig, aber dokumentieren.** Die Entscheidung liegt bei Ihnen als Verantwortlicher. Wir sind keine Rechtsberatung.",
+      "punkte": [
+        {
+          "art": "ok",
+          "titel": "Was der Angreifer tun konnte, ist protokolliert",
+          "text": "Über die Fernsteuerung lief genau ein Befehl: das Hochladen des Schad-Plugins. Ein Abruf von Sicherungen, Benutzerlisten oder Dateien ist nicht zu sehen."
+        },
+        {
+          "art": "ok",
+          "titel": "Personenbezogene Daten in der Seite",
+          "text": "2 Benutzerkonten (Administratoren). Keine Kommentare mit E-Mail-Adresse, keine Formular-, Newsletter- oder Bestelldaten."
+        },
+        {
+          "art": "warn",
+          "titel": "Pflicht bleibt die Dokumentation",
+          "text": "Art. 33 Abs. 5 DSGVO: Bitte unterschreiben Sie die beiliegende Dokumentation und legen Sie sie zu Ihren Datenschutzunterlagen."
+        },
+        {
+          "art": "warn",
+          "titel": "Wenn Sie trotzdem melden möchten",
+          "text": "Frist ist 72 Stunden ab Kenntnis, also bis **24.10.2026, 06:00 Uhr**."
+        },
+        {
+          "art": "ok",
+          "titel": "BSI: keine Meldepflicht",
+          "text": "Die Seite ist keine kritische Infrastruktur, die Betreiberin liegt unter den Schwellen von NIS2."
+        }
+      ]
+    }
+  },
+  "dsgvo": {
+    "titel": [
+      "Keine",
+      "Meldung",
+      " nötig."
+    ],
+    "lede": "Schad-Plugin auf kunde-zwei.example am 19.10.2026. Personenbezogene Daten wurden nach allen Belegen nicht abgerufen.",
+    "status": [
+      {
+        "art": "ok",
+        "titel": "1 Befehl",
+        "text": "über die Fernsteuerung ausgeführt",
+        "regel": "Plugin hochladen"
+      },
+      {
+        "art": "info",
+        "titel": "2 Konten",
+        "text": "personenbezogene Daten in der Seite",
+        "regel": "nur Administratoren"
+      },
+      {
+        "art": "ok",
+        "titel": "kein Risiko",
+        "text": "für Personen, voraussichtlich",
+        "regel": "Art. 33 Abs. 1"
+      }
+    ],
+    "pruefliste": [
+      {
+        "art": "ok",
+        "titel": "Protokoll der Fernsteuerung",
+        "text": "Ein Befehl: das Hochladen des Plugins. Kein Abruf von Sicherungen oder Dateien."
+      },
+      {
+        "art": "ok",
+        "titel": "Wirkung des Schadcodes",
+        "text": "Das Plugin brach bei jedem Aufruf ab. Die Hintertür hat nie funktioniert."
+      },
+      {
+        "art": "ok",
+        "titel": "Datenbestand der Seite",
+        "text": "2 Administratorkonten. Keine Kommentare mit E-Mail, keine Formular-, Newsletter- oder Bestelldaten."
+      },
+      {
+        "art": "warn",
+        "titel": "Vorfall beim Hersteller",
+        "text": "Daten des Herstellerkontos sind dort abgeflossen. Das meldet der Hersteller selbst."
+      }
+    ],
+    "einordnung": "Voraussichtlich **kein Risiko** für Personen, damit keine Meldung an die Aufsicht. Die Dokumentation erfüllt dieses Dokument. Wer trotzdem meldet: Frist bis **24.10.2026, 06:00 Uhr**. Keine Rechtsberatung, die Entscheidung trifft die Verantwortliche.",
+    "art": "Integrität und Verfügbarkeit: ein Plugin über die Fernsteuerung eingespielt, die Seite vom 19.10. bis 21.10.2026 nicht erreichbar. Vertraulichkeit: nicht belegt. Kenntnis 21.10.2026, 06:00 Uhr.",
+    "personen": {
+      "kopf": [
+        "Website",
+        "Personen",
+        "Daten"
+      ],
+      "zeilen": [
+        [
+          "kunde-zwei.example",
+          "2 Administratoren",
+          "Benutzername, E-Mail, Passwort-Hash"
+        ]
+      ]
+    },
+    "personen_text": "Besucher, Kunden oder Abonnenten sind nicht betroffen, besondere Kategorien nach Art. 9 nicht berührt.",
+    "massnahmen": "Schadcode in Quarantäne, Fernsteuerung widerrufen und von aussen geprüft, alle Sitzungen beendet. Datenbank-, FTP- und Administrator-Passwörter erneuert.",
+    "abwaegung": [
+      [
+        "Meldung an die Aufsichtsbehörde (Art. 33 Abs. 1)",
+        "ok",
+        "nicht erforderlich"
+      ],
+      [
+        "Benachrichtigung der Betroffenen (Art. 34)",
+        "ok",
+        "nicht erforderlich"
+      ],
+      [
+        "Dokumentation (Art. 33 Abs. 5)",
+        "ok",
+        "mit diesem Dokument"
+      ]
+    ]
+  },
+  "bsi": {
+    "titel": [
+      "Keine",
+      "Pflicht",
+      " zur Meldung."
+    ],
+    "lede": "Die Website kunde-zwei.example fällt unter keine Meldepflicht beim BSI. Eine freiwillige Meldung ist möglich.",
+    "status": [
+      {
+        "art": "ok",
+        "titel": "kein KRITIS",
+        "text": "keine kritische Infrastruktur betroffen",
+        "regel": "BSI-KritisV"
+      },
+      {
+        "art": "ok",
+        "titel": "kein NIS2",
+        "text": "Betreiberin unter den Schwellenwerten",
+        "regel": "ab 50 MA oder 10 Mio. €"
+      },
+      {
+        "art": "info",
+        "titel": "freiwillig",
+        "text": "Meldung möglich",
+        "regel": "Herstellervorfall öffentlich"
+      }
+    ],
+    "gruende": [
+      {
+        "art": "ok",
+        "titel": "Pflicht nach § 32 BSIG",
+        "text": "Gilt für besonders wichtige und wichtige Einrichtungen in den Sektoren der Anlagen 1 und 2. Eine private Website gehört nicht dazu."
+      },
+      {
+        "art": "ok",
+        "titel": "Grösse",
+        "text": "Erfasst sind seit 06.12.2025 Unternehmen ab 50 Beschäftigten oder mehr als 10 Mio. € Umsatz und Bilanzsumme. Die Betreiberin liegt darunter."
+      },
+      {
+        "art": "ok",
+        "titel": "Hosting",
+        "text": "Die Server betreibt die netztaucher GmbH. Der Angriff blieb in WordPress."
+      },
+      {
+        "art": "warn",
+        "titel": "Ursache beim Hersteller",
+        "text": "Die Schlüssel der Fernsteuerung stammen sehr wahrscheinlich aus dem Einbruch beim Hersteller. Er hat ihn veröffentlicht und gemeldet."
+      }
+    ],
+    "angaben": [
+      [
+        "Art",
+        "Kompromittierung WordPress über die Fernsteuerung eines Sicherungs-Plugins"
+      ],
+      [
+        "Erster Zugriff",
+        "18.10.2026, 23:33 Uhr"
+      ],
+      [
+        "Schadcode",
+        "19.10.2026, 06:49 Uhr"
+      ],
+      [
+        "Festgestellt",
+        "21.10.2026, 06:00 Uhr"
+      ],
+      [
+        "Beendet",
+        "21.10.2026, 07:53 Uhr, bereinigt und geprüft"
+      ]
+    ],
+    "auswirkung": [
+      [
+        "Verfügbarkeit",
+        "warn",
+        "2 Tage ausgefallen"
+      ],
+      [
+        "Integrität",
+        "warn",
+        "Plugin eingespielt"
+      ],
+      [
+        "Vertraulichkeit",
+        "ok",
+        "kein Abfluss belegt"
+      ],
+      [
+        "Ausbreitung auf den Server",
+        "ok",
+        "kein Hinweis"
+      ]
+    ],
+    "massnahmen": "Schadcode in Quarantäne, Fernsteuerung widerrufen und von aussen geprüft, alle Zugangsdaten erneuert."
+  },
+  "mail": {
+    "an": {
+      "name": "Jana Lindqvist",
+      "email": "jana@kunde-zwei.example"
+    },
+    "betreff": "Sicherheitsvorfall kunde-zwei.example: Abschluss und Ihre nächsten Schritte",
+    "ursache": "Die Ursache liegt beim Hersteller Ihres Sicherungs-Plugins: Er wurde am 17. und 18.10. gehackt, dabei sind die Schlüssel für die Fernsteuerung abgeflossen. Der Angriff lief automatisiert gegen viele Websites, nicht gezielt gegen Sie.",
+    "bitte_heute": [
+      "Passwort beim Hersteller ändern und die Zwei-Faktor-Anmeldung neu einrichten",
+      "Dasselbe Passwort überall sonst ändern, wo Sie es nutzen",
+      "Im Herstellerkonto die übrigen verbundenen Websites nachsehen und mir nennen"
+    ],
+    "meldepflicht": "Sie müssen nichts melden. Abgerufen wurden keine Daten, in der Seite liegen nur Admin-Konten. Bitte unterschreiben Sie die Dokumentation nach Art. 33 DSGVO und legen Sie sie mit dem Bericht zu Ihren Datenschutzunterlagen. Warum das BSI nicht zuständig ist, steht in der Einordnung zur BSI-Meldung."
+  }
+}
