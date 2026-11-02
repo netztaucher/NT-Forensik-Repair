@@ -25,6 +25,7 @@ Avada	*	1	7.13.2	1	7.13.3	CVE-2025-64634	4.3		https://www.wordfence.com/threat-i
 Avada	*	1	7.16	1	7.16.1	CVE-2026-18431	9.8		https://www.wordfence.com/threat-intel/vulnerabilities/id/5bef5bd3-8ec9-4a5b-bcdd-98952c7ef390?source=api-prod
 Avada	*	1	7.16.1	1	7.16.2	CVE-2026-84925	6.1		https://www.wordfence.com/threat-intel/vulnerabilities/id/4c3936aa-58d6-4ac0-a077-2faaed48828f?source=api-prod
 Avada	*	1	7.16.1	1	7.16.2	CVE-2026-97340	6.4		https://www.wordfence.com/threat-intel/vulnerabilities/id/cbd47a59-5a9e-4eb2-9152-2cd47fc38ae2?source=api-prod
+Avada	*	1	7.16.2	1	7.16.4	CVE-2026-115346	8.1		https://www.wordfence.com/threat-intel/vulnerabilities/id/af757e6b-cbb3-4efd-8c83-99a03dee2311?source=api-prod
 Avada	*	1	7.4.1	1	7.4.2		6.1		https://www.wordfence.com/threat-intel/vulnerabilities/id/11280431-ee39-45da-909a-e9efc0e6266f?source=api-prod
 Avada	*	1	7.4.1	1	7.4.2		6.4		https://www.wordfence.com/threat-intel/vulnerabilities/id/e9b58db6-4059-4923-b1e3-3321cc7d3573?source=api-prod
 Avada	*	1	7.6.2	0	7.6.2	CVE-2022-1386	8.3		https://www.wordfence.com/threat-intel/vulnerabilities/id/ad3de7e6-a080-4ce8-aa27-21e7f8fdb2c7?source=api-prod
@@ -55,6 +56,7 @@ Grimag	*	1	1.1.0	1	1.1.1		7.2		https://www.wordfence.com/threat-intel/vulnerabil
 Litho - Multipurpose Elementor WordPress Theme	*	1	3.0	1	3.1	CVE-2025-49879	9.1		https://www.wordfence.com/threat-intel/vulnerabilities/id/594c9b09-6abc-4028-889d-46b5394b368a?source=api-prod
 MDx	*	1	2.0.3	1	2.0.4	CVE-2024-6639	6.4		https://www.wordfence.com/threat-intel/vulnerabilities/id/23ae17a6-a745-42c4-8627-ad1c41b66e0e?source=api-prod
 NativeChurch	*	1	1.6.1	1	1.6.2		7.5		https://www.wordfence.com/threat-intel/vulnerabilities/id/6e6cda1a-e137-4c30-a66b-c10a88070c50?source=api-prod
+NativeChurch	*	1	1.6.1	1	1.6.2	CVE-2014-125133	7.5		https://www.wordfence.com/threat-intel/vulnerabilities/id/fa348259-b242-4f29-ac88-c32e546b09a5?source=api-prod
 NativeChurch	*	1	4.8.8.2	1		CVE-2026-27408	6.1		https://www.wordfence.com/threat-intel/vulnerabilities/id/eee87b71-713e-4e97-90a4-4ed71d264053?source=api-prod
 Newspaper	*	1	10.3.3	1	10.3.4		6.1		https://www.wordfence.com/threat-intel/vulnerabilities/id/441f5764-eab6-40fe-80cd-65da327b39b2?source=api-prod
 Newspaper	*	1	11.5.1	1	12	CVE-2022-2167	6.1		https://www.wordfence.com/threat-intel/vulnerabilities/id/25cde35e-ba76-4651-8828-71ddd4c8a164?source=api-prod
@@ -639,7 +641,7 @@ chrimson	*	1	2.2	1		CVE-2025-26592	8.1		https://www.wordfence.com/threat-intel/v
 christine-miller	*	1	1.3.3	1		CVE-2026-28053	8.1		https://www.wordfence.com/threat-intel/vulnerabilities/id/0b80d2d5-1b2c-4bc8-aba6-dc9266005d36?source=api-prod
 chroma	*	1	1.11	1		CVE-2026-28020	8.1		https://www.wordfence.com/threat-intel/vulnerabilities/id/e898b0ec-6180-485f-aa01-29c243681ebf?source=api-prod
 chronicle	*	1	1.0	1		CVE-2026-27337	8.1		https://www.wordfence.com/threat-intel/vulnerabilities/id/88442edf-bec6-49df-89a9-7d6852dd87db?source=api-prod
-churchope	*	1	2.1	1	2.2		9.8		https://www.wordfence.com/threat-intel/vulnerabilities/id/d5c0c64c-7105-4bc3-b42d-89cfa44d02b9?source=api-prod
+churchope	*	1	2.1	1	2.2	CVE-2014-125134	9.8		https://www.wordfence.com/threat-intel/vulnerabilities/id/d5c0c64c-7105-4bc3-b42d-89cfa44d02b9?source=api-prod
 churel	*	1	1.0.8	1		CVE-2025-31419	6.4		https://www.wordfence.com/threat-intel/vulnerabilities/id/57bbc2f3-8d31-4e73-a7f8-569109311b94?source=api-prod
 cinerama	*	1	2.4	1		CVE-2025-68987	7.5		https://www.wordfence.com/threat-intel/vulnerabilities/id/563b1b9e-260d-4cbc-9479-ad42bcef5012?source=api-prod
 city-store	*	1	1.4.5	1		CVE-2025-26737	6.4		https://www.wordfence.com/threat-intel/vulnerabilities/id/8852cd88-fe13-4613-be6c-514b90b896a3?source=api-prod
@@ -833,6 +835,7 @@ dessau	*	1	1.9	0	1.9	CVE-2025-39463	9.8		https://www.wordfence.com/threat-intel/
 deston	*	1	1.0	1		CVE-2026-27080	8.1		https://www.wordfence.com/threat-intel/vulnerabilities/id/d4a5ec27-fe7e-411d-811c-e6b66dd7ba56?source=api-prod
 detailx	*	1	1.10.0	1		CVE-2025-60058	8.1		https://www.wordfence.com/threat-intel/vulnerabilities/id/803b5a64-f861-4510-9838-2a39e0ad9baa?source=api-prod
 diamond	*	1	2.4.8	1		CVE-2025-69391	6.1		https://www.wordfence.com/threat-intel/vulnerabilities/id/607ea767-8a9f-414a-b6ed-af8335256e60?source=api-prod
+diarise	*	1	1.5.9	1		CVE-2019-25779	7.5		https://www.wordfence.com/threat-intel/vulnerabilities/id/442ea621-3af4-4aae-8cde-6078e01edf43?source=api-prod
 diary	*	1	2.0	0	2.0		5.3		https://www.wordfence.com/threat-intel/vulnerabilities/id/07bccf56-99b2-42e6-93ab-606af65e6cac?source=api-prod
 digi-store	*	1	1.1.4	1		CVE-2025-22354	6.4		https://www.wordfence.com/threat-intel/vulnerabilities/id/5f2435fd-ccd5-4e51-89d7-98cddafac3fd?source=api-prod
 digiqole	*	1	2.2.7	0	2.2.7	CVE-2025-67527	7.5		https://www.wordfence.com/threat-intel/vulnerabilities/id/8e8d7aa4-d2df-47ec-a5dc-c2cfd74763aa?source=api-prod
@@ -1043,6 +1046,7 @@ esplanade	*	1	1.1.5	0	1.1.5		6.1		https://www.wordfence.com/threat-intel/vulnera
 essence	*	1	1.1	0	1.1		6.1		https://www.wordfence.com/threat-intel/vulnerabilities/id/559b7250-5b10-4a01-925e-73ed4fa7ca3d?source=api-prod
 estate	*	1	1.3.4	1		CVE-2026-22475	8.1		https://www.wordfence.com/threat-intel/vulnerabilities/id/2d3de38b-1b03-4e77-9ea9-f6a54b1ab506?source=api-prod
 esteem	*	1	1.5.0	1	1.5.1	CVE-2024-37432	6.4		https://www.wordfence.com/threat-intel/vulnerabilities/id/c3d40868-267f-4875-81ea-09e18010670a?source=api-prod
+estore	*	1	1.6.13	1	1.6.14	CVE-2026-108485	6.1		https://www.wordfence.com/threat-intel/vulnerabilities/id/3b56e9a2-5724-4317-9ce0-9daff4291a1e?source=api-prod
 estrutura-basica	*	1	*	1		CVE-2015-9473	7.5		https://www.wordfence.com/threat-intel/vulnerabilities/id/f980e902-820b-43e0-8334-fc70c711a126?source=api-prod
 etchy	*	1	1.0	1		CVE-2026-22476	8.1		https://www.wordfence.com/threat-intel/vulnerabilities/id/169d8cd5-0dee-45d1-b5e2-6fd2bc0973c4?source=api-prod
 etta	*	1	1.14.0	1		CVE-2025-53430	8.1		https://www.wordfence.com/threat-intel/vulnerabilities/id/d0f4ca62-8342-4b53-948e-3cf2408631bf?source=api-prod
@@ -1334,6 +1338,7 @@ gutentype	*	1	2.1.12	1		CVE-2026-62046	8.1		https://www.wordfence.com/threat-int
 gym-express	*	1	1.0.2	1	1.0.3	CVE-2023-33999	6.1		https://www.wordfence.com/threat-intel/vulnerabilities/id/5253fe2b-040b-417c-b257-0cb59ee5aa6e?source=api-prod
 gymbase_classes	*	1	1.4	1	1.5	CVE-2025-54026	6.5		https://www.wordfence.com/threat-intel/vulnerabilities/id/87adbc9d-cb7b-4e3b-be43-73663d549d20?source=api-prod
 haaken	*	1	1.5	1	1.6	CVE-2026-104747	8.1		https://www.wordfence.com/threat-intel/vulnerabilities/id/a205cad5-c81e-4a96-91bd-c77a26eab882?source=api-prod
+hallelujah	*	1	1.1.1	1		CVE-2026-112853	8.1		https://www.wordfence.com/threat-intel/vulnerabilities/id/f1ea9976-cd05-4149-8920-5c647d2cb9e1?source=api-prod
 halpes	*	1	1.2.5	0	1.2.5	CVE-2024-43334	6.1		https://www.wordfence.com/threat-intel/vulnerabilities/id/7f25f001-cbb7-4d73-b37d-47bc1681c690?source=api-prod
 halstein	*	1	1.8	0	1.8	CVE-2026-32508	8.1		https://www.wordfence.com/threat-intel/vulnerabilities/id/9048eaa1-159f-4464-89da-fcd80b732f18?source=api-prod
 hampton	*	1	1.3.3	1		CVE-2025-26592	8.1		https://www.wordfence.com/threat-intel/vulnerabilities/id/dc82bfca-75de-4c77-a0ac-b34525b29a8d?source=api-prod
@@ -1358,6 +1363,7 @@ healthy-blog	*	1	1.2.8	1		CVE-2025-26592	8.1		https://www.wordfence.com/threat-i
 heart	*	1	1.8	1		CVE-2025-58928	8.1		https://www.wordfence.com/threat-intel/vulnerabilities/id/7a38b41c-0371-4488-a941-0ae70368ce9b?source=api-prod
 heartstar	*	1	1.0.14	1		CVE-2025-60046	8.1		https://www.wordfence.com/threat-intel/vulnerabilities/id/e7e9cb89-6ed0-4096-82eb-b6f948d3bfd4?source=api-prod
 heaven11	*	1	1.0.9	1		CVE-2025-26592	8.1		https://www.wordfence.com/threat-intel/vulnerabilities/id/dc82bfca-75de-4c77-a0ac-b34525b29a8d?source=api-prod
+helion	*	1	1.1.12	1		CVE-2026-112852	8.1		https://www.wordfence.com/threat-intel/vulnerabilities/id/b9438d01-a5a4-414a-a9b9-a93e6ebd34f0?source=api-prod
 helion	*	1	1.1.12	1		CVE-2026-28024	8.1		https://www.wordfence.com/threat-intel/vulnerabilities/id/b0e63d48-8749-4c10-a086-425e81df6920?source=api-prod
 hello-fse	*	1	1.0.6	1		CVE-2026-25393	4.3		https://www.wordfence.com/threat-intel/vulnerabilities/id/5338cb06-ec30-4552-8939-b3135e53d65a?source=api-prod
 hello-fse-blog	*	1	1.0.6	1		CVE-2025-49970	4.3		https://www.wordfence.com/threat-intel/vulnerabilities/id/2971344c-4162-4d44-90cb-28a922fdb909?source=api-prod
@@ -1385,6 +1391,7 @@ hobo	*	1	1.0.10	1		CVE-2025-69077	8.1		https://www.wordfence.com/threat-intel/vu
 hogwords	*	1	1.2.6	1		CVE-2025-26592	8.1		https://www.wordfence.com/threat-intel/vulnerabilities/id/dc82bfca-75de-4c77-a0ac-b34525b29a8d?source=api-prod
 hogwords	*	1	1.2.7	1		CVE-2026-93938	8.1		https://www.wordfence.com/threat-intel/vulnerabilities/id/b191abdc-cb60-4ec7-81dc-fc4fcb2cd9fe?source=api-prod
 holding_pattern	*	1	0.6	1		CVE-2015-1172	9.8		https://www.wordfence.com/threat-intel/vulnerabilities/id/15fecefa-f1f1-47f3-8ad7-ec7772ecafc4?source=api-prod
+holistic-center	*	1	1.2.6	1		CVE-2026-112854	8.1		https://www.wordfence.com/threat-intel/vulnerabilities/id/af45560e-2e75-42fd-9f34-74ed9d150a3c?source=api-prod
 holmes	*	1	1.7	1		CVE-2026-22399	8.1		https://www.wordfence.com/threat-intel/vulnerabilities/id/21869bed-4678-4091-a0c5-cafd2306c207?source=api-prod
 holmes	*	1	1.7	1		CVE-2026-22400	4.3		https://www.wordfence.com/threat-intel/vulnerabilities/id/9915758a-47f0-4fa7-8885-311b2f75a7b6?source=api-prod
 home-services	*	1	1.2.6	1		CVE-2025-26930	6.4		https://www.wordfence.com/threat-intel/vulnerabilities/id/9ef01973-c6f7-447b-933c-ae8bc3ebac5d?source=api-prod
@@ -1410,10 +1417,13 @@ hostiko	*	1	30.1	0	30.1	CVE-2025-27014	6.1		https://www.wordfence.com/threat-int
 hostiko	*	1	30.1	0	30.1	CVE-2025-27015	8.1		https://www.wordfence.com/threat-intel/vulnerabilities/id/f627e9a4-378f-4c05-bd6e-bc0c4523df89?source=api-prod
 hostiko	*	1	94.3.6	0	94.3.6	CVE-2025-67949	7.2		https://www.wordfence.com/threat-intel/vulnerabilities/id/9085b3b8-ee5e-455c-af39-1cb674a44f61?source=api-prod
 hostmev2	*	1	7.0	1		CVE-2025-68907	9.1		https://www.wordfence.com/threat-intel/vulnerabilities/id/cc5cee40-32a4-499a-ba34-97e07a276a36?source=api-prod
+hostmev2	*	1	7.0	1		CVE-2026-112848	8.1		https://www.wordfence.com/threat-intel/vulnerabilities/id/8b1bd0be-a0a5-4d0b-a334-f847f325e9f8?source=api-prod
+hostmev2	*	1	7.0	1		CVE-2026-112849	7.2		https://www.wordfence.com/threat-intel/vulnerabilities/id/c8207f83-c771-44b1-ab18-ff582ad7b274?source=api-prod
 hot-coffee	*	1	1.7	1		CVE-2025-69108	8.1		https://www.wordfence.com/threat-intel/vulnerabilities/id/f9ba7e7e-f906-400c-8133-ccafd3987ca7?source=api-prod
 hotel-galaxy	*	1	4.4.24	1		CVE-2024-43991	6.4		https://www.wordfence.com/threat-intel/vulnerabilities/id/d3804220-7c80-419c-9bf5-174e5c8ea924?source=api-prod
 hotelica	*	1	2.5	1	2.6	CVE-2023-33999	6.1		https://www.wordfence.com/threat-intel/vulnerabilities/id/5253fe2b-040b-417c-b257-0cb59ee5aa6e?source=api-prod
 hoteller	*	1	6.8.9	0	6.8.9	CVE-2025-68518	6.1		https://www.wordfence.com/threat-intel/vulnerabilities/id/396db2fd-d6be-449b-9719-0b4561e5afa8?source=api-prod
+hotlock	*	1	1.3.9	1		CVE-2026-112851	8.1		https://www.wordfence.com/threat-intel/vulnerabilities/id/b89e7783-e13e-4f5d-80b4-7bb64f7bffd2?source=api-prod
 hotlock	*	1	1.4.5	0	1.4.5	CVE-2025-26592	8.1		https://www.wordfence.com/threat-intel/vulnerabilities/id/dc82bfca-75de-4c77-a0ac-b34525b29a8d?source=api-prod
 hotstar	*	1	1.4	1		CVE-2025-31069	9.8		https://www.wordfence.com/threat-intel/vulnerabilities/id/236bb9a8-49f7-4b75-a0b1-fa4ff65394f8?source=api-prod
 hotstar	*	1	1.4	1		CVE-2025-31071	5.3		https://www.wordfence.com/threat-intel/vulnerabilities/id/4b71a48c-f041-47be-b2e7-6e8b2951e526?source=api-prod
@@ -1433,6 +1443,7 @@ houzez	*	1	4.1.1	1	4.1.4	CVE-2025-49407	6.1		https://www.wordfence.com/threat-in
 houzez	*	1	4.1.6	1	4.1.7	CVE-2025-9163	6.1		https://www.wordfence.com/threat-intel/vulnerabilities/id/e0e177f3-fb24-4dd5-80d5-19b113d5f527?source=api-prod
 houzez	*	1	4.1.6	1	4.1.7	CVE-2025-9191	6.3		https://www.wordfence.com/threat-intel/vulnerabilities/id/b1c450d9-42d8-40f5-84fc-1bc0c8cfcf9b?source=api-prod
 houzez	*	1	4.2.0	0	4.2.0	CVE-2025-62053	8.1		https://www.wordfence.com/threat-intel/vulnerabilities/id/46edd7fd-1a28-4cd3-89df-d5cb0ba16540?source=api-prod
+houzez	*	1	4.4.0	1	4.4.1	CVE-2026-96339	6.1		https://www.wordfence.com/threat-intel/vulnerabilities/id/671fe004-1481-442c-a376-967d83673252?source=api-prod
 hoverex	*	1	1.5.10	1		CVE-2026-22452	8.1		https://www.wordfence.com/threat-intel/vulnerabilities/id/5a67e002-f5ef-4edf-9b21-5ea4e0f0d9d7?source=api-prod
 hub	*	1	*	1		CVE-2025-0951	4.3		https://www.wordfence.com/threat-intel/vulnerabilities/id/0099c700-e1af-4d97-a518-151a9139ea35?source=api-prod
 hueman	*	1	3.6.3	1	3.6.4	CVE-2020-36753	4.3		https://www.wordfence.com/threat-intel/vulnerabilities/id/d54b4dc9-8590-433c-873a-efb49e2e79cd?source=api-prod
@@ -1513,7 +1524,7 @@ jannah	*	1	7.6.5	1		CVE-2026-42693	7.2		https://www.wordfence.com/threat-intel/v
 jardi	*	1	1.7.2	1		CVE-2026-22497	8.1		https://www.wordfence.com/threat-intel/vulnerabilities/id/77104b2f-2348-45df-90b1-41a3a3983101?source=api-prod
 jaroti	*	1	1.4.8	0	1.4.8	CVE-2026-25304	6.1		https://www.wordfence.com/threat-intel/vulnerabilities/id/fabcfaee-54b5-409f-b023-71aebdda2e00?source=api-prod
 jarvis	*	1	1.8.11	1		CVE-2025-32292	9.8		https://www.wordfence.com/threat-intel/vulnerabilities/id/ebb0e616-9a57-4a77-a9ac-a938eb9b26b8?source=api-prod
-javo-spot	*	1	3.0.0	0	3.0.0		7.5		https://www.wordfence.com/threat-intel/vulnerabilities/id/db9cd10e-90c1-48b2-8760-d5fc501fb3ba?source=api-prod
+javo-spot	*	1	3.0.0	0	3.0.0	CVE-2017-20287	7.5		https://www.wordfence.com/threat-intel/vulnerabilities/id/db9cd10e-90c1-48b2-8760-d5fc501fb3ba?source=api-prod
 jawn	*	1	1.4.2	1		CVE-2026-66648	9.8		https://www.wordfence.com/threat-intel/vulnerabilities/id/e0642c85-ee01-497c-8dc3-42e3ffc02995?source=api-prod
 jetapo	*	1	1.0.0	1	1.1		6.1		https://www.wordfence.com/threat-intel/vulnerabilities/id/86f95721-ff77-4137-adba-61d74373ee06?source=api-prod
 jetapo-with-woocommerce	*	1	1.0.0	1	1.1		6.1		https://www.wordfence.com/threat-intel/vulnerabilities/id/86f95721-ff77-4137-adba-61d74373ee06?source=api-prod
@@ -1570,6 +1581,7 @@ kallyas	*	1	4.22.0	1	4.23.0	CVE-2025-62017	4.3		https://www.wordfence.com/threat
 kallyas	*	1	4.22.0	1	4.23.0	CVE-2025-62018	5.3		https://www.wordfence.com/threat-intel/vulnerabilities/id/7dfa42ad-9b5d-43d6-97b6-f105d31dd141?source=api-prod
 kallyas	*	1	4.23.0	1	4.24.0	CVE-2025-6988	6.4		https://www.wordfence.com/threat-intel/vulnerabilities/id/89f4d353-bb6a-4520-bb3e-a0121fb4bf9b?source=api-prod
 kallyas	*	1	4.24.0	1		CVE-2025-6990	8.8		https://www.wordfence.com/threat-intel/vulnerabilities/id/721d29e4-397d-4965-bd64-33bced8e5de4?source=api-prod
+kallyas	*	1	4.25.0	1		CVE-2026-112863	7.2		https://www.wordfence.com/threat-intel/vulnerabilities/id/870e2eb8-1d31-4782-b4ff-9f033c1b060e?source=api-prod
 kalon	*	1	1.2.9	1	1.3.0	CVE-2026-32376	5.3		https://www.wordfence.com/threat-intel/vulnerabilities/id/7b18918f-5a06-4bf7-9b6c-7b8517064f6d?source=api-prod
 kamperen	*	1	1.3	0	1.3	CVE-2026-32510	8.1		https://www.wordfence.com/threat-intel/vulnerabilities/id/06862d82-fc24-4433-bd73-3139c5394be9?source=api-prod
 kapee	*	1	1.7.0	0	1.7.0	CVE-2026-39446	8.1		https://www.wordfence.com/threat-intel/vulnerabilities/id/377b1964-2b7c-42c4-954e-25b1cc61c074?source=api-prod
@@ -1710,6 +1722,7 @@ listingpro	*	1	2.9.4	1	2.9.5	CVE-2024-39624	8.8		https://www.wordfence.com/threa
 listingpro	*	1	2.9.9	1		CVE-2025-63039	4.3		https://www.wordfence.com/threat-intel/vulnerabilities/id/108fc77a-b260-4bbf-a551-7593bbecc6e0?source=api-prod
 listingpro	*	1	2.9.9	1		CVE-2025-63047	5.3		https://www.wordfence.com/threat-intel/vulnerabilities/id/d6c1ba13-9c1a-4ba8-b481-677bf0b1534b?source=api-prod
 listivo	*	1	2.3.67	1	2.3.68	CVE-2024-13867	6.1		https://www.wordfence.com/threat-intel/vulnerabilities/id/705c2322-bb52-4337-b0dd-6bf04bd1b0e0?source=api-prod
+little-birdies	*	1	1.3.16	1		CVE-2026-112859	8.1		https://www.wordfence.com/threat-intel/vulnerabilities/id/37cf179f-9b20-4a3b-9a88-66f3cc6a6e20?source=api-prod
 little-birdies	*	1	1.3.16	1		CVE-2026-28129	8.1		https://www.wordfence.com/threat-intel/vulnerabilities/id/0d5f2531-216e-4214-a74b-bdf8011432e1?source=api-prod
 lms	*	1	8.3	1		CVE-2026-78532	7.2		https://www.wordfence.com/threat-intel/vulnerabilities/id/9c1c5c1d-45a8-492d-9047-f8fcfe420dc6?source=api-prod
 lms	*	1	9.2	1	9.3	CVE-2025-52799	6.1		https://www.wordfence.com/threat-intel/vulnerabilities/id/d5e0d63c-64a9-4861-9c70-c0f4d82a042e?source=api-prod
@@ -1969,6 +1982,7 @@ newsmag	*	1	5.2.1	1	5.2.2	CVE-2022-3477	9.8		https://www.wordfence.com/threat-in
 newsmash	*	1	1.0.71	1	1.0.72	CVE-2024-10849	6.4		https://www.wordfence.com/threat-intel/vulnerabilities/id/3bb30dac-e0f3-43dd-a20d-9af6c7af3cb4?source=api-prod
 newsmatic	*	1	1.3.1	1	1.3.3	CVE-2024-37468	5.3		https://www.wordfence.com/threat-intel/vulnerabilities/id/2cd92497-25ac-4560-82ed-e21a117d8c64?source=api-prod
 newsmatic	*	1	1.3.4	1	1.3.5	CVE-2024-1587	5.3		https://www.wordfence.com/threat-intel/vulnerabilities/id/bd2ea430-48ce-43c3-ba3d-8ef5f91460ce?source=api-prod
+newsmatic	*	1	1.5.0	1	1.5.1	CVE-2026-110184	7.5		https://www.wordfence.com/threat-intel/vulnerabilities/id/81a503f9-3bd2-4fb8-8c3e-8d68d41f7918?source=api-prod
 newsmunch	*	1	1.0.35	1	1.0.36	CVE-2024-10848	6.4		https://www.wordfence.com/threat-intel/vulnerabilities/id/1a2b0ff4-9471-4fd0-ac1a-ed5b7b4af4ff?source=api-prod
 newspaper-lite	*	1	10.3.9.1	1	11.0	CVE-2021-3135	6.1		https://www.wordfence.com/threat-intel/vulnerabilities/id/21dd2899-cb2d-4266-be79-bdf00e60e9a7?source=api-prod
 newspaper-x	*	1	1.3.1	1	1.3.2	CVE-2020-36708	9.8		https://www.wordfence.com/threat-intel/vulnerabilities/id/5b75c322-539d-44e9-8f26-5ff929874b67?source=api-prod
@@ -2350,6 +2364,7 @@ reconstruction	*	1	1.4.7	1		CVE-2024-52417	6.1		https://www.wordfence.com/threat
 redart	*	1	3.8	1	3.9	CVE-2025-52828	8.8		https://www.wordfence.com/threat-intel/vulnerabilities/id/afcfacab-4847-4394-9f85-83dbaeed0857?source=api-prod
 redline	*	1	1.66	0	1.66	CVE-2011-3863	6.1		https://www.wordfence.com/threat-intel/vulnerabilities/id/362fcd02-73c3-413b-8076-694c4d55544d?source=api-prod
 redy	*	1	1.0.2	1		CVE-2026-22368	8.1		https://www.wordfence.com/threat-intel/vulnerabilities/id/f5b17c94-995a-458a-b712-3388a7144e14?source=api-prod
+redy	*	1	1.3.5	1		CVE-2026-112855	8.1		https://www.wordfence.com/threat-intel/vulnerabilities/id/1160c535-c01f-4243-925b-60bffa0b186f?source=api-prod
 reebox	*	1	1.4.8	0	1.4.8	CVE-2026-25354	6.1		https://www.wordfence.com/threat-intel/vulnerabilities/id/773f2b16-3a70-4d06-9a9c-77a787596e37?source=api-prod
 refraction	*	1	1.3	1			10		https://www.wordfence.com/threat-intel/vulnerabilities/id/7887e0a6-53bf-49c7-a7a6-7c65cec28cae?source=api-prod
 reganto-theme	*	1	*	1			8.8		https://www.wordfence.com/threat-intel/vulnerabilities/id/6897a8fe-c32e-430a-847c-23d1add2355d?source=api-prod
@@ -2369,6 +2384,7 @@ renden	*	1	1.9.0	1		CVE-2025-12117	6.4		https://www.wordfence.com/threat-intel/v
 renewal	*	1	1.2.2	1		CVE-2025-60064	8.1		https://www.wordfence.com/threat-intel/vulnerabilities/id/3f1770dc-e473-438c-9732-b51cff57c796?source=api-prod
 rentic	*	1	1.1	1		CVE-2025-53442	8.1		https://www.wordfence.com/threat-intel/vulnerabilities/id/7d2cec6e-9ce9-448f-8e32-a3f1877e2575?source=api-prod
 repagent	*	1	*	1			6.1		https://www.wordfence.com/threat-intel/vulnerabilities/id/d557ccb4-99c3-4286-91cd-87576a95f179?source=api-prod
+reprizo	*	1	1.0.8	1		CVE-2026-112857	8.1		https://www.wordfence.com/threat-intel/vulnerabilities/id/0fc8b13b-6b84-45e5-bf34-fde1594ac85b?source=api-prod
 reprizo	*	1	1.0.8	1		CVE-2026-22326	8.1		https://www.wordfence.com/threat-intel/vulnerabilities/id/012b3e9f-a926-42b3-b825-2314d9f72474?source=api-prod
 resca	*	1	3.0.2	1	3.0.3	CVE-2025-54721	6.1		https://www.wordfence.com/threat-intel/vulnerabilities/id/a1ada4cc-aded-4592-b0e7-f70f845c858e?source=api-prod
 resido	*	1	1.5	1		CVE-2026-73387	8.1		https://www.wordfence.com/threat-intel/vulnerabilities/id/ced01ad6-01a9-401c-baf1-25af6840a374?source=api-prod
@@ -2394,6 +2410,7 @@ rexcoin	*	1	1.2.6	1		CVE-2026-28094	8.1		https://www.wordfence.com/threat-intel/
 rezo	*	1	1.9.7	1		CVE-2025-30996	8.8		https://www.wordfence.com/threat-intel/vulnerabilities/id/9be6c569-4832-4b57-9123-0b2a26dac3a6?source=api-prod
 rezo	*	1	1.9.7	1		CVE-2025-31013	6.1		https://www.wordfence.com/threat-intel/vulnerabilities/id/2668ad2e-d7ae-47f2-90b1-5f9c31c8fee2?source=api-prod
 rf	*	1	1.5	1		CVE-2025-69402	8.1		https://www.wordfence.com/threat-intel/vulnerabilities/id/7da114bc-158d-485c-ad3b-4b1c2a099d30?source=api-prod
+rhodos	*	1	1.3.3	1		CVE-2026-112858	8.1		https://www.wordfence.com/threat-intel/vulnerabilities/id/0d1102e9-212d-42d1-90ec-91a8b18d3393?source=api-prod
 rhodos	*	1	1.3.3	1		CVE-2026-22363	8.1		https://www.wordfence.com/threat-intel/vulnerabilities/id/5ea976ab-ecb5-4a7b-a784-afb39b895ab8?source=api-prod
 rhythmo	*	1	1.3.4	1		CVE-2026-28068	8.1		https://www.wordfence.com/threat-intel/vulnerabilities/id/60d98a7c-b95b-4c56-8356-306e53de4d5a?source=api-prod
 ricky	*	1	2.31	0	2.31	CVE-2026-25032	8.1		https://www.wordfence.com/threat-intel/vulnerabilities/id/e1ac8af3-bd42-4d58-b70b-b67e66a632ea?source=api-prod
@@ -2466,6 +2483,7 @@ sanzo	*	1	2.4.3	0	2.4.3	CVE-2026-25355	6.4		https://www.wordfence.com/threat-int
 sapa	*	1	1.1.14	1	1.1.15	CVE-2025-49256	9.8		https://www.wordfence.com/threat-intel/vulnerabilities/id/d56cfeb1-1257-4f6b-b889-d9f5839ce60d?source=api-prod
 satoshi	*	1	2.0	1			9.8		https://www.wordfence.com/threat-intel/vulnerabilities/id/560b175b-ce2a-4161-aa6b-cd11d1377314?source=api-prod
 save-life	*	1	1.2.13	1		CVE-2026-28098	8.1		https://www.wordfence.com/threat-intel/vulnerabilities/id/b8807275-bd44-43e0-9016-031e863a83d0?source=api-prod
+save-life	*	1	1.2.14	1		CVE-2026-112846	8.1		https://www.wordfence.com/threat-intel/vulnerabilities/id/8624cb09-b3b4-4d45-8b9e-c45d83477ea0?source=api-prod
 saveo	*	1	1.1.2	1		CVE-2026-22377	8.1		https://www.wordfence.com/threat-intel/vulnerabilities/id/b19c81c9-d4ea-4a62-ba37-7904cc3ca95a?source=api-prod
 savory	*	1	2.5	1	2.6	CVE-2025-62067	8.1		https://www.wordfence.com/threat-intel/vulnerabilities/id/3c1db6c6-06fa-467d-8c63-24430a81c241?source=api-prod
 savoy	*	1	3.0.8	1	3.0.9	CVE-2025-54736	5.3		https://www.wordfence.com/threat-intel/vulnerabilities/id/bbafaa1b-bd90-42b5-b262-27ca4797b468?source=api-prod
@@ -2947,6 +2965,7 @@ urna	*	1	2.5.12	1	2.5.13	CVE-2025-67982	8.1		https://www.wordfence.com/threat-in
 urna	*	1	2.5.7	1	2.5.8	CVE-2025-54689	8.1		https://www.wordfence.com/threat-intel/vulnerabilities/id/a8161eb7-d854-4f5c-a9f9-9f8163f79222?source=api-prod
 urna	*	1	2.6.2	1	2.6.3	CVE-2026-66610	7.2		https://www.wordfence.com/threat-intel/vulnerabilities/id/e895fc43-2348-4a02-abbf-eadaa181d25d?source=api-prod
 vagabonds	*	1	1.3.10	1		CVE-2025-26592	8.1		https://www.wordfence.com/threat-intel/vulnerabilities/id/dc82bfca-75de-4c77-a0ac-b34525b29a8d?source=api-prod
+vagabonds	*	1	1.3.10	1		CVE-2026-112856	8.1		https://www.wordfence.com/threat-intel/vulnerabilities/id/b01ed5e4-2685-417e-a0db-3607d68f7cef?source=api-prod
 valen	*	1	2.4	1		CVE-2025-28945	9.8		https://www.wordfence.com/threat-intel/vulnerabilities/id/0fc781bc-d0e6-4fce-95aa-ff34caa072da?source=api-prod
 valenti	*	1	5.6.3.5	1		CVE-2026-23544	7.5		https://www.wordfence.com/threat-intel/vulnerabilities/id/98c263b5-8de6-4a75-9f4c-9756d6f3a050?source=api-prod
 valeska	*	1	1.2.2	1	1.3	CVE-2026-40761	8.1		https://www.wordfence.com/threat-intel/vulnerabilities/id/38ea5328-f728-45de-8edd-80fd400f0902?source=api-prod
@@ -3205,6 +3224,7 @@ xstore	*	1	9.6.1	0	9.6.1	CVE-2025-64193	7.5		https://www.wordfence.com/threat-in
 xstore	*	1	9.6.4	1	9.6.5	CVE-2026-25006	6.5		https://www.wordfence.com/threat-intel/vulnerabilities/id/aa30b959-cdf2-4b3b-9c65-d52e1d839a79?source=api-prod
 xstore	*	1	9.6.4	1	9.6.5	CVE-2026-25305	6.4		https://www.wordfence.com/threat-intel/vulnerabilities/id/af0e3e7c-580c-4367-bda5-e94c1f7e8e65?source=api-prod
 xstore	*	1	9.7.3	0	9.7.3	CVE-2026-3326	7.5		https://www.wordfence.com/threat-intel/vulnerabilities/id/c80e9dc6-6a0a-4bdf-bcc4-52df9cc4c405?source=api-prod
+xstore	*	1	9.7.9	0	9.7.9	CVE-2026-105065	6.1		https://www.wordfence.com/threat-intel/vulnerabilities/id/f9445f27-9786-4c3d-b11c-ada8ecfa0d35?source=api-prod
 xts-hitek	*	1	1.8.3	0	1.8.3	CVE-2026-39582	8.1		https://www.wordfence.com/threat-intel/vulnerabilities/id/4e725c3c-3c12-4aa8-a0f8-80b4fbbf0b24?source=api-prod
 yaaburnee-themes	*	1	1.0.7	1			9.8		https://www.wordfence.com/threat-intel/vulnerabilities/id/9d8551b8-67b9-45a8-9357-9e42fb451606?source=api-prod
 yacht-rental	*	1	2.6	1		CVE-2026-28051	8.1		https://www.wordfence.com/threat-intel/vulnerabilities/id/697a3235-cf3a-4ec8-b8d2-60ed110d0d24?source=api-prod
@@ -3214,7 +3234,9 @@ yogi	*	1	2.9.3	0	2.9.3	CVE-2025-24779	8.8		https://www.wordfence.com/threat-inte
 yokoo	*	1	1.1.11	1		CVE-2025-69400	8.1		https://www.wordfence.com/threat-intel/vulnerabilities/id/ed581d7d-ef03-4d15-81ed-8d6215397c22?source=api-prod
 yolox	*	1	1.0.15	1		CVE-2025-69075	8.1		https://www.wordfence.com/threat-intel/vulnerabilities/id/d0da2e4f-f605-4d10-a832-4659605f1d57?source=api-prod
 yootheme	*	1	5.0.34	1	5.0.35	CVE-2026-10077	6.4		https://www.wordfence.com/threat-intel/vulnerabilities/id/07c25607-032c-4456-9e67-f02d2627eab3?source=api-prod
+yootheme	5.0.0	1	5.0.52	1	5.0.53	CVE-2026-102785	9.8		https://www.wordfence.com/threat-intel/vulnerabilities/id/d928290b-c20c-4ca7-9bbc-7cc67a07ac8a?source=api-prod
 yottis	*	1	1.0.10	1		CVE-2026-28011	8.1		https://www.wordfence.com/threat-intel/vulnerabilities/id/757f8ff6-f655-459c-bdd8-a3cbeade7b5d?source=api-prod
+your-dress	*	1	1.4.1	1		CVE-2026-112850	8.1		https://www.wordfence.com/threat-intel/vulnerabilities/id/faacefad-eb8a-4c8b-967a-6167ab5492fd?source=api-prod
 yourjourney	*	1	1.9.8	1		CVE-2023-3933	6.1		https://www.wordfence.com/threat-intel/vulnerabilities/id/c738e051-ad1c-4115-94d3-127dd5dff935?source=api-prod
 yozi	*	1	2.0.63	1	2.0.66.1	CVE-2025-32289	9.8		https://www.wordfence.com/threat-intel/vulnerabilities/id/2710b445-4281-4055-be37-56902ae1d1b6?source=api-prod
 yuki	*	1	1.3.13	1	1.3.14	CVE-2024-1388	4.3		https://www.wordfence.com/threat-intel/vulnerabilities/id/d964e0ef-f14e-463b-bf4e-3f25788df03c?source=api-prod
@@ -3234,6 +3256,7 @@ zeka	*	1	1.0.9	1	1.0.10	CVE-2024-34810	4.3		https://www.wordfence.com/threat-int
 zella-theme	*	1	2.6.2	1	2.6.3	CVE-2026-75873	9.8		https://www.wordfence.com/threat-intel/vulnerabilities/id/b8b684f7-d99f-4d73-9256-e39c5a203262?source=api-prod
 zenlite	*	1	4.3	1	4.4	CVE-2011-3854	6.1		https://www.wordfence.com/threat-intel/vulnerabilities/id/68042416-efa6-4814-a8d9-c74ab652c4ed?source=api-prod
 zenon-lite	*	1	1.9	1		CVE-2024-5964	6.4		https://www.wordfence.com/threat-intel/vulnerabilities/id/7e9b004a-2050-47e8-ac4d-491b715c87d2?source=api-prod
+zensoul	*	1	1.13	1		CVE-2026-112847	8.1		https://www.wordfence.com/threat-intel/vulnerabilities/id/a03aef95-dbc8-40c6-aec6-0c7ba289b0e8?source=api-prod
 zentrum	*	1	1.0	1		CVE-2026-22441	8.1		https://www.wordfence.com/threat-intel/vulnerabilities/id/a88fd2b0-1bd3-495a-9432-2f1b1034c4e4?source=api-prod
 zermatt	*	1	1.6.1	1	1.7	CVE-2026-39545	8.1		https://www.wordfence.com/threat-intel/vulnerabilities/id/8dee7376-0177-4b9d-88f6-d2df054aca65?source=api-prod
 zigcy-baby	*	1	1.0.6	1	1.0.7		8.8		https://www.wordfence.com/threat-intel/vulnerabilities/id/59bf14a9-5abe-4b83-9364-d318eedaba83?source=api-prod
