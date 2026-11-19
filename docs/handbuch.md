@@ -45,9 +45,11 @@ Fehlt ein optionales Werkzeug, überspringt das Skript den betroffenen Punkt mit
 ```bash
 # 1. Werkzeug auf den Server bringen — das GANZE Verzeichnis, nicht nur das
 #    Skript: ohne lib/ und module/ bricht der Lauf mit Code 3 ab.
-ssh root@SERVER "git clone --depth 1 https://github.com/netztaucher/NT-Forensik-Repair.git /root/nt-forensik"
-# ohne git auf dem Zielsystem:
-#   rsync -a --exclude laeufe --exclude .git ./ root@SERVER:/root/nt-forensik/
+ssh root@SERVER "git clone --depth 1 https://github.com/netztaucher/NT-Forensik.git /root/nt-forensik"
+# ohne git auf dem Zielsystem: Verteil-Stand bauen und übertragen
+#   werkzeuge/verteilung-bauen.sh HEAD /tmp/nt-forensik-stand
+#   rsync -a /tmp/nt-forensik-stand/ root@SERVER:/root/nt-forensik/
+# Umzug einer alten Installation aus NT-Forensik-Repair: README, Abschnitt Verwendung
 
 # 2. Für eine bestimmte Domain ausführen
 ssh root@SERVER "bash /root/nt-forensik/wp_plesk_forensik.sh kundendomain.tld"

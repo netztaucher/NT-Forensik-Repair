@@ -1,0 +1,24 @@
+# Was ins öffentliche Verteil-Repo netztaucher/NT-Forensik geht (#126).
+# Ein Eintrag je Zeile, nur Einträge der obersten Ebene.
+# Jeder Eintrag der obersten Ebene steht entweder hier oder in privat.txt.
+# Ein neuer Ordner bleibt privat, bis er hier eingetragen ist.
+.gitignore
+CHANGELOG.md
+LICENSE
+README.md
+assets
+daten
+docs
+examples
+haertung
+lib
+mailgen
+module
+nt_repair.sh
+paket
+pruefstand
+reportgen
+rezepte
+signaturen
+werkzeuge
+wp_plesk_forensik.sh

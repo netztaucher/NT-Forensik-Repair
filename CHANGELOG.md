@@ -4,6 +4,20 @@ Alle nennenswerten Änderungen an `wp_plesk_forensik.sh`.
 
 ## [unveröffentlicht]
 
+### Verteilung über das öffentliche Verteil-Repo NT-Forensik (#126)
+
+- Kunden installieren aus `https://github.com/netztaucher/NT-Forensik.git` statt aus
+  diesem Repo. CI (`.github/workflows/verteilung.yml`) schreibt den Stand nach jeder
+  grünen Prüfung auf `main` dorthin, bei Tags `v*` samt Tag. Danach kann dieses Repo
+  privat werden.
+- Was verteilt wird, steht in `verteilung/umfang.txt`. Jeder Eintrag der obersten Ebene
+  muss in `umfang.txt` oder `privat.txt` stehen, sonst bricht der Bau ab. Neue Ordner
+  sind damit privat, bis sie ausdrücklich eingetragen sind.
+- Werkzeuge: `werkzeuge/verteilung-bauen.sh`, `werkzeuge/verteilung-schieben.sh`,
+  Selbsttest `werkzeuge/verteilung_selbsttest.sh` in CI.
+- Doku: Installationsweg in README, Handbuch, Incident-Response und Joomla-Prüfung,
+  Umzug bestehender Installationen im README, Erklärung in `docs/verteilung.md`.
+
 ### Maskierung lässt Meldewege und eigenen Server stehen (#148)
 
 - `nf_fremdkunden_maskieren` (`lib/kern.sh`) maskierte in `bsi_meldung.md` die Meldewege

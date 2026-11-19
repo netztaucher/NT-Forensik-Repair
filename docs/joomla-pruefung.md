@@ -38,7 +38,7 @@ Dazu kommt die Lage: Seit Juni 2026 läuft eine Welle von Massenausnutzungen geg
 
 ```bash
 # Werkzeug samt Datenbestand auf den Server bringen
-ssh root@SERVER "git clone --depth 1 https://github.com/netztaucher/NT-Forensik-Repair.git /root/nt-forensik"
+ssh root@SERVER "git clone --depth 1 https://github.com/netztaucher/NT-Forensik.git /root/nt-forensik"
 
 # Eine Domain prüfen
 ssh root@SERVER "bash /root/nt-forensik/wp_plesk_forensik.sh --domain kunde.tld"

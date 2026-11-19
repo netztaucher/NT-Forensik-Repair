@@ -8,6 +8,7 @@
 | [incident-response.md](incident-response.md) | Playbook — 7 Phasen von Beweissicherung bis Härtung | Incident Responder |
 | [runbook.md](runbook.md) | Manuelle Einzelschritt-Befehle für Ad-hoc-Analyse | Techniker |
 | [schwachstellen-bestand.md](schwachstellen-bestand.md) | Der Wordfence-Datenbestand — wie er entsteht, warum er im Repository liegt, die 30-Tage-Marke, was bei rotem Zeitplan zu tun ist | Betreiber |
+| [verteilung.md](verteilung.md) | Wie das Werkzeug zum Kunden kommt: Verteil-Repo NT-Forensik, was hinausgeht, Zugang, Rückweg | Betreiber |
 
 Einstieg: **[README des Projekts](../README.md)** → dann [Handbuch](handbuch.md).
 

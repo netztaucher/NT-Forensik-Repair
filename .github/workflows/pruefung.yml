@@ -257,6 +257,12 @@ jobs:
         # selbst prüft werkzeuge/kundenpaket-pruefstand.sh im Job „Zwei Läufe".
         run: bash werkzeuge/interna_waechter_selbsttest.sh
 
+      - name: Selbsttest Verteilung ins öffentliche Verteil-Repo (#126)
+        # Zwei Richtungen: der verteilte Stand ist vollständig und startet,
+        # ein nicht eingestufter Ordner (etwa der Quelltext der Bereinigung)
+        # bricht den Bau ab. Schieben gegen ein lokales Bare-Repo, ohne Netz.
+        run: bash werkzeuge/verteilung_selbsttest.sh
+
       - name: Selbsttest Fremdkunden-Maskierung lässt Vorlagentext stehen (#148)
         # BSI-Meldewege, Betreiber-Kontakt und der eigene Hostname bleiben stehen,
         # Nachbarn als Domain, Mail, vhost-Pfad und webNN werden weiter maskiert.

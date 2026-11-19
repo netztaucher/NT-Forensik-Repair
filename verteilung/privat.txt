@@ -1,0 +1,6 @@
+# Was nie ins Verteil-Repo geht (#126).
+# Hier stehen Dinge, die nur zum Entwickeln gebraucht werden oder nicht
+# öffentlich sein dürfen. Einträge der obersten Ebene, einer je Zeile.
+.github
+handovers
+verteilung

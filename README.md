@@ -6,12 +6,12 @@
 
 <p align="center">
   <b><a href="https://netztaucher.com/wordpress">WordPress-Betreuung &amp; Sicherheit durch netztaucher</a></b>
-  &nbsp;·&nbsp; <a href="https://github.com/netztaucher/NT-Forensik-Repair/releases">Releases</a>
+  &nbsp;·&nbsp; <a href="https://github.com/netztaucher/NT-Forensik/tags">Stände</a>
   &nbsp;·&nbsp; <a href="docs/handbuch.md">Handbuch</a>
 </p>
 
 <p align="center">
-  <a href="https://github.com/netztaucher/NT-Forensik-Repair/releases"><img src="https://img.shields.io/github/v/release/netztaucher/NT-Forensik-Repair?label=Release" alt="Release"></a>
+  <a href="https://github.com/netztaucher/NT-Forensik/tags"><img src="https://img.shields.io/github/v/tag/netztaucher/NT-Forensik?label=Stand" alt="Stand"></a>
   <img src="https://img.shields.io/badge/Modus-read--only-brightgreen" alt="read-only">
   <img src="https://img.shields.io/badge/Plesk-Obsidian%20%7C%20Ubuntu%2022.04-informational" alt="Plesk">
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT"></a>
@@ -110,11 +110,27 @@ ganze Verzeichnis auf den Server, nicht das Skript allein.
 
 ```bash
 # Auf den Server bringen — am einfachsten direkt klonen
-ssh root@SERVER "git clone --depth 1 https://github.com/netztaucher/NT-Forensik-Repair.git /root/nt-forensik"
+ssh root@SERVER "git clone --depth 1 https://github.com/netztaucher/NT-Forensik.git /root/nt-forensik"
 
-# ohne git auf dem Zielsystem: das ganze Verzeichnis übertragen
-rsync -a --exclude laeufe --exclude .git ./ root@SERVER:/root/nt-forensik/
+# ohne git auf dem Zielsystem: den Verteil-Stand bauen und übertragen
+werkzeuge/verteilung-bauen.sh HEAD /tmp/nt-forensik-stand
+rsync -a /tmp/nt-forensik-stand/ root@SERVER:/root/nt-forensik/
 ```
+
+Das Verteil-Repo [`netztaucher/NT-Forensik`](https://github.com/netztaucher/NT-Forensik)
+enthält genau das, was auf einen Server gehört. CI füllt es nach jeder grünen
+Prüfung auf `main` (siehe [`docs/verteilung.md`](docs/verteilung.md)).
+Aktualisieren auf dem Server: `git -C /root/nt-forensik pull --ff-only`.
+
+**Bestehende Installation umziehen** (geklont aus `NT-Forensik-Repair`): die
+Geschichte des Verteil-Repos beginnt neu, ein `pull` reicht deshalb nicht.
+
+```bash
+ssh root@SERVER 'cd /root/nt-forensik && git remote set-url origin https://github.com/netztaucher/NT-Forensik.git && git fetch --depth 1 origin main && git reset --hard origin/main'
+```
+
+`reset --hard` verwirft lokale Änderungen im Werkzeugordner. Laufergebnisse unter
+`laeufe/` sind nicht eingecheckt und bleiben stehen.
 
 | Ordner | wofür | nötig |
 |---|---|---|

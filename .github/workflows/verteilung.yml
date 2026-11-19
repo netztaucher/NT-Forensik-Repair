@@ -1,0 +1,82 @@
+name: Verteilung
+
+# Füllt das öffentliche Verteil-Repo netztaucher/NT-Forensik (#126).
+#
+# Kunden installieren per anonymem `git clone` und aktualisieren mit
+# `git pull --ff-only`. Damit dieses Quell-Repo privat werden kann, holen sie
+# den Stand aus dem Verteil-Repo. Was dorthin geht, legt verteilung/umfang.txt
+# fest; Erklärung in docs/verteilung.md.
+#
+# Wann:
+#   - nach jeder GRÜNEN „Prüfung“ auf main (Kunden klonen main, nicht Tags)
+#   - bei jedem Tag v*: derselbe Stand, dazu das Tag im Verteil-Repo
+#   - von Hand (workflow_dispatch)
+#
+# Zugang: Deploy-Key mit Schreibrecht nur auf netztaucher/NT-Forensik, privater
+# Teil als Secret VERTEIL_DEPLOY_KEY. Er wird nie ausgegeben, nur in eine Datei
+# mit Modus 600 geschrieben und am Ende gelöscht.
+#
+# Kein Fork-Code: workflow_run, push von Tags und workflow_dispatch laufen nur
+# mit Code aus diesem Repo (netztaucher/infra#690, Option B).
+
+on:
+  workflow_run:
+    workflows: ["Prüfung"]
+    types: [completed]
+    branches: [main]
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: verteilung
+  cancel-in-progress: false
+
+jobs:
+  verteilen:
+    name: Stand ins Verteil-Repo
+    if: >-
+      github.event_name != 'workflow_run' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'push' &&
+       github.event.workflow_run.head_repository.full_name == github.repository)
+    runs-on: [self-hosted, linux, docker]
+    timeout-minutes: 10
+    env:
+      ZIEL_URL: git@github.com:netztaucher/NT-Forensik.git
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+
+      - name: Stand zusammenstellen
+        run: bash werkzeuge/verteilung-bauen.sh HEAD "$RUNNER_TEMP/stand"
+
+      - name: Startet das Werkzeug aus dem Stand?
+        run: |
+          bash "$RUNNER_TEMP/stand/wp_plesk_forensik.sh" --help > "$RUNNER_TEMP/hilfe" 2>&1 || true
+          grep -q 'WP-PLESK-FORENSIK' "$RUNNER_TEMP/hilfe" || { echo "::error::Forensik startet aus dem verteilten Stand nicht"; cat "$RUNNER_TEMP/hilfe"; exit 1; }
+          bash -n "$RUNNER_TEMP/stand/nt_repair.sh"
+
+      - name: Ins Verteil-Repo schreiben
+        env:
+          VERTEIL_DEPLOY_KEY: ${{ secrets.VERTEIL_DEPLOY_KEY }}
+        run: |
+          [ -n "$VERTEIL_DEPLOY_KEY" ] || { echo "::error::Secret VERTEIL_DEPLOY_KEY fehlt"; exit 1; }
+          for w in ssh git curl python3; do
+            command -v "$w" >/dev/null || { echo "::error::$w fehlt im Runner-Image (infra stacks/gh-runners/Dockerfile)"; exit 1; }
+          done
+          umask 077
+          KEY="$RUNNER_TEMP/verteil_key"; KH="$RUNNER_TEMP/known_hosts"
+          trap 'rm -f "$KEY"' EXIT
+          printf '%s\n' "$VERTEIL_DEPLOY_KEY" > "$KEY"
+          # Host-Schlüssel von GitHub über TLS, nicht blind annehmen.
+          curl -fsS https://api.github.com/meta \
+            | python3 -c 'import json,sys; [print("github.com "+k) for k in json.load(sys.stdin)["ssh_keys"]]' > "$KH"
+          export GIT_SSH_COMMAND="ssh -i $KEY -o IdentitiesOnly=yes -o UserKnownHostsFile=$KH -o StrictHostKeyChecking=yes"
+          TAG=""
+          if [ "$GITHUB_EVENT_NAME" = push ] && [ "$GITHUB_REF_TYPE" = tag ]; then TAG="$GITHUB_REF_NAME"; fi
+          bash werkzeuge/verteilung-schieben.sh "$RUNNER_TEMP/stand" "$ZIEL_URL" "$TAG"
