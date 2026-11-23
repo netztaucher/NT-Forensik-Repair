@@ -22,10 +22,11 @@
 # Seit dem Standard vom 21.10.2026 (#149, #150, #151) prüft er ausserdem die
 # Kundendokumente selbst: aus dem echten Lauf und der anonymen Fixture
 # pruefstand/kundenpaket/fall.json entstehen Sicherheitsbericht, DSGVO- und
-# BSI-Dokument (NT Docs, WeasyPrint) und das Anschreiben. Geprüft werden
-# Seitenzahl, Überlauf, Seitenbilder, fremde Kunden, die Interna-Sperrliste in
-# beide Richtungen (grün ohne, rot mit eingeschleustem Issue-Verweis) und die
-# Mail (Wortzahl, Anhänge).
+# BSI-Dokument (Berichtslayout NT Dokumente seit 23.11.2026, WeasyPrint) und das
+# Anschreiben. Geprüft werden Seitenzahl, Geschäftsfuss, Überlauf, Seitenbilder,
+# fremde Kunden, die Interna-Sperrliste in beide Richtungen (grün ohne, rot mit
+# eingeschleustem Issue-Verweis), die Entwurf-Sperre (Anhang ungeprüft aus dem
+# Lauf: Rückgabe 4, kein Paket, #160) und die Mail (Wortzahl, Anhänge).
 #
 # Braucht ein Python mit WeasyPrint (reportgen/README.md): $NT_WEASYPRINT_PY,
 # sonst der Interpreter hinter $WEASYPRINT, sonst ~/.venvs/weasyprint.
@@ -33,7 +34,7 @@
 # Nutzung:  werkzeuge/kundenpaket-pruefstand.sh
 # Rückgabe: 0 wenn alle Soll-Werte erreicht wurden, sonst 1
 #
-# Test:     ja - ist selbst der Prüfstand (Soll-Werte, Gegenproben je Sperre) · NT-Forensik-Repair#1, #149
+# Test:     ja - ist selbst der Prüfstand (Soll-Werte, Gegenproben je Sperre) · NT-Forensik-Repair#1, #149, #160
 # Rueckweg: entfällt - schreibt nur in den Arbeitsordner (KUNDENPAKET_PRUEFSTAND_DIR)
 # =============================================================================
 set -uo pipefail
@@ -90,7 +91,7 @@ ERSTER=$(awk -F'\t' '$2=="kunde"{print $4; exit}' "$VERZ")
 [[ -n "$ERSTER" ]] || { pfehl "kein kunde-Beleg im Lauf — Probe nicht durchführbar"; exit 1; }
 printf '\n/var/www/vhosts/fremder-kunde.example/httpdocs/geheim.php\n' >> "${BELEGE}/${ERSTER}"
 
-# ── Kundendokumente (NT Docs) aus Lauf und Fixture ──────────────────────────
+# ── Kundendokumente (Berichtslayout NT Dokumente) aus Lauf und Fixture ──────
 WPY="${NT_WEASYPRINT_PY:-}"
 if [[ -z "$WPY" ]]; then
   _wp="${WEASYPRINT:-$(command -v weasyprint 2>/dev/null || true)}"
@@ -155,18 +156,21 @@ for f in "$BER" "$DSG" "$BSI"; do
   fi
 done
 if python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); sys.exit(any(x["fehler"] or x["regelverstoesse"] for x in d["dokumente"]))' "${KP}/pruefung.json" 2>/dev/null; then
-  pok "kein Überlauf, ≥ 8 mm über der Fusszeile, Titel einzeilig, Sprachregeln eingehalten"
+  pok "Geschäftsfuss auf jeder Seite, nichts ragt über den Satzspiegel, Sprachregeln eingehalten"
 else
   pfehl "Satzprüfung meldet Fehler — ${KP}/pruefung.json"
 fi
-if pdftotext -enc UTF-8 "$BER" - 2>/dev/null | grep -q 'fremder-kunde'; then
+# Text einmal ganz lesen: `pdftotext | grep -q` endet unter pipefail mit SIGPIPE,
+# sobald grep früh trifft, und ein Treffer sähe aus wie keiner.
+BTXT=$(pdftotext -enc UTF-8 "$BER" - 2>/dev/null)
+if grep -q 'fremder-kunde' <<<"$BTXT"; then
   pfehl "Ein fremder Kunde steht im Sicherheitsbericht"
 else
   pok "fremder Kunde aus findings.json steht nicht im Sicherheitsbericht"
 fi
 # Die Fundliste (Abschnitt Schadcode) muss die Funde des Laufs tragen, nicht
 # nur die Zeitachse. Gegenprobe zu einem Lauf, der eine leere Liste lieferte.
-if pdftotext -enc UTF-8 "$BER" - 2>/dev/null | grep -qE '[0-9]+ Funde? im Webspace\. Pfade ab der Dokumentenwurzel'; then
+if grep -qE '[0-9]+ Funde? im Webspace\. Pfade ab der Dokumentenwurzel' <<<"$BTXT"; then
   pok "Funde aus dem Prüfumfang stehen mit Pfad im Webspace im Bericht"
 else
   pfehl "Funde aus dem Lauf fehlen im Bericht"
@@ -186,6 +190,27 @@ if [[ "$IRC" -eq 3 ]] && grep -q 'infra#1062' "${ARBEIT}/kundenpaket_interna.log
   pok "Interna-Wächter schlägt bei eingeschleustem Issue-Verweis an"
 else
   pfehl "Interna-Wächter schweigt zum eingeschleusten Issue-Verweis (rc ${IRC})"
+fi
+
+# Gegenprobe Entwurf: Liefert die Fall-Datei weder bericht.protokoll noch
+# bericht.protokoll_geprueft, kommt der Anhang ungeprüft aus dem Lauf (im
+# Vorfall vom 23.11.2026 mit Fehlalarmen). Das muss als Entwurf auffallen.
+python3 - "$FALL" "${ARBEIT}/fall_entwurf.json" <<'PY'
+import json, sys
+d = json.load(open(sys.argv[1], encoding="utf-8"))
+d["bericht"].pop("protokoll_geprueft", None)
+d["bericht"].pop("protokoll", None)
+json.dump(d, open(sys.argv[2], "w", encoding="utf-8"), ensure_ascii=False)
+PY
+"$WPY" "${SELF_DIR}/reportgen/kundenpaket.py" --lauf "$LAUF" --ziel "${ARBEIT}/kunde_entwurf" \
+       --fall "${ARBEIT}/fall_entwurf.json" >"${ARBEIT}/kundenpaket_entwurf.log" 2>&1
+ERC=$?
+EBER=$(find "${ARBEIT}/kunde_entwurf" -maxdepth 1 -name 'NT-Sicherheitsbericht_*.pdf' | head -1)
+ETXT=$(pdftotext -enc UTF-8 "$EBER" - 2>/dev/null)
+if [[ "$ERC" -eq 4 ]] && grep -qi 'nicht zur Auslieferung' <<<"$ETXT" && grep -q 'Automatisch, ungeprüft' <<<"$ETXT"; then
+  pok "Anhang ohne Prüfvermerk: Entwurf (Rückgabe 4), Vermerk und Kasten im PDF"
+else
+  pfehl "Ungeprüfter Anhang fällt nicht als Entwurf auf (rc ${ERC}) — ${ARBEIT}/kundenpaket_entwurf.log"
 fi
 
 # Anschreiben: kurz, drei Punkte, alle Anhänge, ohne Interna
@@ -274,6 +299,19 @@ elif [[ -e "${ARBEIT}/paket_interna" ]]; then
   pfehl "kundenpaket.sh lehnt ab, hinterlässt aber ein Paket"
 else
   pok "kundenpaket.sh lehnt Kunden-PDFs mit Interna ab, kein Paket entsteht"
+fi
+
+# ── Paket aus einem Lauf mit Entwurf-PDFs wird abgelehnt ────────────────────
+LAUF_E="${ARBEIT}/lauf_entwurf"
+cp -R "$LAUF" "$LAUF_E"
+rm -f "${LAUF_E}"/kunde/NT-*.pdf
+cp "${ARBEIT}"/kunde_entwurf/NT-*.pdf "${LAUF_E}/kunde/" 2>/dev/null
+if bash "${SELF_DIR}/werkzeuge/kundenpaket.sh" "$LAUF_E" "${ARBEIT}/paket_entwurf" >"${ARBEIT}/paket_entwurf.log" 2>&1; then
+  pfehl "Ein Lauf mit Entwurf-PDFs (Anhang ungeprüft) wurde zu einem Paket verarbeitet"
+elif [[ -e "${ARBEIT}/paket_entwurf" ]]; then
+  pfehl "kundenpaket.sh lehnt den Entwurf ab, hinterlässt aber ein Paket"
+else
+  pok "kundenpaket.sh lehnt Entwurf-PDFs ab, kein Paket entsteht"
 fi
 
 # ── Paket mit --mit-server ──────────────────────────────────────────────────

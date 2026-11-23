@@ -37,10 +37,11 @@
 - **`findings.json`** — maschinenlesbarer Export aller Befunde (Verdikte, IOCs, actionable Pfade) für nachgelagerte Werkzeuge.
 
 Die Markdown-Berichte sind Rohfassungen. Was an den Kunden geht, folgt seit 21.10.2026 dem
-Standard **Kundenpaket** (Sicherheitsbericht, DSGVO-Dokumentation und BSI-Einordnung im Designsystem
-NT Docs, kurzes Anschreiben, keine Interna) — siehe [Incident-Response-Playbook, Phase 5](docs/incident-response.md#kundenpaket--standard-seit-21102026).
+Standard **Kundenpaket** (Sicherheitsbericht, DSGVO-Dokumentation und BSI-Einordnung im Berichtslayout
+des Designsystems NT Dokumente, kurzes Anschreiben, keine Interna) — siehe [Incident-Response-Playbook, Phase 5](docs/incident-response.md#kundenpaket--standard-seit-21102026).
 Der Lauf erzeugt die drei PDFs selbst ([`reportgen/kundenpaket.py`](reportgen/README.md)), sobald
-WeasyPrint da ist; Kunde, Erzählung und Bereinigung kommen aus einer Fall-Datei. Das Anschreiben
+WeasyPrint da ist; Kunde, Erzählung, Bereinigung und das geprüfte Protokoll kommen aus einer
+Fall-Datei. Ohne sie bleiben die PDFs ein Entwurf, der nicht ins Paket geht. Das Anschreiben
 baut [`mailgen/anschreiben.py`](mailgen/README.md), der [Interna-Wächter](werkzeuge/interna-sperrliste.txt)
 prüft alles vor der Auslieferung.
 
@@ -121,7 +122,7 @@ rsync -a --exclude laeufe --exclude .git ./ root@SERVER:/root/nt-forensik/
 | `lib/`, `module/` | Runner und Prüfabschnitte | **immer** |
 | `daten/` | Joomla-Prüfsummen und Schwachstellenlisten (3 MB) | für Abschnitt 12 |
 | `signaturen/` | YARA-Regeln | nur mit `--yara` |
-| `reportgen/` | Kundenpaket im Designsystem NT Docs (WeasyPrint) | nur für die Kunden-PDFs |
+| `reportgen/` | Kundenpaket im Berichtslayout NT Dokumente (WeasyPrint) | nur für die Kunden-PDFs |
 
 ```bash
 # Ein Plesk-Abo als Ganzes — alle Verzeichnisse dieses Kunden, sonst nichts
@@ -179,7 +180,7 @@ Das Skript installiert sich beim ersten Lauf nach `/root/wartungsscripte/` und l
 │   ├── kundenbericht.md        # laienlesbar, mit Ampel
 │   ├── befunde_details.md      # Fundstellen relativ zum Kundenverzeichnis (nur bei Funden)
 │   ├── root_aussage.md         # nur bei --nur-root
-│   ├── NT-Sicherheitsbericht_<Kunde>_<Datum>.pdf         # NT Docs (nur wenn WeasyPrint da)
+│   ├── NT-Sicherheitsbericht_<Kunde>_<Datum>.pdf         # Berichtslayout (nur wenn WeasyPrint da)
 │   ├── NT-Dokumentation_DSGVO-Art33_<Kunde>_<Datum>.pdf  # 2 Seiten
 │   └── NT-Einordnung_BSI-Meldung_<Kunde>_<Datum>.pdf     # 2 Seiten
 └── betreiber/                  # NICHT WEITERGEBEN

@@ -5,7 +5,7 @@
 #   werkzeuge/kundenpaket.sh <lauf-ordner> [ziel] [--mit-server] [--mit-technik]
 #                            [--mit-rohfassung]
 #
-# Test:     ja - werkzeuge/kundenpaket-pruefstand.sh · NT-Forensik-Repair#1, #149, #150
+# Test:     ja - werkzeuge/kundenpaket-pruefstand.sh · NT-Forensik-Repair#1, #149, #150, #160
 # Rueckweg: entfällt - schreibt nur einen neuen Ordner (kein Überschreiben), der Lauf bleibt unverändert
 #
 # ------------------------------------------------------------
@@ -34,10 +34,13 @@
 #   bsi_meldung.md  Meldeweg des Betreibers, nicht des Kunden
 #   Markdown-Rohfassungen (kundenbericht.md, dsgvo_meldung.md, ...) — nur mit
 #                   --mit-rohfassung. Kundendokumente sind seit dem Standard
-#                   vom 21.10.2026 die PDFs im Designsystem NT Docs (#149).
+#                   vom 21.10.2026 die PDFs von reportgen/kundenpaket.py, seit
+#                   23.11.2026 im Berichtslayout NT Dokumente (#149, #160).
 #
 # Vor dem Packen prüft werkzeuge/interna-waechter.sh die Kundendokumente gegen
 # die Interna-Sperrliste (#150). Ein Treffer bricht ab — es entsteht kein Paket.
+# Ebenso ein Entwurf ("nicht zur Auslieferung" im Vermerk): der Anhang kam
+# ungeprüft aus dem Lauf (#160).
 #
 # Das Paket ist bewusst KLEINER als das, was der Betreiber hat. Wer mehr
 # hineinlegen will, tut das bewusst über einen Schalter — nicht aus Versehen.
@@ -139,7 +142,7 @@ LAUF_NAME="$(basename "$LAUF")"
 ZIEL="${ZIEL:-$(dirname "$LAUF")/${LAUF_NAME}_kundenpaket}"
 [[ -e "$ZIEL" ]] && pfail "Ziel existiert bereits: ${ZIEL} — bewusst kein Überschreiben."
 
-# ── Kundendokumente (NT Docs) vorhanden und ohne Interna? ────
+# ── Kundendokumente vorhanden, ohne Interna, kein Entwurf? ────
 KD_PDFS=()
 while IFS= read -r _p; do KD_PDFS+=("$_p"); done \
   < <(find "$KUNDE_SRC" -maxdepth 1 -name 'NT-*.pdf' 2>/dev/null | LC_ALL=C sort)
@@ -150,6 +153,17 @@ if [[ ${#KD_PDFS[@]} -gt 0 ]]; then
   if ! bash "${SELF_DIR}/werkzeuge/interna-waechter.sh" "${KD_PDFS[@]}"; then
     pfail "Interna in den Kundendokumenten (siehe oben, Sperrliste werkzeuge/interna-sperrliste.txt). Kein Paket."
   fi
+  # Entwurf: reportgen/kundenpaket.py stempelt "nicht zur Auslieferung" in den
+  # Vermerk, wenn der Anhang ungeprueft aus dem Lauf kommt (Fehlalarme, Vorfall
+  # vom 23.11.2026). Solche PDFs gehen nicht ins Paket. Text erst ganz lesen:
+  # `pdftotext | grep -q` endet unter pipefail mit SIGPIPE, sobald grep trifft,
+  # und der Treffer sähe aus wie kein Treffer.
+  for _p in "${KD_PDFS[@]}"; do
+    _txt="$(pdftotext -enc UTF-8 "$_p" - 2>/dev/null)"
+    if grep -qi 'nicht zur Auslieferung' <<<"$_txt"; then
+      pfail "Entwurf: $(basename "$_p") hat einen ungeprüften Anhang aus dem Lauf. Fall-Datei mit bericht.protokoll oder bericht.protokoll_geprueft, dann reportgen/kundenpaket.py erneut. Kein Paket."
+    fi
+  done
 fi
 
 echo -e "${BOLD}NT-Forensik · Kundenpaket${NC}"

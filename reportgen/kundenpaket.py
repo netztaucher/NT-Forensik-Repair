@@ -1,17 +1,19 @@
 #!/usr/bin/env python3
-# kundenpaket.py - Kundenpaket im Designsystem NT Docs aus einem Forensik-Lauf
+# kundenpaket.py - Kundenpaket im Berichtslayout NT Dokumente aus einem Forensik-Lauf
 #
-# Test:     ja - werkzeuge/kundenpaket-pruefstand.sh (Fixture: drei PDFs, Seiten, Interna) · NT-Forensik-Repair#149
+# Test:     ja - werkzeuge/kundenpaket-pruefstand.sh (Fixture: drei PDFs, Seiten, Interna, Entwurf-Sperre) · NT-Forensik-Repair#149, #160
 # Rueckweg: entfaellt - schreibt nur neue Dateien in --ziel und --pruefung, aendert den Lauf nicht
 #
 # Aufruf:
 #   kundenpaket.py --lauf <lauf-ordner> --ziel <ordner> [--fall fall.json]
 #                  [--pruefung <ordner>] [--entwurf fall.entwurf.json]
 #
-# Erzeugt den Standard vom 21.10.2026 (NT-Forensik-Repair#149, #150):
-#   NT-Sicherheitsbericht_<Kunde>_<Datum>.pdf          Seite 1 Ergebnis, Teil 1 Kundenbericht, Teil 2 Protokoll
-#   NT-Dokumentation_DSGVO-Art33_<Kunde>_<Datum>.pdf   2 Seiten
-#   NT-Einordnung_BSI-Meldung_<Kunde>_<Datum>.pdf      2 Seiten
+# Erzeugt die drei Kundendokumente (Standard vom 21.10.2026, NT-Forensik-Repair#149,
+# #150) im Berichtslayout des Designsystems NT Dokumente (Komponente Bericht),
+# freigegeben am 23.11.2026:
+#   NT-Sicherheitsbericht_<Kunde>_<Datum>.pdf          Briefkopf, Abschnitte 1-6, Anhang Technisches Protokoll
+#   NT-Dokumentation_DSGVO-Art33_<Kunde>_<Datum>.pdf   2 Seiten, Art. 33 Abs. 3 a-d, Unterschrift
+#   NT-Einordnung_BSI-Meldung_<Kunde>_<Datum>.pdf      2 Seiten, Einordnung, Angaben, IOC
 #
 # Inhalt in zwei Schichten:
 #   1. aus dem Lauf (findings.json, kundenpaket_funde.tsv): Websites, Funde mit
@@ -24,29 +26,32 @@
 #
 # Rueckgabe: 0 = alle Dokumente regelgerecht und ohne Interna,
 #            1 = Aufruf- oder Lauffehler, 2 = Satz- oder Regelfehler,
-#            3 = Interna-Waechter schlaegt an. Die PDFs liegen auch bei 2/3 vor,
-#            zur Ansicht, nicht zur Auslieferung.
+#            3 = Interna-Waechter schlaegt an,
+#            4 = Entwurf: der Anhang (Protokoll) kommt ungeprueft aus dem Lauf, weil
+#                die Fall-Datei weder bericht.protokoll liefert noch
+#                bericht.protokoll_geprueft bestaetigt (ohne --fall immer).
+#            Die PDFs liegen auch bei 2/3/4 vor, zur Ansicht, nicht zur Auslieferung;
+#            werkzeuge/kundenpaket.sh nimmt Entwuerfe nicht ins Paket.
 
 import argparse
 import copy
 import datetime as dt
 import hashlib
 import json
-import os
 import pathlib
+import posixpath
 import re
 import subprocess
 import sys
 
 HERE = pathlib.Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
-import ntdocs_satz as S  # noqa: E402
-from ntdocs_satz import Atom, Zeilen, Abschnitt, Kapitel, Dokument, t  # noqa: E402
+import bericht_satz as S  # noqa: E402
 
 WAECHTER = HERE.parent / "werkzeuge" / "interna-waechter.sh"
 
-ANSPRECHPARTNER = {"name": "Marco Neuber", "firma": "die netztaucher GmbH",
-                   "telefon": "03331 252520", "email": "neuber@netztaucher.com"}
+ANSPRECHPARTNER = {"name": "Marco Neuber", "funktion": "Geschäftsführer", "firma": "die netztaucher GmbH",
+                   "telefon": "+49 3331 252520", "email": "team@netztaucher.com"}
 
 # Familien aus module/14_berichte/05_einordnung.sh, Erklaerung fuer Kunden
 FAMILIE = {
@@ -102,6 +107,9 @@ def lauf_lesen(lauf):
         """(website, pfad im Webspace, absoluter Pfad) oder None, wenn ausserhalb des Umfangs."""
         p = str(pfad)
         if p.startswith("/"):
+            # Doppelte Schraegstriche (TMPDIR endet auf / , Basis + / + Pfad) normalisieren,
+            # sonst passt der Pfad nicht zum Pruefumfang, den pathlib schon bereinigt hat.
+            p = posixpath.normpath(p)
             for sp in scan:
                 s = str(sp).rstrip("/") + "/"
                 if p.startswith(s):
@@ -275,7 +283,7 @@ def fall_aus_lauf(L, bereinigt=False):
     ]
     wichtigste = []
     for fam, k in L["familien"][:3]:
-        wichtigste.append({"art": "warn", "titel": f"{fam} ({k})", "text": FAMILIE.get(fam, "Einordnung im Protokoll, Teil 2") + "."})
+        wichtigste.append({"art": "warn", "titel": f"{fam} ({k})", "text": FAMILIE.get(fam, "Einordnung im Anhang") + "."})
     if L["fremde_admins"]:
         wichtigste.append({"art": "warn", "titel": "Fremdes Administratorkonto",
                            "text": f"{_anzahl(L['fremde_admins'], 'Konto', 'Konten')} ohne erkennbaren Inhaber."})
@@ -322,8 +330,8 @@ def fall_aus_lauf(L, bereinigt=False):
             "lede": lede,
             "status": status,
             "wichtigste": wichtigste,
-            "jetzt": "**Heute** die Passwörter Ihrer WordPress-Konten ändern und nichts löschen, bevor die Bereinigung abgeschlossen ist. Alle Schritte mit Frist stehen in Teil 1.",
-            "kurz": {"absaetze": [lede], "hinweis": None},
+            "jetzt": "**Heute** die Passwörter Ihrer WordPress-Konten ändern und nichts löschen, bevor die Bereinigung abgeschlossen ist.",
+            "kurz": {"absaetze": [lede] + _kurz_funde(L), "hinweis": None},
             "bewertung": _bewertung(L, bereinigt),
             "bewertung_text": "",
             "ablauf": ablauf,
@@ -384,7 +392,7 @@ def fall_aus_lauf(L, bereinigt=False):
                 {"art": "warn", "titel": "Grösse", "text": "Erfasst sind seit 06.12.2025 Unternehmen ab 50 Beschäftigten oder mehr als 10 Mio. € Umsatz und Bilanzsumme in diesen Sektoren."},
                 {"art": "ok", "titel": "Hosting", "text": "Die Server betreibt die netztaucher GmbH. Der Befund betrifft den Webspace der Website."},
             ],
-            "hinweis": "Eine freiwillige Meldung nimmt das BSI über die Allianz für Cybersicherheit an. Eine Strafanzeige ist bei der Zentralen Ansprechstelle Cybercrime (ZAC) der Landespolizei möglich. Die Angaben dafür stehen auf Seite 2. Stand der Rechtslage: Oktober 2026.",
+            "hinweis": "Meldeweg: Eine freiwillige Meldung nimmt das BSI über die Allianz für Cybersicherheit an. Eine Strafanzeige ist bei der Zentralen Ansprechstelle Cybercrime (ZAC) der Landespolizei möglich. Stand der Rechtslage: Oktober 2026.",
             "angaben": [
                 ["Art", "Kompromittierung des Webspace einer Website" if n else "Prüfung ohne Schadcode-Fund"],
                 ["Erster Nachweis", _uhr(_lokal(L["zeitachse"][0]["zeit"])) if L["zeitachse"] else "nicht bestimmbar"],
@@ -403,6 +411,17 @@ def fall_aus_lauf(L, bereinigt=False):
     }
 
 
+def _kurz_funde(L):
+    """Zusammenfassung ohne Fall-Datei: die haeufigsten Fundarten in einem Satz."""
+    if not L["familien"]:
+        return []
+    teile = [f"{fam} ({k}): {FAMILIE.get(fam, 'Einordnung im Anhang')}" for fam, k in L["familien"][:3]]
+    s = "Gefunden: " + "; ".join(teile) + "."
+    if L["ohne_ergebnis"]:
+        s += f" {_anzahl(L['ohne_ergebnis'], 'Prüfung', 'Prüfungen')} ohne Ergebnis, das ist keine Entwarnung."
+    return [s]
+
+
 def _bewertung(L, bereinigt):
     seiten = L["websites"]
     zeilen = []
@@ -410,7 +429,7 @@ def _bewertung(L, bereinigt):
                                      if any(f["website"] == w or len(seiten) == 1 for f in L["funde"]) else {"art": "ok", "text": "unauffällig"}
                                      for w in seiten])
     zeilen.append(["Schadcode"] + [_anzahl(sum(1 for f in L["funde"] if f["website"] == w or len(seiten) == 1), "Fund", "Funde") for w in seiten])
-    zeilen.append(["Einfallstor"] + [L["einstieg"][0]["kanal"] if L["einstieg"] else "nicht belegt" for _ in seiten])
+    zeilen.append(["Einfallstor"] + [L["einstieg"][0]["kanal"] if L["einstieg"] else "aus dem Lauf nicht ermittelt" for _ in seiten])
     zeilen.append(["fremdes Admin-Konto"] + [{"art": "warn", "text": "ja"} if L["fremde_admins"] else {"art": "ok", "text": "nein"} for _ in seiten])
     zeilen.append(["Datenabfluss"] + ["nicht belegt, nicht ausgeschlossen" for _ in seiten])
     return {"spalten": seiten, "zeilen": zeilen}
@@ -449,7 +468,7 @@ def _protokoll(L, jetzt, bereinigt):
                                        "zeilen": [[e["zeit"], e["kanal"], f"`{e['ip']}`", f"`{e['datei']}`" if e["datei"] else ""] for e in L["einstieg"]]}})
     else:
         abschnitte.append({"titel": "Einfallstor",
-                           "absaetze": ["Aus den vorhandenen Protokollen nicht belegt. Kein Zugriff mit Fernwartungs-, Upload- oder Installationskennung in derselben Sekunde wie die Anlage einer belasteten Datei."]})
+                           "absaetze": ["Aus dem Lauf nicht ermittelt: kein Zugriff mit Fernwartungs-, Upload- oder Installationskennung in derselben Sekunde wie die Anlage einer belasteten Datei. Andere Wege sind damit nicht ausgeschlossen."]})
     if L["zeitachse"]:
         abschnitte.append({"titel": "Zeitachse",
                            "absaetze": ["Anlagezeit der belasteten Dateien laut Dateisystem."],
@@ -492,218 +511,184 @@ def zusammenfuehren(basis, ueber):
     return out
 
 
-# ── HTML-Bausteine ──────────────────────────────────────────────────────────
-ICON = {"ok": "status-ok.svg", "warn": "status-warn.svg", "info": "status-info.svg"}
-DOT = {"ok": "dot-ok.svg", "warn": "dot-warn.svg", "info": "dot-ok.svg"}
+# ── Berichtslayout NT Dokumente ─────────────────────────────────────────────
+ENTWURF_VERMERK = "Entwurf · Anhang automatisch aus dem Lauf, ungeprüft · nicht zur Auslieferung"
+ENTWURF_TEXT = ("Dieser Anhang ist automatisch aus der Untersuchung übernommen und nicht von Hand geprüft. "
+                "Einzelne Einordnungen können Fehlalarme sein, etwa ein gewöhnliches Dokument als Schadcode "
+                "oder ein Einfallstor als nicht ermittelt, obwohl es bekannt ist. Vor der Auslieferung prüfen "
+                "und bestätigen.")
 
 
-def _zelle(x):
-    if isinstance(x, dict):
-        art = x.get("art", "info")
-        cls = {"ok": "nt-state is-ok", "warn": "nt-state is-warn"}.get(art, "nt-state")
-        return f'<span class="{cls}"><img src="img/{ICON.get(art, ICON["info"])}" alt="">{t(x.get("text", ""))}</span>{t(x.get("nach", ""))}'
-    return "<br>".join(t(z) for z in str(x).split("\n"))
+def _titel(teile):
+    """["Die Website ist", "sauber", "."] -> "Die Website ist sauber." (Feld titel der Fall-Datei)."""
+    vor, mark, nach = (list(teile) + ["", "", ""])[:3]
+    s = " ".join(x.strip() for x in (vor, mark) if x and x.strip())
+    if nach:
+        s += nach if nach.startswith((".", ",", "!", "?")) else " " + nach.strip()
+    return s
 
 
-def h_kopfband(meta, kicker, titel, lede):
-    vor, mark, nach = (list(titel) + ["", "", ""])[:3]
-    mark_html = f' <span class="nt-mark">{t(mark)}</span>' if mark else ""
-    if nach and not nach.startswith((".", ",", "!", "?")):
-        nach = " " + nach.lstrip()
-    return (f'<header class="nt-band"><div class="nt-band-top">{S.MARKE_BAND}'
-            f'<div class="nt-band-meta">{"<br>".join(t(m) for m in meta)}</div></div>'
-            f'<p class="nt-kicker">{t(kicker)}</p><h1 class="nt-display">{t(vor)}{mark_html}{t(nach)}</h1>'
-            f'<p class="nt-lede">{t(lede)}</p><img class="nt-edge" src="img/kante.svg" alt=""></header>')
+def _vorgang(F):
+    if F.get("vorgang"):
+        return F["vorgang"]
+    return "SV-" + dt.datetime.strptime(F["datum"], "%d.%m.%Y").strftime("%Y-%m-%d") + "-01"
 
 
-def h_status(status):
-    karten = []
-    for s in status[:3]:
-        art = s.get("art", "info")
-        cls = {"ok": "nt-status is-ok", "warn": "nt-status is-warn"}.get(art, "nt-status")
-        regel = f'<span class="nt-status-rule">{t(s["regel"])}</span>' if s.get("regel") else ""
-        karten.append(f'<div class="{cls}"><img class="nt-status-icon" src="img/{ICON.get(art, ICON["info"])}" alt="">'
-                      f'<span class="nt-status-title">{t(s.get("titel"))}</span>'
-                      f'<span class="nt-status-text">{t(s.get("text"))}</span>{regel}</div>')
-    return f'<div class="nt-status-row">{"".join(karten)}</div>'
+def karten_kunde(F, mit_kenntnis=True):
+    k, a = F["kunde"], F["ansprechpartner"]
+    links = S.adresskarte("Auftraggeber", k.get("name"), k.get("zeilen") or [], [k.get("rolle"), k.get("email")])
+    bearbeitung = ", ".join(x for x in (a.get("name"), a.get("funktion")) if x)
+    kontakt = " · ".join(x for x in (a.get("telefon"), a.get("email")) if x)
+    roh = f"<b>Vorgang:</b> {S.t(_vorgang(F))}<br>"
+    if mit_kenntnis and F.get("kenntnis"):
+        roh += f'<span class="sub">Kenntnis: {S.t(F["kenntnis"])}</span>'
+    rechts = S.adresskarte("Ersteller", a.get("firma") or S.FIRMA, S.ANSCHRIFT,
+                           [f"Bearbeitung: {bearbeitung}" if bearbeitung else "", kontakt], roh)
+    return S.adresskarten(links, rechts)
 
 
-def h_li(p):
-    art = p.get("art", "ok")
-    return (f'<li><img class="nt-dot" src="img/{DOT.get(art, DOT["ok"])}" alt=""><div>'
-            f'<span class="nt-item-title">{t(p.get("titel"))}</span>'
-            f'<span class="nt-item-text">{t(p.get("text"))}</span></div></li>')
-
-
-def h_checkliste(punkte):
-    return f'<ul class="nt-checklist">{"".join(h_li(p) for p in punkte)}</ul>'
-
-
-def h_infokarte(label, name, zeilen):
-    return (f'<div class="nt-infocard"><p class="nt-label">{t(label)}</p>'
-            f'<span class="nt-infocard-name">{t(name)}</span>{"<br>".join(t(z) for z in zeilen if z)}</div>')
-
-
-def h_person(label, p):
-    return h_infokarte(label, p.get("name"), [p.get("firma"), p.get("telefon"), p.get("email")])
-
-
-def h_hinweis(label, text, art="warn", icon=None):
-    cls = "nt-notice" if art == "warn" else "nt-notice is-info"
-    icon = icon or ("idea.svg" if art == "warn" else "status-info.svg")
-    return (f'<div class="{cls}"><img class="nt-notice-icon" src="img/{icon}" alt=""><div>'
-            f'<p class="nt-label">{t(label)}</p><p>{t(text)}</p></div></div>')
-
-
-def h_seite1(kopf, status, links_label, links, rechts, hinweis):
-    return (kopf + '<div class="nt-body">' + h_status(status)
-            + '<div class="nt-cols nt-gap"><div class="nt-col-2of3">'
-            + f'<p class="nt-label">{t(links_label)}</p>{h_checkliste(links)}</div>'
-            + f'<div class="nt-col-1of3">{"".join(rechts)}</div></div>'
-            + S._mit_gap_html(hinweis, "gap") + '</div>')
-
-
-def b_tabelle(kopf, zeilen, gap="gap", erste_fest=False):
-    """erste_fest: erste Spalte bricht nicht um und steht fett (Wann, Frist)."""
-    k = "<tr>" + "".join(f"<th>{t(x)}</th>" for x in kopf) + "</tr>"
-    z = []
-    for r in zeilen:
-        zellen = []
-        for i, c in enumerate(r):
-            if i == 0 and erste_fest:
-                inhalt = _zelle(c) if isinstance(c, dict) else f"<b>{_zelle(c)}</b>"
-                zellen.append(f'<td class="nt-nb">{inhalt}</td>')
-            else:
-                zellen.append(f"<td>{_zelle(c)}</td>")
-        z.append("<tr>" + "".join(zellen) + "</tr>")
-    return Zeilen('<table class="nt-table">', z, "</table>", kopf=k, gap=gap)
-
-
-def b_checkliste(punkte, gap="gap"):
-    return Zeilen('<ul class="nt-checklist">', [h_li(p) for p in punkte], "</ul>", gap=gap)
-
-
-def b_meta(paare, gap="gap"):
-    return Atom('<dl class="nt-meta">' + "".join(f"<dt>{t(k)}</dt><dd>{_zelle(v)}</dd>" for k, v in paare) + "</dl>", gap=gap)
-
-
-def b_prosa(absaetze, lede=False, gap="gap"):
-    ps = []
-    for i, a in enumerate(absaetze):
-        cls = ' class="nt-lede"' if lede and i == 0 else ""
-        ps.append(f"<p{cls}>{t(a)}</p>")
-    return Atom(f'<div class="nt-prose">{"".join(ps)}</div>', gap=gap)
-
-
-def b_checks(zeilen, gap=""):
-    rows = "".join(f'<div><dt>{t(a)}</dt><dd>{_zelle({"art": art, "text": txt})}</dd></div>' for a, art, txt in zeilen)
-    return Atom(f'<dl class="nt-checks">{rows}</dl>', gap=gap)
-
-
-def b_abschnitt(nr, a):
-    kinder = []
-    for p in a.get("absaetze") or []:
-        kinder.append(Atom(f"<p>{t(p)}</p>", gap=""))
+def _abschnitt_anhang(i, a):
+    h = f"<h3>A.{i} {S.t(a.get('titel'))}</h3>"
     if a.get("meta"):
-        kinder.append(b_meta(a["meta"], gap=""))
+        h += S.tabelle([], a["meta"], kv=True)
+    h += S.absaetze(a.get("absaetze"))
     if a.get("tabelle"):
-        kinder.append(b_tabelle(a["tabelle"]["kopf"], a["tabelle"]["zeilen"], gap="",
-                                erste_fest=bool(a["tabelle"].get("erste_fest"))))
+        tb = a["tabelle"]
+        h += S.tabelle(tb.get("kopf") or [], tb.get("zeilen") or [], erste_fest=bool(tb.get("erste_fest")))
     if a.get("checks"):
-        kinder.append(b_checks(a["checks"]))
+        h += S.tabelle([], [[x[0], {"art": x[1], "text": x[2]}] for x in a["checks"]], kv=True)
     if a.get("fussnote"):
-        kinder.append(Atom(f'<p class="nt-footnote">{t(a["fussnote"])}</p>', gap=""))
-    return Abschnitt(f"{nr:02d}", a["titel"], kinder)
+        h += f'<p class="note">{S.t(a["fussnote"])}</p>'
+    return h
 
 
-def b_kacheln(kacheln):
-    k = "".join(f'<div class="nt-tile{" is-key" if x.get("key") else ""}"><p class="nt-label">{t(x["label"])}</p>'
-                f'<span class="nt-tile-value">{t(x["wert"])}</span><span class="nt-tile-text">{t(x["text"])}</span></div>'
-                for x in kacheln[:4])
-    return Atom(f'<div class="nt-tiles is-linie">{k}</div>', gap="")
+def _unterschrift_ersteller(F):
+    a = F["ansprechpartner"]
+    return S.unterschrift("Angermünde, " + F["datum"], f"{a.get('name')}, {a.get('firma') or S.FIRMA}")
 
 
-# ── Dokumente ───────────────────────────────────────────────────────────────
-def kunde_rechts(F, label="Kunde"):
-    k = F["kunde"]
-    return h_infokarte(label, k.get("name"), list(k.get("zeilen") or []) + [k.get("email")])
-
-
-def dok_bericht(F):
+def dok_bericht(F, entwurf=False):
     B = F["bericht"]
-    s1 = h_seite1(h_kopfband(B["meta"], B["kicker"], B["titel"], B["lede"]), B["status"], "Das Wichtigste",
-                  B["wichtigste"], [kunde_rechts(F), h_person("Ansprechpartner", F["ansprechpartner"])],
-                  h_hinweis("Was Sie jetzt tun sollten", B["jetzt"], icon="status-warn.svg"))
-    T1 = "Teil 1 · Kundenbericht"
-    kap = []
-    kurz = [b_meta([["Betroffen", _aufzaehlen(F["websites"])], ["Stand", F["stand"]]], gap=""),
-            b_prosa(B["kurz"]["absaetze"], lede=True)]
-    if B["kurz"].get("hinweis"):
-        h = B["kurz"]["hinweis"]
-        kurz.append(Atom(h_hinweis(h.get("label", "Hinweis"), h.get("text", "")), gap="gap"))
-    for p in B["kurz"].get("nach") or []:
-        kurz.append(b_prosa([p]))
-    kap.append(Kapitel(T1, "Das Wichtigste in Kürze", kurz))
+    kurz = B.get("kurz") or {}
+    kicker = B.get("kicker") or ""
+    art = kicker.split("·")[-1].strip() if "·" in kicker else "Bericht"
+    untertitel = B.get("untertitel") or f"{art} · Stand {F['stand']}"
+    vermerk = ENTWURF_VERMERK if entwurf else B.get("vermerk") or "Vertraulich · nur für den Auftraggeber"
+
+    h = karten_kunde(F)
+    h += f'<h1 class="doctitle">{S.t(B.get("ueberschrift") or _titel(B["titel"]))}</h1><p class="lead">{S.t(B["lede"])}</p>'
+    h += S.h2("1", "Zusammenfassung") + S.absaetze(kurz.get("absaetze"))
+    if kurz.get("hinweis"):
+        h += S.karte(kurz["hinweis"].get("text", ""), kurz["hinweis"].get("label"))
+    h += S.absaetze(kurz.get("nach"))
+
     bw = B["bewertung"]
-    bl = [b_tabelle([""] + list(bw["spalten"]), bw["zeilen"], gap="")]
-    if B.get("bewertung_text"):
-        bl.append(b_prosa([B["bewertung_text"]]))
-    kap.append(Kapitel(T1, "Bewertung je Website", bl))
-    kap.append(Kapitel(T1, "Was passiert ist", [b_tabelle(["Wann", "Was"], B["ablauf"], gap="", erste_fest=True)]))
-    kap.append(Kapitel(T1, "Was wir getan haben", [b_checkliste([dict(p, art=p.get("art", "ok")) for p in B["erledigt"]], gap="")]))
-    auf = [b_tabelle(["Frist", "Massnahme"], [[{"art": a.get("art", "info"), "text": a["frist"]}, a["text"]] for a in B["aufgaben"]], gap="", erste_fest=True)]
+    if len(bw.get("spalten") or []) <= 1:
+        bew = S.tabelle([], [r[:2] for r in bw["zeilen"]], kv=True)
+    else:
+        bew = S.tabelle([""] + list(bw["spalten"]), bw["zeilen"])
+    h += S.h2("2", "Bewertung") + bew + S.absaetze([B.get("bewertung_text")])
+    h += S.h2("3", "Ablauf") + S.tabelle(["Zeitpunkt", "Ereignis"], B["ablauf"])
+    h += S.h2("4", "Ergriffene Massnahmen") + S.tabelle(
+        ["Massnahme", "Umsetzung"], [[f"**{e['titel']}**", e.get("text", "")] for e in B["erledigt"]])
+    h += S.h2("5", "Erforderliche nächste Schritte") + S.angebot("Vordringlich", B["jetzt"])
+    h += S.tabelle(["Frist", "Massnahme"], [[x["frist"], x["text"]] for x in B["aufgaben"]])
     if B.get("aufgaben_hinweis"):
-        auf.append(Atom(h_hinweis("Bereits erledigt" if F.get("bereinigt") else "Hinweis", B["aufgaben_hinweis"], art="info")))
-    kap.append(Kapitel(T1, "Was Sie jetzt tun sollten", auf))
+        h += f'<p class="note">{S.t(B["aufgaben_hinweis"])}</p>'
     M = B["meldepflichten"]
-    kap.append(Kapitel(T1, "Meldepflichten", [Atom(h_hinweis("Unsere Einschätzung", M["einschaetzung"]), gap=""),
-                                              b_checkliste(M["punkte"])]))
+    h += S.h2("6", "Meldepflichten") + f"<p>{S.t(M['einschaetzung'])}</p>"
+    h += S.tabelle(["Punkt", "Einordnung"], [[f"**{p['titel']}**", p.get("text", "")] for p in M["punkte"]])
+    h += ("<p>Die Dokumentation nach Art. 33 Abs. 5 DSGVO und die Einordnung zur BSI-Meldung "
+          "liegen als gesonderte Dokumente bei.</p>")
+    h += _unterschrift_ersteller(F)
+
     P = B["protokoll"]
-    t2 = [b_kacheln(P["kacheln"])] + [b_abschnitt(i, a) for i, a in enumerate(P["abschnitte"], 1)]
-    if len(t2) > 1:
-        t2[1].gap = "gap"
-    kap.append(Kapitel("Teil 2 · Anlage zum Bericht", "Forensik- und Bereinigungsprotokoll", t2, linie=True))
-    return Dokument("Sicherheitsbericht", f"Sicherheitsbericht · {F['kunde']['kurz']} · {F['datum']}", s1, kap)
+    h += S.h2("A", "Anhang: Technisches Protokoll", anhang=True)
+    if entwurf:
+        h += S.karte(ENTWURF_TEXT, "Automatisch, ungeprüft", art="entwurf")
+    h += f"<p>{S.t(P.get('einleitung') or 'Alle Zeiten in Ortszeit. Belege mit SHA-256 gesichert, Rohdaten beim Ersteller hinterlegt.')}</p>"
+    h += "".join(_abschnitt_anhang(i, a) for i, a in enumerate(P.get("abschnitte") or [], 1))
+    return "Sicherheitsbericht", S.dokument("Sicherheitsbericht", untertitel, vermerk, h, entwurf), None
 
 
-def dok_dsgvo(F):
-    D = F["dsgvo"]
-    s1 = h_seite1(h_kopfband(["Datenschutzverletzung · Dokumentation", F["datum"]], D["kicker"], D["titel"], D["lede"]),
-                  D["status"], "Was wir geprüft haben", D["pruefliste"],
-                  [h_infokarte("Verantwortlicher", F["kunde"]["name"], [F["kunde"].get("rolle"), F["kunde"].get("email")]),
-                   h_person("Auftragsverarbeiter", F["ansprechpartner"])],
-                  h_hinweis("Einordnung", D["einordnung"]))
-    a = [
-        b_abschnitt(1, {"titel": "Art der Verletzung", "absaetze": [D["art"]]}),
-        b_abschnitt(2, {"titel": "Betroffene Personen und Daten", "tabelle": D["personen"], "absaetze": []}),
-        b_abschnitt(3, {"titel": "Ergriffene Massnahmen", "absaetze": [D["massnahmen"]]}),
-        b_abschnitt(4, {"titel": "Abwägung und Entscheidung", "checks": D["abwaegung"]}),
+def _personen(D):
+    zeilen = (D.get("personen") or {}).get("zeilen") or []
+    mehrere = len(zeilen) > 1
+    pers = "; ".join(f"{r[1]} ({r[0]})" if mehrere else str(r[1]) for r in zeilen if len(r) > 1)
+    daten = "; ".join(dict.fromkeys(str(r[2]) for r in zeilen if len(r) > 2))
+    return pers, daten
+
+
+def dok_dsgvo(F, entwurf=False):
+    D, k, a = F["dsgvo"], F["kunde"], F["ansprechpartner"]
+    vermerk = ENTWURF_VERMERK if entwurf else D.get("vermerk") or "Vertraulich · zu den Datenschutzunterlagen der Verantwortlichen"
+    links = S.adresskarte("Verantwortliche (Art. 4 Nr. 7)", k.get("name"), k.get("zeilen") or [],
+                          [f"Datenschutz: {D.get('kontakt') or '____________________'}"])
+    kontakt = " · ".join(x for x in (a.get("name"), a.get("telefon"), a.get("email")) if x)
+    rechts = S.adresskarte("Auftragsverarbeiter (Hosting)", a.get("firma") or S.FIRMA, [", ".join(S.ANSCHRIFT)],
+                           [kontakt, f"Unterrichtung nach Art. 33 Abs. 2: {F['datum']}"])
+    h = S.adresskarten(links, rechts)
+    h += (f'<h1 class="doctitle">{S.t(D.get("ergebnis") or "Ergebnis: " + _titel(D["titel"]))}</h1>'
+          f'<p class="lead">{S.t(D["lede"])}</p>')
+
+    beginn = D.get("beginn") or next((v for kk, v in F["bsi"].get("angaben") or [] if str(kk).startswith("Erst")),
+                                     "aus den Protokollen nicht bestimmbar")
+    zeit = D.get("zeitpunkte") or [["Beginn der Verletzung", beginn], ["Kenntnis", F["kenntnis"]],
+                                   ["Frist Meldung (72 Stunden)", f"**{F['frist_72h']}**"]]
+    h += S.h2("1", "Zeitpunkte") + S.tabelle([], zeit, kv=True)
+
+    pers, daten = _personen(D)
+    angaben = [
+        ["a) Art der Verletzung", D["art"]],
+        ["a) Kategorien betroffener Personen", " ".join(x for x in (pers + "." if pers else "", D.get("personen_text")) if x)],
+        ["a) Kategorien personenbezogener Daten", daten or "____________________"],
+        ["a) Ungefähre Zahl", D.get("zahl") or "Personen: ______ · Datensätze: ______ (ergänzt die Verantwortliche)"],
+        ["b) Kontakt Datenschutz", D.get("kontakt") or "____________________"],
+        ["c) Wahrscheinliche Folgen", D.get("folgen") or "Ein Abfluss personenbezogener Daten ist nicht belegt. "
+                                                      "Mögliche Folgen hängen vom Datenbestand ab, die Verantwortliche bewertet sie."],
+        ["d) Ergriffene Massnahmen", D["massnahmen"]],
     ]
-    if D.get("personen_text"):
-        a[1].kinder.append(Atom(f"<p>{t(D['personen_text'])}</p>", gap=""))
-    sign = Atom('<div class="nt-sign"><p class="nt-label">Entscheidung des Verantwortlichen</p><div class="nt-sign-row">'
-                '<div><div class="nt-sign-line"></div><small>Ort, Datum</small></div>'
-                f'<div><div class="nt-sign-line"></div><small><b>{t(F["kunde"]["name"])}</b> · Verantwortlicher</small></div>'
-                '</div></div>', gap="gap")
-    kap = [Kapitel("Angaben nach Art. 33 Abs. 3 DSGVO", "Sachverhalt, Folgen und Massnahmen", a + [sign])]
-    return Dokument("Dokumentation Art. 33 DSGVO", f"Dokumentation Art. 33 DSGVO · {F['kunde']['kurz']} · {F['datum']}",
-                    s1, kap, soll_seiten=2)
+    h += S.h2("2", "Angaben nach Art. 33 Abs. 3 DSGVO") + S.tabelle([], angaben, kv=True)
+    h += S.h2("3", "Prüfung") + S.tabelle(["Prüfpunkt", "Ergebnis"], [[f"**{p['titel']}**", p.get("text", "")] for p in D["pruefliste"]])
+    h += S.h2("4", "Abwägung") + S.tabelle(["Pflicht", "Einschätzung"], [[x[0], {"art": x[1], "text": x[2]}] for x in D["abwaegung"]])
+    h += S.karte(D["einordnung"])
+    box = '<span class="box"></span>'
+    h += (S.h2("5", "Entscheidung der Verantwortlichen")
+          + f"<p>{box}Meldung an die Aufsichtsbehörde erfolgt am __________ &nbsp;&nbsp; {box}keine Meldung, Begründung: ______________________________</p>"
+          + f"<p>{box}Benachrichtigung der Betroffenen nach Art. 34 erfolgt am __________ &nbsp;&nbsp; {box}nicht erforderlich</p>"
+          + S.unterschrift("Ort, Datum", f"Unterschrift {k.get('name')}"))
+    return ("Dokumentation Art. 33 DSGVO",
+            S.dokument("Dokumentation Datenschutzverletzung", f"nach Art. 33 Abs. 5 DSGVO · {F['datum']}", vermerk, h, entwurf), 2)
 
 
-def dok_bsi(F):
+def dok_bsi(F, entwurf=False):
     B = F["bsi"]
-    s1 = h_seite1(h_kopfband(["IT-Sicherheitsvorfall · Einordnung BSI", F["datum"]], B["kicker"], B["titel"], B["lede"]),
-                  B["status"], "Warum", B["gruende"],
-                  [h_infokarte("Betreiber", F["kunde"]["name"], F["websites"]), h_person("Ansprechpartner", F["ansprechpartner"])],
-                  h_hinweis("Falls Sie melden möchten", B["hinweis"], art="info"))
-    a = [b_meta(B["angaben"], gap=""),
-         b_abschnitt(1, {"titel": "Merkmale des Angriffs", "tabelle": {"kopf": ["Merkmal", "Wert"], "zeilen": B["merkmale"]}}),
-         b_abschnitt(2, {"titel": "Auswirkung", "checks": B["auswirkung"]}),
-         b_abschnitt(3, {"titel": "Massnahmen", "absaetze": [B["massnahmen"]]})]
-    a[1].gap = "gap"
-    kap = [Kapitel("Angaben für eine freiwillige Meldung", "Vorfall, Merkmale und Auswirkung", a)]
-    return Dokument("Einordnung BSI-Meldung", f"Einordnung BSI-Meldung · {F['kunde']['kurz']} · {F['datum']}",
-                    s1, kap, soll_seiten=2)
+    vermerk = ENTWURF_VERMERK if entwurf else B.get("vermerk") or "Vertraulich · Angaben für eine freiwillige Meldung"
+    h = karten_kunde(F, mit_kenntnis=False)
+    h += (f'<h1 class="doctitle">{S.t(B.get("ergebnis") or "Ergebnis: " + _titel(B["titel"]))}</h1>'
+          f'<p class="lead">{S.t(B["lede"])}</p>')
+    h += S.h2("1", "Einordnung") + S.tabelle(
+        ["Prüfung", "Ergebnis", "Begründung"],
+        [[x.get("regel", ""), {"art": x.get("art"), "text": x.get("titel", "")}, x.get("text", "")] for x in B["status"]])
+    h += S.tabelle(["Kriterium", "Erläuterung"], [[f"**{g['titel']}**", g.get("text", "")] for g in B["gruende"]])
+    h += S.h2("2", "Angaben für eine freiwillige Meldung") + S.tabelle([], B["angaben"], kv=True)
+    h += S.tabelle(["Schutzziel", "Auswirkung"], [[x[0], {"art": x[1], "text": x[2]}] for x in B["auswirkung"]])
+    h += f"<p><strong>Massnahmen:</strong> {S.t(B['massnahmen'])}</p>"
+    h += S.h2("3", "Indikatoren (IOC)") + S.tabelle(["Art", "Wert"], B.get("iocs") or B.get("merkmale") or [])
+    if B.get("hinweis"):
+        h += f'<p class="note">{S.t(B["hinweis"])}</p>'
+    h += _unterschrift_ersteller(F)
+    return ("Einordnung BSI-Meldung",
+            S.dokument("Einordnung BSI-Meldung", f"BSIG / NIS2 · {F['datum']}", vermerk, h, entwurf), 2)
+
+
+def protokoll_geprueft(eigen):
+    """Der Anhang gilt als geprueft, wenn die Fall-Datei ihn liefert (bericht.protokoll)
+    oder den Stand aus dem Lauf ausdruecklich bestaetigt (bericht.protokoll_geprueft).
+    Ohne das uebernimmt er ungeprueft, was der Lauf einordnet, Fehlalarme eingeschlossen
+    (Vorfall vom 23.11.2026: ein Dokument als Schadcode, Einfallstor als nicht belegt)."""
+    b = (eigen or {}).get("bericht") or {}
+    return bool(b.get("protokoll")) or b.get("protokoll_geprueft") is True
 
 
 def dateinamen(F):
@@ -722,7 +707,7 @@ def interna_pruefen(pdfs):
 
 
 def main(argv=None):
-    ap = argparse.ArgumentParser(description="Kundenpaket im Designsystem NT Docs aus einem Forensik-Lauf")
+    ap = argparse.ArgumentParser(description="Kundenpaket im Berichtslayout NT Dokumente aus einem Forensik-Lauf")
     ap.add_argument("--lauf", required=True)
     ap.add_argument("--ziel", required=True, help="Ordner für die drei Kunden-PDFs")
     ap.add_argument("--fall", help="Fall-Datei (JSON), überschreibt die Vorgaben aus dem Lauf")
@@ -736,6 +721,7 @@ def main(argv=None):
         return 1
     eigen = json.loads(pathlib.Path(a.fall).read_text(encoding="utf-8")) if a.fall else {}
     F = zusammenfuehren(fall_aus_lauf(L, bool(eigen.get("bereinigt"))), eigen)
+    entwurf = not protokoll_geprueft(eigen)
     if a.entwurf:
         pathlib.Path(a.entwurf).parent.mkdir(parents=True, exist_ok=True)
         pathlib.Path(a.entwurf).write_text(json.dumps(F, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
@@ -745,8 +731,10 @@ def main(argv=None):
     namen = dateinamen(F)
     berichte, pdfs, rc = [], [], 0
     for key, bauen in (("bericht", dok_bericht), ("dsgvo", dok_dsgvo), ("bsi", dok_bsi)):
+        name, html, soll = bauen(F, entwurf)
         try:
-            b, html = S.schreiben(bauen(F), ziel / namen[key], png_ordner=pruef / "seiten" if pruef else None)
+            b = S.schreiben(name, html, ziel / namen[key], soll_seiten=soll,
+                            png_ordner=pruef / "seiten" if pruef else None)
         except S.SatzFehler as e:
             print(f"kundenpaket: {e}", file=sys.stderr)
             return 1
@@ -768,10 +756,15 @@ def main(argv=None):
         print(itext)
     if irc != 0:
         rc = 3
+    if entwurf:
+        print("  ENTWURF: Anhang automatisch aus dem Lauf, ungeprüft. Nicht ausliefern, bevor die Fall-Datei "
+              "bericht.protokoll liefert oder bericht.protokoll_geprueft bestätigt.")
+        if rc == 0:
+            rc = 4
     if pruef:
         pruef.mkdir(parents=True, exist_ok=True)
         (pruef / "pruefung.json").write_text(json.dumps(
-            {"dokumente": berichte, "interna": {"rc": irc, "ausgabe": itext}, "rc": rc},
+            {"dokumente": berichte, "interna": {"rc": irc, "ausgabe": itext}, "entwurf": entwurf, "rc": rc},
             ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     return rc
 

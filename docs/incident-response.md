@@ -122,13 +122,17 @@ cd "$RUN/belege" && sha256sum ./* > SHA256SUMS
 
 ### Kundenpaket — Standard seit 21.10.2026
 
-Was an den Kunden geht, folgt diesem Standard. Das Werkzeug erzeugt ihn (#149, #150, #151):
+Was an den Kunden geht, folgt diesem Standard. Das Werkzeug erzeugt ihn (#149, #150, #151).
+Layout seit 23.11.2026: **Berichtslayout** des Designsystems NT Dokumente (Komponente Bericht),
+freigegeben von Marco, nachdem das frühere Layout mit Kopfband, Statuskarten und halbleeren
+Kapitelseiten als nicht seriös abgelehnt wurde (#160).
 
 | Teil | Form |
 |---|---|
-| Sicherheitsbericht | PDF im Designsystem **NT Docs**; Seite 1 Ergebnis mit Statuskarten, Teil 1 Kundenbericht (Sie), Teil 2 Protokoll in nummerierten Abschnitten bis „Offene Punkte" |
-| Dokumentation Art. 33 DSGVO | 2 Seiten NT Docs, Einschätzung + Angaben nach Abs. 3 + Unterschriftsfeld des Verantwortlichen |
-| Einordnung BSI-Meldung | 2 Seiten NT Docs, KRITIS/NIS2/freiwillig + alle Angaben für eine freiwillige Meldung |
+| Sicherheitsbericht | Briefkopf (Logo, Dokumenttitel rechts), Haarlinie, Vertraulichkeitsvermerk, Adress-Cards Auftraggeber/Ersteller mit Vorgangsnummer; Abschnitte 1 Zusammenfassung, 2 Bewertung, 3 Ablauf, 4 Ergriffene Massnahmen, 5 Nächste Schritte, 6 Meldepflichten, Unterschrift; Anhang „Technisches Protokoll" auf eigener Seite |
+| Dokumentation Art. 33 DSGVO | 2 Seiten, Zeitpunkte, Angaben nach Abs. 3 a bis d mit Ausfüllfeldern, Prüfung, Abwägung, Entscheidung mit Unterschrift der Verantwortlichen |
+| Einordnung BSI-Meldung | 2 Seiten, Einordnung KRITIS/NIS2/freiwillig, Angaben für eine freiwillige Meldung, Indikatoren (IOC) |
+| Geschäftsfuss | auf jeder Seite: Anschrift, Handelsregister, Kontakt, „Vertraulich", „Seite x von y" |
 | Bildschirmfotos | Startseiten nach der Bereinigung (Chrome headless, 1440×1000) |
 | Anschreiben | kurze HTML-Mail (~150 Wörter, ein Kasten „Bitte heute", Meldepflicht in 2–3 Sätzen), normale Gross-/Kleinschreibung, kein Kopf, kein Logo |
 
@@ -137,17 +141,24 @@ Serverpfade, Ablagen (1Password, Register), internen Servernamen, keine Daten an
 Kunden, keine Admin-Benutzernamen, kein unerklärter Fachjargon (Liste in #150).
 Beweise zum Vorfall (Hashes, Angreifer-IPs, Zeitstempel, Pfade im Kunden-Webspace) bleiben.
 
-**Vor der Auslieferung jede Seite als Bild prüfen.** Feste A4-Seiten schneiden Überlauf
-still ab; Abstände, fluchtende Tabellenzeilen und die Kante unter dem Kopfband sind
-nur im Bild sichtbar. Danach `pdftotext` gegen die Interna-Liste.
+**Vor der Auslieferung jede Seite als Bild prüfen.** Umbrüche, Abstände und fluchtende
+Tabellenzeilen sind nur im Bild sichtbar. Danach `pdftotext` gegen die Interna-Liste.
+
+**Das Protokoll (Anhang) wird geprüft, nicht übernommen.** Ohne Fall-Datei übernimmt der
+Anhang, was der Lauf einordnet, Fehlalarme eingeschlossen (Vorfall vom 23.11.2026: ein
+gewöhnliches PDF als Schadcode, das bekannte Einfallstor als „nicht belegt"). Das Werkzeug
+setzt die Dokumente dann als **Entwurf** (Vermerk „nicht zur Auslieferung", roter Kasten im
+Anhang, Rückgabe 4), und `werkzeuge/kundenpaket.sh` nimmt sie nicht ins Paket. Freigeben:
+in der Fall-Datei `bericht.protokoll` mit dem geprüften Protokoll liefern oder, wenn die
+Liste aus dem Lauf stimmt, `"protokoll_geprueft": true` unter `bericht` setzen.
 
 So entsteht das Paket:
 
 ```bash
 # 1. Der Lauf hat einen Entwurf aus seinen Funden gebaut (kunde/NT-*.pdf) und die
 #    Vorlage betreiber/kundenpaket_fall.entwurf.json geschrieben. Kunde, Erzählung,
-#    Bereinigung, Aufgaben und Meldepflicht dort eintragen (Muster:
-#    pruefstand/kundenpaket/fall.json), dann neu setzen:
+#    Bereinigung, Aufgaben, Meldepflicht und das geprüfte Protokoll dort eintragen
+#    (Muster: pruefstand/kundenpaket/fall.json), dann neu setzen:
 reportgen/kundenpaket.py --lauf "$RUN" --fall fall.json --ziel "$RUN/kunde" \
     --pruefung "$RUN/betreiber/kundenpaket_pruefung"
 # 2. Jede Seite ansehen: $RUN/betreiber/kundenpaket_pruefung/seiten/*.png
@@ -158,10 +169,10 @@ mailgen/anschreiben.py --fall fall.json --ziel "$RUN/betreiber/mail" \
 werkzeuge/kundenpaket.sh "$RUN"
 ```
 
-`reportgen/kundenpaket.py` setzt die Seiten selbst um (gemessen, nicht geschätzt),
-prüft jede Seite auf Überlauf (≥ 8 mm über der Fusszeile), Titel einzeilig, Seitenzahl
-und Sprachregeln und legt die Seitenbilder beim Betreiber ab. Ansehen muss sie trotzdem
-ein Mensch. Der Wächter `werkzeuge/interna-waechter.sh` liest die Sperrliste
+`reportgen/kundenpaket.py` setzt im Fluss (WeasyPrint), prüft jede Seite auf
+Geschäftsfuss und Überlauf über den rechten Satzspiegel, DSGVO und BSI auf genau 2 Seiten
+und alle Texte auf die Sprachregeln, und legt die Seitenbilder beim Betreiber ab. Ansehen
+muss sie trotzdem ein Mensch. Der Wächter `werkzeuge/interna-waechter.sh` liest die Sperrliste
 `werkzeuge/interna-sperrliste.txt`; Namen anderer Kunden desselben Servers lassen sich
 über `NT_INTERNA_EXTRA=<datei>` ergänzen.
 

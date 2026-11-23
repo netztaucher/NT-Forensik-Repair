@@ -70,7 +70,7 @@
         "text": "Schadcode in Quarantäne, Fernsteuerung abgeschaltet und von aussen geprüft. Kein fremdes Admin-Konto."
       }
     ],
-    "jetzt": "**Sofort** das Passwort Ihres Kontos beim Hersteller des Sicherungs-Plugins ändern und die Zwei-Faktor-Anmeldung dort neu einrichten. Die Adresse selbst eintippen, keinem Link folgen. Alle weiteren Schritte mit Frist stehen in Teil 1.",
+    "jetzt": "**Sofort** das Passwort Ihres Kontos beim Hersteller des Sicherungs-Plugins ändern und die Zwei-Faktor-Anmeldung dort neu einrichten. Die Adresse selbst eintippen, keinem Link folgen.",
     "kurz": {
       "absaetze": [
         "Am 19. Oktober 2026 hat ein Angreifer auf Ihrer Website ein getarntes Zusatzprogramm (Plugin) eingespielt. Es sollte ihm ein Administratorkonto verschaffen.",
@@ -232,7 +232,8 @@
           "text": "Die Seite ist keine kritische Infrastruktur, die Betreiberin liegt unter den Schwellen von NIS2."
         }
       ]
-    }
+    },
+    "protokoll_geprueft": true
   },
   "dsgvo": {
     "titel": [

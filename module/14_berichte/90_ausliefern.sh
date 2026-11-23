@@ -19,7 +19,7 @@
             betreiber/dsgvo_meldung.md betreiber/findings.json; do
     [[ -f "$_h" ]] && sha256sum "$_h" 2>/dev/null >> "${BELEGE_DIR}/SHA256SUMS"
   done
-  # Kundenpaket (NT Docs, 60_pdf): alle Kunden-PDFs
+  # Kundenpaket (NT Dokumente, 60_pdf): alle Kunden-PDFs
   for _h in kunde/*.pdf; do
     [[ -f "$_h" ]] && sha256sum "$_h" 2>/dev/null >> "${BELEGE_DIR}/SHA256SUMS"
   done

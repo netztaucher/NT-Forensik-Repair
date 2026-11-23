@@ -22,7 +22,7 @@ mailgen/anschreiben.py --fall fall.json --ziel <ordner> \
 - **Sprache:** Sie-Form, normale Gross-/Kleinschreibung (Abweichung von der
   Brandvoice-Kleinschreibung, Entscheidung Marco für Sie-Kunden mit Vorfall), kein ß,
   keine Gedankenstriche.
-- **Layout:** Tabellen und Inline-Stile, Farben aus NT Docs (Kasten `#fff1e0`, Label
+- **Layout:** Tabellen und Inline-Stile, Farben aus dem Berichtslayout `reportgen/bericht/bericht.css` (Kasten `#fff1e0`, Label
   `#a85400`/`#003366`), kein Kopf, kein Logo. Text-Alternative mit gleichem Inhalt.
 - **Inhalt** aus dem Abschnitt `mail` der Fall-Datei (`an`, `betreff`, `anrede`,
   `ergebnis`, `ursache`, `bitte_heute`, `meldepflicht`, `gruss`); was fehlt, wird aus

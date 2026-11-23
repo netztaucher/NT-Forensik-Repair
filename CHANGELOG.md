@@ -4,6 +4,36 @@ Alle nennenswerten Änderungen an `wp_plesk_forensik.sh`.
 
 ## [unveröffentlicht]
 
+### Kundenpaket im Berichtslayout NT Dokumente (#160)
+
+- Marco hat das Layout der Kundendokumente am 23.11.2026 (Vorfall cfds) als nicht seriös
+  abgelehnt: Kopfband mit Schwung, Ampel-Statuskarten, eine halbleere Seite je Kapitel.
+  `reportgen/kundenpaket.py` setzt Sicherheitsbericht, DSGVO-Dokumentation und
+  BSI-Einordnung jetzt im freigegebenen **Berichtslayout** des Designsystems NT Dokumente
+  (Komponente Bericht): Briefkopf, Haarlinie, Vertraulichkeitsvermerk, Adress-Cards mit
+  Vorgangsnummer, nummerierte Abschnitte, Tabellen mit navy Kopf, Unterschriftszeilen,
+  Anhang „Technisches Protokoll" auf eigener Seite, Geschäftsfuss mit „Seite x von y" auf
+  jeder Seite. DSGVO nach Art. 33 Abs. 3 a bis d mit Ausfüllfeldern, BSI mit IOC-Tabelle.
+- Satz neu in `reportgen/bericht_satz.py`: WeasyPrint im Fluss statt fester Seiten, Fuss als
+  laufendes Element im Seitenrand. Geprüft werden Geschäftsfuss je Seite, Überlauf über den
+  rechten Satzspiegel, DSGVO/BSI genau 2 Seiten, Sprachregeln, Seitenbilder. Layout,
+  Schriften (Inter 300/400/600, Inter Tight 700, Hack) und Logo unter `reportgen/bericht/`,
+  Herkunft in `reportgen/bericht/QUELLE.md`. Die Kopie des alten Designsystems und das
+  Seitenpacken entfallen.
+- Fall-Datei bleibt kompatibel (`kunde`, `bericht`, `dsgvo`, `bsi`, `mail`,
+  `bericht.protokoll`); neue optionale Felder `vorgang`, `bericht.ueberschrift`,
+  `bericht.untertitel`, `*.vermerk`, `*.ergebnis`, `dsgvo.zeitpunkte`/`beginn`/`zahl`/
+  `kontakt`/`folgen`, `bsi.iocs`. Gelesen, aber nicht mehr gedruckt: `bericht.meta`,
+  `bericht.status`, `bericht.wichtigste`, `bericht.protokoll.kacheln`, `dsgvo.status`.
+- **Entwurf-Sperre:** Liefert die Fall-Datei weder `bericht.protokoll` noch
+  `bericht.protokoll_geprueft: true`, kommt der Anhang ungeprüft aus dem Lauf (im Vorfall
+  vom 23.11.2026 mit Fehlalarmen: ein PDF als Schadcode, Einfallstor „nicht belegt"). Die
+  Dokumente tragen dann den Vermerk „nicht zur Auslieferung" und einen roten Kasten im
+  Anhang, `kundenpaket.py` endet mit 4, `werkzeuge/kundenpaket.sh` baut kein Paket.
+  `module/14_berichte/60_pdf.sh` meldet den Entwurf im Bericht.
+- `werkzeuge/kundenpaket-pruefstand.sh`: Gegenproben für die Entwurf-Sperre (Rückgabe 4,
+  Vermerk im PDF, kein Paket); Fixture mit `protokoll_geprueft`.
+
 ### Maskierung lässt Meldewege und eigenen Server stehen (#148)
 
 - `nf_fremdkunden_maskieren` (`lib/kern.sh`) maskierte in `bsi_meldung.md` die Meldewege
@@ -26,10 +56,10 @@ Alle nennenswerten Änderungen an `wp_plesk_forensik.sh`.
 
 - **#149 NT Docs:** `reportgen/kundenpaket.py` erzeugt aus dem Lauf Sicherheitsbericht,
   Dokumentation Art. 33 DSGVO (2 Seiten) und Einordnung BSI-Meldung (2 Seiten) im
-  Designsystem NT Docs (Kopie unter `reportgen/ntdocs/`, Herkunft in `QUELLE.md`). Inhalt
+  Designsystem NT Docs (Kopie im Repo, seit #160 durch das Berichtslayout ersetzt). Inhalt
   aus `findings.json` und der neuen Fundliste `betreiber/kundenpaket_funde.tsv`, nur Pfade
   im Prüfumfang; Kunde, Erzählung und Bereinigung aus einer Fall-Datei (`--fall`,
-  im Lauf `NT_KUNDENFALL`). `reportgen/ntdocs_satz.py` misst die Bausteine, verteilt sie
+  im Lauf `NT_KUNDENFALL`). Ein eigenes Satzmodul misst die Bausteine, verteilt sie
   auf feste A4-Seiten, bricht Tabellen zwischen Zeilen um und prüft das fertige PDF
   (Seitenzahl, ≥ 8 mm über der Fusszeile, Titel einzeilig, Sprachregeln, Seitenbilder).
   `module/14_berichte/60_pdf.sh` baut damit `kunde/NT-*.pdf` statt `abschlussbericht.pdf`;
