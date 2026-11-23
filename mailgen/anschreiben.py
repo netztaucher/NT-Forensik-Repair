@@ -44,7 +44,7 @@ WAECHTER = HERE.parent / "werkzeuge" / "interna-waechter.sh"
 ABSENDER = ("Marco Neuber", "neuber@netztaucher.com")
 GRUSS = "Mit einem schönen Gruss aus Angermünde in der Uckermark"
 ADRESSE = "die netztaucher GmbH · Am Gutshof 36 · 16278 Angermünde · 03331 252520"
-# Farben aus NT Docs (tokens.css)
+# Farben aus dem Berichtslayout (reportgen/bericht/bericht.css)
 INK, ORANGE_SOFT, ORANGE_INK, NAVY, INK3 = "#1b2533", "#fff1e0", "#a85400", "#003366", "#626b78"
 MAX_WOERTER = 190      # Ziel ~150; darüber ist es kein kurzes Anschreiben mehr
 MAX_PUNKTE = 3

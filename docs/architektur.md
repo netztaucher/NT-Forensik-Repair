@@ -30,7 +30,7 @@ module/
   01_system.sh … 14_berichte.sh     ein Modul je Prüfabschnitt
 signaturen/            YARA-Regeln
 daten/                 Joomla-Prüfsummen und Schwachstellenlisten
-reportgen/             Kundenpaket im Designsystem NT Docs (PDF)
+reportgen/             Kundenpaket im Berichtslayout NT Dokumente (PDF)
 werkzeuge/             Pflegeskripte — laufen NIE auf einem Kundenserver
 ```
 

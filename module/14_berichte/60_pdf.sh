@@ -1,21 +1,24 @@
 # shellcheck shell=bash
 # Test:     ja - werkzeuge/kundenpaket-pruefstand.sh (Lauf mit Fixture, PDFs, Seiten, Interna) · NT-Forensik-Repair#149
 # Rueckweg: entfällt - schreibt nur in den eigenen Laufordner
-# NT-Forensik — Abschnitt 14, Teil: Kundenpaket im Designsystem NT Docs (optional, degradierend)
+# NT-Forensik — Abschnitt 14, Teil: Kundenpaket im Berichtslayout NT Dokumente (optional, degradierend)
 #
 # Unterabschnitt von module/14_berichte.sh. Wird vom Runner nach dem
 # Hauptmodul geladen (siehe modul_teile_laden in wp_plesk_forensik.sh) und
 # teilt sich dessen Variablen. Nicht einzeln ausfuehrbar.
 #
-# Seit dem Standard vom 21.10.2026 (#149) entstehen hier drei Kunden-PDFs im
-# Designsystem NT Docs statt des frueheren abschlussbericht.pdf:
+# Seit dem Standard vom 21.10.2026 (#149) entstehen hier drei Kunden-PDFs statt
+# des frueheren abschlussbericht.pdf, seit 23.11.2026 im Berichtslayout des
+# Designsystems NT Dokumente (#160):
 #   kunde/NT-Sicherheitsbericht_<Kunde>_<Datum>.pdf
 #   kunde/NT-Dokumentation_DSGVO-Art33_<Kunde>_<Datum>.pdf
 #   kunde/NT-Einordnung_BSI-Meldung_<Kunde>_<Datum>.pdf
 # Seitenbilder und Pruefbericht liegen beim Betreiber (betreiber/kundenpaket_pruefung/),
-# nie beim Kunden. Ohne Fall-Datei sind die Dokumente ein Entwurf aus dem Lauf;
-# betreiber/kundenpaket_fall.entwurf.json ist die Vorlage, um Kunde, Erzaehlung
-# und Bereinigung nachzutragen und reportgen/kundenpaket.py erneut aufzurufen.
+# nie beim Kunden. Ohne Fall-Datei sind die Dokumente ein Entwurf aus dem Lauf
+# (Vermerk "nicht zur Auslieferung", Rueckgabe 4, kundenpaket.sh packt sie nicht);
+# betreiber/kundenpaket_fall.entwurf.json ist die Vorlage, um Kunde, Erzaehlung,
+# Bereinigung und das gepruefte Protokoll nachzutragen und reportgen/kundenpaket.py
+# erneut aufzurufen.
 #
 # Fehlt WeasyPrint, wird uebersprungen: die Markdown-Berichte bleiben
 # vollstaendig (Read-only-Versprechen, kein harter Fehler).
@@ -65,7 +68,8 @@ elif [[ -n "$REPORTGEN_DIR" && -n "$_kp_py" ]] && "$_kp_py" -c 'import weasyprin
   while IFS= read -r _p; do KUNDENPAKET_PDFS+=("$_p"); done \
     < <(find "$KUNDE_DIR" -maxdepth 1 -name 'NT-*.pdf' 2>/dev/null | sort)
   case "$_kp_rc" in
-    0) echo "  Kundenpaket (NT Docs): ${#KUNDENPAKET_PDFS[@]} PDF(s) in kunde/, Seiten als Bild: betreiber/kundenpaket_pruefung/seiten/" >> "$REPORT_FILE" ;;
+    0) echo "  Kundenpaket: ${#KUNDENPAKET_PDFS[@]} PDF(s) in kunde/, Seiten als Bild: betreiber/kundenpaket_pruefung/seiten/" >> "$REPORT_FILE" ;;
+    4) echo "  Kundenpaket: Entwurf, Anhang ungeprüft aus dem Lauf — NICHT ausliefern; Fall-Datei (NT_KUNDENFALL) mit geprüftem Protokoll nachreichen (betreiber/kundenpaket_fall.entwurf.json)." >> "$REPORT_FILE" ;;
     3) echo "  Kundenpaket: Interna in den Kunden-PDFs — NICHT ausliefern (betreiber/kundenpaket_pruefung.log)." >> "$REPORT_FILE" ;;
     2) echo "  Kundenpaket: Satz- oder Regelfehler — Seiten prüfen (betreiber/kundenpaket_pruefung.log)." >> "$REPORT_FILE" ;;
     *) echo "  Kundenpaket fehlgeschlagen — Markdown-Berichte bleiben maßgeblich (betreiber/kundenpaket_pruefung.log)." >> "$REPORT_FILE" ;;
