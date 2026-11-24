@@ -2,8 +2,8 @@
 # =============================================================================
 # nc-rotation-server.sh — Server-Teil der Rotation (Plesk + Nextcloud); neue Werte NUR über stdin
 # =============================================================================
-# Test:     ja - werkzeuge/nextcloud/nextcloud_selbsttest.sh (Attrappen, CI) · NT-Forensik-Repair#162
-# Rueckweg: nein - postfach: alter Wert wird bei Fehler zurückgesetzt (nur im Selbsttest gelaufen); smtpcfg: config.php aus Sicherung (Selbsttest); abo/nutzer/pleskadmin/mailapp: alter Wert unbekannt, Rückweg = erneut setzen · NT-Forensik-Repair#165
+# Test:     ja - werkzeuge/nextcloud/nextcloud_selbsttest.sh (Attrappen, CI); liste, nutzer, smtpcfg zusätzlich gegen echte Nextcloud im werkzeuge/nextcloud/probelauf/probelauf.sh (echte Nextcloud 27.1.11/28.0.14 im Wegwerf-Container) · NT-Forensik-Repair#165
+# Rueckweg: nein - smtpcfg: Rückweg (config.php aus Sicherung) im Prüfstand 24.11.2026 gelaufen; postfach (alten Wert zurücksetzen), abo, pleskadmin, mailapp brauchen Plesk, IMAP bzw. Mail-App und sind nur mit Attrappen geprüft; nutzer/abo/pleskadmin: alter Wert unbekannt, Rückweg = erneut setzen · NT-Forensik-Repair#167
 #
 # Wird von nc-rotation-mac.sh per ssh aufgerufen. Ein Wert kommt nie als Argument.
 #

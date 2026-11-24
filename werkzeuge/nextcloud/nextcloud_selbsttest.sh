@@ -75,13 +75,14 @@ case "$1" in
       status) echo "  - versionstring: $(ver)";;
       app:list) printf 'Enabled:\n  - foo: 1.0\nDisabled:\n';;
       app:update) if [ "${2:-}" = --showonly ]; then [ -f "$ST/app-updates" ] && echo "groupfolders new version available: 23.0.2"; true
-                  else [ -f "$ST/appupdate-kaputt" ] && exit 1; rm -f "$ST/app-updates" "$ST/cron-fehler"; echo "groupfolders updated"; fi;;
+                  else [ -f "$ST/appupdate-kaputt" ] && exit 1; echo "groupfolders updated"; [ -f "$ST/appupdate-ohne-wirkung" ] && exit 0; rm -f "$ST/app-updates" "$ST/cron-fehler"; fi;;
       user:list) echo '{"alice":"Alice","bob":"Bob"}';;
       group:list) echo '{"admin":["alice"],"users":["bob"]}';;
       user:resetpassword) uid=""; for x; do uid=$x; done; [ -n "${OC_PASS:-}" ] || exit 1; printf '%s' "$OC_PASS" | sha > "$ST/nc-hash.$uid";;
       list) [ -f "$ST/nc27" ] || echo "  user:auth-tokens:delete";;
       user:auth-tokens:delete) echo "$2" >> "$ST/abgemeldet";;
-      config:app:get) if [ "$3" = lastcron ]; then cat "$ST/lastcron"; else echo cron; fi;;
+      config:app:get) if [ "$3" = lastcron ]; then cat "$ST/lastcron"; elif [ -f "$ST/ajax" ]; then echo ""; else echo cron; fi;;
+      background:cron) rm -f "$ST/ajax"; echo "Set mode for background jobs to 'cron'";;
       *) echo "ok $1";;
     esac;;
   updater/updater.phar)
@@ -356,6 +357,10 @@ lauf mac-op nc-rotation-mac.sh --domain "$D" --abo "$U" --server srv1 --tresor T
 aufbau
 lauf cron nc-abschluss.sh cron "${COMMON[@]}" --ausfuehren
 eq "$RC" 0 "cron rc"
+ja '! grep -q "Hintergrundjob-Modus" "$NC_CHANGELOG"' "cron: Modus schon cron, keine Umstellung"
+aufbau; touch "$ST/ajax"
+lauf cron-ajax nc-abschluss.sh cron "${COMMON[@]}" --ausfuehren
+ja '[ "$RC" = 0 ] && [ ! -f "$ST/ajax" ] && grep -q "Hintergrundjob-Modus ajax -> cron" "$NC_CHANGELOG"' "cron: ajax wird auf cron gestellt (Prüfstand #165)"
 ja 'grep -q "^\*/5 \* \* \* \* root runuser -u $U -- .*/8.2/bin/php .*-f $W/cron.php" "$TMP/cron.d/nextcloud-$U"' "cron: Datei mit runuser"
 ja 'grep -qx "$U" "$NC_CRON_DENY"' "cron: Abo bleibt in cron.deny"
 aufbau; touch "$ST/cron-fehler"
@@ -369,6 +374,10 @@ aufbau; touch "$ST/app-updates" "$ST/appupdate-kaputt"; echo alt > "$W/apps/file
 lauf app-f nc-abschluss.sh appupdate "${COMMON[@]}" --ausfuehren
 eq "$RC" 4 "appupdate scheitert: Rückweg exit 4"
 ja '[ -f "$W/apps/files/marke" ] && [ -d "$W/apps.fehlschlag-"* ] && [ -s "$ST/restores" ]' "appupdate: apps und DB zurück"
+aufbau; touch "$ST/app-updates" "$ST/appupdate-ohne-wirkung"
+lauf app-ow nc-abschluss.sh appupdate "${COMMON[@]}" --ausfuehren
+eq "$RC" 4 "appupdate meldet Erfolg, App bleibt offen: Rückweg exit 4 (Prüfstand #165)"
+ja '! grep -q "maintenance:mode --on" <(grep -B999 "app:update --all" "$ST/aufrufe")' "appupdate: kein Wartungsmodus vor app:update"
 aufbau; mkdir -p "$TMP/q"; echo x > "$TMP/q/config.php.vor-rotation"; echo x > "$TMP/q/psa.shadow.vor-admin-1"; echo beweis > "$TMP/q/crontab.abo"
 lauf q nc-abschluss.sh quarantaene "${COMMON[@]}" --ausfuehren
 eq "$RC" 0 "quarantaene rc"

@@ -2,8 +2,8 @@
 # =============================================================================
 # nc-stufenupdate.sh — Nextcloud stufenweise aktualisieren, je Stufe mit Sicherung und Rückweg
 # =============================================================================
-# Test:     ja - werkzeuge/nextcloud/nextcloud_selbsttest.sh (Attrappen, CI) · NT-Forensik-Repair#162
-# Rueckweg: nein - Rollback je Stufe im Selbsttest belegt; die verallgemeinerte Fassung lief noch nicht gegen eine echte Instanz (Vorgänger rollte am 23.11.2026 zweimal gesund zurück) · NT-Forensik-Repair#165
+# Test:     ja - werkzeuge/nextcloud/nextcloud_selbsttest.sh (Attrappen, CI) und werkzeuge/nextcloud/probelauf/probelauf.sh (echte Nextcloud 27.1.11/28.0.14 im Wegwerf-Container) · NT-Forensik-Repair#165
+# Rueckweg: ja - Prüfstand 24.11.2026: Rückweg vor dem Code-Tausch (Updater rc 255) und nach dem Code-Tausch (29.0.16, Migration verweigert) je gesund zurück auf die Stufe davor · NT-Forensik-Repair#165
 #
 #   nc-stufenupdate.sh --domain <domain> --abo <systembenutzer> [--ip <ip>]
 #                      [--app-entfernen <app>]... [--fremd <eintrag>]...

@@ -3,7 +3,7 @@
 # nc-rotation-mac.sh — Treiber auf dem Arbeitsplatz: Werte erzeugen, ZUERST in 1Password, dann per stdin an den Server
 # =============================================================================
 # Test:     ja - werkzeuge/nextcloud/nextcloud_selbsttest.sh (Attrappen für ssh/scp/op, CI) · NT-Forensik-Repair#162
-# Rueckweg: nein - Werte stehen in 1Password, Rückweg = erneut setzen; gescheiterte Einträge heissen "VERWORFEN …" (nur im Selbsttest gelaufen) · NT-Forensik-Repair#165
+# Rueckweg: nein - Werte stehen in 1Password, Rückweg = erneut setzen; VERWORFEN-Markierung nur mit Attrappen für op/ssh geprüft, Lauf mit echtem Tresor steht aus · NT-Forensik-Repair#167
 #
 #   nc-rotation-mac.sh --server <ssh-ziel> --domain <domain> --abo <systembenutzer> [--ip <ip>]
 #                      --tresor <1password-tresor> --tag <tag>
