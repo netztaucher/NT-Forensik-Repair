@@ -4,6 +4,18 @@ Alle nennenswerten Änderungen an `wp_plesk_forensik.sh`.
 
 ## [unveröffentlicht]
 
+### Nextcloud-Werkzeuge für den Vorfall (#162)
+
+- Neu unter `werkzeuge/nextcloud/`: die Einmal-Skripte des Nextcloud-Vorfalls vom 23./24.11.2026,
+  verallgemeinert (Parameter statt fester Domain, Abo und Host, Trockenlauf als Vorgabe,
+  `--ausfuehren` zum Ändern): `nc-stufenupdate.sh`, `nc-folgelauf.sh`, `nc-rotation-mac.sh` +
+  `nc-rotation-server.sh`, `nc-abschluss.sh`, `op-sammel-item.sh`. Übersicht in
+  `werkzeuge/nextcloud/README.md`, Einstieg aus Playbook Phase 7.
+- Selbsttest `werkzeuge/nextcloud/nextcloud_selbsttest.sh` in der CI: Attrappen für Plesk,
+  occ/Updater, MySQL, curl, ssh und op; Erfolg und Rückweg je Werkzeug, dazu die Zusicherung,
+  dass kein Geheimnis in einem Argument, einer Ausgabe oder im changelog steht.
+- Rückweg gegen eine echte Instanz steht aus (#165).
+
 ### Kundenpaket im Berichtslayout NT Dokumente (#160)
 
 - Marco hat das Layout der Kundendokumente am 23.11.2026 (Vorfall cfds) als nicht seriös
