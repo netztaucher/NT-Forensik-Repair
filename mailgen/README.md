@@ -45,6 +45,9 @@ mailgen/anschreiben.py --fall fall.json --ziel <ordner> \
 - „Erneut senden“ per UI ist für Agenten gesperrt (der Auto-Modus wertet es als Senden).
 - Mail verkleinert angehängte PNG auf 1280 px Breite.
 - Prüfen über die Quelle des gespeicherten Entwurfs: Anhänge per sha256 gegen den Ordner.
+- Jeder Lauf mit `--apple-mail` legt einen **neuen** Entwurf an, alte bleiben liegen
+  (23.11.2026: fünf Entwürfe). Zwischenstände ohne `--apple-mail` prüfen, den Entwurf erst
+  am Ende einmal bauen und alte Entwürfe benennen.
 
 ## mailgen.py — Erstkontakt
 
