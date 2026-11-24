@@ -217,6 +217,32 @@ Rechtsberatung — die Entscheidung trifft der Verantwortliche.
 - WP-DB auf fremde Admins/Optionen prüfen (der §11-Verdikt hilft).
 - Fail2ban + ModSecurity (OWASP CRS) aktivieren.
 
+**Nextcloud-Fall (gemessen 23.11.2026):** die WordPress-Aktuatoren greifen hier nicht.
+Bis die Skripte im Repo liegen (#162), gilt dieses Vorgehen:
+- **Werte nie als Argument.** Plesk: `PSA_PASSWORD="$NEU" plesk bin subscription|mail -u <x> -passwd ""`,
+  Plesk-Admin genauso mit `plesk bin admin --set-admin-password -passwd ""`.
+  Nextcloud: `OC_PASS` + `occ user:resetpassword --password-from-env <uid>`, unter `runuser`
+  nur mit `--whitelist-environment=OC_PASS`. curl liest Zugangsdaten mit `-K -` von stdin.
+- **Reihenfolge:** Wert auf dem Mac erzeugen, zuerst in 1Password ablegen, dann per stdin über
+  ssh an das Server-Skript. Scheitert das Setzen, bekommt der Eintrag das Präfix `VERWORFEN`.
+- **Kill-Proof je Klasse:** DB `ERROR 1045` mit altem Wert · Systembenutzer shadow-Hash vorher/nachher ·
+  Postfach IMAP mit altem Wert vorher ok, nachher abgelehnt (sonst alten Wert zurücksetzen) ·
+  Nextcloud-Konto neuer Hash + WebDAV `PROPFIND` 207 · App-Geheimnis zurücklesen (`hash_equals`).
+  Beim Plesk-Admin ist der alte Wert nicht prüfbar: als „nicht feststellbar" dokumentieren, nicht als bestanden.
+- **Abmelden:** `occ user:auth-tokens:*` gibt es erst ab NC 28; auf älteren Ständen nach dem Update.
+- **SMTP-Postfach der Nextcloud** steht lesbar in `config.php`. Es mitrotieren, `mail_smtppassword`
+  mit Sicherung anpassen und prüfen, ob die Mail-App dasselbe Postfach nutzt.
+- **Kern-API NC 35:** `\OC::$server->getCrypto()` gibt es nicht mehr, stattdessen
+  `\OCP\Server::get(\OCP\Security\ICrypto::class)`. PHP gegen den Kern erst lesend testen.
+- **Update aus EOL:** eine Hauptversion je Stufe, vor jeder Stufe Sicherung httpdocs + DB.
+  Nach einem Rollback blockiert `data/updater-<id>/.step` den Updater (meldet Erfolg in 1 s
+  ohne Wirkung): vor jedem Lauf beiseitelegen. „Kein Update" gilt nur bei `No update available`,
+  sonst `version.php` vorher/nachher vergleichen. Abschluss: `update:check`, `app:update --showonly`,
+  `integrity:check-core`.
+- **Übergabe an den Kunden:** ein eigenes 1Password-Item nur mit Kundenzugängen (Konten, Postfach).
+  DB, Systembenutzer und Plesk-Admin bleiben beim Betreiber. Der Bericht sagt, welche Daten
+  rotiert wurden und dass sie als Export aus dem Passwortmanager kommen, nie per Mail.
+
 **Mittelfristig:**
 - SSH auf Key-only (`PermitRootLogin prohibit-password`, `PasswordAuthentication no`).
 - PHP `disable_functions` härten.
@@ -232,6 +258,7 @@ Rechtsberatung — die Entscheidung trifft der Verantwortliche.
 5. **Dokumentieren** — der Kunde, das BSI und ggf. das Gericht brauchen die Kette.
 6. **Rotiert ist, was den alten Wert ablehnt** — „der neue funktioniert" reicht nicht.
 7. **Kundenpaket ohne Interna** — und jede Seite einmal als Bild ansehen.
+8. **Wirkung belegen, nicht Erfolgsmeldung glauben** — Versionsdatei, Hash oder Ablehnung des alten Werts.
 
 ---
 *netztaucher | digital*
