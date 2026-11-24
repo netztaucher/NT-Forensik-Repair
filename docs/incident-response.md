@@ -218,7 +218,11 @@ Rechtsberatung — die Entscheidung trifft der Verantwortliche.
 - Fail2ban + ModSecurity (OWASP CRS) aktivieren.
 
 **Nextcloud-Fall (gemessen 23.11.2026):** die WordPress-Aktuatoren greifen hier nicht.
-Bis die Skripte im Repo liegen (#162), gilt dieses Vorgehen:
+Werkzeuge: [`werkzeuge/nextcloud/`](../werkzeuge/nextcloud/README.md) — Stufenupdate
+(`nc-stufenupdate.sh`), DB-Passwort und Abmelden (`nc-folgelauf.sh`), Rotation aller übrigen
+Zugänge über 1Password (`nc-rotation-mac.sh` → `nc-rotation-server.sh`), Abschluss
+(`nc-abschluss.sh`), Übergabe-Item (`op-sammel-item.sh`). Ohne `--ausfuehren` nur Trockenlauf.
+Gegen eine echte Instanz lief bisher nur der Vorgänger aus dem Vorfall (#165). Die Skripte setzen um:
 - **Werte nie als Argument.** Plesk: `PSA_PASSWORD="$NEU" plesk bin subscription|mail -u <x> -passwd ""`,
   Plesk-Admin genauso mit `plesk bin admin --set-admin-password -passwd ""`.
   Nextcloud: `OC_PASS` + `occ user:resetpassword --password-from-env <uid>`, unter `runuser`

@@ -268,6 +268,12 @@ jobs:
         # ein Browser-GET darf kein Einstiegsweg werden.
         run: bash werkzeuge/einstieg_request_selbsttest.sh
 
+      - name: Selbsttest Nextcloud-IR-Werkzeuge (#162)
+        # Stufenupdate, DB-Rotation, Rotation über 1Password -> ssh -> Server, Abschluss
+        # und Sammel-Item gegen Attrappen, ohne Netz und ohne root. Beide Richtungen
+        # (Erfolg und Rückweg), dazu: kein Geheimnis in Argument, Ausgabe oder changelog.
+        run: bash werkzeuge/nextcloud/nextcloud_selbsttest.sh
+
       - name: Selbsttest Anlegezeit im Inventar (#141)
         # GNU find liefert -1, wenn die crtime nicht messbar ist. Auf cletus
         # zaehlte 7.0 damit 18541 "Anlegezeiten", die es nicht gab.

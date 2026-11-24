@@ -226,6 +226,7 @@ Im Ordner [`examples/`](examples/) liegen vollständige Beispielberichte eines *
 - **[`docs/joomla-pruefung.md`](docs/joomla-pruefung.md)** — Joomla-Prüfung im Detail: die zehn Prüfschritte, Datenbestand, Offline-/Online-Betrieb, Fehlalarm-Vermeidung, Pflege.
 - **[`docs/relay-backdoors.md`](docs/relay-backdoors.md)** — Relay-Backdoors (gsocket), Prozess-Introspektion und warum Signatur-Rootkitscanner diese Klasse verfehlen.
 - **[`docs/incident-response.md`](docs/incident-response.md)** — Incident-Response-Playbook: 7 Phasen von der Beweissicherung bis zur Härtung.
+- **[`werkzeuge/nextcloud/`](werkzeuge/nextcloud/README.md)** — Nextcloud-Vorfall auf Plesk (Phase 7): Stufenupdate mit Rückweg je Stufe, Rotation aller Zugänge über 1Password mit Kill-Proof, Abschluss, Übergabe-Item.
 - **[`docs/runbook.md`](docs/runbook.md)** — Runbook für die manuelle Ad-hoc-Analyse einzelner Prüfpunkte.
 - **[`docs/findings-schnittstelle.md`](docs/findings-schnittstelle.md)** — `findings.json` als Vertrag: welche Feldpfade NT-Repair liest und was bei Schema-Änderungen zu tun ist.
 - **[`../docs/ablage-konvention.md`](../docs/ablage-konvention.md)** — übergreifende Ablage-/Namenskonvention für Läufe und Quarantäne (`<datum>_<host>_<scope>`), gemeinsam mit NT-Repair.
