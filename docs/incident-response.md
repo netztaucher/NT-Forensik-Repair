@@ -222,7 +222,8 @@ Werkzeuge: [`werkzeuge/nextcloud/`](../werkzeuge/nextcloud/README.md) — Stufen
 (`nc-stufenupdate.sh`), DB-Passwort und Abmelden (`nc-folgelauf.sh`), Rotation aller übrigen
 Zugänge über 1Password (`nc-rotation-mac.sh` → `nc-rotation-server.sh`), Abschluss
 (`nc-abschluss.sh`), Übergabe-Item (`op-sammel-item.sh`). Ohne `--ausfuehren` nur Trockenlauf.
-Gegen eine echte Instanz lief bisher nur der Vorgänger aus dem Vorfall (#165). Die Skripte setzen um:
+Erfolg und Rückweg sind gegen eine echte Nextcloud im Wegwerf-Container belegt (`probelauf/probelauf.sh`, #165);
+nur die Plesk-, IMAP- und 1Password-Wege der Rotation sind bisher allein mit Attrappen geprüft (#167). Die Skripte setzen um:
 - **Werte nie als Argument.** Plesk: `PSA_PASSWORD="$NEU" plesk bin subscription|mail -u <x> -passwd ""`,
   Plesk-Admin genauso mit `plesk bin admin --set-admin-password -passwd ""`.
   Nextcloud: `OC_PASS` + `occ user:resetpassword --password-from-env <uid>`, unter `runuser`
@@ -243,6 +244,9 @@ Gegen eine echte Instanz lief bisher nur der Vorgänger aus dem Vorfall (#165). 
   ohne Wirkung): vor jedem Lauf beiseitelegen. „Kein Update" gilt nur bei `No update available`,
   sonst `version.php` vorher/nachher vergleichen. Abschluss: `update:check`, `app:update --showonly`,
   `integrity:check-core`.
+- **App-Updates (gemessen im Prüfstand, #165):** `occ upgrade` verweigert im Wartungsmodus, und
+  `occ app:update` meldet „updated“ mit rc 0 auch dann, wenn es den App-Ordner nicht schreiben durfte.
+  Erfolg ist erst, was `app:update --showonly` danach nicht mehr als offen meldet.
 - **Übergabe an den Kunden:** ein eigenes 1Password-Item nur mit Kundenzugängen (Konten, Postfach).
   DB, Systembenutzer und Plesk-Admin bleiben beim Betreiber. Der Bericht sagt, welche Daten
   rotiert wurden und dass sie als Export aus dem Passwortmanager kommen, nie per Mail.

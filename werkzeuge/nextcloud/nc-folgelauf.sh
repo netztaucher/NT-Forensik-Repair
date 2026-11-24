@@ -2,8 +2,8 @@
 # =============================================================================
 # nc-folgelauf.sh — nach dem Update: Inventur der Geheimnisse, DB-Passwort rotieren, Geräte abmelden
 # =============================================================================
-# Test:     ja - werkzeuge/nextcloud/nextcloud_selbsttest.sh (Attrappen, CI) · NT-Forensik-Repair#162
-# Rueckweg: nein - db: automatischer Rückweg im Selbsttest belegt, gegen echte Instanz lief nur der Vorgänger (23.11.2026); abmelden: nicht umkehrbar (gewollt, Nutzer melden sich neu an) · NT-Forensik-Repair#165
+# Test:     ja - werkzeuge/nextcloud/nextcloud_selbsttest.sh (Attrappen, CI) und werkzeuge/nextcloud/probelauf/probelauf.sh (echte Nextcloud 27.1.11/28.0.14 im Wegwerf-Container) · NT-Forensik-Repair#165
+# Rueckweg: ja - db: Prüfstand 24.11.2026, Rückweg bei scheiternder Prüfung gelaufen (alter Wert in MariaDB und config.php wieder aktiv); abmelden: nicht umkehrbar (gewollt, Nutzer melden sich neu an) · NT-Forensik-Repair#165
 #
 #   nc-folgelauf.sh <inventur|db|abmelden> --domain <domain> --abo <systembenutzer> [--ip <ip>] [--ausfuehren]
 #
@@ -34,16 +34,17 @@ pgrep -f 'updater\.phar|nc-stufenupdate\.sh' >/dev/null 2>&1 && nc_abbruch "Upda
 [ "$NC_LOS" = 1 ] || echo "TROCKENLAUF (mit --ausfuehren wird geändert)"
 DBNAME=$(nc_cfg dbname); PFX=$(nc_cfg dbtableprefix)
 q(){ plesk db -Ne "$1" 2>/dev/null; }
+qi(){ q "$1" || echo 'keine Tabelle'; }   # nur Inventur: fehlende Tabelle sichtbar machen
 
 inventur(){
   nc_h "Inventur (nur Namen, keine Werte)"
   echo "Geheimnis-Schlüssel in config.php: $(grep -oE "^[[:space:]]*'[a-z_]*(pass|secret|salt|key|token)[a-z_]*'" "$NC_C" | tr -d " '" | sort -u | tr '\n' ' ')"
   echo "dbtype=$(nc_cfg dbtype) dbhost=$(nc_cfg dbhost) dbname=$DBNAME dbuser=$(nc_cfg dbuser) prefix=$PFX"
-  echo "Nutzerkonten: $(q "SELECT COUNT(*) FROM \`$DBNAME\`.\`${PFX}users\`") · Admins: $(q "SELECT COUNT(*) FROM \`$DBNAME\`.\`${PFX}group_user\` WHERE gid='admin'")"
-  echo "Geräte-Tokens/App-Passwörter: $(q "SELECT COUNT(*) FROM \`$DBNAME\`.\`${PFX}authtoken\`")"
-  echo "Mail-App-Konten (Passwort mit 'secret' verschlüsselt): $(q "SELECT COUNT(*) FROM \`$DBNAME\`.\`${PFX}mail_accounts\`")"
-  echo "LDAP mit Bind-Passwort: $(q "SELECT COUNT(*) FROM \`$DBNAME\`.\`${PFX}appconfig\` WHERE appid='user_ldap' AND configkey LIKE '%ldap_agent_password' AND configvalue<>''")"
-  echo "Externe Speicher: $(q "SELECT COUNT(*) FROM \`$DBNAME\`.\`${PFX}external_mounts\`")"
+  echo "Nutzerkonten: $(qi "SELECT COUNT(*) FROM \`$DBNAME\`.\`${PFX}users\`") · Admins: $(qi "SELECT COUNT(*) FROM \`$DBNAME\`.\`${PFX}group_user\` WHERE gid='admin'")"
+  echo "Geräte-Tokens/App-Passwörter: $(qi "SELECT COUNT(*) FROM \`$DBNAME\`.\`${PFX}authtoken\`")"
+  echo "Mail-App-Konten (Passwort mit 'secret' verschlüsselt): $(qi "SELECT COUNT(*) FROM \`$DBNAME\`.\`${PFX}mail_accounts\`")"
+  echo "LDAP mit Bind-Passwort: $(qi "SELECT COUNT(*) FROM \`$DBNAME\`.\`${PFX}appconfig\` WHERE appid='user_ldap' AND configkey LIKE '%ldap_agent_password' AND configvalue<>''")"
+  echo "Externe Speicher: $(qi "SELECT COUNT(*) FROM \`$DBNAME\`.\`${PFX}external_mounts\`")"
   echo "SMTP: mode=$(nc_cfg mail_smtpmode) host=$(nc_cfg mail_smtphost) port=$(nc_cfg mail_smtpport) auth=$(nc_cfg mail_smtpauth) konto=$(nc_cfg mail_smtpname) — Passwort liegt lesbar in config.php: $([ -n "$(nc_cfg mail_smtppassword)" ] && echo ja || echo nein)"
 }
 

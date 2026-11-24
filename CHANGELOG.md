@@ -16,6 +16,18 @@ Alle nennenswerten Änderungen an `wp_plesk_forensik.sh`.
   dass kein Geheimnis in einem Argument, einer Ausgabe oder im changelog steht.
 - Rückweg gegen eine echte Instanz steht aus (#165).
 
+### Nextcloud-Werkzeuge: Prüfstand mit echter Nextcloud (#165)
+
+- Neu `werkzeuge/nextcloud/probelauf/`: Wegwerf-Container mit Nextcloud 27.1.11, MariaDB und Apache in
+  Plesk-Anordnung; `probelauf.sh` prüft Erfolg und Rückweg von Stufenupdate, DB-Rotation, cron,
+  appupdate und den Rotations-Modi ohne Plesk gegen die echte Instanz und räumt danach ab.
+- `nc-abschluss.sh appupdate`: kein Wartungsmodus mehr um `app:update` (`occ upgrade` verweigerte dort,
+  lief also nie); Erfolg erst, wenn kein vorher offenes Update mehr offen ist (app:update meldete
+  „updated“ mit rc 0 ohne Wirkung); sichert auch `custom_apps`; Rückweg prüft die Gesundheit.
+- `nc-abschluss.sh cron` stellt den Hintergrundjob-Modus auf `cron`, wenn er dort nicht steht.
+- `nc-folgelauf.sh inventur` zeigt fehlende Tabellen (z. B. Mail-App nicht installiert) als „keine Tabelle“.
+- Kopfzeilen: Rückweg `ja` für Stufenupdate, Folgelauf und Abschluss; Rotation bleibt `nein` (#167).
+
 ### Kundenpaket im Berichtslayout NT Dokumente (#160)
 
 - Marco hat das Layout der Kundendokumente am 23.11.2026 (Vorfall cfds) als nicht seriös

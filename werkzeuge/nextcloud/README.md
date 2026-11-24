@@ -19,6 +19,7 @@ den Kopfkommentar mit allen Schaltern. Die Server-Skripte laufen als root auf de
 | [`op-sammel-item.sh`](op-sammel-item.sh) | Arbeitsplatz | Übergabe-Item für den Kunden: alle Items eines Tresors in einem, `--ausschluss` für Betreiber-Zugänge, `--erwartet` als Anzahl-Sperre, Fingerabdruck vorher = nachher |
 | [`lib.sh`](lib.sh) | — | gemeinsame Helfer |
 | [`nextcloud_selbsttest.sh`](nextcloud_selbsttest.sh) | CI | Selbsttest mit Attrappen, ohne Netz und root |
+| [`probelauf/probelauf.sh`](probelauf/probelauf.sh) | Arbeitsplatz (Docker) | Prüfstand: dieselben Werkzeuge gegen eine **echte** Nextcloud im Wegwerf-Container, Erfolg und Rückweg je Werkzeug |
 
 ## Reihenfolge im Vorfall
 
@@ -60,10 +61,35 @@ Ablagen: `--arbeit` (Vorgabe `/root/nc-ir/<domain>`, Sicherungen und Lauf-Log) u
 - `--abo` muss der Systembenutzer sein und `--domain` die Hauptdomain des Abos, sonst lehnt
   `plesk bin subscription` ab und es ändert sich nichts.
 
+## Prüfstand mit echter Nextcloud
+
+```bash
+bash werkzeuge/nextcloud/probelauf/probelauf.sh [<protokoll-ordner>] [--behalten]
+```
+
+Baut einen Wegwerf-Container (Debian, PHP 8.2, MariaDB, Apache, Nextcloud 27.1.11 in Plesk-Anordnung:
+`/var/www/vhosts/<domain>/httpdocs`, Abo-Benutzer, `/opt/plesk/php/8.2`), installiert Nextcloud ohne
+Wert-Argument und führt [`probelauf/szenarien.sh`](probelauf/szenarien.sh) aus. Am Ende sind Container
+und Abbild entfernt. Braucht Docker und Netz (Nextcloud-Paket, Updater-Server, App-Store), dauert
+etwa zehn Minuten. Nachgebildet ist nur `plesk` ([`probelauf/plesk-attrappe`](probelauf/plesk-attrappe):
+`plesk db` und PHP-Handler); alles andere ist echt.
+
+| Werkzeug | Erfolg | Rückweg ausgelöst durch | gelaufen 24.11.2026 (#165) |
+|---|---|---|---|
+| `nc-stufenupdate.sh` | Stufe 27.1.11 → 28.0.14 | Fremddatei sprengt Updater-Prüfung (vor Code-Tausch); DB-Benutzer ohne ALTER, Migration auf 29.0.16 scheitert (nach Code-Tausch) | beide gesund zurück, rc 4 |
+| `nc-folgelauf.sh db` | Kill-Proof `ERROR 1045` | Wartungsmodus, Prüfung nach dem Setzen scheitert | alter Wert wieder aktiv, rc 6 |
+| `nc-folgelauf.sh abmelden` | Tokens 1 → 0 | — (nicht umkehrbar, gewollt) | |
+| `nc-abschluss.sh cron` | Datei, Modus `cron`, lastcron rückt vor | `rm /etc/cron.d/nextcloud-<abo>` | ja |
+| `nc-abschluss.sh appupdate` | notes 4.9.3 → aktuell | App-Ordner für das Abo schreibgeschützt: app:update meldet Erfolg ohne Wirkung | notes zurück auf 4.9.3, rc 4 |
+| `nc-rotation-server.sh` | `liste`, `nutzer` (neuer Wert 207, alter 401), `smtpcfg` | `smtpcfg`: Wartungsmodus, Prüfung scheitert | config.php zurück, rc 4 |
+
+Zusätzlich prüft der Lauf, dass keines der Prüfstand-Geheimnisse in einem Protokoll oder im changelog steht.
+
 ## Grenzen
 
-- Die verallgemeinerte Fassung ist mit Attrappen getestet, ein Lauf gegen eine echte Instanz steht
-  aus (#165). Bis dahin `# Rueckweg: nein` in den Kopfzeilen.
+- Ohne echtes Plesk, IMAP und 1Password geprüft sind nur mit Attrappen: `nc-rotation-server.sh`
+  `postfach`, `abo`, `pleskadmin`, `mailapp` und der Treiber `nc-rotation-mac.sh` (#167). Dort steht
+  `# Rueckweg: nein`.
 - Nur MySQL/MariaDB. `secret` und `passwordsalt` der Nextcloud werden nicht rotiert (zerstört
   verschlüsselte Daten); was mit `secret` verschlüsselt ist (Mail-App-Konten), wird stattdessen neu gesetzt.
 - Ausgehende Sperren (Plesk-Firewall) gehören nicht hierher: siehe Playbook, Phase 7, Abschluss,
