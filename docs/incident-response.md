@@ -243,6 +243,26 @@ Bis die Skripte im Repo liegen (#162), gilt dieses Vorgehen:
   DB, Systembenutzer und Plesk-Admin bleiben beim Betreiber. Der Bericht sagt, welche Daten
   rotiert wurden und dass sie als Export aus dem Passwortmanager kommen, nie per Mail.
 
+- **Hintergrundjobs nach Crontab-Persistenz:** nicht über die Crontab des Abos zurückholen. Eine Datei
+  `/etc/cron.d/nextcloud-<abo>` startet `cron.php` alle 5 min als root über `runuser -u <abo>`; das Abo bleibt in
+  `/etc/cron.deny` und kann keine Crontab mehr schreiben. Prüfen: `cron.php` rc 0 und `occ config:app:get core lastcron`
+  rückt vor. Der erste Lauf nach langer Pause dauert Minuten. Gemessen 24.11.2026: groupfolders 23.0.1 bricht
+  `cron.php` ab („Cannot declare class …RepairMisplacedTrashItemsJob“), 23.0.2 behebt es; App-Updates deshalb mit
+  Sicherung (DB + `apps`) und Rückweg einspielen.
+
+**Abschluss (gemessen 24.11.2026):**
+- **Ausgehende Sperren dauerhaft machen** nur als Regel der Plesk-Firewall, nicht als iptables von Hand (die löscht
+  der nächste Apply). Achtung: Ein Apply löscht jede INPUT-Regel außer fail2ban, also auch `ts-input` (Tailnet-sshd
+  auf 2222) und `nt-abuse`. Vorher prüfen, ob der Host durch infra `ops/input-spruenge` abgesichert ist
+  (infra#1731). Bestätigen nur aus einer neuen Sitzung, eine Minute später noch einmal neu verbinden.
+- **MySQL-Admin auf Plesk:** `MYSQL_PWD="$(cat /etc/psa/.psa.shadow)" mysql --no-defaults -u admin`. Nie `-p<wert>`
+  (steht in der Prozessliste, auf Hosts ohne `hidepid` für jeden lokalen Benutzer). Ohne `--no-defaults` gewinnt
+  ein Passwort aus `/root/.my.cnf` und die Anmeldung scheitert mit 1045.
+- **fail2ban mitprüfen:** `fail2ban-client -t` und `systemctl is-active fail2ban`. Eine Jail ohne Logdatei (z. B.
+  `plesk-horde` ohne Horde) legt den ganzen Dienst lahm; abschalten über `plesk bin ip_ban --disable-jails <jail>`.
+- **Quarantäne-Kopien mit alten Geheimnissen** (`config.php.vor-*`, `.psa.shadow`-Kopien) nach Abschluss der
+  Rotation mit `shred -u` löschen. Beweise (Schadcode, Crontab, Logs) bleiben in der Quarantäne.
+
 **Mittelfristig:**
 - SSH auf Key-only (`PermitRootLogin prohibit-password`, `PasswordAuthentication no`).
 - PHP `disable_functions` härten.
