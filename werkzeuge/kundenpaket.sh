@@ -3,10 +3,6 @@
 # NT-Forensik — kundenpaket.sh
 #
 #   werkzeuge/kundenpaket.sh <lauf-ordner> [ziel] [--mit-server] [--mit-technik]
-#                            [--mit-rohfassung]
-#
-# Test:     ja - werkzeuge/kundenpaket-pruefstand.sh · NT-Forensik-Repair#1, #149, #150, #160
-# Rueckweg: entfällt - schreibt nur einen neuen Ordner (kein Überschreiben), der Lauf bleibt unverändert
 #
 # ------------------------------------------------------------
 # WOZU
@@ -32,15 +28,6 @@
 #   lauf.log        Protokoll des Werkzeugs
 #   Log-Archiv      im Anlassfall 527 MB Zugriffe ALLER Domains des Servers
 #   bsi_meldung.md  Meldeweg des Betreibers, nicht des Kunden
-#   Markdown-Rohfassungen (kundenbericht.md, dsgvo_meldung.md, ...) — nur mit
-#                   --mit-rohfassung. Kundendokumente sind seit dem Standard
-#                   vom 21.10.2026 die PDFs von reportgen/kundenpaket.py, seit
-#                   23.11.2026 im Berichtslayout NT Dokumente (#149, #160).
-#
-# Vor dem Packen prüft werkzeuge/interna-waechter.sh die Kundendokumente gegen
-# die Interna-Sperrliste (#150). Ein Treffer bricht ab — es entsteht kein Paket.
-# Ebenso ein Entwurf ("nicht zur Auslieferung" im Vermerk): der Anhang kam
-# ungeprüft aus dem Lauf (#160).
 #
 # Das Paket ist bewusst KLEINER als das, was der Betreiber hat. Wer mehr
 # hineinlegen will, tut das bewusst über einen Schalter — nicht aus Versehen.
@@ -70,14 +57,13 @@ pinfo() { echo -e "  ${CYN}·${NC}  $1"; }
 
 SELF_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")/.." && pwd)"
 
-LAUF=""; ZIEL=""; MIT_SERVER=0; MIT_TECHNIK=0; MIT_ROH=0
+LAUF=""; ZIEL=""; MIT_SERVER=0; MIT_TECHNIK=0
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --mit-server)  MIT_SERVER=1; shift ;;
     --mit-technik) MIT_TECHNIK=1; shift ;;
-    --mit-rohfassung) MIT_ROH=1; shift ;;
     -h|--help)
-      sed -n '3,6p;21,44p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
+      sed -n '3,5p;16,36p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
       exit 0 ;;
     -*) pfail "Unbekannter Schalter: $1" ;;
     *)  if [[ -z "$LAUF" ]]; then LAUF="$1"; else ZIEL="$1"; fi; shift ;;
@@ -142,30 +128,6 @@ LAUF_NAME="$(basename "$LAUF")"
 ZIEL="${ZIEL:-$(dirname "$LAUF")/${LAUF_NAME}_kundenpaket}"
 [[ -e "$ZIEL" ]] && pfail "Ziel existiert bereits: ${ZIEL} — bewusst kein Überschreiben."
 
-# ── Kundendokumente vorhanden, ohne Interna, kein Entwurf? ────
-KD_PDFS=()
-while IFS= read -r _p; do KD_PDFS+=("$_p"); done \
-  < <(find "$KUNDE_SRC" -maxdepth 1 -name 'NT-*.pdf' 2>/dev/null | LC_ALL=C sort)
-if [[ ${#KD_PDFS[@]} -eq 0 && "$MIT_ROH" -eq 0 ]]; then
-  pfail "Keine Kundendokumente (kunde/NT-*.pdf). Erst reportgen/kundenpaket.py --lauf ${LAUF} --ziel ${KUNDE_SRC} [--fall fall.json] ausführen — oder bewusst --mit-rohfassung."
-fi
-if [[ ${#KD_PDFS[@]} -gt 0 ]]; then
-  if ! bash "${SELF_DIR}/werkzeuge/interna-waechter.sh" "${KD_PDFS[@]}"; then
-    pfail "Interna in den Kundendokumenten (siehe oben, Sperrliste werkzeuge/interna-sperrliste.txt). Kein Paket."
-  fi
-  # Entwurf: reportgen/kundenpaket.py stempelt "nicht zur Auslieferung" in den
-  # Vermerk, wenn der Anhang ungeprueft aus dem Lauf kommt (Fehlalarme, Vorfall
-  # vom 23.11.2026). Solche PDFs gehen nicht ins Paket. Text erst ganz lesen:
-  # `pdftotext | grep -q` endet unter pipefail mit SIGPIPE, sobald grep trifft,
-  # und der Treffer sähe aus wie kein Treffer.
-  for _p in "${KD_PDFS[@]}"; do
-    _txt="$(pdftotext -enc UTF-8 "$_p" - 2>/dev/null)"
-    if grep -qi 'nicht zur Auslieferung' <<<"$_txt"; then
-      pfail "Entwurf: $(basename "$_p") hat einen ungeprüften Anhang aus dem Lauf. Fall-Datei mit bericht.protokoll oder bericht.protokoll_geprueft, dann reportgen/kundenpaket.py erneut. Kein Paket."
-    fi
-  done
-fi
-
 echo -e "${BOLD}NT-Forensik · Kundenpaket${NC}"
 pinfo "Lauf:  ${LAUF}"
 pinfo "Ziel:  ${ZIEL}"
@@ -189,21 +151,17 @@ uebernehmen() {   # <quelle> <zielordner> [neuer name]
 }
 
 # ── 01 Kundenunterlagen ──────────────────────────────────────
-N_DOK=0; N_MELD=0
-if [[ "$MIT_ROH" -eq 1 ]]; then
-  for d in kundenbericht.md befunde_details.md root_aussage.md; do
-    uebernehmen "${KUNDE_SRC}/${d}" "${ZIEL}/01_Kundenunterlagen" && N_DOK=$((N_DOK+1))
-  done
-fi
-for p in "${KD_PDFS[@]+"${KD_PDFS[@]}"}"; do
-  # PDFs werden NICHT maskiert: reportgen/kundenpaket.py nimmt nur Pfade aus
-  # dem Pruefumfang auf, und der Interna-Waechter hat sie oben geprueft. Ein
-  # Textersatz im PDF-Binaerstrom wuerde die Datei zerstoeren.
-  case "$(basename "$p")" in
-    NT-Dokumentation_DSGVO*|NT-Einordnung_BSI*)
-      cp "$p" "${ZIEL}/02_Meldungen/" && N_MELD=$((N_MELD+1)) ;;
-    *) cp "$p" "${ZIEL}/01_Kundenunterlagen/" && N_DOK=$((N_DOK+1)) ;;
-  esac
+N_DOK=0
+for d in kundenbericht.md befunde_details.md root_aussage.md; do
+  uebernehmen "${KUNDE_SRC}/${d}" "${ZIEL}/01_Kundenunterlagen" && N_DOK=$((N_DOK+1))
+done
+for p in "${KUNDE_SRC}"/*.pdf; do
+  [[ -f "$p" ]] || continue
+  # PDFs werden NICHT maskiert — sie sind aus der bereits maskierten
+  # Markdown-Fassung gebaut (siehe module/14_berichte/55_maskieren.sh, das
+  # ausdruecklich vor dem PDF-Bau laeuft). Ein Textersatz im PDF-Binaerstrom
+  # wuerde die Datei zerstoeren.
+  cp "$p" "${ZIEL}/01_Kundenunterlagen/" && N_DOK=$((N_DOK+1))
 done
 pok "01_Kundenunterlagen: ${N_DOK} Dokument(e)"
 
@@ -212,25 +170,24 @@ pok "01_Kundenunterlagen: ${N_DOK} Dokument(e)"
 # personenbezogenen Daten seines Auftritts und hat die Meldepflicht nach
 # Art. 33. Die BSI-Meldung bleibt draussen — sie betrifft den Betreiber und
 # seinen Meldeweg.
-if [[ "$MIT_ROH" -eq 1 ]] && uebernehmen "${BETR_SRC}/dsgvo_meldung.md" "${ZIEL}/02_Meldungen"; then
-  N_MELD=$((N_MELD+1))
-fi
-if [[ "$N_MELD" -gt 0 ]]; then
-  pok "02_Meldungen: ${N_MELD} Dokument(e)"
+if uebernehmen "${BETR_SRC}/dsgvo_meldung.md" "${ZIEL}/02_Meldungen"; then
+  pok "02_Meldungen: DSGVO-Entwurf (maskiert)"
 else
-  pwarn "02_Meldungen: keine Dokumente zur Meldepflicht im Lauf"
+  pwarn "02_Meldungen: keine DSGVO-Meldung im Lauf"
 fi
 cat > "${ZIEL}/02_Meldungen/LIESMICH.txt" <<'MELD'
-MELDEPFLICHT — EINSCHAETZUNG, KEINE RECHTSBERATUNG
+DSGVO-MELDUNG — ENTWURF, NICHT ABGESENDET
 
-Dokumentation Art. 33 DSGVO: unsere Einschaetzung zur Meldepflicht und alle
-Angaben nach Art. 33 Abs. 3. Die Entscheidung obliegt IHNEN als
-Verantwortlichem fuer die Daten Ihres Webauftritts. Bitte unterschreiben Sie
-das Dokument und legen Sie es zu Ihren Datenschutzunterlagen (Art. 33 Abs. 5).
-Wer meldet: Frist 72 Stunden ab Kenntnis.
+Diese Datei ist eine Vorlage, kein Bescheid und keine Rechtsberatung. Sie
+enthaelt Felder in eckigen Klammern, die nur Sie ausfuellen koennen.
 
-Einordnung BSI-Meldung: ob eine Pflicht nach BSIG/NIS2 besteht, und alle
-Angaben fuer eine freiwillige Meldung.
+Die Meldung nach Art. 33 DSGVO obliegt IHNEN als Verantwortlichem fuer die
+Daten Ihres Webauftritts. Die Frist betraegt 72 Stunden ab Kenntnis. Pruefen
+Sie den Entwurf mit Ihrem Datenschutzbeauftragten oder Ihrer Rechtsberatung,
+bevor Sie ihn absenden.
+
+NICHT in diesem Paket: die BSI-Meldung. Sie betrifft den Betreiber des
+Servers und seinen eigenen Meldeweg, nicht Sie.
 MELD
 
 # ── 03 Technik ───────────────────────────────────────────────
@@ -332,8 +289,8 @@ UNTERSUCHUNGSUNTERLAGEN — ${DOMAIN:-Ihr Webauftritt}
 Lauf ${LAUF_NAME}
 Erstellt: $(date '+%d.%m.%Y, %H:%M Uhr')
 
-  01_Kundenunterlagen  Sicherheitsbericht (PDF)
-  02_Meldungen         Dokumentation Art. 33 DSGVO und Einordnung BSI-Meldung (PDF)
+  01_Kundenunterlagen  Bericht, Fundstellen-Einordnung, Root-Aussage
+  02_Meldungen         DSGVO-Entwurf (Ihre Meldepflicht, Art. 33)
   03_Technik           $(if [[ "$MIT_TECHNIK" -eq 1 ]]; then echo "Technik-Bericht, maskiert"; else echo "leer — siehe LIESMICH darin"; fi)
   04_Belege            ${N_BEL} Rohbeleg(e), maskiert und neu nummeriert
   05_Bereinigung       $(if [[ "$N_REP" -eq 0 ]]; then echo "noch offen"; else echo "${N_REP} Protokoll(e)"; fi)
@@ -354,7 +311,7 @@ WAS NICHT IN DIESEM PAKET IST — UND WARUM
 
   findings.json      Maschinendatei fuer die Bereinigung, keine Unterlage
   Log-Archiv         enthaelt die Zugriffe ALLER Domains des Servers
-  BSI-Meldung        Meldeweg des Betreibers (Ihre Einordnung liegt in 02)
+  BSI-Meldung        Meldeweg des Betreibers, nicht Ihrer
   ${N_RAUS} Beleg(e)  betreffen den Server des Betreibers, nicht Ihren Auftritt
 
 Das Paket ist damit kleiner als der Bestand beim Betreiber. Was Sie

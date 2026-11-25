@@ -109,72 +109,10 @@ Im `kundenbericht.md`/`bsi_meldung.md` ergänzen (die maschinellen Teile stehen 
 - „Bereits durchgeführt" um Quarantäne/Offline-Nahme,
 - BSI-Formularfelder (Kontakt, Einstufung).
 
-**Ursache auch beim Hersteller suchen.** Kam der Einstieg über eine Fernwartung oder ein
-Premium-Plugin (UpdraftCentral, ManageWP, MainWP, WPMU-Dashboard), zuerst die
-Sicherheitsmeldungen des Herstellers prüfen. Im Vorfall vom 21.10.2026 stammte der
-Schlüssel aus einem Einbruch bei TeamUpdraft — belegt durch das `updraftcentral_client_log`
-(Sondierung unter erfundener Kennung, danach ein gültig signierter Befehl).
-
 Belege nach Änderungen neu versiegeln:
 ```bash
 cd "$RUN/belege" && sha256sum ./* > SHA256SUMS
 ```
-
-### Kundenpaket — Standard seit 21.10.2026
-
-Was an den Kunden geht, folgt diesem Standard. Das Werkzeug erzeugt ihn (#149, #150, #151).
-Layout seit 23.11.2026: **Berichtslayout** des Designsystems NT Dokumente (Komponente Bericht),
-freigegeben von Marco, nachdem das frühere Layout mit Kopfband, Statuskarten und halbleeren
-Kapitelseiten als nicht seriös abgelehnt wurde (#160).
-
-| Teil | Form |
-|---|---|
-| Sicherheitsbericht | Briefkopf (Logo, Dokumenttitel rechts), Haarlinie, Vertraulichkeitsvermerk, Adress-Cards Auftraggeber/Ersteller mit Vorgangsnummer; Abschnitte 1 Zusammenfassung, 2 Bewertung, 3 Ablauf, 4 Ergriffene Massnahmen, 5 Nächste Schritte, 6 Meldepflichten, Unterschrift; Anhang „Technisches Protokoll" auf eigener Seite |
-| Dokumentation Art. 33 DSGVO | 2 Seiten, Zeitpunkte, Angaben nach Abs. 3 a bis d mit Ausfüllfeldern, Prüfung, Abwägung, Entscheidung mit Unterschrift der Verantwortlichen |
-| Einordnung BSI-Meldung | 2 Seiten, Einordnung KRITIS/NIS2/freiwillig, Angaben für eine freiwillige Meldung, Indikatoren (IOC) |
-| Geschäftsfuss | auf jeder Seite: Anschrift, Handelsregister, Kontakt, „Vertraulich", „Seite x von y" |
-| Bildschirmfotos | Startseiten nach der Bereinigung (Chrome headless, 1440×1000) |
-| Anschreiben | kurze HTML-Mail (~150 Wörter, ein Kasten „Bitte heute", Meldepflicht in 2–3 Sätzen), normale Gross-/Kleinschreibung, kein Kopf, kein Logo |
-
-**Keine Interna im Kundenpaket:** keine Issue-Nummern, Werkzeugnamen oder -stände,
-Serverpfade, Ablagen (1Password, Register), internen Servernamen, keine Daten anderer
-Kunden, keine Admin-Benutzernamen, kein unerklärter Fachjargon (Liste in #150).
-Beweise zum Vorfall (Hashes, Angreifer-IPs, Zeitstempel, Pfade im Kunden-Webspace) bleiben.
-
-**Vor der Auslieferung jede Seite als Bild prüfen.** Umbrüche, Abstände und fluchtende
-Tabellenzeilen sind nur im Bild sichtbar. Danach `pdftotext` gegen die Interna-Liste.
-
-**Das Protokoll (Anhang) wird geprüft, nicht übernommen.** Ohne Fall-Datei übernimmt der
-Anhang, was der Lauf einordnet, Fehlalarme eingeschlossen (Vorfall vom 23.11.2026: ein
-gewöhnliches PDF als Schadcode, das bekannte Einfallstor als „nicht belegt"). Das Werkzeug
-setzt die Dokumente dann als **Entwurf** (Vermerk „nicht zur Auslieferung", roter Kasten im
-Anhang, Rückgabe 4), und `werkzeuge/kundenpaket.sh` nimmt sie nicht ins Paket. Freigeben:
-in der Fall-Datei `bericht.protokoll` mit dem geprüften Protokoll liefern oder, wenn die
-Liste aus dem Lauf stimmt, `"protokoll_geprueft": true` unter `bericht` setzen.
-
-So entsteht das Paket:
-
-```bash
-# 1. Der Lauf hat einen Entwurf aus seinen Funden gebaut (kunde/NT-*.pdf) und die
-#    Vorlage betreiber/kundenpaket_fall.entwurf.json geschrieben. Kunde, Erzählung,
-#    Bereinigung, Aufgaben, Meldepflicht und das geprüfte Protokoll dort eintragen
-#    (Muster: pruefstand/kundenpaket/fall.json), dann neu setzen:
-reportgen/kundenpaket.py --lauf "$RUN" --fall fall.json --ziel "$RUN/kunde" \
-    --pruefung "$RUN/betreiber/kundenpaket_pruefung"
-# 2. Jede Seite ansehen: $RUN/betreiber/kundenpaket_pruefung/seiten/*.png
-# 3. Anschreiben mit Bildschirmfotos der Startseiten, Entwurf in Apple Mail:
-mailgen/anschreiben.py --fall fall.json --ziel "$RUN/betreiber/mail" \
-    --anhang "$RUN"/kunde/NT-*.pdf --bildschirmfoto https://kunde.tld --apple-mail
-# 4. Übergabepaket mit Belegen (prüft die PDFs erneut gegen die Interna-Liste):
-werkzeuge/kundenpaket.sh "$RUN"
-```
-
-`reportgen/kundenpaket.py` setzt im Fluss (WeasyPrint), prüft jede Seite auf
-Geschäftsfuss und Überlauf über den rechten Satzspiegel, DSGVO und BSI auf genau 2 Seiten
-und alle Texte auf die Sprachregeln, und legt die Seitenbilder beim Betreiber ab. Ansehen
-muss sie trotzdem ein Mensch. Der Wächter `werkzeuge/interna-waechter.sh` liest die Sperrliste
-`werkzeuge/interna-sperrliste.txt`; Namen anderer Kunden desselben Servers lassen sich
-über `NT_INTERNA_EXTRA=<datei>` ergänzen.
 
 ## Phase 6 — Melden (falls einschlägig)
 
@@ -182,94 +120,21 @@ muss sie trotzdem ein Mensch. Der Wächter `werkzeuge/interna-waechter.sh` liest
 |---|---|---|
 | **Datenschutz-Aufsichtsbehörde** (DSGVO Art. 33) | personenbezogene Daten betroffen/möglich | **72 h** ab Kenntnis |
 | **BSI-Meldeportal** (mip.bsi.bund.de) | KRITIS / NIS2 / §32 BSIG | Erst ≤ 24 h, Folge ≤ 72 h |
-| **BSI freiwillig** | alle anderen (Allianz für Cybersicherheit) | jederzeit sinnvoll |
+| **BSI freiwillig** | alle anderen | jederzeit sinnvoll |
 | **ZAC der Landespolizei** | Straftatverdacht | Strafanzeige empfohlen |
-
-**Meldepflicht belegen statt schätzen.** Für Art. 33 zählen, was der Angreifer *tatsächlich*
-tun konnte und was in der Instanz liegt:
-- ausgeführte Befehle der Fernwartung (Client-Log) und Antworten > 10 MB im Zugriffsprotokoll,
-- Personenbezug zählen: Benutzer, Kommentare mit E-Mail, Formular-/Newsletter-/Bestell-/Quizdaten.
-
-Bleibt es bei „kein Abruf, nur Admin-Konten", ist das Risiko voraussichtlich keines: keine
-Meldung, aber Dokumentation nach Abs. 5 (unterschrieben beim Verantwortlichen). NIS2 gilt
-seit 06.12.2025 für mittlere Unternehmen (≥ 50 Beschäftigte oder > 10 Mio. € Umsatz und
-Bilanzsumme) in den gelisteten Sektoren; Stand und Quelle im Dokument nennen. Keine
-Rechtsberatung — die Entscheidung trifft der Verantwortliche.
 
 ## Phase 7 — Bereinigen & Härten
 
 **Sofort:**
-- Alle Passwörter rotieren (WordPress, Plesk, FTP, SSH, DB) — **nur über die Aktuatoren**
-  in `infra/ops/secret-rotation/` (`rotate-plesk-wp-db.sh`, `rotate-plesk-ftp.sh`,
-  `set-wp-user-password.sh`), mit Kill-Proof: rotiert ist erst, was den alten Wert ablehnt.
-- Fernwartungs-Schlüssel widerrufen und von aussen prüfen (UpdraftCentral: RPC-POST mit
-  alter Kennung muss die normale Startseite liefern, nicht eine leere Antwort).
-- Im Kunden-Webspace gespeicherte Fremd-Zugangsdaten entfernen (z. B. updraftplus.com-Login
-  in `updraftplus-addons_options`).
-- Zusätzliche FTP-Unterkonten und ungenutzte `.ssh/id_rsa` prüfen; unbekannte sperren bzw. in Quarantäne.
+- Alle Passwörter rotieren (WordPress, Plesk, FTP, SSH, DB).
 - Alle WP-Sitzungen invalidieren (Salts in `wp-config.php` neu).
-- `WP_DEBUG` abschalten, wenn es an ist (vorher `wp-config.php` sichern).
-- Angreifer-IP + Brute-Force-IPs sperren — anonymisierte `.0`-Adressen nie als Einzel-IP.
+- Angreifer-IP + Brute-Force-IPs sperren.
 - Verwundbare/genutzte Plugins deaktivieren/aktualisieren.
 
 **Kurzfristig:**
 - WordPress **aus sauberem Backup vor der Erstinfektion** neu aufsetzen (nicht nur „drüberbügeln").
 - WP-DB auf fremde Admins/Optionen prüfen (der §11-Verdikt hilft).
 - Fail2ban + ModSecurity (OWASP CRS) aktivieren.
-
-**Nextcloud-Fall (gemessen 23.11.2026):** die WordPress-Aktuatoren greifen hier nicht.
-Werkzeuge: [`werkzeuge/nextcloud/`](../werkzeuge/nextcloud/README.md) — Stufenupdate
-(`nc-stufenupdate.sh`), DB-Passwort und Abmelden (`nc-folgelauf.sh`), Rotation aller übrigen
-Zugänge über 1Password (`nc-rotation-mac.sh` → `nc-rotation-server.sh`), Abschluss
-(`nc-abschluss.sh`), Übergabe-Item (`op-sammel-item.sh`). Ohne `--ausfuehren` nur Trockenlauf.
-Erfolg und Rückweg sind gegen eine echte Nextcloud im Wegwerf-Container belegt (`probelauf/probelauf.sh`, #165);
-nur die Plesk-, IMAP- und 1Password-Wege der Rotation sind bisher allein mit Attrappen geprüft (#167). Die Skripte setzen um:
-- **Werte nie als Argument.** Plesk: `PSA_PASSWORD="$NEU" plesk bin subscription|mail -u <x> -passwd ""`,
-  Plesk-Admin genauso mit `plesk bin admin --set-admin-password -passwd ""`.
-  Nextcloud: `OC_PASS` + `occ user:resetpassword --password-from-env <uid>`, unter `runuser`
-  nur mit `--whitelist-environment=OC_PASS`. curl liest Zugangsdaten mit `-K -` von stdin.
-- **Reihenfolge:** Wert auf dem Mac erzeugen, zuerst in 1Password ablegen, dann per stdin über
-  ssh an das Server-Skript. Scheitert das Setzen, bekommt der Eintrag das Präfix `VERWORFEN`.
-- **Kill-Proof je Klasse:** DB `ERROR 1045` mit altem Wert · Systembenutzer shadow-Hash vorher/nachher ·
-  Postfach IMAP mit altem Wert vorher ok, nachher abgelehnt (sonst alten Wert zurücksetzen) ·
-  Nextcloud-Konto neuer Hash + WebDAV `PROPFIND` 207 · App-Geheimnis zurücklesen (`hash_equals`).
-  Beim Plesk-Admin ist der alte Wert nicht prüfbar: als „nicht feststellbar" dokumentieren, nicht als bestanden.
-- **Abmelden:** `occ user:auth-tokens:*` gibt es erst ab NC 28; auf älteren Ständen nach dem Update.
-- **SMTP-Postfach der Nextcloud** steht lesbar in `config.php`. Es mitrotieren, `mail_smtppassword`
-  mit Sicherung anpassen und prüfen, ob die Mail-App dasselbe Postfach nutzt.
-- **Kern-API NC 35:** `\OC::$server->getCrypto()` gibt es nicht mehr, stattdessen
-  `\OCP\Server::get(\OCP\Security\ICrypto::class)`. PHP gegen den Kern erst lesend testen.
-- **Update aus EOL:** eine Hauptversion je Stufe, vor jeder Stufe Sicherung httpdocs + DB.
-  Nach einem Rollback blockiert `data/updater-<id>/.step` den Updater (meldet Erfolg in 1 s
-  ohne Wirkung): vor jedem Lauf beiseitelegen. „Kein Update" gilt nur bei `No update available`,
-  sonst `version.php` vorher/nachher vergleichen. Abschluss: `update:check`, `app:update --showonly`,
-  `integrity:check-core`.
-- **App-Updates (gemessen im Prüfstand, #165):** `occ upgrade` verweigert im Wartungsmodus, und
-  `occ app:update` meldet „updated“ mit rc 0 auch dann, wenn es den App-Ordner nicht schreiben durfte.
-  Erfolg ist erst, was `app:update --showonly` danach nicht mehr als offen meldet.
-- **Übergabe an den Kunden:** ein eigenes 1Password-Item nur mit Kundenzugängen (Konten, Postfach).
-  DB, Systembenutzer und Plesk-Admin bleiben beim Betreiber. Der Bericht sagt, welche Daten
-  rotiert wurden und dass sie als Export aus dem Passwortmanager kommen, nie per Mail.
-
-- **Hintergrundjobs nach Crontab-Persistenz:** nicht über die Crontab des Abos zurückholen. Eine Datei
-  `/etc/cron.d/nextcloud-<abo>` startet `cron.php` alle 5 min als root über `runuser -u <abo>`; das Abo bleibt in
-  `/etc/cron.deny` und kann keine Crontab mehr schreiben. Prüfen: `cron.php` rc 0 und `occ config:app:get core lastcron`
-  rückt vor. Der erste Lauf nach langer Pause dauert Minuten. Gemessen 24.11.2026: groupfolders 23.0.1 bricht
-  `cron.php` ab („Cannot declare class …RepairMisplacedTrashItemsJob“), 23.0.2 behebt es; App-Updates deshalb mit
-  Sicherung (DB + `apps`) und Rückweg einspielen.
-
-**Abschluss (gemessen 24.11.2026):**
-- **Ausgehende Sperren dauerhaft machen** nur als Regel der Plesk-Firewall, nicht als iptables von Hand (die löscht
-  der nächste Apply). Achtung: Ein Apply löscht jede INPUT-Regel außer fail2ban, also auch `ts-input` (Tailnet-sshd
-  auf 2222) und `nt-abuse`. Vorher prüfen, ob der Host durch infra `ops/input-spruenge` abgesichert ist
-  (infra#1731). Bestätigen nur aus einer neuen Sitzung, eine Minute später noch einmal neu verbinden.
-- **MySQL-Admin auf Plesk:** `MYSQL_PWD="$(cat /etc/psa/.psa.shadow)" mysql --no-defaults -u admin`. Nie `-p<wert>`
-  (steht in der Prozessliste, auf Hosts ohne `hidepid` für jeden lokalen Benutzer). Ohne `--no-defaults` gewinnt
-  ein Passwort aus `/root/.my.cnf` und die Anmeldung scheitert mit 1045.
-- **fail2ban mitprüfen:** `fail2ban-client -t` und `systemctl is-active fail2ban`. Eine Jail ohne Logdatei (z. B.
-  `plesk-horde` ohne Horde) legt den ganzen Dienst lahm; abschalten über `plesk bin ip_ban --disable-jails <jail>`.
-- **Quarantäne-Kopien mit alten Geheimnissen** (`config.php.vor-*`, `.psa.shadow`-Kopien) nach Abschluss der
-  Rotation mit `shred -u` löschen. Beweise (Schadcode, Crontab, Logs) bleiben in der Quarantäne.
 
 **Mittelfristig:**
 - SSH auf Key-only (`PermitRootLogin prohibit-password`, `PasswordAuthentication no`).
@@ -284,9 +149,6 @@ nur die Plesk-, IMAP- und 1Password-Wege der Rotation sind bisher allein mit Att
 3. **Passwörter zuerst** — solange Zugänge gültig sind, ist jede Reinigung sinnlos.
 4. **Sauberes Backup** schlägt Nachbereinigung.
 5. **Dokumentieren** — der Kunde, das BSI und ggf. das Gericht brauchen die Kette.
-6. **Rotiert ist, was den alten Wert ablehnt** — „der neue funktioniert" reicht nicht.
-7. **Kundenpaket ohne Interna** — und jede Seite einmal als Bild ansehen.
-8. **Wirkung belegen, nicht Erfolgsmeldung glauben** — Versionsdatei, Hash oder Ablehnung des alten Werts.
 
 ---
 *netztaucher | digital*

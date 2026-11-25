@@ -17,14 +17,13 @@
 #     │   ├── kundenbericht.md                 ← lesbar für den Kunden
 #     │   ├── befunde_details.md               ← Anlage, relative Pfade
 #     │   ├── root_aussage.md                  ← nur bei --nur-root
-#     │   └── NT-*.pdf                         ← Kundenpaket NT Dokumente (optional, WeasyPrint)
+#     │   └── abschlussbericht.pdf             ← optional
 #     └── betreiber/                           ← NICHT WEITERGEBEN
 #         ├── technik_bericht.md               ← vollständig, auch serverweit
 #         ├── bsi_meldung.md                   ← Entwurf
 #         ├── dsgvo_meldung.md                 ← Entwurf, eigener Meldeweg
 #         ├── findings.json                    ← Eingabe für die Bereinigung
 #         ├── lauf.log                         ← Ausführungsprotokoll
-#         ├── kundenpaket_*                     ← Fundliste, Fall-Entwurf, Seitenbilder
 #         └── belege/                          ← Rohdaten, gehasht, UNMASKIERT
 #             ├── 00_manifest.txt              ← Chain-of-Custody
 #             ├── NN_*.txt / logs_sicherung.tar.gz
@@ -33,9 +32,6 @@
 #   Dazu zwei Archive: <LAUF>_kunde.tar.gz und <LAUF>_betreiber.tar.gz.
 #   Die Trennung ist der Punkt: ein einziges Archiv lädt dazu ein, es als
 #   Ganzes weiterzureichen — samt fremder vhosts und unmaskierter Rohbelege.
-#
-# Test:     ja - werkzeuge/goldmuster.sh vergleichen, in der CI zwei Läufe im Job „Zwei Läufe, dieselbe Ausgabe“ · NT-Forensik-Repair#1
-# Rueckweg: entfällt - schreibt nur in den eigenen Laufordner unter /root/wartungsscripte/forensik/, Webspace nur lesend
 #
 # Autor: netztaucher | digital
 # Nur read-only Analyse. Keine Lösch-/Schreiboperationen im Webspace.

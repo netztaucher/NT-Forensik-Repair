@@ -192,7 +192,12 @@ Wir übernehmen Wartung, Härtung, Monitoring und Notfall-Forensik für WordPres
 Rootserver — damit Vorfälle wie dieser gar nicht erst entstehen oder im Ernstfall
 sauber und dokumentiert behoben werden.
 
-**→ https://netztaucher.com/wordpress**
+**→ https://<anderer Kunde 1>/wordpress**
 
 ---
 *netztaucher | digital — maschinell erstellt (wp_plesk_forensik.sh <FASSUNG>) und dokumentiert den Zustand zum Prüfzeitpunkt. Der Angriffshergang (Abschnitt 5/6) wird nach manueller Auswertung ergänzt.*
+
+
+---
+
+> **Hinweis zum Datenschutz.** Dieser Server beherbergt weitere Kunden. Wo serverweite Prüfungen deren Domains oder Systemkonten berührten, stehen Platzhalter (`<anderer Kunde N>`); derselbe Nachbar trägt dabei immer dieselbe Nummer, sodass Zusammenhänge erkennbar bleiben. Betroffen waren 1 fremde Kennungen. Die unmaskierte Fassung verbleibt beim Betreiber.

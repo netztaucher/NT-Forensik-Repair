@@ -1,6 +1,4 @@
 # shellcheck shell=bash
-# Test:     ja - mittelbar über werkzeuge/goldmuster.sh (jeder Referenzlauf durchläuft diesen Teil) · NT-Forensik-Repair#149
-# Rueckweg: entfällt - schreibt nur Prüfsummen und Archive des eigenen Laufs
 # NT-Forensik — Abschnitt 14, Teil: Archive und Abschlussmeldung
 #
 # Unterabschnitt von module/14_berichte.sh. Wird vom Runner nach dem
@@ -19,10 +17,8 @@
             betreiber/dsgvo_meldung.md betreiber/findings.json; do
     [[ -f "$_h" ]] && sha256sum "$_h" 2>/dev/null >> "${BELEGE_DIR}/SHA256SUMS"
   done
-  # Kundenpaket (NT Dokumente, 60_pdf): alle Kunden-PDFs
-  for _h in kunde/*.pdf; do
-    [[ -f "$_h" ]] && sha256sum "$_h" 2>/dev/null >> "${BELEGE_DIR}/SHA256SUMS"
-  done
+  [[ -n "${PDF_FILE:-}" && -f "${PDF_FILE:-}" ]] && \
+    sha256sum "kunde/$(basename "$PDF_FILE")" 2>/dev/null >> "${BELEGE_DIR}/SHA256SUMS"
 ) || true
 
 # ── Zwei Archive statt einem ─────────────────────────────────
@@ -59,7 +55,7 @@ echo -e "${BOLD}${GRN}  kunde/${NC}  — weitergabefähig"
 echo -e "    Kundenbericht:   ${KUNDE_FILE}"
 [[ -f "${KUNDE_DIR}/befunde_details.md" ]] && echo -e "    Befund-Details:  ${KUNDE_DIR}/befunde_details.md"
 [[ -f "${KUNDE_DIR}/root_aussage.md" ]]    && echo -e "    Root-Aussage:    ${KUNDE_DIR}/root_aussage.md"
-for _p in "${KUNDENPAKET_PDFS[@]+"${KUNDENPAKET_PDFS[@]}"}"; do echo -e "    Kunden-PDF:      ${_p}"; done
+[[ -n "${PDF_FILE:-}" && -f "${PDF_FILE:-}" ]] && echo -e "    PDF-Bericht:     ${PDF_FILE}"
 echo -e "    Archiv:          ${KUNDE_ARCHIVE}"
 echo ""
 echo -e "${BOLD}${YLW}  betreiber/${NC} — NICHT weitergeben"

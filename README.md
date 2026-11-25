@@ -36,15 +36,6 @@
 - **`technik_bericht.md`** — vollständiger technischer Bericht über alle Prüfpunkte.
 - **`findings.json`** — maschinenlesbarer Export aller Befunde (Verdikte, IOCs, actionable Pfade) für nachgelagerte Werkzeuge.
 
-Die Markdown-Berichte sind Rohfassungen. Was an den Kunden geht, folgt seit 21.10.2026 dem
-Standard **Kundenpaket** (Sicherheitsbericht, DSGVO-Dokumentation und BSI-Einordnung im Berichtslayout
-des Designsystems NT Dokumente, kurzes Anschreiben, keine Interna) — siehe [Incident-Response-Playbook, Phase 5](docs/incident-response.md#kundenpaket--standard-seit-21102026).
-Der Lauf erzeugt die drei PDFs selbst ([`reportgen/kundenpaket.py`](reportgen/README.md)), sobald
-WeasyPrint da ist; Kunde, Erzählung, Bereinigung und das geprüfte Protokoll kommen aus einer
-Fall-Datei. Ohne sie bleiben die PDFs ein Entwurf, der nicht ins Paket geht. Das Anschreiben
-baut [`mailgen/anschreiben.py`](mailgen/README.md), der [Interna-Wächter](werkzeuge/interna-sperrliste.txt)
-prüft alles vor der Auslieferung.
-
 Alle Rohdaten werden als nummerierte, SHA256-versiegelte Belege abgelegt (Chain-of-Custody).
 
 > Entwickelt von **netztaucher | digital** für den Einsatz auf eigenen und betreuten Systemen.
@@ -122,7 +113,7 @@ rsync -a --exclude laeufe --exclude .git ./ root@SERVER:/root/nt-forensik/
 | `lib/`, `module/` | Runner und Prüfabschnitte | **immer** |
 | `daten/` | Joomla-Prüfsummen und Schwachstellenlisten (3 MB) | für Abschnitt 12 |
 | `signaturen/` | YARA-Regeln | nur mit `--yara` |
-| `reportgen/` | Kundenpaket im Berichtslayout NT Dokumente (WeasyPrint) | nur für die Kunden-PDFs |
+| `reportgen/` | PDF-Erzeugung | nur für den PDF-Bericht |
 
 ```bash
 # Ein Plesk-Abo als Ganzes — alle Verzeichnisse dieses Kunden, sonst nichts
@@ -180,18 +171,13 @@ Das Skript installiert sich beim ersten Lauf nach `/root/wartungsscripte/` und l
 │   ├── kundenbericht.md        # laienlesbar, mit Ampel
 │   ├── befunde_details.md      # Fundstellen relativ zum Kundenverzeichnis (nur bei Funden)
 │   ├── root_aussage.md         # nur bei --nur-root
-│   ├── NT-Sicherheitsbericht_<Kunde>_<Datum>.pdf         # Berichtslayout (nur wenn WeasyPrint da)
-│   ├── NT-Dokumentation_DSGVO-Art33_<Kunde>_<Datum>.pdf  # 2 Seiten
-│   └── NT-Einordnung_BSI-Meldung_<Kunde>_<Datum>.pdf     # 2 Seiten
+│   └── abschlussbericht.pdf    # gebrandetes PDF (nur wenn pandoc+weasyprint da)
 └── betreiber/                  # NICHT WEITERGEBEN
     ├── technik_bericht.md      # vollständig, auch serverweite Befunde
     ├── bsi_meldung.md          # Entwurf
     ├── dsgvo_meldung.md        # Entwurf, eigener Meldeweg
     ├── findings.json           # maschinenlesbar, Eingabe für die Bereinigung
     ├── lauf.log
-    ├── kundenpaket_funde.tsv         # Fundliste für die Kunden-PDFs
-    ├── kundenpaket_fall.entwurf.json # Vorlage für die Fall-Datei (NT_KUNDENFALL)
-    ├── kundenpaket_pruefung/         # Seitenbilder und Prüfbericht der Kunden-PDFs
     └── belege/                 # Rohdaten, SHA256-versiegelt, bewusst UNMASKIERT
 ```
 
@@ -226,7 +212,6 @@ Im Ordner [`examples/`](examples/) liegen vollständige Beispielberichte eines *
 - **[`docs/joomla-pruefung.md`](docs/joomla-pruefung.md)** — Joomla-Prüfung im Detail: die zehn Prüfschritte, Datenbestand, Offline-/Online-Betrieb, Fehlalarm-Vermeidung, Pflege.
 - **[`docs/relay-backdoors.md`](docs/relay-backdoors.md)** — Relay-Backdoors (gsocket), Prozess-Introspektion und warum Signatur-Rootkitscanner diese Klasse verfehlen.
 - **[`docs/incident-response.md`](docs/incident-response.md)** — Incident-Response-Playbook: 7 Phasen von der Beweissicherung bis zur Härtung.
-- **[`werkzeuge/nextcloud/`](werkzeuge/nextcloud/README.md)** — Nextcloud-Vorfall auf Plesk (Phase 7): Stufenupdate mit Rückweg je Stufe, Rotation aller Zugänge über 1Password mit Kill-Proof, Abschluss, Übergabe-Item.
 - **[`docs/runbook.md`](docs/runbook.md)** — Runbook für die manuelle Ad-hoc-Analyse einzelner Prüfpunkte.
 - **[`docs/findings-schnittstelle.md`](docs/findings-schnittstelle.md)** — `findings.json` als Vertrag: welche Feldpfade NT-Repair liest und was bei Schema-Änderungen zu tun ist.
 - **[`../docs/ablage-konvention.md`](../docs/ablage-konvention.md)** — übergreifende Ablage-/Namenskonvention für Läufe und Quarantäne (`<datum>_<host>_<scope>`), gemeinsam mit NT-Repair.
